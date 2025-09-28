@@ -42,7 +42,10 @@
       "WebSearch",
       "Bash(chmod:*)",
       "Bash(./scaffold-docs.sh:*)",
-      "Bash(./scaffold-foundation-docs.sh:*)"
+      "Bash(./scaffold-foundation-docs.sh:*)",
+      "Bash(awk:*)",
+      "Bash(~/.claude-code-docs/claude-docs-helper.sh:*)",
+      "Bash(python3:*)"
     ]
   }
 }

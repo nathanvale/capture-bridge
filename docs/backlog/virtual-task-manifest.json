@@ -1,0 +1,3105 @@
+{
+  "status": "OK",
+  "manifest_hash": "PLACEHOLDER",
+  "decomposition_input_hash": "PLACEHOLDER",
+  "timestamp": "2025-09-28T09:18:28.165Z",
+  "metadata": {
+    "total_capabilities": 27,
+    "total_tasks": 68,
+    "total_acceptance_criteria": 229
+  },
+  "tasks": [
+    {
+      "task_id": "MONOREPO_STRUCTURE--T01",
+      "capability_id": "MONOREPO_STRUCTURE",
+      "phase": "Phase 1",
+      "slice": "Slice 1.1",
+      "title": "Monorepo Package Structure & Build Pipeline - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "MONOREPO_STRUCTURE-AC01",
+          "text": "4 packages defined: @adhd-brain/foundation, @adhd-brain/storage, @adhd-brain/capture, @adhd-brain/cli"
+        },
+        {
+          "id": "MONOREPO_STRUCTURE-AC02",
+          "text": "Turbo pipeline configured (build, test, lint)"
+        },
+        {
+          "id": "MONOREPO_STRUCTURE-AC03",
+          "text": "Shared tsconfig.base.json, eslint.config.js, prettier.config.js"
+        },
+        {
+          "id": "MONOREPO_STRUCTURE-AC07",
+          "text": "Zero circular dependencies verified"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "M"
+      },
+      "depends_on_tasks": [],
+      "related_specs": [
+        "docs/cross-cutting/spec-foundation-monorepo-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0019: Monorepo Tooling Stack (pnpm + Turbo + TSUP)",
+        "docs/guides/guide-monorepo-mppp.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/foundation/tests/monorepo-structure.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "MONOREPO_STRUCTURE--T02",
+      "capability_id": "MONOREPO_STRUCTURE",
+      "phase": "Phase 1",
+      "slice": "Slice 1.1",
+      "title": "Monorepo Package Structure & Build Pipeline - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "MONOREPO_STRUCTURE-AC04",
+          "text": "Build time < 30s"
+        },
+        {
+          "id": "MONOREPO_STRUCTURE-AC05",
+          "text": "Test time < 30s"
+        },
+        {
+          "id": "MONOREPO_STRUCTURE-AC06",
+          "text": "Setup time < 5 minutes"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "M"
+      },
+      "depends_on_tasks": [
+        "MONOREPO_STRUCTURE--T01"
+      ],
+      "related_specs": [
+        "docs/cross-cutting/spec-foundation-monorepo-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0019: Monorepo Tooling Stack (pnpm + Turbo + TSUP)",
+        "docs/guides/guide-monorepo-mppp.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/foundation/tests/monorepo-structure.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "SQLITE_SCHEMA--T01",
+      "capability_id": "SQLITE_SCHEMA",
+      "phase": "Phase 1",
+      "slice": "Slice 1.1",
+      "title": "SQLite Staging Ledger Schema & Indexes - Schema & Structure",
+      "description": "Core schema and structural implementation",
+      "acceptance_criteria": [
+        {
+          "id": "SQLITE_SCHEMA-AC01",
+          "text": "All 4 tables created with correct schema"
+        },
+        {
+          "id": "SQLITE_SCHEMA-AC02",
+          "text": "Foreign key constraints enforced (captures ← exports_audit, errors_log)"
+        },
+        {
+          "id": "SQLITE_SCHEMA-AC03",
+          "text": "Indexes created: captures_status_idx, captures_channel_native_uid, errors_stage_idx, exports_capture_idx"
+        },
+        {
+          "id": "SQLITE_SCHEMA-AC04",
+          "text": "WAL mode enabled (journal_mode=WAL)"
+        },
+        {
+          "id": "SQLITE_SCHEMA-AC06",
+          "text": "Schema version tracking in sync_state table"
+        },
+        {
+          "id": "SQLITE_SCHEMA-AC07",
+          "text": "PRAGMA integrity_check passes"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "MONOREPO_STRUCTURE--T02"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0003: Four-Table Hard Cap",
+        "ADR-0004: Status-Driven State Machine",
+        "ADR-0005: WAL Mode Normal Sync",
+        "ADR-0010: ULID-Based Deterministic Filenames",
+        "docs/guides/guide-tdd-applicability.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/storage/tests/schema-creation.spec.ts",
+        "packages/storage/tests/foreign-key-constraints.spec.ts",
+        "packages/storage/tests/index-performance.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "SQLITE_SCHEMA--T02",
+      "capability_id": "SQLITE_SCHEMA",
+      "phase": "Phase 1",
+      "slice": "Slice 1.1",
+      "title": "SQLite Staging Ledger Schema & Indexes - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "SQLITE_SCHEMA-AC05",
+          "text": "synchronous=NORMAL, foreign_keys=ON, busy_timeout=5000"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "SQLITE_SCHEMA--T01"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0003: Four-Table Hard Cap",
+        "ADR-0004: Status-Driven State Machine",
+        "ADR-0005: WAL Mode Normal Sync",
+        "ADR-0010: ULID-Based Deterministic Filenames",
+        "docs/guides/guide-tdd-applicability.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/storage/tests/schema-creation.spec.ts",
+        "packages/storage/tests/foreign-key-constraints.spec.ts",
+        "packages/storage/tests/index-performance.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CONTENT_HASH_IMPLEMENTATION--T01",
+      "capability_id": "CONTENT_HASH_IMPLEMENTATION",
+      "phase": "Phase 1",
+      "slice": "Slice 1.1",
+      "title": "Content Hash Normalization & Computation (SHA-256) - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "CONTENT_HASH_IMPLEMENTATION-AC01",
+          "text": "Text normalization function (trim, LF line endings)"
+        },
+        {
+          "id": "CONTENT_HASH_IMPLEMENTATION-AC02",
+          "text": "SHA-256 hash computation (64-char hex output)"
+        },
+        {
+          "id": "CONTENT_HASH_IMPLEMENTATION-AC03",
+          "text": "Audio fingerprint (first 4MB SHA-256)"
+        },
+        {
+          "id": "CONTENT_HASH_IMPLEMENTATION-AC04",
+          "text": "Email body hash (Message-ID + normalized text)"
+        },
+        {
+          "id": "CONTENT_HASH_IMPLEMENTATION-AC05",
+          "text": "100% deterministic (same input → same hash)"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "MONOREPO_STRUCTURE--T02"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0002: Dual Hash Migration (superseded, SHA-256 only)",
+        "ADR-0006: Late Hash Binding for Voice",
+        "docs/guides/guide-tdd-applicability.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/foundation/tests/content-hash-normalization.spec.ts",
+        "packages/foundation/tests/hash-determinism.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CONTENT_HASH_IMPLEMENTATION--T02",
+      "capability_id": "CONTENT_HASH_IMPLEMENTATION",
+      "phase": "Phase 1",
+      "slice": "Slice 1.1",
+      "title": "Content Hash Normalization & Computation (SHA-256) - Error Handling",
+      "description": "Error handling and validation",
+      "acceptance_criteria": [
+        {
+          "id": "CONTENT_HASH_IMPLEMENTATION-AC06",
+          "text": "Hash collision handling (log critical error)"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "CONTENT_HASH_IMPLEMENTATION--T01"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0002: Dual Hash Migration (superseded, SHA-256 only)",
+        "ADR-0006: Late Hash Binding for Voice",
+        "docs/guides/guide-tdd-applicability.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/foundation/tests/content-hash-normalization.spec.ts",
+        "packages/foundation/tests/hash-determinism.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CONTENT_HASH_IMPLEMENTATION--T03",
+      "capability_id": "CONTENT_HASH_IMPLEMENTATION",
+      "phase": "Phase 1",
+      "slice": "Slice 1.1",
+      "title": "Content Hash Normalization & Computation (SHA-256) - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "CONTENT_HASH_IMPLEMENTATION-AC07",
+          "text": "Performance: < 10ms for 1KB text, < 50ms for 4MB audio"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "CONTENT_HASH_IMPLEMENTATION--T02"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0002: Dual Hash Migration (superseded, SHA-256 only)",
+        "ADR-0006: Late Hash Binding for Voice",
+        "docs/guides/guide-tdd-applicability.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/foundation/tests/content-hash-normalization.spec.ts",
+        "packages/foundation/tests/hash-determinism.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "ATOMIC_FILE_WRITER--T01",
+      "capability_id": "ATOMIC_FILE_WRITER",
+      "phase": "Phase 1",
+      "slice": "Slice 1.1",
+      "title": "Atomic File Writer (Temp-Then-Rename Pattern) - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "ATOMIC_FILE_WRITER-AC01",
+          "text": "Write to temp path: {vault}/.trash/{ulid}.tmp"
+        },
+        {
+          "id": "ATOMIC_FILE_WRITER-AC02",
+          "text": "fsync() before rename"
+        },
+        {
+          "id": "ATOMIC_FILE_WRITER-AC03",
+          "text": "Atomic rename to {vault}/inbox/{ulid}.md"
+        },
+        {
+          "id": "ATOMIC_FILE_WRITER-AC05",
+          "text": "ULID collision detection (same filename, different content → CRITICAL)"
+        },
+        {
+          "id": "ATOMIC_FILE_WRITER-AC06",
+          "text": "Duplicate detection (same content hash → skip write)"
+        },
+        {
+          "id": "ATOMIC_FILE_WRITER-AC08",
+          "text": "Zero partial writes verified with crash testing"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "MONOREPO_STRUCTURE--T02"
+      ],
+      "related_specs": [
+        "docs/features/obsidian-bridge/spec-obsidian-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0009: Atomic Write via Temp-Then-Rename Pattern",
+        "ADR-0010: ULID-Based Deterministic Filenames",
+        "ADR-0011: Inbox-Only Export Pattern",
+        "ADR-0020: Foundation Direct Export Pattern",
+        "docs/guides/guide-obsidian-bridge-usage.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/obsidian-bridge/tests/atomic-write.spec.ts",
+        "packages/obsidian-bridge/tests/crash-recovery.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "ATOMIC_FILE_WRITER--T02",
+      "capability_id": "ATOMIC_FILE_WRITER",
+      "phase": "Phase 1",
+      "slice": "Slice 1.1",
+      "title": "Atomic File Writer (Temp-Then-Rename Pattern) - Error Handling",
+      "description": "Error handling and validation",
+      "acceptance_criteria": [
+        {
+          "id": "ATOMIC_FILE_WRITER-AC04",
+          "text": "Temp file cleanup on failure"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "ATOMIC_FILE_WRITER--T01"
+      ],
+      "related_specs": [
+        "docs/features/obsidian-bridge/spec-obsidian-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0009: Atomic Write via Temp-Then-Rename Pattern",
+        "ADR-0010: ULID-Based Deterministic Filenames",
+        "ADR-0011: Inbox-Only Export Pattern",
+        "ADR-0020: Foundation Direct Export Pattern",
+        "docs/guides/guide-obsidian-bridge-usage.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/obsidian-bridge/tests/atomic-write.spec.ts",
+        "packages/obsidian-bridge/tests/crash-recovery.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "ATOMIC_FILE_WRITER--T03",
+      "capability_id": "ATOMIC_FILE_WRITER",
+      "phase": "Phase 1",
+      "slice": "Slice 1.1",
+      "title": "Atomic File Writer (Temp-Then-Rename Pattern) - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "ATOMIC_FILE_WRITER-AC07",
+          "text": "Performance: < 50ms p95 for 1KB file"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "ATOMIC_FILE_WRITER--T02"
+      ],
+      "related_specs": [
+        "docs/features/obsidian-bridge/spec-obsidian-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0009: Atomic Write via Temp-Then-Rename Pattern",
+        "ADR-0010: ULID-Based Deterministic Filenames",
+        "ADR-0011: Inbox-Only Export Pattern",
+        "ADR-0020: Foundation Direct Export Pattern",
+        "docs/guides/guide-obsidian-bridge-usage.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/obsidian-bridge/tests/atomic-write.spec.ts",
+        "packages/obsidian-bridge/tests/crash-recovery.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "TESTKIT_INTEGRATION--T01",
+      "capability_id": "TESTKIT_INTEGRATION",
+      "phase": "Phase 1",
+      "slice": "Slice 1.1",
+      "title": "TestKit Integration & Test Infrastructure - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "TESTKIT_INTEGRATION-AC01",
+          "text": "@orchestr8/testkit installed and configured"
+        },
+        {
+          "id": "TESTKIT_INTEGRATION-AC02",
+          "text": "In-memory SQLite fixtures working"
+        },
+        {
+          "id": "TESTKIT_INTEGRATION-AC03",
+          "text": "MSW setup for API mocks (Gmail API)"
+        },
+        {
+          "id": "TESTKIT_INTEGRATION-AC04",
+          "text": "Auto-cleanup verified (no temp files, no leaked connections)"
+        },
+        {
+          "id": "TESTKIT_INTEGRATION-AC05",
+          "text": "Parallel test execution working (no conflicts)"
+        },
+        {
+          "id": "TESTKIT_INTEGRATION-AC07",
+          "text": "Zero flaky tests (5 consecutive clean runs)"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "MONOREPO_STRUCTURE--T02"
+      ],
+      "related_specs": [
+        "docs/cross-cutting/spec-foundation-monorepo-test.md"
+      ],
+      "related_adrs": [
+        "ADR-0019: Monorepo Tooling Stack",
+        "docs/guides/guide-testkit-usage.md",
+        "docs/guides/guide-testkit-standardization.md",
+        "docs/guides/guide-phase1-testing-patterns.md"
+      ],
+      "related_guides": [],
+      "test_verification": [],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "TESTKIT_INTEGRATION--T02",
+      "capability_id": "TESTKIT_INTEGRATION",
+      "phase": "Phase 1",
+      "slice": "Slice 1.1",
+      "title": "TestKit Integration & Test Infrastructure - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "TESTKIT_INTEGRATION-AC06",
+          "text": "Test suite runs < 30 seconds"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "TESTKIT_INTEGRATION--T01"
+      ],
+      "related_specs": [
+        "docs/cross-cutting/spec-foundation-monorepo-test.md"
+      ],
+      "related_adrs": [
+        "ADR-0019: Monorepo Tooling Stack",
+        "docs/guides/guide-testkit-usage.md",
+        "docs/guides/guide-testkit-standardization.md",
+        "docs/guides/guide-phase1-testing-patterns.md"
+      ],
+      "related_guides": [],
+      "test_verification": [],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "METRICS_INFRASTRUCTURE--T01",
+      "capability_id": "METRICS_INFRASTRUCTURE",
+      "phase": "Phase 1",
+      "slice": "Slice 1.1",
+      "title": "Local Metrics Collection (NDJSON) - Schema & Structure",
+      "description": "Core schema and structural implementation",
+      "acceptance_criteria": [
+        {
+          "id": "METRICS_INFRASTRUCTURE-AC07",
+          "text": "Schema version field in every record"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "MONOREPO_STRUCTURE--T02"
+      ],
+      "related_specs": [
+        "docs/cross-cutting/spec-metrics-contract-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0021: Local-Only NDJSON Metrics Strategy",
+        "docs/guides/guide-testkit-usage.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/metrics/tests/ndjson-writer.spec.ts",
+        "packages/metrics/tests/log-rotation.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "METRICS_INFRASTRUCTURE--T02",
+      "capability_id": "METRICS_INFRASTRUCTURE",
+      "phase": "Phase 1",
+      "slice": "Slice 1.1",
+      "title": "Local Metrics Collection (NDJSON) - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "METRICS_INFRASTRUCTURE-AC01",
+          "text": "NDJSON writer for .metrics/YYYY-MM-DD.ndjson"
+        },
+        {
+          "id": "METRICS_INFRASTRUCTURE-AC02",
+          "text": "Daily log rotation (new file per day)"
+        },
+        {
+          "id": "METRICS_INFRASTRUCTURE-AC03",
+          "text": "Opt-in activation (CAPTURE_METRICS=1)"
+        },
+        {
+          "id": "METRICS_INFRASTRUCTURE-AC06",
+          "text": "ISO 8601 timestamps (UTC)"
+        },
+        {
+          "id": "METRICS_INFRASTRUCTURE-AC08",
+          "text": "No external network calls"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "METRICS_INFRASTRUCTURE--T01"
+      ],
+      "related_specs": [
+        "docs/cross-cutting/spec-metrics-contract-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0021: Local-Only NDJSON Metrics Strategy",
+        "docs/guides/guide-testkit-usage.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/metrics/tests/ndjson-writer.spec.ts",
+        "packages/metrics/tests/log-rotation.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "METRICS_INFRASTRUCTURE--T03",
+      "capability_id": "METRICS_INFRASTRUCTURE",
+      "phase": "Phase 1",
+      "slice": "Slice 1.1",
+      "title": "Local Metrics Collection (NDJSON) - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "METRICS_INFRASTRUCTURE-AC04",
+          "text": "Core metrics defined: capture_staging_ms, dedup_hits_total, export_failures_total, transcription_duration_ms"
+        },
+        {
+          "id": "METRICS_INFRASTRUCTURE-AC05",
+          "text": "Monotonic clock for durations (performance.now())"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "METRICS_INFRASTRUCTURE--T02"
+      ],
+      "related_specs": [
+        "docs/cross-cutting/spec-metrics-contract-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0021: Local-Only NDJSON Metrics Strategy",
+        "docs/guides/guide-testkit-usage.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/metrics/tests/ndjson-writer.spec.ts",
+        "packages/metrics/tests/log-rotation.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "VOICE_POLLING_ICLOUD--T01",
+      "capability_id": "VOICE_POLLING_ICLOUD",
+      "phase": "Phase 1",
+      "slice": "Slice 1.2",
+      "title": "Voice Memo Polling (iCloud + APFS Dataless Detection) - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "VOICE_POLLING_ICLOUD-AC01",
+          "text": "Poll directory every 30 seconds (configurable)"
+        },
+        {
+          "id": "VOICE_POLLING_ICLOUD-AC02",
+          "text": "Detect new .m4a files (mtime check + sync_state cursor)"
+        },
+        {
+          "id": "VOICE_POLLING_ICLOUD-AC03",
+          "text": "APFS dataless detection via icloudctl"
+        },
+        {
+          "id": "VOICE_POLLING_ICLOUD-AC04",
+          "text": "Sequential download (no parallel, semaphore=1)"
+        },
+        {
+          "id": "VOICE_POLLING_ICLOUD-AC07",
+          "text": "Audio fingerprint (first 4MB SHA-256) computed before staging"
+        },
+        {
+          "id": "VOICE_POLLING_ICLOUD-AC08",
+          "text": "Channel-native-id = file path (uniqueness constraint)"
+        },
+        {
+          "id": "VOICE_POLLING_ICLOUD-AC09",
+          "text": "Insert capture row (status='staged', audio_fp in meta_json)"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "SQLITE_SCHEMA--T02",
+        "CONTENT_HASH_IMPLEMENTATION--T03"
+      ],
+      "related_specs": [
+        "docs/features/capture/spec-capture-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0001: Voice File Sovereignty (never move/copy Apple files)",
+        "ADR-0006: Late Hash Binding for Voice",
+        "ADR-0008: Sequential Processing MPPP",
+        "docs/guides/guide-polling-implementation.md",
+        "docs/guides/guide-capture-debugging.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/capture/tests/voice-polling.spec.ts",
+        "packages/capture/tests/apfs-dataless-detection.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "VOICE_POLLING_ICLOUD--T02",
+      "capability_id": "VOICE_POLLING_ICLOUD",
+      "phase": "Phase 1",
+      "slice": "Slice 1.2",
+      "title": "Voice Memo Polling (iCloud + APFS Dataless Detection) - Error Handling",
+      "description": "Error handling and validation",
+      "acceptance_criteria": [
+        {
+          "id": "VOICE_POLLING_ICLOUD-AC05",
+          "text": "Exponential backoff on iCloud failure (1s, 2s, 4s, cap at 60s)"
+        },
+        {
+          "id": "VOICE_POLLING_ICLOUD-AC06",
+          "text": "Skip files with iCloud conflicts (log error prominently)"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "VOICE_POLLING_ICLOUD--T01"
+      ],
+      "related_specs": [
+        "docs/features/capture/spec-capture-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0001: Voice File Sovereignty (never move/copy Apple files)",
+        "ADR-0006: Late Hash Binding for Voice",
+        "ADR-0008: Sequential Processing MPPP",
+        "docs/guides/guide-polling-implementation.md",
+        "docs/guides/guide-capture-debugging.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/capture/tests/voice-polling.spec.ts",
+        "packages/capture/tests/apfs-dataless-detection.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "VOICE_POLLING_ICLOUD--T03",
+      "capability_id": "VOICE_POLLING_ICLOUD",
+      "phase": "Phase 1",
+      "slice": "Slice 1.2",
+      "title": "Voice Memo Polling (iCloud + APFS Dataless Detection) - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "VOICE_POLLING_ICLOUD-AC10",
+          "text": "Performance: < 150ms p95 staging time"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "VOICE_POLLING_ICLOUD--T02"
+      ],
+      "related_specs": [
+        "docs/features/capture/spec-capture-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0001: Voice File Sovereignty (never move/copy Apple files)",
+        "ADR-0006: Late Hash Binding for Voice",
+        "ADR-0008: Sequential Processing MPPP",
+        "docs/guides/guide-polling-implementation.md",
+        "docs/guides/guide-capture-debugging.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/capture/tests/voice-polling.spec.ts",
+        "packages/capture/tests/apfs-dataless-detection.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "WHISPER_TRANSCRIPTION--T01",
+      "capability_id": "WHISPER_TRANSCRIPTION",
+      "phase": "Phase 1",
+      "slice": "Slice 1.2",
+      "title": "Whisper Transcription (Medium Model, Local) - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "WHISPER_TRANSCRIPTION-AC01",
+          "text": "Whisper medium model loaded (medium.pt)"
+        },
+        {
+          "id": "WHISPER_TRANSCRIPTION-AC02",
+          "text": "Sequential transcription (no parallel, MPPP constraint)"
+        },
+        {
+          "id": "WHISPER_TRANSCRIPTION-AC05",
+          "text": "Update capture: content_hash + status='transcribed' on success"
+        },
+        {
+          "id": "WHISPER_TRANSCRIPTION-AC10",
+          "text": "Queue depth metric: transcription_queue_depth"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "M"
+      },
+      "depends_on_tasks": [
+        "VOICE_POLLING_ICLOUD--T03"
+      ],
+      "related_specs": [
+        "docs/features/capture/spec-capture-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0006: Late Hash Binding for Voice",
+        "ADR-0008: Sequential Processing MPPP",
+        "ADR-0014: Placeholder Export Immutability",
+        "docs/guides/guide-whisper-transcription.md",
+        "docs/guides/guide-error-recovery.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/capture/tests/whisper-transcription.spec.ts",
+        "packages/capture/tests/transcription-failure.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "WHISPER_TRANSCRIPTION--T02",
+      "capability_id": "WHISPER_TRANSCRIPTION",
+      "phase": "Phase 1",
+      "slice": "Slice 1.2",
+      "title": "Whisper Transcription (Medium Model, Local) - Error Handling",
+      "description": "Error handling and validation",
+      "acceptance_criteria": [
+        {
+          "id": "WHISPER_TRANSCRIPTION-AC06",
+          "text": "Update capture: status='failed_transcription' on failure"
+        },
+        {
+          "id": "WHISPER_TRANSCRIPTION-AC07",
+          "text": "Insert errors_log on failure (stage='transcribe', message)"
+        },
+        {
+          "id": "WHISPER_TRANSCRIPTION-AC08",
+          "text": "Placeholder export on failure (see PLACEHOLDER_EXPORT)"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "M"
+      },
+      "depends_on_tasks": [
+        "WHISPER_TRANSCRIPTION--T01"
+      ],
+      "related_specs": [
+        "docs/features/capture/spec-capture-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0006: Late Hash Binding for Voice",
+        "ADR-0008: Sequential Processing MPPP",
+        "ADR-0014: Placeholder Export Immutability",
+        "docs/guides/guide-whisper-transcription.md",
+        "docs/guides/guide-error-recovery.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/capture/tests/whisper-transcription.spec.ts",
+        "packages/capture/tests/transcription-failure.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "WHISPER_TRANSCRIPTION--T03",
+      "capability_id": "WHISPER_TRANSCRIPTION",
+      "phase": "Phase 1",
+      "slice": "Slice 1.2",
+      "title": "Whisper Transcription (Medium Model, Local) - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "WHISPER_TRANSCRIPTION-AC03",
+          "text": "Single retry on failure (timeout, corrupted audio)"
+        },
+        {
+          "id": "WHISPER_TRANSCRIPTION-AC04",
+          "text": "Timeout: 30 seconds per transcription"
+        },
+        {
+          "id": "WHISPER_TRANSCRIPTION-AC09",
+          "text": "Performance: < 10s average transcription time"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "M"
+      },
+      "depends_on_tasks": [
+        "WHISPER_TRANSCRIPTION--T02"
+      ],
+      "related_specs": [
+        "docs/features/capture/spec-capture-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0006: Late Hash Binding for Voice",
+        "ADR-0008: Sequential Processing MPPP",
+        "ADR-0014: Placeholder Export Immutability",
+        "docs/guides/guide-whisper-transcription.md",
+        "docs/guides/guide-error-recovery.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/capture/tests/whisper-transcription.spec.ts",
+        "packages/capture/tests/transcription-failure.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "DEDUPLICATION_LOGIC--T01",
+      "capability_id": "DEDUPLICATION_LOGIC",
+      "phase": "Phase 1",
+      "slice": "Slice 1.2",
+      "title": "Duplicate Detection & Suppression - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "DEDUPLICATION_LOGIC-AC01",
+          "text": "Query: SELECT id FROM captures WHERE content_hash = ? AND id != ?"
+        },
+        {
+          "id": "DEDUPLICATION_LOGIC-AC02",
+          "text": "Voice duplicate check: audio_fp (staged) → transcript hash (transcribed)"
+        },
+        {
+          "id": "DEDUPLICATION_LOGIC-AC03",
+          "text": "Email duplicate check: Message-ID (primary) OR body hash (fallback)"
+        },
+        {
+          "id": "DEDUPLICATION_LOGIC-AC04",
+          "text": "Unique constraint enforced: (channel, channel_native_id)"
+        },
+        {
+          "id": "DEDUPLICATION_LOGIC-AC05",
+          "text": "Mark duplicate: status='exported_duplicate'"
+        },
+        {
+          "id": "DEDUPLICATION_LOGIC-AC06",
+          "text": "Insert exports_audit (mode='duplicate_skip')"
+        },
+        {
+          "id": "DEDUPLICATION_LOGIC-AC07",
+          "text": "No vault write on duplicate"
+        },
+        {
+          "id": "DEDUPLICATION_LOGIC-AC09",
+          "text": "Metric: dedup_hits_total counter"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "CONTENT_HASH_IMPLEMENTATION--T03",
+        "SQLITE_SCHEMA--T02"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0006: Late Hash Binding for Voice",
+        "docs/guides/guide-tdd-applicability.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/staging-ledger/tests/deduplication.spec.ts",
+        "packages/staging-ledger/tests/hash-collision-handling.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "DEDUPLICATION_LOGIC--T02",
+      "capability_id": "DEDUPLICATION_LOGIC",
+      "phase": "Phase 1",
+      "slice": "Slice 1.2",
+      "title": "Duplicate Detection & Suppression - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "DEDUPLICATION_LOGIC-AC08",
+          "text": "Performance: < 10ms duplicate check"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "DEDUPLICATION_LOGIC--T01"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0006: Late Hash Binding for Voice",
+        "docs/guides/guide-tdd-applicability.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/staging-ledger/tests/deduplication.spec.ts",
+        "packages/staging-ledger/tests/hash-collision-handling.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "DIRECT_EXPORT_VOICE--T01",
+      "capability_id": "DIRECT_EXPORT_VOICE",
+      "phase": "Phase 1",
+      "slice": "Slice 1.2",
+      "title": "Voice Direct Export to Vault (Synchronous) - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "DIRECT_EXPORT_VOICE-AC01",
+          "text": "Trigger: capture status='transcribed' AND duplicate check passed"
+        },
+        {
+          "id": "DIRECT_EXPORT_VOICE-AC02",
+          "text": "Generate markdown: frontmatter (created, source, capture_id) + transcript"
+        },
+        {
+          "id": "DIRECT_EXPORT_VOICE-AC03",
+          "text": "Atomic write to inbox/{capture.id}.md"
+        },
+        {
+          "id": "DIRECT_EXPORT_VOICE-AC04",
+          "text": "Insert exports_audit (capture_id, vault_path, hash_at_export, mode='initial')"
+        },
+        {
+          "id": "DIRECT_EXPORT_VOICE-AC05",
+          "text": "Update captures: status='exported'"
+        },
+        {
+          "id": "DIRECT_EXPORT_VOICE-AC07",
+          "text": "Zero partial writes (verified with crash testing)"
+        },
+        {
+          "id": "DIRECT_EXPORT_VOICE-AC08",
+          "text": "Metric: export_write_ms histogram"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "WHISPER_TRANSCRIPTION--T03",
+        "ATOMIC_FILE_WRITER--T03",
+        "DEDUPLICATION_LOGIC--T02"
+      ],
+      "related_specs": [
+        "docs/features/obsidian-bridge/spec-obsidian-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0011: Inbox-Only Export Pattern",
+        "ADR-0013: MPPP Direct Export Pattern",
+        "ADR-0020: Foundation Direct Export Pattern",
+        "docs/guides/guide-obsidian-bridge-usage.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/obsidian-bridge/tests/voice-export-e2e.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "DIRECT_EXPORT_VOICE--T02",
+      "capability_id": "DIRECT_EXPORT_VOICE",
+      "phase": "Phase 1",
+      "slice": "Slice 1.2",
+      "title": "Voice Direct Export to Vault (Synchronous) - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "DIRECT_EXPORT_VOICE-AC06",
+          "text": "Performance: < 1s export time"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "DIRECT_EXPORT_VOICE--T01"
+      ],
+      "related_specs": [
+        "docs/features/obsidian-bridge/spec-obsidian-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0011: Inbox-Only Export Pattern",
+        "ADR-0013: MPPP Direct Export Pattern",
+        "ADR-0020: Foundation Direct Export Pattern",
+        "docs/guides/guide-obsidian-bridge-usage.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/obsidian-bridge/tests/voice-export-e2e.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "PLACEHOLDER_EXPORT--T01",
+      "capability_id": "PLACEHOLDER_EXPORT",
+      "phase": "Phase 1",
+      "slice": "Slice 1.2",
+      "title": "Placeholder Export (Transcription Failure Fallback) - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "PLACEHOLDER_EXPORT-AC01",
+          "text": "Trigger: capture status='failed_transcription'"
+        },
+        {
+          "id": "PLACEHOLDER_EXPORT-AC03",
+          "text": "Atomic write to inbox/{capture.id}.md"
+        },
+        {
+          "id": "PLACEHOLDER_EXPORT-AC05",
+          "text": "Update captures: status='exported_placeholder'"
+        },
+        {
+          "id": "PLACEHOLDER_EXPORT-AC06",
+          "text": "No retrofit mechanism (MPPP immutability constraint)"
+        },
+        {
+          "id": "PLACEHOLDER_EXPORT-AC07",
+          "text": "Metric: placeholder_export_ratio (daily aggregation)"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "WHISPER_TRANSCRIPTION--T03",
+        "ATOMIC_FILE_WRITER--T03"
+      ],
+      "related_specs": [
+        "docs/features/capture/spec-capture-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0014: Placeholder Export Immutability",
+        "docs/guides/guide-error-recovery.md",
+        "docs/guides/guide-whisper-transcription.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/capture/tests/placeholder-export.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "PLACEHOLDER_EXPORT--T02",
+      "capability_id": "PLACEHOLDER_EXPORT",
+      "phase": "Phase 1",
+      "slice": "Slice 1.2",
+      "title": "Placeholder Export (Transcription Failure Fallback) - Error Handling",
+      "description": "Error handling and validation",
+      "acceptance_criteria": [
+        {
+          "id": "PLACEHOLDER_EXPORT-AC02",
+          "text": "Generate placeholder markdown: `[TRANSCRIPTION_FAILED]` + audio path + error message"
+        },
+        {
+          "id": "PLACEHOLDER_EXPORT-AC04",
+          "text": "Insert exports_audit (capture_id, vault_path, hash_at_export=NULL, mode='placeholder', error_flag=1)"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "PLACEHOLDER_EXPORT--T01"
+      ],
+      "related_specs": [
+        "docs/features/capture/spec-capture-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0014: Placeholder Export Immutability",
+        "docs/guides/guide-error-recovery.md",
+        "docs/guides/guide-whisper-transcription.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/capture/tests/placeholder-export.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CAPTURE_STATE_MACHINE--T01",
+      "capability_id": "CAPTURE_STATE_MACHINE",
+      "phase": "Phase 1",
+      "slice": "Slice 1.2",
+      "title": "Gmail API OAuth2 Authentication - Schema & Structure",
+      "description": "Core schema and structural implementation",
+      "acceptance_criteria": [
+        {
+          "id": "CAPTURE_STATE_MACHINE-AC04",
+          "text": "Terminal states: exported, exported_duplicate, exported_placeholder (immutable)"
+        },
+        {
+          "id": "CAPTURE_STATE_MACHINE-AC07",
+          "text": "Status index for fast filtering: CREATE INDEX captures_status_idx ON captures(status)"
+        },
+        {
+          "id": "CAPTURE_STATE_MACHINE-AC13",
+          "text": "Store last successful auth in sync_state table"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "M"
+      },
+      "depends_on_tasks": [
+        "SQLITE_SCHEMA--T02"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-arch.md",
+        "docs/features/capture/spec-capture-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0004: Status-Driven State Machine",
+        "ADR-0014: Placeholder Export Immutability",
+        "docs/guides/guide-error-recovery.md",
+        "docs/guides/guide-gmail-oauth2-setup.md",
+        "docs/guides/guide-polling-implementation.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/staging-ledger/tests/state-machine.spec.ts",
+        "packages/staging-ledger/tests/invalid-transitions.spec.ts",
+        "packages/capture/tests/gmail-oauth2.spec.ts (MSW mocks)"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CAPTURE_STATE_MACHINE--T02",
+      "capability_id": "CAPTURE_STATE_MACHINE",
+      "phase": "Phase 1",
+      "slice": "Slice 1.2",
+      "title": "Gmail API OAuth2 Authentication - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "CAPTURE_STATE_MACHINE-AC01",
+          "text": "States: staged → transcribed → exported"
+        },
+        {
+          "id": "CAPTURE_STATE_MACHINE-AC02",
+          "text": "States: staged → failed_transcription → exported_placeholder"
+        },
+        {
+          "id": "CAPTURE_STATE_MACHINE-AC03",
+          "text": "States: staged → exported_duplicate (duplicate detected before transcription)"
+        },
+        {
+          "id": "CAPTURE_STATE_MACHINE-AC06",
+          "text": "Recovery: query non-terminal states on startup → resume processing"
+        },
+        {
+          "id": "CAPTURE_STATE_MACHINE-AC08",
+          "text": "credentials.json file parsing (Google Console)"
+        },
+        {
+          "id": "CAPTURE_STATE_MACHINE-AC09",
+          "text": "OAuth2 authorization flow (first-time setup)"
+        },
+        {
+          "id": "CAPTURE_STATE_MACHINE-AC10",
+          "text": "token.json storage (local file)"
+        },
+        {
+          "id": "CAPTURE_STATE_MACHINE-AC11",
+          "text": "Automatic token refresh (before expiry)"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "CAPTURE_STATE_MACHINE--T01"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-arch.md",
+        "docs/features/capture/spec-capture-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0004: Status-Driven State Machine",
+        "ADR-0014: Placeholder Export Immutability",
+        "docs/guides/guide-error-recovery.md",
+        "docs/guides/guide-gmail-oauth2-setup.md",
+        "docs/guides/guide-polling-implementation.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/staging-ledger/tests/state-machine.spec.ts",
+        "packages/staging-ledger/tests/invalid-transitions.spec.ts",
+        "packages/capture/tests/gmail-oauth2.spec.ts (MSW mocks)"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CAPTURE_STATE_MACHINE--T03",
+      "capability_id": "CAPTURE_STATE_MACHINE",
+      "phase": "Phase 1",
+      "slice": "Slice 1.2",
+      "title": "Gmail API OAuth2 Authentication - Error Handling",
+      "description": "Error handling and validation",
+      "acceptance_criteria": [
+        {
+          "id": "CAPTURE_STATE_MACHINE-AC05",
+          "text": "Validate transitions at service layer (throw error on invalid)"
+        },
+        {
+          "id": "CAPTURE_STATE_MACHINE-AC12",
+          "text": "Error handling: invalid credentials, revoked token, rate limit"
+        },
+        {
+          "id": "CAPTURE_STATE_MACHINE-AC14",
+          "text": "Cap consecutive auth failures (> 5 → halt email polling, alert via doctor)"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "M"
+      },
+      "depends_on_tasks": [
+        "CAPTURE_STATE_MACHINE--T02"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-arch.md",
+        "docs/features/capture/spec-capture-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0004: Status-Driven State Machine",
+        "ADR-0014: Placeholder Export Immutability",
+        "docs/guides/guide-error-recovery.md",
+        "docs/guides/guide-gmail-oauth2-setup.md",
+        "docs/guides/guide-polling-implementation.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/staging-ledger/tests/state-machine.spec.ts",
+        "packages/staging-ledger/tests/invalid-transitions.spec.ts",
+        "packages/capture/tests/gmail-oauth2.spec.ts (MSW mocks)"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "EMAIL_POLLING_GMAIL--T01",
+      "capability_id": "EMAIL_POLLING_GMAIL",
+      "phase": "Phase 1",
+      "slice": "Slice 1.3",
+      "title": "Email Polling (Gmail API) - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "EMAIL_POLLING_GMAIL-AC01",
+          "text": "Poll Gmail API every 60 seconds (configurable)"
+        },
+        {
+          "id": "EMAIL_POLLING_GMAIL-AC02",
+          "text": "History-based polling (gmail.users.history.list)"
+        },
+        {
+          "id": "EMAIL_POLLING_GMAIL-AC03",
+          "text": "Store cursor in sync_state: ('gmail_history_id', <value>)"
+        },
+        {
+          "id": "EMAIL_POLLING_GMAIL-AC04",
+          "text": "Pagination handling (nextPageToken)"
+        },
+        {
+          "id": "EMAIL_POLLING_GMAIL-AC05",
+          "text": "Rate limit backoff (built into googleapis library)"
+        },
+        {
+          "id": "EMAIL_POLLING_GMAIL-AC06",
+          "text": "Fetch full message (headers + plain text body)"
+        },
+        {
+          "id": "EMAIL_POLLING_GMAIL-AC07",
+          "text": "Extract metadata: from, subject, message_id → meta_json"
+        },
+        {
+          "id": "EMAIL_POLLING_GMAIL-AC08",
+          "text": "Duplicate check: Message-ID uniqueness (channel_native_id)"
+        },
+        {
+          "id": "EMAIL_POLLING_GMAIL-AC09",
+          "text": "Insert capture row (status='staged', source='email')"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "SQLITE_SCHEMA--T02"
+      ],
+      "related_specs": [
+        "docs/features/capture/spec-capture-arch.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-gmail-oauth2-setup.md",
+        "docs/guides/guide-polling-implementation.md"
+      ],
+      "test_verification": [
+        "packages/capture/tests/email-polling.spec.ts (MSW mocks)"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "EMAIL_POLLING_GMAIL--T02",
+      "capability_id": "EMAIL_POLLING_GMAIL",
+      "phase": "Phase 1",
+      "slice": "Slice 1.3",
+      "title": "Email Polling (Gmail API) - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "EMAIL_POLLING_GMAIL-AC10",
+          "text": "Performance: < 200ms p95 staging time"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "EMAIL_POLLING_GMAIL--T01"
+      ],
+      "related_specs": [
+        "docs/features/capture/spec-capture-arch.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-gmail-oauth2-setup.md",
+        "docs/guides/guide-polling-implementation.md"
+      ],
+      "test_verification": [
+        "packages/capture/tests/email-polling.spec.ts (MSW mocks)"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "EMAIL_NORMALIZATION--T01",
+      "capability_id": "EMAIL_NORMALIZATION",
+      "phase": "Phase 1",
+      "slice": "Slice 1.3",
+      "title": "Email Body Normalization & Hash Computation - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "EMAIL_NORMALIZATION-AC01",
+          "text": "Strip HTML tags (extract plain text)"
+        },
+        {
+          "id": "EMAIL_NORMALIZATION-AC02",
+          "text": "Normalize whitespace (trim, consistent line endings)"
+        },
+        {
+          "id": "EMAIL_NORMALIZATION-AC03",
+          "text": "Compute SHA-256 content hash (deterministic)"
+        },
+        {
+          "id": "EMAIL_NORMALIZATION-AC04",
+          "text": "Update capture: content_hash + raw_content"
+        },
+        {
+          "id": "EMAIL_NORMALIZATION-AC05",
+          "text": "Attachment count logged in meta_json (no download)"
+        },
+        {
+          "id": "EMAIL_NORMALIZATION-AC07",
+          "text": "Deterministic: same email → same hash"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "EMAIL_POLLING_GMAIL--T02",
+        "CONTENT_HASH_IMPLEMENTATION--T03"
+      ],
+      "related_specs": [
+        "docs/features/capture/spec-capture-tech.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [],
+      "test_verification": [
+        "packages/capture/tests/email-normalization.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "EMAIL_NORMALIZATION--T02",
+      "capability_id": "EMAIL_NORMALIZATION",
+      "phase": "Phase 1",
+      "slice": "Slice 1.3",
+      "title": "Email Body Normalization & Hash Computation - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "EMAIL_NORMALIZATION-AC06",
+          "text": "Performance: < 50ms for 10KB email"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "EMAIL_NORMALIZATION--T01"
+      ],
+      "related_specs": [
+        "docs/features/capture/spec-capture-tech.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [],
+      "test_verification": [
+        "packages/capture/tests/email-normalization.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "DIRECT_EXPORT_EMAIL--T01",
+      "capability_id": "DIRECT_EXPORT_EMAIL",
+      "phase": "Phase 1",
+      "slice": "Slice 1.3",
+      "title": "Email Direct Export to Vault (Synchronous) - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "DIRECT_EXPORT_EMAIL-AC01",
+          "text": "Trigger: capture status='staged' (email) AND duplicate check passed"
+        },
+        {
+          "id": "DIRECT_EXPORT_EMAIL-AC02",
+          "text": "Generate markdown: frontmatter (created, source, capture_id, from, subject) + body"
+        },
+        {
+          "id": "DIRECT_EXPORT_EMAIL-AC03",
+          "text": "Atomic write to inbox/{capture.id}.md"
+        },
+        {
+          "id": "DIRECT_EXPORT_EMAIL-AC04",
+          "text": "Insert exports_audit (capture_id, vault_path, hash_at_export, mode='initial')"
+        },
+        {
+          "id": "DIRECT_EXPORT_EMAIL-AC05",
+          "text": "Update captures: status='exported'"
+        },
+        {
+          "id": "DIRECT_EXPORT_EMAIL-AC07",
+          "text": "Zero partial writes (verified with crash testing)"
+        },
+        {
+          "id": "DIRECT_EXPORT_EMAIL-AC08",
+          "text": "Metric: export_write_ms histogram"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "EMAIL_NORMALIZATION--T02",
+        "ATOMIC_FILE_WRITER--T03",
+        "DEDUPLICATION_LOGIC--T02"
+      ],
+      "related_specs": [
+        "docs/features/obsidian-bridge/spec-obsidian-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0011: Inbox-Only Export Pattern",
+        "ADR-0013: MPPP Direct Export Pattern",
+        "ADR-0020: Foundation Direct Export Pattern",
+        "docs/guides/guide-obsidian-bridge-usage.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/obsidian-bridge/tests/email-export-e2e.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "DIRECT_EXPORT_EMAIL--T02",
+      "capability_id": "DIRECT_EXPORT_EMAIL",
+      "phase": "Phase 1",
+      "slice": "Slice 1.3",
+      "title": "Email Direct Export to Vault (Synchronous) - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "DIRECT_EXPORT_EMAIL-AC06",
+          "text": "Performance: < 1s export time"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "DIRECT_EXPORT_EMAIL--T01"
+      ],
+      "related_specs": [
+        "docs/features/obsidian-bridge/spec-obsidian-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0011: Inbox-Only Export Pattern",
+        "ADR-0013: MPPP Direct Export Pattern",
+        "ADR-0020: Foundation Direct Export Pattern",
+        "docs/guides/guide-obsidian-bridge-usage.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/obsidian-bridge/tests/email-export-e2e.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CLI_FOUNDATION--T01",
+      "capability_id": "CLI_FOUNDATION",
+      "phase": "Phase 1",
+      "slice": "Slice 1.4",
+      "title": "CLI Argument Parsing & Command Registry - Schema & Structure",
+      "description": "Core schema and structural implementation",
+      "acceptance_criteria": [
+        {
+          "id": "CLI_FOUNDATION-AC02",
+          "text": "Zod validation schemas"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "MONOREPO_STRUCTURE--T02"
+      ],
+      "related_specs": [
+        "docs/features/cli/spec-cli-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0015: CLI Library Stack Selection",
+        "ADR-0016: CLI as Feature Architecture",
+        "ADR-0017: JSON Output Contract Stability",
+        "ADR-0018: CLI Exit Code Registry Pattern",
+        "docs/guides/guide-health-command.md",
+        "docs/guides/guide-cli-doctor-implementation.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/cli/tests/argument-parsing.spec.ts",
+        "packages/cli/tests/command-registry.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CLI_FOUNDATION--T02",
+      "capability_id": "CLI_FOUNDATION",
+      "phase": "Phase 1",
+      "slice": "Slice 1.4",
+      "title": "CLI Argument Parsing & Command Registry - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "CLI_FOUNDATION-AC01",
+          "text": "Commander.js setup (v12+)"
+        },
+        {
+          "id": "CLI_FOUNDATION-AC03",
+          "text": "Command registry: capture, doctor, ledger"
+        },
+        {
+          "id": "CLI_FOUNDATION-AC04",
+          "text": "Help text for all commands"
+        },
+        {
+          "id": "CLI_FOUNDATION-AC06",
+          "text": "JSON output mode (--json flag)"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "M"
+      },
+      "depends_on_tasks": [
+        "CLI_FOUNDATION--T01"
+      ],
+      "related_specs": [
+        "docs/features/cli/spec-cli-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0015: CLI Library Stack Selection",
+        "ADR-0016: CLI as Feature Architecture",
+        "ADR-0017: JSON Output Contract Stability",
+        "ADR-0018: CLI Exit Code Registry Pattern",
+        "docs/guides/guide-health-command.md",
+        "docs/guides/guide-cli-doctor-implementation.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/cli/tests/argument-parsing.spec.ts",
+        "packages/cli/tests/command-registry.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CLI_FOUNDATION--T03",
+      "capability_id": "CLI_FOUNDATION",
+      "phase": "Phase 1",
+      "slice": "Slice 1.4",
+      "title": "CLI Argument Parsing & Command Registry - Error Handling",
+      "description": "Error handling and validation",
+      "acceptance_criteria": [
+        {
+          "id": "CLI_FOUNDATION-AC05",
+          "text": "Error handling with structured codes (CLI_INPUT_INVALID, CLI_DB_UNAVAILABLE, etc.)"
+        },
+        {
+          "id": "CLI_FOUNDATION-AC07",
+          "text": "Exit code registry (0=success, 1=error, 2=invalid input, etc.)"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "CLI_FOUNDATION--T02"
+      ],
+      "related_specs": [
+        "docs/features/cli/spec-cli-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0015: CLI Library Stack Selection",
+        "ADR-0016: CLI as Feature Architecture",
+        "ADR-0017: JSON Output Contract Stability",
+        "ADR-0018: CLI Exit Code Registry Pattern",
+        "docs/guides/guide-health-command.md",
+        "docs/guides/guide-cli-doctor-implementation.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/cli/tests/argument-parsing.spec.ts",
+        "packages/cli/tests/command-registry.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CLI_FOUNDATION--T04",
+      "capability_id": "CLI_FOUNDATION",
+      "phase": "Phase 1",
+      "slice": "Slice 1.4",
+      "title": "CLI Argument Parsing & Command Registry - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "CLI_FOUNDATION-AC08",
+          "text": "Performance: < 150ms cold start"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "CLI_FOUNDATION--T03"
+      ],
+      "related_specs": [
+        "docs/features/cli/spec-cli-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0015: CLI Library Stack Selection",
+        "ADR-0016: CLI as Feature Architecture",
+        "ADR-0017: JSON Output Contract Stability",
+        "ADR-0018: CLI Exit Code Registry Pattern",
+        "docs/guides/guide-health-command.md",
+        "docs/guides/guide-cli-doctor-implementation.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/cli/tests/argument-parsing.spec.ts",
+        "packages/cli/tests/command-registry.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CLI_CAPTURE_COMMANDS--T01",
+      "capability_id": "CLI_CAPTURE_COMMANDS",
+      "phase": "Phase 1",
+      "slice": "Slice 1.4",
+      "title": "CLI Capture Commands (voice, email manual triggers) - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "CLI_CAPTURE_COMMANDS-AC01",
+          "text": "Command: `adhd capture voice <file_path>`"
+        },
+        {
+          "id": "CLI_CAPTURE_COMMANDS-AC02",
+          "text": "Command: `adhd capture email <file_path>` (Phase 3)"
+        },
+        {
+          "id": "CLI_CAPTURE_COMMANDS-AC03",
+          "text": "Validate file exists and readable"
+        },
+        {
+          "id": "CLI_CAPTURE_COMMANDS-AC04",
+          "text": "Call capture service (voice polling or email ingestion)"
+        },
+        {
+          "id": "CLI_CAPTURE_COMMANDS-AC05",
+          "text": "Return capture ID and status"
+        },
+        {
+          "id": "CLI_CAPTURE_COMMANDS-AC06",
+          "text": "JSON output mode support (--json)"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "CLI_FOUNDATION--T04",
+        "VOICE_POLLING_ICLOUD--T03",
+        "EMAIL_POLLING_GMAIL--T02"
+      ],
+      "related_specs": [
+        "docs/features/cli/spec-cli-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0016: CLI as Feature Architecture"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/cli/tests/capture-voice-command.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CLI_CAPTURE_COMMANDS--T02",
+      "capability_id": "CLI_CAPTURE_COMMANDS",
+      "phase": "Phase 1",
+      "slice": "Slice 1.4",
+      "title": "CLI Capture Commands (voice, email manual triggers) - Error Handling",
+      "description": "Error handling and validation",
+      "acceptance_criteria": [
+        {
+          "id": "CLI_CAPTURE_COMMANDS-AC07",
+          "text": "Error handling: file not found, permissions, invalid format"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "CLI_CAPTURE_COMMANDS--T01"
+      ],
+      "related_specs": [
+        "docs/features/cli/spec-cli-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0016: CLI as Feature Architecture"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/cli/tests/capture-voice-command.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CLI_LEDGER_COMMANDS--T01",
+      "capability_id": "CLI_LEDGER_COMMANDS",
+      "phase": "Phase 1",
+      "slice": "Slice 1.4",
+      "title": "CLI Ledger Inspection Commands (list, inspect) - Schema & Structure",
+      "description": "Core schema and structural implementation",
+      "acceptance_criteria": [
+        {
+          "id": "CLI_LEDGER_COMMANDS-AC03",
+          "text": "Query captures table (filter by status, limit)"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "CLI_FOUNDATION--T04",
+        "SQLITE_SCHEMA--T02"
+      ],
+      "related_specs": [
+        "docs/features/cli/spec-cli-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0017: JSON Output Contract Stability"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/cli/tests/ledger-list-command.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CLI_LEDGER_COMMANDS--T02",
+      "capability_id": "CLI_LEDGER_COMMANDS",
+      "phase": "Phase 1",
+      "slice": "Slice 1.4",
+      "title": "CLI Ledger Inspection Commands (list, inspect) - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "CLI_LEDGER_COMMANDS-AC01",
+          "text": "Command: `adhd ledger list [--status=<status>] [--limit=N]`"
+        },
+        {
+          "id": "CLI_LEDGER_COMMANDS-AC02",
+          "text": "Command: `adhd ledger inspect <capture_id>`"
+        },
+        {
+          "id": "CLI_LEDGER_COMMANDS-AC04",
+          "text": "Display: id, source, status, created_at, content_hash (truncated)"
+        },
+        {
+          "id": "CLI_LEDGER_COMMANDS-AC05",
+          "text": "JSON output mode support (--json)"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "M"
+      },
+      "depends_on_tasks": [
+        "CLI_LEDGER_COMMANDS--T01"
+      ],
+      "related_specs": [
+        "docs/features/cli/spec-cli-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0017: JSON Output Contract Stability"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/cli/tests/ledger-list-command.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CLI_LEDGER_COMMANDS--T03",
+      "capability_id": "CLI_LEDGER_COMMANDS",
+      "phase": "Phase 1",
+      "slice": "Slice 1.4",
+      "title": "CLI Ledger Inspection Commands (list, inspect) - Error Handling",
+      "description": "Error handling and validation",
+      "acceptance_criteria": [
+        {
+          "id": "CLI_LEDGER_COMMANDS-AC06",
+          "text": "Inspect shows: full capture row + exports_audit + errors_log"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "CLI_LEDGER_COMMANDS--T02"
+      ],
+      "related_specs": [
+        "docs/features/cli/spec-cli-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0017: JSON Output Contract Stability"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/cli/tests/ledger-list-command.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CLI_LEDGER_COMMANDS--T04",
+      "capability_id": "CLI_LEDGER_COMMANDS",
+      "phase": "Phase 1",
+      "slice": "Slice 1.4",
+      "title": "CLI Ledger Inspection Commands (list, inspect) - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "CLI_LEDGER_COMMANDS-AC07",
+          "text": "Performance: < 50ms for 1000 rows"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "CLI_LEDGER_COMMANDS--T03"
+      ],
+      "related_specs": [
+        "docs/features/cli/spec-cli-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0017: JSON Output Contract Stability"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/cli/tests/ledger-list-command.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "DOCTOR_HEALTH_CHECKS--T01",
+      "capability_id": "DOCTOR_HEALTH_CHECKS",
+      "phase": "Phase 1",
+      "slice": "Slice 1.4",
+      "title": "Health Command (capture doctor) - Schema & Structure",
+      "description": "Core schema and structural implementation",
+      "acceptance_criteria": [
+        {
+          "id": "DOCTOR_HEALTH_CHECKS-AC02",
+          "text": "Check: Vault path exists and writable"
+        },
+        {
+          "id": "DOCTOR_HEALTH_CHECKS-AC03",
+          "text": "Check: SQLite database accessible (PRAGMA integrity_check)"
+        },
+        {
+          "id": "DOCTOR_HEALTH_CHECKS-AC05",
+          "text": "Check: icloudctl binary available and executable"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "M"
+      },
+      "depends_on_tasks": [
+        "CLI_FOUNDATION--T04",
+        "SQLITE_SCHEMA--T02"
+      ],
+      "related_specs": [
+        "docs/features/cli/spec-cli-tech.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-health-command.md",
+        "docs/guides/guide-cli-doctor-implementation.md"
+      ],
+      "test_verification": [
+        "packages/cli/tests/doctor-command.spec.ts",
+        "packages/cli/tests/doctor-failure-scenarios.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "DOCTOR_HEALTH_CHECKS--T02",
+      "capability_id": "DOCTOR_HEALTH_CHECKS",
+      "phase": "Phase 1",
+      "slice": "Slice 1.4",
+      "title": "Health Command (capture doctor) - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "DOCTOR_HEALTH_CHECKS-AC01",
+          "text": "Command: `adhd doctor [--json]`"
+        },
+        {
+          "id": "DOCTOR_HEALTH_CHECKS-AC04",
+          "text": "Check: Gmail API authentication status (token.json valid)"
+        },
+        {
+          "id": "DOCTOR_HEALTH_CHECKS-AC06",
+          "text": "Check: Whisper model file exists (medium.pt)"
+        },
+        {
+          "id": "DOCTOR_HEALTH_CHECKS-AC07",
+          "text": "Check: Last successful poll timestamps (voice/email)"
+        },
+        {
+          "id": "DOCTOR_HEALTH_CHECKS-AC09",
+          "text": "Check: Backup status (last hourly backup timestamp)"
+        },
+        {
+          "id": "DOCTOR_HEALTH_CHECKS-AC10",
+          "text": "Check: Queue depth (staged + transcribed count)"
+        },
+        {
+          "id": "DOCTOR_HEALTH_CHECKS-AC11",
+          "text": "Check: Placeholder ratio (last 7 days)"
+        },
+        {
+          "id": "DOCTOR_HEALTH_CHECKS-AC12",
+          "text": "Check: Disk space (vault path and .metrics directory)"
+        },
+        {
+          "id": "DOCTOR_HEALTH_CHECKS-AC13",
+          "text": "Output: Pass/Warn/Fail status for each check"
+        },
+        {
+          "id": "DOCTOR_HEALTH_CHECKS-AC14",
+          "text": "Exit code: 0 if all pass, 1 if any fail, 2 if critical fail"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "DOCTOR_HEALTH_CHECKS--T01"
+      ],
+      "related_specs": [
+        "docs/features/cli/spec-cli-tech.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-health-command.md",
+        "docs/guides/guide-cli-doctor-implementation.md"
+      ],
+      "test_verification": [
+        "packages/cli/tests/doctor-command.spec.ts",
+        "packages/cli/tests/doctor-failure-scenarios.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "DOCTOR_HEALTH_CHECKS--T03",
+      "capability_id": "DOCTOR_HEALTH_CHECKS",
+      "phase": "Phase 1",
+      "slice": "Slice 1.4",
+      "title": "Health Command (capture doctor) - Error Handling",
+      "description": "Error handling and validation",
+      "acceptance_criteria": [
+        {
+          "id": "DOCTOR_HEALTH_CHECKS-AC08",
+          "text": "Check: Error log summary (last 24 hours)"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "DOCTOR_HEALTH_CHECKS--T02"
+      ],
+      "related_specs": [
+        "docs/features/cli/spec-cli-tech.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-health-command.md",
+        "docs/guides/guide-cli-doctor-implementation.md"
+      ],
+      "test_verification": [
+        "packages/cli/tests/doctor-command.spec.ts",
+        "packages/cli/tests/doctor-failure-scenarios.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CRASH_RECOVERY_MECHANISM--T01",
+      "capability_id": "CRASH_RECOVERY_MECHANISM",
+      "phase": "Phase 2",
+      "slice": "Slice 2.1",
+      "title": "Startup Reconciliation & Resume Processing - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "CRASH_RECOVERY_MECHANISM-AC01",
+          "text": "Startup query: SELECT * FROM captures WHERE status IN ('staged', 'transcribed', 'failed_transcription')"
+        },
+        {
+          "id": "CRASH_RECOVERY_MECHANISM-AC02",
+          "text": "Resume processing for all non-terminal captures"
+        },
+        {
+          "id": "CRASH_RECOVERY_MECHANISM-AC04",
+          "text": "Quarantine flag for missing voice files (file not found)"
+        },
+        {
+          "id": "CRASH_RECOVERY_MECHANISM-AC05",
+          "text": "User notification: \"Recovered N captures\" (if N > 0)"
+        },
+        {
+          "id": "CRASH_RECOVERY_MECHANISM-AC07",
+          "text": "Zero duplicate exports during recovery"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "CAPTURE_STATE_MACHINE--T03",
+        "SQLITE_SCHEMA--T02"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0004: Status-Driven State Machine",
+        "docs/guides/guide-error-recovery.md",
+        "docs/guides/guide-crash-matrix-test-plan.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/staging-ledger/tests/crash-recovery.spec.ts",
+        "packages/staging-ledger/tests/timeout-recovery.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "CRASH_RECOVERY_MECHANISM--T02",
+      "capability_id": "CRASH_RECOVERY_MECHANISM",
+      "phase": "Phase 2",
+      "slice": "Slice 2.1",
+      "title": "Startup Reconciliation & Resume Processing - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "CRASH_RECOVERY_MECHANISM-AC03",
+          "text": "Timeout detection: captures stuck in same state > 10 minutes"
+        },
+        {
+          "id": "CRASH_RECOVERY_MECHANISM-AC06",
+          "text": "Performance: < 250ms recovery time for 1000 rows"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "CRASH_RECOVERY_MECHANISM--T01"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-arch.md"
+      ],
+      "related_adrs": [
+        "ADR-0004: Status-Driven State Machine",
+        "docs/guides/guide-error-recovery.md",
+        "docs/guides/guide-crash-matrix-test-plan.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/staging-ledger/tests/crash-recovery.spec.ts",
+        "packages/staging-ledger/tests/timeout-recovery.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "ERROR_LOGGING_STRUCTURED--T01",
+      "capability_id": "ERROR_LOGGING_STRUCTURED",
+      "phase": "Phase 2",
+      "slice": "Slice 2.1",
+      "title": "Structured Error Logging & Diagnostics - Schema & Structure",
+      "description": "Core schema and structural implementation",
+      "acceptance_criteria": [
+        {
+          "id": "ERROR_LOGGING_STRUCTURED-AC04",
+          "text": "Link to capture via foreign key (optional)"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "SQLITE_SCHEMA--T02"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-error-recovery.md",
+        "docs/guides/guide-health-command.md"
+      ],
+      "test_verification": [
+        "packages/staging-ledger/tests/error-logging.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "ERROR_LOGGING_STRUCTURED--T02",
+      "capability_id": "ERROR_LOGGING_STRUCTURED",
+      "phase": "Phase 2",
+      "slice": "Slice 2.1",
+      "title": "Structured Error Logging & Diagnostics - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "ERROR_LOGGING_STRUCTURED-AC02",
+          "text": "Fields: id, capture_id (nullable), stage, message, created_at"
+        },
+        {
+          "id": "ERROR_LOGGING_STRUCTURED-AC03",
+          "text": "Stages: poll, transcribe, export, backup, integrity"
+        },
+        {
+          "id": "ERROR_LOGGING_STRUCTURED-AC07",
+          "text": "Optional trim after 90 days (Phase 3+)"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "M"
+      },
+      "depends_on_tasks": [
+        "ERROR_LOGGING_STRUCTURED--T01"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-error-recovery.md",
+        "docs/guides/guide-health-command.md"
+      ],
+      "test_verification": [
+        "packages/staging-ledger/tests/error-logging.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "ERROR_LOGGING_STRUCTURED--T03",
+      "capability_id": "ERROR_LOGGING_STRUCTURED",
+      "phase": "Phase 2",
+      "slice": "Slice 2.1",
+      "title": "Structured Error Logging & Diagnostics - Error Handling",
+      "description": "Error handling and validation",
+      "acceptance_criteria": [
+        {
+          "id": "ERROR_LOGGING_STRUCTURED-AC01",
+          "text": "Insert errors_log on any failure"
+        },
+        {
+          "id": "ERROR_LOGGING_STRUCTURED-AC05",
+          "text": "Doctor command shows error summary (last 24 hours)"
+        },
+        {
+          "id": "ERROR_LOGGING_STRUCTURED-AC06",
+          "text": "Group by stage: SELECT stage, COUNT(*) FROM errors_log WHERE created_at > datetime('now', '-1 day') GROUP BY stage"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "M"
+      },
+      "depends_on_tasks": [
+        "ERROR_LOGGING_STRUCTURED--T02"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-error-recovery.md",
+        "docs/guides/guide-health-command.md"
+      ],
+      "test_verification": [
+        "packages/staging-ledger/tests/error-logging.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "TRANSCRIPTION_RETRY_LOGIC--T01",
+      "capability_id": "TRANSCRIPTION_RETRY_LOGIC",
+      "phase": "Phase 2",
+      "slice": "Slice 2.1",
+      "title": "Transcription Single Retry on Failure - Error Handling",
+      "description": "Error handling and validation",
+      "acceptance_criteria": [
+        {
+          "id": "TRANSCRIPTION_RETRY_LOGIC-AC02",
+          "text": "Retry after 5 second delay"
+        },
+        {
+          "id": "TRANSCRIPTION_RETRY_LOGIC-AC03",
+          "text": "If retry succeeds: proceed normally (status='transcribed')"
+        },
+        {
+          "id": "TRANSCRIPTION_RETRY_LOGIC-AC04",
+          "text": "If retry fails: status='failed_transcription' → placeholder export"
+        },
+        {
+          "id": "TRANSCRIPTION_RETRY_LOGIC-AC05",
+          "text": "Insert errors_log on failure (stage='transcribe', message)"
+        },
+        {
+          "id": "TRANSCRIPTION_RETRY_LOGIC-AC06",
+          "text": "Metric: transcription_retry_count counter"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "WHISPER_TRANSCRIPTION--T03",
+        "ERROR_LOGGING_STRUCTURED--T03"
+      ],
+      "related_specs": [
+        "docs/features/capture/spec-capture-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0014: Placeholder Export Immutability",
+        "docs/guides/guide-error-recovery.md",
+        "docs/guides/guide-whisper-transcription.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/capture/tests/transcription-retry.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "TRANSCRIPTION_RETRY_LOGIC--T02",
+      "capability_id": "TRANSCRIPTION_RETRY_LOGIC",
+      "phase": "Phase 2",
+      "slice": "Slice 2.1",
+      "title": "Transcription Single Retry on Failure - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "TRANSCRIPTION_RETRY_LOGIC-AC01",
+          "text": "Single retry on Whisper failure (timeout, error)"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "TRANSCRIPTION_RETRY_LOGIC--T01"
+      ],
+      "related_specs": [
+        "docs/features/capture/spec-capture-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0014: Placeholder Export Immutability",
+        "docs/guides/guide-error-recovery.md",
+        "docs/guides/guide-whisper-transcription.md"
+      ],
+      "related_guides": [],
+      "test_verification": [
+        "packages/capture/tests/transcription-retry.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "VAULT_WRITE_ERROR_HANDLING--T01",
+      "capability_id": "VAULT_WRITE_ERROR_HANDLING",
+      "phase": "Phase 2",
+      "slice": "Slice 2.1",
+      "title": "Vault Write Error Handling (EACCES, ENOSPC, etc.) - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "VAULT_WRITE_ERROR_HANDLING-AC04",
+          "text": "EEXIST → check duplicate (collision detection)"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "ATOMIC_FILE_WRITER--T03",
+        "ERROR_LOGGING_STRUCTURED--T03"
+      ],
+      "related_specs": [
+        "docs/features/obsidian-bridge/spec-obsidian-tech.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-error-recovery.md"
+      ],
+      "test_verification": [
+        "packages/obsidian-bridge/tests/vault-write-errors.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "VAULT_WRITE_ERROR_HANDLING--T02",
+      "capability_id": "VAULT_WRITE_ERROR_HANDLING",
+      "phase": "Phase 2",
+      "slice": "Slice 2.1",
+      "title": "Vault Write Error Handling (EACCES, ENOSPC, etc.) - Error Handling",
+      "description": "Error handling and validation",
+      "acceptance_criteria": [
+        {
+          "id": "VAULT_WRITE_ERROR_HANDLING-AC01",
+          "text": "Error classification: EACCES, ENOSPC, EEXIST, EROFS, ENETDOWN, EUNKNOWN"
+        },
+        {
+          "id": "VAULT_WRITE_ERROR_HANDLING-AC02",
+          "text": "EACCES → retry with exponential backoff (max 3 attempts)"
+        },
+        {
+          "id": "VAULT_WRITE_ERROR_HANDLING-AC03",
+          "text": "ENOSPC → halt export worker, log CRITICAL error"
+        },
+        {
+          "id": "VAULT_WRITE_ERROR_HANDLING-AC05",
+          "text": "EROFS → halt export worker, log CRITICAL error"
+        },
+        {
+          "id": "VAULT_WRITE_ERROR_HANDLING-AC06",
+          "text": "ENETDOWN → retry (network mount failure)"
+        },
+        {
+          "id": "VAULT_WRITE_ERROR_HANDLING-AC07",
+          "text": "Clean up temp file on all errors (fs.unlink, idempotent)"
+        },
+        {
+          "id": "VAULT_WRITE_ERROR_HANDLING-AC08",
+          "text": "Insert errors_log (capture_id, stage='export', message)"
+        },
+        {
+          "id": "VAULT_WRITE_ERROR_HANDLING-AC09",
+          "text": "Doctor command surfaces export errors"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "VAULT_WRITE_ERROR_HANDLING--T01"
+      ],
+      "related_specs": [
+        "docs/features/obsidian-bridge/spec-obsidian-tech.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-error-recovery.md"
+      ],
+      "test_verification": [
+        "packages/obsidian-bridge/tests/vault-write-errors.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "FAULT_INJECTION_FRAMEWORK--T01",
+      "capability_id": "FAULT_INJECTION_FRAMEWORK",
+      "phase": "Phase 2",
+      "slice": "Slice 2.1",
+      "title": "Fault Injection Hook Registry for Testing - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "FAULT_INJECTION_FRAMEWORK-AC01",
+          "text": "Fault injection registry: registerFaultHook(name, handler)"
+        },
+        {
+          "id": "FAULT_INJECTION_FRAMEWORK-AC02",
+          "text": "Fault points: pre-transcription, post-transcription, pre-export, post-export, post-audit"
+        },
+        {
+          "id": "FAULT_INJECTION_FRAMEWORK-AC03",
+          "text": "Simulated crashes: process.exit(1)"
+        },
+        {
+          "id": "FAULT_INJECTION_FRAMEWORK-AC04",
+          "text": "Activation: FAULT_INJECT=<fault_point> environment variable"
+        },
+        {
+          "id": "FAULT_INJECTION_FRAMEWORK-AC05",
+          "text": "Test suite: crash at each fault point → restart → verify no data loss"
+        },
+        {
+          "id": "FAULT_INJECTION_FRAMEWORK-AC06",
+          "text": "All 5 fault points tested"
+        },
+        {
+          "id": "FAULT_INJECTION_FRAMEWORK-AC07",
+          "text": "Zero data loss, zero duplicate exports"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "CRASH_RECOVERY_MECHANISM--T02"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-test.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-fault-injection-registry.md",
+        "docs/guides/guide-crash-matrix-test-plan.md"
+      ],
+      "test_verification": [
+        "packages/staging-ledger/tests/fault-injection-crash-matrix.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "HOURLY_BACKUP_AUTOMATION--T01",
+      "capability_id": "HOURLY_BACKUP_AUTOMATION",
+      "phase": "Phase 2",
+      "slice": "Slice 2.2",
+      "title": "Hourly SQLite Backup Automation - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "HOURLY_BACKUP_AUTOMATION-AC01",
+          "text": "Backup every hour (cron or setInterval)"
+        },
+        {
+          "id": "HOURLY_BACKUP_AUTOMATION-AC02",
+          "text": "Backup command: .backup ./.backups/ledger-YYYYMMDD-HH.sqlite"
+        },
+        {
+          "id": "HOURLY_BACKUP_AUTOMATION-AC03",
+          "text": "Timestamp-based naming (ISO 8601 datetime)"
+        },
+        {
+          "id": "HOURLY_BACKUP_AUTOMATION-AC04",
+          "text": "Retention policy: keep last 24 hourly"
+        },
+        {
+          "id": "HOURLY_BACKUP_AUTOMATION-AC05",
+          "text": "Daily promotion: copy 1 per day to daily set (keep last 7)"
+        },
+        {
+          "id": "HOURLY_BACKUP_AUTOMATION-AC06",
+          "text": "Prune oldest after successful verification"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "SQLITE_SCHEMA--T02"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-backup-verification.md",
+        "docs/guides/guide-backup-restore-drill.md"
+      ],
+      "test_verification": [
+        "packages/staging-ledger/tests/hourly-backup.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "HOURLY_BACKUP_AUTOMATION--T02",
+      "capability_id": "HOURLY_BACKUP_AUTOMATION",
+      "phase": "Phase 2",
+      "slice": "Slice 2.2",
+      "title": "Hourly SQLite Backup Automation - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "HOURLY_BACKUP_AUTOMATION-AC07",
+          "text": "Performance: < 5s backup creation"
+        },
+        {
+          "id": "HOURLY_BACKUP_AUTOMATION-AC08",
+          "text": "Metric: backup_duration_ms histogram"
+        }
+      ],
+      "risk": "High",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "HOURLY_BACKUP_AUTOMATION--T01"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-backup-verification.md",
+        "docs/guides/guide-backup-restore-drill.md"
+      ],
+      "test_verification": [
+        "packages/staging-ledger/tests/hourly-backup.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "BACKUP_VERIFICATION_PROTOCOL--T01",
+      "capability_id": "BACKUP_VERIFICATION_PROTOCOL",
+      "phase": "Phase 2",
+      "slice": "Slice 2.2",
+      "title": "90-Day Retention Policy (Exported Captures Only) - Schema & Structure",
+      "description": "Core schema and structural implementation",
+      "acceptance_criteria": [
+        {
+          "id": "BACKUP_VERIFICATION_PROTOCOL-AC01",
+          "text": "Integrity check: PRAGMA integrity_check on backup file"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "SQLITE_SCHEMA--T02",
+        "BACKUP_VERIFICATION_PROTOCOL--T04"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md",
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0007: 90-Day Retention for Exported Captures Only"
+      ],
+      "related_guides": [
+        "docs/guides/guide-backup-verification.md",
+        "docs/guides/guide-backup-restore-drill.md"
+      ],
+      "test_verification": [
+        "packages/staging-ledger/tests/backup-verification.spec.ts",
+        "packages/staging-ledger/tests/backup-escalation-policy.spec.ts",
+        "packages/staging-ledger/tests/retention-policy.spec.ts",
+        "packages/staging-ledger/tests/retention-pause-on-backup-failure.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "BACKUP_VERIFICATION_PROTOCOL--T02",
+      "capability_id": "BACKUP_VERIFICATION_PROTOCOL",
+      "phase": "Phase 2",
+      "slice": "Slice 2.2",
+      "title": "90-Day Retention Policy (Exported Captures Only) - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "BACKUP_VERIFICATION_PROTOCOL-AC02",
+          "text": "Hash compare: SHA-256 of backup vs live database"
+        },
+        {
+          "id": "BACKUP_VERIFICATION_PROTOCOL-AC05",
+          "text": "Automatic recovery on next successful verification"
+        },
+        {
+          "id": "BACKUP_VERIFICATION_PROTOCOL-AC06",
+          "text": "Manual intervention: `capture doctor --force-backup`"
+        },
+        {
+          "id": "BACKUP_VERIFICATION_PROTOCOL-AC10",
+          "text": "Never trim: status IN ('staged', 'transcribed', 'failed_transcription')"
+        },
+        {
+          "id": "BACKUP_VERIFICATION_PROTOCOL-AC11",
+          "text": "Pause pruning if backup verification fails 3 consecutive times"
+        },
+        {
+          "id": "BACKUP_VERIFICATION_PROTOCOL-AC12",
+          "text": "Resume pruning after successful verification"
+        },
+        {
+          "id": "BACKUP_VERIFICATION_PROTOCOL-AC13",
+          "text": "Manual override: `capture ledger prune --force` (Phase 3+)"
+        },
+        {
+          "id": "BACKUP_VERIFICATION_PROTOCOL-AC15",
+          "text": "Metric: retention_cleanup_rows_deleted counter"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "BACKUP_VERIFICATION_PROTOCOL--T01"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md",
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0007: 90-Day Retention for Exported Captures Only"
+      ],
+      "related_guides": [
+        "docs/guides/guide-backup-verification.md",
+        "docs/guides/guide-backup-restore-drill.md"
+      ],
+      "test_verification": [
+        "packages/staging-ledger/tests/backup-verification.spec.ts",
+        "packages/staging-ledger/tests/backup-escalation-policy.spec.ts",
+        "packages/staging-ledger/tests/retention-policy.spec.ts",
+        "packages/staging-ledger/tests/retention-pause-on-backup-failure.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "BACKUP_VERIFICATION_PROTOCOL--T03",
+      "capability_id": "BACKUP_VERIFICATION_PROTOCOL",
+      "phase": "Phase 2",
+      "slice": "Slice 2.2",
+      "title": "90-Day Retention Policy (Exported Captures Only) - Error Handling",
+      "description": "Error handling and validation",
+      "acceptance_criteria": [
+        {
+          "id": "BACKUP_VERIFICATION_PROTOCOL-AC03",
+          "text": "Weekly restore test: restore to temp database + query validation"
+        },
+        {
+          "id": "BACKUP_VERIFICATION_PROTOCOL-AC04",
+          "text": "Escalation policy: 1 failure = warn, 2 consecutive = DEGRADED_BACKUP, 3 consecutive = HALT_PRUNING"
+        },
+        {
+          "id": "BACKUP_VERIFICATION_PROTOCOL-AC08",
+          "text": "Metric: backup_verification_result{status=success|failure}"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "M"
+      },
+      "depends_on_tasks": [
+        "BACKUP_VERIFICATION_PROTOCOL--T02"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md",
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0007: 90-Day Retention for Exported Captures Only"
+      ],
+      "related_guides": [
+        "docs/guides/guide-backup-verification.md",
+        "docs/guides/guide-backup-restore-drill.md"
+      ],
+      "test_verification": [
+        "packages/staging-ledger/tests/backup-verification.spec.ts",
+        "packages/staging-ledger/tests/backup-escalation-policy.spec.ts",
+        "packages/staging-ledger/tests/retention-policy.spec.ts",
+        "packages/staging-ledger/tests/retention-pause-on-backup-failure.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "BACKUP_VERIFICATION_PROTOCOL--T04",
+      "capability_id": "BACKUP_VERIFICATION_PROTOCOL",
+      "phase": "Phase 2",
+      "slice": "Slice 2.2",
+      "title": "90-Day Retention Policy (Exported Captures Only) - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "BACKUP_VERIFICATION_PROTOCOL-AC07",
+          "text": "Performance: < 10s verification time"
+        },
+        {
+          "id": "BACKUP_VERIFICATION_PROTOCOL-AC09",
+          "text": "Trim query: DELETE FROM captures WHERE status LIKE 'exported%' AND created_at < datetime('now', '-90 days')"
+        },
+        {
+          "id": "BACKUP_VERIFICATION_PROTOCOL-AC14",
+          "text": "Performance: < 30s trim time for 10k rows"
+        }
+      ],
+      "risk": "Medium",
+      "est": {
+        "size": "M"
+      },
+      "depends_on_tasks": [
+        "BACKUP_VERIFICATION_PROTOCOL--T03"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md",
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [
+        "ADR-0007: 90-Day Retention for Exported Captures Only"
+      ],
+      "related_guides": [
+        "docs/guides/guide-backup-verification.md",
+        "docs/guides/guide-backup-restore-drill.md"
+      ],
+      "test_verification": [
+        "packages/staging-ledger/tests/backup-verification.spec.ts",
+        "packages/staging-ledger/tests/backup-escalation-policy.spec.ts",
+        "packages/staging-ledger/tests/retention-policy.spec.ts",
+        "packages/staging-ledger/tests/retention-pause-on-backup-failure.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "STORAGE_SIZE_MONITORING--T01",
+      "capability_id": "STORAGE_SIZE_MONITORING",
+      "phase": "Phase 2",
+      "slice": "Slice 2.2",
+      "title": "Storage Size Monitoring & Alerts - Schema & Structure",
+      "description": "Core schema and structural implementation",
+      "acceptance_criteria": [
+        {
+          "id": "STORAGE_SIZE_MONITORING-AC01",
+          "text": "Query database size: SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "SQLITE_SCHEMA--T02",
+        "METRICS_INFRASTRUCTURE--T03"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-health-command.md"
+      ],
+      "test_verification": [
+        "packages/staging-ledger/tests/storage-monitoring.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "STORAGE_SIZE_MONITORING--T02",
+      "capability_id": "STORAGE_SIZE_MONITORING",
+      "phase": "Phase 2",
+      "slice": "Slice 2.2",
+      "title": "Storage Size Monitoring & Alerts - Core Logic",
+      "description": "Core business logic implementation",
+      "acceptance_criteria": [
+        {
+          "id": "STORAGE_SIZE_MONITORING-AC02",
+          "text": "Warn threshold: 100MB"
+        },
+        {
+          "id": "STORAGE_SIZE_MONITORING-AC03",
+          "text": "Hard limit: 500MB (halt ingestion)"
+        },
+        {
+          "id": "STORAGE_SIZE_MONITORING-AC04",
+          "text": "Doctor command displays: database size, warn/critical status"
+        },
+        {
+          "id": "STORAGE_SIZE_MONITORING-AC05",
+          "text": "Check disk space: vault path and .metrics directory"
+        },
+        {
+          "id": "STORAGE_SIZE_MONITORING-AC07",
+          "text": "Metric: database_size_bytes gauge"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "L"
+      },
+      "depends_on_tasks": [
+        "STORAGE_SIZE_MONITORING--T01"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-health-command.md"
+      ],
+      "test_verification": [
+        "packages/staging-ledger/tests/storage-monitoring.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    },
+    {
+      "task_id": "STORAGE_SIZE_MONITORING--T03",
+      "capability_id": "STORAGE_SIZE_MONITORING",
+      "phase": "Phase 2",
+      "slice": "Slice 2.2",
+      "title": "Storage Size Monitoring & Alerts - Performance",
+      "description": "Performance optimization and validation",
+      "acceptance_criteria": [
+        {
+          "id": "STORAGE_SIZE_MONITORING-AC06",
+          "text": "Warn if disk space < 10GB"
+        }
+      ],
+      "risk": "Low",
+      "est": {
+        "size": "S"
+      },
+      "depends_on_tasks": [
+        "STORAGE_SIZE_MONITORING--T02"
+      ],
+      "related_specs": [
+        "docs/features/staging-ledger/spec-staging-tech.md"
+      ],
+      "related_adrs": [],
+      "related_guides": [
+        "docs/guides/guide-health-command.md"
+      ],
+      "test_verification": [
+        "packages/staging-ledger/tests/storage-monitoring.spec.ts"
+      ],
+      "gap_codes": [],
+      "provisional": false
+    }
+  ]
+}

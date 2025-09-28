@@ -3,6 +3,8 @@ title: <Feature> Tech Spec
 status: draft
 owner: Nathan
 version: 0.1.0
+date: <date>
+spec_type: tech
 ---
 
 # <Feature> — Technical Specification
@@ -25,8 +27,13 @@ version: 0.1.0
 - YAGNI deferrals: …
 - Trigger to revisit: …
 
-## 5) Risks & Mitigations
+## 5) Dependencies & Contracts
+- Upstream systems:
+- Downstream consumers:
+- External adapters:
+
+## 6) Risks & Mitigations
 - Integrity, idempotency, atomicity, concurrency
 
-## 6) Rollout & Telemetry (local-only)
+## 7) Rollout & Telemetry (local-only)
 - Feature flags, counters/logs (no analytics)

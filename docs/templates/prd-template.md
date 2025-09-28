@@ -3,6 +3,8 @@ title: <Feature> PRD
 status: draft
 owner: Nathan
 version: 0.1.0
+date: <date>
+spec_type: prd
 ---
 
 # <Feature> — PRD
