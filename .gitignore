@@ -1,4 +1,162 @@
+# ADHD Brain specific
 .vault-id
-node_modules
-dist
-coverage
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Bun
+.bun/
+bun.lockb.txt
+bunfig.toml.local
+
+# Build outputs
+dist/
+dist-node/
+dist-types/
+dist-ssr/
+build/
+!tooling/build/
+out/
+.next/
+.nuxt/
+.turbo/
+*.tsbuildinfo
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+playwright/.cache/
+.vitest/
+*.lcov
+junit.xml
+
+# Environment files
+.env
+.env*.local
+.env.development
+.env.production
+.env.test
+!.env.example
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+.fleet/
+.history/
+
+# Claude Code
+.claude/settings.local.json
+PROJECT_INDEX.json
+
+# Agent OS
+.agentos/
+.agent-os/**
+
+# System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+.prettiercache
+.grunt/
+*.pid
+*.seed
+*.pid.lock
+.agent-os/cache/
+
+# Performance data files (generated)
+.ci-performance-data.json
+.cache-performance.json
+
+# Temporary files
+tmp/
+temp/
+test-temp/
+.tmp/
+*.tmp
+*.bak
+*.backup
+
+# SQLite artifacts (from tests with URI-style filenames)
+file:*?mode=memory&cache=shared
+packages/testkit/file:*?mode=memory&cache=shared
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.db-wal
+*.db-shm
+
+# Debug/temporary test files
+test-*.sh
+test-*.js
+test-*.ts
+!**/test/**/*.js
+!**/tests/**/*.js
+!**/*.test.js
+!**/*.spec.js
+!**/test/**/*.ts
+!**/tests/**/*.ts
+!**/*.test.ts
+!**/*.spec.ts
+
+# Package files
+*.tgz
+*.tar.gz
+*.zip
+*.7z
+*.rar
+
+# Security
+*.pem
+*.key
+*.crt
+*.p12
+private/
+
+# Debug
+*.map
+.sourceMap
+
+# Documentation (generated)
+typedoc/
+.docusaurus/
+
+# Misc
+.sass-cache/
+.connect.lock
+package-lock.json
+yarn.lock
+# pnpm-lock.yaml should be committed for reproducible builds
+.pnpm/.claude/settings.json

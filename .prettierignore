@@ -1,0 +1,225 @@
+# Prettier Ignore Configuration
+# Enhanced patterns for monorepo optimization
+
+# Dependencies and build artifacts
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+**/build/
+out/
+**/out/
+.next/
+**/.next/
+coverage/
+**/coverage/
+.nyc_output/
+**/.nyc_output/
+
+# Package manager files
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+.pnpm-store/
+**/.pnpm-store/
+
+# Cache directories
+.cache/
+**/.cache/
+.turbo/
+**/.turbo/
+.eslintcache
+**/.eslintcache
+.prettierrcache
+**/.prettierrcache
+.tscache/
+**/.tscache/
+
+# Environment and configuration
+.env
+.env.*
+!.env.example
+!.env.template
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Generated files
+*.d.ts.map
+*.js.map
+*.tsbuildinfo
+.tsbuildinfo
+
+# Documentation build
+docs/dist/
+docs/build/
+.docusaurus/
+**/storybook-static/
+
+# Test coverage
+coverage/
+.coverage/
+*.lcov
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Binary files
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.ico
+*.svg
+*.woff
+*.woff2
+*.eot
+*.ttf
+*.otf
+*.pdf
+
+# Large data files
+*.csv
+*.xlsx
+*.xls
+*.db
+*.sqlite
+*.sqlite3
+
+# Minified files
+*.min.js
+*.min.css
+*.bundle.js
+*.bundle.css
+
+# Generated documentation
+api-docs/
+**/api-docs/
+typedoc/
+**/typedoc/
+
+# Vendor directories
+vendor/
+**/vendor/
+third_party/
+**/third_party/
+
+# License files (preserve original formatting)
+LICENSE
+**/LICENSE
+COPYING
+**/COPYING
+COPYRIGHT
+**/COPYRIGHT
+
+# Changelog files (preserve formatting for semantic release)
+CHANGELOG.md
+**/CHANGELOG.md
+HISTORY.md
+**/HISTORY.md
+
+# Git files
+.git/
+.gitkeep
+.gitignore
+**/.gitignore
+
+# Package manager workspace files
+.npmrc
+.yarnrc
+.yarnrc.yml
+
+# Development tool configurations
+.editorconfig
+.browserslistrc
+.nvmrc
+.ruby-version
+.python-version
+
+# Platform specific
+.vercel/
+.netlify/
+.firebase/
+.amplify/
+
+# Database
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Archives
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# Compiled binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Generated protobuf files
+*_pb.js
+*_pb.ts
+*_pb2.py
+
+# Generated GraphQL files
+generated/
+**/generated/
+__generated__/
+**/__generated__/
+
+# Storybook
+.storybook/build/
+storybook-static/
+
+# Monorepo specific
+**/turbo.json
+.turbo/
+**/CHANGELOG.md
+
+# Claude Code specific
+.claude/
+**/.claude/

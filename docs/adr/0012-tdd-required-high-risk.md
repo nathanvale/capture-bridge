@@ -13,6 +13,7 @@ Accepted
 ## Context
 
 The Obsidian Bridge component handles atomic writes to the user's Obsidian vault, which serves as their canonical knowledge store. Failures in this component can result in:
+
 - Vault corruption from partial writes
 - Data loss from failed exports
 - Sync conflicts with Obsidian Sync/iCloud
@@ -44,6 +45,7 @@ Classify Obsidian Bridge as **HIGH RISK** and mandate Test-Driven Development (T
 ## Consequences
 
 **Positive:**
+
 - Early detection of atomicity violations and race conditions
 - Comprehensive error path verification (EACCES, ENOSPC, etc.)
 - Design validation for collision handling and recovery
@@ -51,12 +53,14 @@ Classify Obsidian Bridge as **HIGH RISK** and mandate Test-Driven Development (T
 - Documentation of expected behavior through tests
 
 **Negative:**
+
 - Increased development time for test creation
 - Additional complexity for crash simulation and fault injection
 - Test maintenance overhead for refactoring
 - Slower initial feature delivery
 
 **Quality Assurance:**
+
 - P0 Tests: Atomic write guarantees, collision detection, audit trail integrity
 - P1 Tests: Error recovery paths, filesystem edge cases
 - P2 Tests: Performance characteristics, concurrent access (Phase 2+)

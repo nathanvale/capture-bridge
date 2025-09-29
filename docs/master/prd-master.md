@@ -74,7 +74,7 @@ Our solution: **Minimal SQLite staging** - just enough database for safety, not 
 
 ### 4.1 Three-Layer Architecture
 
-```text
+````text
 ┌──────────────────────────────┐
 │     Input Layer              │ Voice / Email
 ├──────────────────────────────┤
@@ -166,7 +166,7 @@ CREATE TABLE sync_state (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 -- Examples: ('gmail_history_id', '12345'), ('last_voice_poll', '2025-09-27T10:30:00Z')
-```
+````
 
 ### 4.3 Content Hash Strategy
 
@@ -180,8 +180,8 @@ interface HashableContent {
     size: number;
     hash: string;         // Individual file hash
   }>;
-  
-  computeHash(): string { 
+
+  computeHash(): string {
     // Deterministic hash including all attachments
     const normalized = normalizeText(this.text);
     const attachmentHashes = this.attachments
@@ -277,7 +277,7 @@ interface DeduplicationStrategy {
       'SELECT id FROM captures WHERE content_hash = ?',
       [content.computeHash()]
     );
-    
+
     if (existing) {
       // Update metadata, don't create duplicate
       return true;
@@ -330,32 +330,34 @@ All exports use ULID filenames (`01HQW3P7XKZM2YJVT8YFGQSZ4M.md`), which are glob
 
 ### 6.1 Performance Targets
 
-| Operation | Target | Measurement |
-|-----------|---------|------------|
-| Capture → SQLite | < 100ms | Time to hash + insert |
-| Voice Capture Cycle | < 10s | Poll → transcribe → export |
-| Email Capture Cycle | < 3s | Poll → extract → export |
-| Duplicate Check | < 10ms | Hash lookup |
+| Operation           | Target  | Measurement                |
+| ------------------- | ------- | -------------------------- |
+| Capture → SQLite    | < 100ms | Time to hash + insert      |
+| Voice Capture Cycle | < 10s   | Poll → transcribe → export |
+| Email Capture Cycle | < 3s    | Poll → extract → export    |
+| Duplicate Check     | < 10ms  | Hash lookup                |
 
 ### 6.2 Reliability Requirements
 
-| Aspect | Requirement | Implementation |
-|--------|-------------|----------------|
-| Durability | 100% capture retention | Write-ahead log in SQLite |
-| Idempotency | Zero duplicate files | Content hash checking |
-| Atomicity | No partial writes | Temp file + rename pattern |
-| Recovery | Auto-resume on crash | Process state in captures table |
-| Backup | Hourly SQLite backup | Automated .backup command + verification (integrity + hash compare) |
-| Path immutability | No relocations/renames performed by system | In-place access; reference by path + fingerprint |
+| Aspect            | Requirement                                | Implementation                                                      |
+| ----------------- | ------------------------------------------ | ------------------------------------------------------------------- |
+| Durability        | 100% capture retention                     | Write-ahead log in SQLite                                           |
+| Idempotency       | Zero duplicate files                       | Content hash checking                                               |
+| Atomicity         | No partial writes                          | Temp file + rename pattern                                          |
+| Recovery          | Auto-resume on crash                       | Process state in captures table                                     |
+| Backup            | Hourly SQLite backup                       | Automated .backup command + verification (integrity + hash compare) |
+| Path immutability | No relocations/renames performed by system | In-place access; reference by path + fingerprint                    |
 
 ### 6.2.1 Backup & Verification Policy (Consolidated)
 
 **Backup Schedule:**
+
 - **Frequency:** Hourly automated backups using SQLite `.backup` command
 - **Location:** `${VAULT_ROOT}/.adhd-brain/.backups/ledger-YYYYMMDD-HH.sqlite`
 - **Retention:** 24 hourly snapshots + 7 daily snapshots (oldest hourly pruned after 24h)
 
 **Verification Protocol:**
+
 - **Integrity Check:** SQLite `PRAGMA integrity_check` on each backup
 - **Hash Compare:** SHA-256 checksum of backup file vs. live database
 - **Restore Test:** Weekly full restore to temporary database + query validation
@@ -363,13 +365,14 @@ All exports use ULID filenames (`01HQW3P7XKZM2YJVT8YFGQSZ4M.md`), which are glob
 
 **Escalation Policy (Consecutive Failures):**
 
-| Failures | Status | Action |
-|----------|--------|--------|
-| 1 failure | `WARN` | Log warning, continue normal operations |
-| 2 consecutive | `DEGRADED_BACKUP` | Alert via `capture doctor`, continue operations |
-| 3 consecutive | `HALT_PRUNING` | Pause 90-day pruning, preserve all captures, continue ingestion |
+| Failures      | Status            | Action                                                          |
+| ------------- | ----------------- | --------------------------------------------------------------- |
+| 1 failure     | `WARN`            | Log warning, continue normal operations                         |
+| 2 consecutive | `DEGRADED_BACKUP` | Alert via `capture doctor`, continue operations                 |
+| 3 consecutive | `HALT_PRUNING`    | Pause 90-day pruning, preserve all captures, continue ingestion |
 
 **Recovery from Degraded State:**
+
 - Automatic recovery on next successful backup verification
 - Manual intervention via `capture doctor --force-backup` to validate backups
 - Escalation resets to `WARN` after single success
@@ -418,7 +421,7 @@ Essential metrics for operational visibility and debugging:
 
 ### Workflow 1: Burst Capture (ADHD Pattern)
 
-```text
+````text
 1. Series of rapid thoughts
 2. Cmd+Shift+Space repeatedly
 3. Each immediately saved to SQLite
@@ -437,7 +440,7 @@ Essential metrics for operational visibility and debugging:
 4. Resume processing automatically
 5. User notification: "Recovered 3 captures"
 6. Continue where left off
-```
+````
 
 ### Workflow 3: Health Check
 
@@ -484,17 +487,17 @@ capture_id: 01HQW3P7XKZM2YJVT8YFGQSZ4M
 
 ### TDD Applicability Decision
 
-| Component | Risk Class | TDD Required? | Rationale |
-|-----------|-----------|---------------|-----------|
-| Hash normalization | High | Yes | Determinism critical for dedup |
-| Duplicate suppression | High | Yes | Core durability promise |
-| Late hash binding (voice) | High | Yes | Transcript updates must be safe |
-| Export idempotency | High | Yes | Re-run must not create duplicates |
-| Whisper failure → placeholder | Medium | Yes | Graceful degradation path |
-| Fault injection recovery | High | Yes | Validates crash invariants |
-| CLI argument parsing | Low | No | Standard library, visual testing sufficient |
-| Load/performance soak | N/A | Deferred | Phase 2+ only |
-| Threaded ingestion | N/A | Deferred | Sequential in MPPP |
+| Component                     | Risk Class | TDD Required? | Rationale                                   |
+| ----------------------------- | ---------- | ------------- | ------------------------------------------- |
+| Hash normalization            | High       | Yes           | Determinism critical for dedup              |
+| Duplicate suppression         | High       | Yes           | Core durability promise                     |
+| Late hash binding (voice)     | High       | Yes           | Transcript updates must be safe             |
+| Export idempotency            | High       | Yes           | Re-run must not create duplicates           |
+| Whisper failure → placeholder | Medium     | Yes           | Graceful degradation path                   |
+| Fault injection recovery      | High       | Yes           | Validates crash invariants                  |
+| CLI argument parsing          | Low        | No            | Standard library, visual testing sufficient |
+| Load/performance soak         | N/A        | Deferred      | Phase 2+ only                               |
+| Threaded ingestion            | N/A        | Deferred      | Sequential in MPPP                          |
 
 **Trigger to revisit:** Introduction of concurrency or async outbox patterns.
 Additional triggers:
@@ -505,36 +508,36 @@ Additional triggers:
 
 ### Test Categories by Risk
 
-| Priority | Category | Coverage Target |
-|----------|----------|-----------------|
-| P0 - Required | Data integrity | 100% |
-| P0 - Required | Deduplication | 100% |
-| P0 - Required | Atomic writes | 100% |
-| P1 - Recommended | Error recovery | 80% |
-| P2 - Optional | CLI output formatting | 60% |
+| Priority         | Category              | Coverage Target |
+| ---------------- | --------------------- | --------------- |
+| P0 - Required    | Data integrity        | 100%            |
+| P0 - Required    | Deduplication         | 100%            |
+| P0 - Required    | Atomic writes         | 100%            |
+| P1 - Recommended | Error recovery        | 80%             |
+| P2 - Optional    | CLI output formatting | 60%             |
 
 ## 10. Risk Analysis & Mitigation
 
 ### Technical Risks (Mitigated by Staging)
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Capture loss (process crash) | High | Atomic insert before async work; WAL mode |
-| Duplicate exports | Medium anxiety | Hash + message_id/audio_fp check |
-| Transcription failure | Medium | Placeholder export ensures continuity |
-| Backup verification drift | High | Consecutive failure escalation + pause pruning |
-| Silent latency backlog growth | Medium | Queue depth + p95 metrics with trigger thresholds |
-| Gmail/IMAP auth failure loops | Medium | Cap consecutive failures + alert |
-| Disk path misconfig (vault) | High | Pre-start validation + fail-fast |
+| Risk                          | Impact         | Mitigation                                        |
+| ----------------------------- | -------------- | ------------------------------------------------- |
+| Capture loss (process crash)  | High           | Atomic insert before async work; WAL mode         |
+| Duplicate exports             | Medium anxiety | Hash + message_id/audio_fp check                  |
+| Transcription failure         | Medium         | Placeholder export ensures continuity             |
+| Backup verification drift     | High           | Consecutive failure escalation + pause pruning    |
+| Silent latency backlog growth | Medium         | Queue depth + p95 metrics with trigger thresholds |
+| Gmail/IMAP auth failure loops | Medium         | Cap consecutive failures + alert                  |
+| Disk path misconfig (vault)   | High           | Pre-start validation + fail-fast                  |
 
 ### Remaining Risks (Deferred)
 
-| Risk | Impact | Mitigation Plan |
-|------|--------|-----------------|
-| SQLite corruption | Low | Hourly backups, verify with checksum |
-| Hash collisions | Extremely low | SHA-256 sufficient for MPPP |
-| Storage growth | Low | 90-day cleanup policy |
-| Multi-device divergence | N/A | Out of scope (single user) |
+| Risk                    | Impact        | Mitigation Plan                      |
+| ----------------------- | ------------- | ------------------------------------ |
+| SQLite corruption       | Low           | Hourly backups, verify with checksum |
+| Hash collisions         | Extremely low | SHA-256 sufficient for MPPP          |
+| Storage growth          | Low           | 90-day cleanup policy                |
+| Multi-device divergence | N/A           | Out of scope (single user)           |
 
 ## 11. Implementation Roadmap
 
@@ -676,7 +679,7 @@ Additional triggers:
   - Cloud service (privacy violation)
 - **Consequences:** Small complexity increase, massive reliability gain
 
-### Decision: Content Hash Deduplication  
+### Decision: Content Hash Deduplication
 
 - **Status:** Decided
 - **Why:** Prevent duplicate files, reduce anxiety
@@ -811,16 +814,16 @@ SQLite staging is like a ADHD thoughts' waiting room—everyone gets a number (U
 
 Core and supporting documents refining this Master PRD:
 
-| Doc | Purpose |
-|-----|---------|
-| [Capture Feature PRD](../features/capture/prd-capture.md) | Feature scope, flows, success criteria |
-| [Capture Architecture Spec](../features/capture/spec-capture-arch.md) | Component model, data model, performance + failure modes |
-| [Capture Tech Spec](../features/capture/spec-capture-tech.md) | Implementation details, APIs, error handling |
-| [CLI Tech Spec](../features/cli/spec-cli-tech.md) | Command contracts, layering, error model |
-| [CLI Test Spec](../features/cli/spec-cli-test.md) | Exit codes, schema stability, perf gates |
-| [TestKit Usage Guide](../guides/guide-testkit-usage.md) - External TestKit integration patterns | Test isolation, fixtures, cleanup |
-| [ADR-0001 Voice File Sovereignty](../adr/0001-voice-file-sovereignty.md) | Never copy/move Apple Voice Memos |
-| [ADR-0002 Dual Hash Migration](../adr/0002-dual-hash-migration.md) | Phased SHA-256 → BLAKE3 adoption strategy |
+| Doc                                                                                             | Purpose                                                  |
+| ----------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| [Capture Feature PRD](../features/capture/prd-capture.md)                                       | Feature scope, flows, success criteria                   |
+| [Capture Architecture Spec](../features/capture/spec-capture-arch.md)                           | Component model, data model, performance + failure modes |
+| [Capture Tech Spec](../features/capture/spec-capture-tech.md)                                   | Implementation details, APIs, error handling             |
+| [CLI Tech Spec](../features/cli/spec-cli-tech.md)                                               | Command contracts, layering, error model                 |
+| [CLI Test Spec](../features/cli/spec-cli-test.md)                                               | Exit codes, schema stability, perf gates                 |
+| [TestKit Usage Guide](../guides/guide-testkit-usage.md) - External TestKit integration patterns | Test isolation, fixtures, cleanup                        |
+| [ADR-0001 Voice File Sovereignty](../adr/0001-voice-file-sovereignty.md)                        | Never copy/move Apple Voice Memos                        |
+| [ADR-0002 Dual Hash Migration](../adr/0002-dual-hash-migration.md)                              | Phased SHA-256 → BLAKE3 adoption strategy                |
 
 > Note: Inbox feature was deferred to Phase 5+ per 2025-09-27 scope reduction (no manual triage needed for MVP).
 

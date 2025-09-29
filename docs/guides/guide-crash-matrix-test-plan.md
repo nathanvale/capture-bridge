@@ -34,18 +34,21 @@ Use this guide when:
 ## Prerequisites
 
 **Required Knowledge:**
+
 - Understanding of MPPP (Multi-Pass Processing Pipeline) sequential execution model
 - Familiarity with SQLite transaction boundaries and WAL mode
 - Knowledge of staging ledger state machine (`staged` → `transcribed` → `exported`)
 - Basic understanding of fault injection testing principles
 
 **Required Setup:**
+
 - Working ADHD Brain development environment
 - Test fixtures for voice audio and email payloads
 - SQLite database with staging ledger schema
 - Access to Obsidian inbox directory for file validation
 
 **Related Documentation:**
+
 - [Fault Injection Hook Registry](./guide-fault-injection-registry.md) - Authoritative hook catalog (REQUIRED)
 - [Staging Ledger PRD](../features/staging-ledger/prd-staging.md)
 - [Capture PRD](../features/capture/prd-capture.md)
@@ -62,6 +65,7 @@ Use this guide when:
 5. Assert: One vault file, one audit row, terminal status, no orphans
 
 **Key Assertions:**
+
 - Vault file count with ULID prefix == 1 (idempotency)
 - Audit row count per capture_id == 1 (no duplicates)
 - Temp file glob `.tmp-*` empty (cleanup)
@@ -74,13 +78,13 @@ Use this guide when:
 
 Consult the authoritative hook inventory to understand each crash point:
 
-| Hook Key | Stage | Description | Expected Pre-Crash Commit Boundary |
-|----------|-------|-------------|------------------------------------|
-| `after_capture_insert` | staging | Row inserted with `status='staged'` | Capture row durable (WAL) |
-| `after_transcription_complete` | transcription | Transcript + hash updated; `status='transcribed'` | Updated row durable |
-| `before_export_write` | export | About to write temp file | Ledger unchanged since last status update |
-| `after_temp_file_write_before_rename` | export | Temp file written, not yet renamed | Temp file present; no audit row yet |
-| `after_audit_insert_before_status_update` | export | Audit row inserted, status not finalized | Audit row durable, capture still prior state |
+| Hook Key                                  | Stage         | Description                                       | Expected Pre-Crash Commit Boundary           |
+| ----------------------------------------- | ------------- | ------------------------------------------------- | -------------------------------------------- |
+| `after_capture_insert`                    | staging       | Row inserted with `status='staged'`               | Capture row durable (WAL)                    |
+| `after_transcription_complete`            | transcription | Transcript + hash updated; `status='transcribed'` | Updated row durable                          |
+| `before_export_write`                     | export        | About to write temp file                          | Ledger unchanged since last status update    |
+| `after_temp_file_write_before_rename`     | export        | Temp file written, not yet renamed                | Temp file present; no audit row yet          |
+| `after_audit_insert_before_status_update` | export        | Audit row inserted, status not finalized          | Audit row durable, capture still prior state |
 
 ### Step 2: Configure Fault Injection Environment
 
@@ -96,12 +100,14 @@ export CAPTURE_FAULT_POINT=after_capture_insert  # Or any hook key
 Execute exactly one capture per channel:
 
 **For Voice:**
+
 ```bash
 # Use small fixture audio file
 cp fixtures/test-voice-10s.m4a ~/watched-folder/voice/
 ```
 
 **For Email:**
+
 ```bash
 # Use fixture message payload
 adhd capture email --fixture fixtures/test-email.json
@@ -110,6 +116,7 @@ adhd capture email --fixture fixtures/test-email.json
 ### Step 4: Observe Process Crash
 
 Allow the process to crash at the configured hook point. Expected behavior:
+
 - Process exits with code 137 (or configured exit code)
 - Hook triggered exactly once (check `fault_injection_triggered_total` metric if implemented)
 
@@ -129,13 +136,13 @@ Observe recovery behavior according to the hook-specific expectations.
 
 Run assertions for the specific hook being tested:
 
-| Hook | On Restart Expect | Assertions |
-|------|-------------------|------------|
-| after_capture_insert | Capture reprocessed from status='staged' | No duplicate export, one final audit row |
-| after_transcription_complete | Export proceeds; status→exported* | Hash stable; no second transcription attempt logged |
-| before_export_write | Export completes from prior status | Exactly one vault file; no orphan temp |
-| after_temp_file_write_before_rename | Temp file cleanup or rename completion | No partial file; final audit row present |
-| after_audit_insert_before_status_update | Status updated to exported* | No second audit row; status terminal |
+| Hook                                    | On Restart Expect                        | Assertions                                          |
+| --------------------------------------- | ---------------------------------------- | --------------------------------------------------- |
+| after_capture_insert                    | Capture reprocessed from status='staged' | No duplicate export, one final audit row            |
+| after_transcription_complete            | Export proceeds; status→exported\*       | Hash stable; no second transcription attempt logged |
+| before_export_write                     | Export completes from prior status       | Exactly one vault file; no orphan temp              |
+| after_temp_file_write_before_rename     | Temp file cleanup or rename completion   | No partial file; final audit row present            |
+| after_audit_insert_before_status_update | Status updated to exported\*             | No second audit row; status terminal                |
 
 `exported*` may be `exported` or `exported_placeholder` depending on simulated success/failure path.
 
@@ -201,6 +208,7 @@ SELECT hash FROM staging_ledger WHERE id = ?;
 **Symptoms:** Process completes successfully despite fault injection enabled
 
 **Solutions:**
+
 1. Verify `CAPTURE_FAULT_INJECTION=1` is set in process environment (not just parent shell)
 2. Check hook key spelling matches code exactly (case-sensitive)
 3. Confirm capture event actually reaches the hook point (add debug logging)
@@ -211,6 +219,7 @@ SELECT hash FROM staging_ledger WHERE id = ?;
 **Symptoms:** Multiple vault files with similar ULID prefixes
 
 **Solutions:**
+
 1. Check status transition logic for missing idempotency guards
 2. Verify audit row insertion occurs within same transaction as status update
 3. Review export path for missing status checks before write
@@ -221,6 +230,7 @@ SELECT hash FROM staging_ledger WHERE id = ?;
 **Symptoms:** `.tmp-*` files persist after process restart
 
 **Solutions:**
+
 1. Verify cleanup code executes in startup recovery path
 2. Check for exception handling gaps in export cleanup
 3. Ensure temp file naming convention matches cleanup glob pattern
@@ -231,6 +241,7 @@ SELECT hash FROM staging_ledger WHERE id = ?;
 **Symptoms:** Hash differs between pre-crash and post-restart transcription
 
 **Solutions:**
+
 1. Review transcription service for non-deterministic behavior (timestamps, metadata)
 2. Check if transcription is re-running instead of resuming
 3. Verify hash calculation excludes volatile fields
@@ -424,6 +435,7 @@ Each added hook requires full matrix re-run to validate comprehensive coverage.
 ## Related Documentation
 
 **PRDs and Specs:**
+
 - [Staging Ledger PRD](../features/staging-ledger/prd-staging.md)
 - [Staging Ledger Architecture](../features/staging-ledger/spec-staging-arch.md)
 - [Staging Ledger Test Spec](../features/staging-ledger/spec-staging-test.md)
@@ -431,10 +443,12 @@ Each added hook requires full matrix re-run to validate comprehensive coverage.
 - [Capture Test Spec](../features/capture/spec-capture-test.md)
 
 **Roadmap and Master Documents:**
+
 - [Master Roadmap: State & Invariants](../master/roadmap.md)
 - [Master PRD: Testing Strategy Triggers](../master/prd-master.md)
 
 **Related Guides:**
+
 - [Fault Injection Hook Registry](./guide-fault-injection-registry.md) - Authoritative hook catalog with implementation patterns
 - [Error Recovery Guide](./guide-error-recovery.md) - Error classification and retry orchestration
 - [TestKit Usage Guide](./guide-testkit-usage.md) - TestKit utilities for crash testing
@@ -443,6 +457,7 @@ Each added hook requires full matrix re-run to validate comprehensive coverage.
 - [Capture Debugging](./guide-capture-debugging.md)
 
 **Schema References:**
+
 - [Schema & Indexes: Export Status Machine](../features/staging-ledger/schema-indexes.md)
 
 ## Maintenance Notes
@@ -469,4 +484,5 @@ Implement harness after initial end-to-end path is stable (post Slice 2, pre Pha
 ---
 
 **Document Version History:**
+
 - 1.0.0 (2025-09-27): Initial guide standardization following template pattern

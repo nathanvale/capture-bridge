@@ -16,6 +16,7 @@ roadmap_version: 2.0.0-MPPP
 > **Alignment**: Supports MPPP requirements for deterministic testing, sequential processing validation, and no-outbox architecture verification
 >
 > **Cross-References**:
+>
 > - Master PRD: [prd-master.md](../master/prd-master.md)
 > - Roadmap: [roadmap.md](../master/roadmap.md)
 > - TDD Applicability Guide: [tdd-applicability.md](./tdd-applicability.md)
@@ -36,12 +37,12 @@ pnpm add -D @template/testkit
 
 ```typescript
 // Import from domain-specific subpaths
-import { setupMSW } from '@template/testkit/msw'
-import { createMemoryUrl } from '@template/testkit/sqlite'
-import { useFakeTimers } from '@template/testkit/env'
-import { createTempDirectory } from '@template/testkit/fs'
-import { quickMocks } from '@template/testkit/cli'
-import { createConvexTestHarness } from '@template/testkit/convex'
+import { setupMSW } from "@template/testkit/msw"
+import { createMemoryUrl } from "@template/testkit/sqlite"
+import { useFakeTimers } from "@template/testkit/env"
+import { createTempDirectory } from "@template/testkit/fs"
+import { quickMocks } from "@template/testkit/cli"
+import { createConvexTestHarness } from "@template/testkit/convex"
 ```
 
 ## 🎯 Core Domains & Features
@@ -80,14 +81,14 @@ import { createConvexTestHarness } from '@template/testkit/convex'
 ```typescript
 // Example: Mock Ollama for ADHD Brain
 setupMSW([
-  http.post('http://localhost:11434/api/generate', () =>
-    createDelayedResponse({ response: 'Mock transcription' }, 100)
+  http.post("http://localhost:11434/api/generate", () =>
+    createDelayedResponse({ response: "Mock transcription" }, 100)
   ),
   createUnreliableHandler(
-    'http://localhost:11434/api/embeddings',
+    "http://localhost:11434/api/embeddings",
     { embedding: new Array(384).fill(0.1) },
     0.1 // 10% failure rate
-  )
+  ),
 ])
 ```
 
@@ -128,11 +129,11 @@ const db = new Database(url)
 applyTestPragmas(db)
 
 // Migration testing
-await applyMigrations(db, { dir: './migrations' })
+await applyMigrations(db, { dir: "./migrations" })
 
 // Transaction isolation
 await withTransaction(db, async (tx) => {
-  tx.prepare('INSERT INTO users (name) VALUES (?)').run('Test User')
+  tx.prepare("INSERT INTO users (name) VALUES (?)").run("Test User")
 })
 ```
 
@@ -167,11 +168,11 @@ await withTransaction(db, async (tx) => {
 
 ```typescript
 // Example: Mock git commands
-quickMocks.success('git status', 'nothing to commit\n')
-quickMocks.failure('npm install', 'ENOENT', 1)
+quickMocks.success("git status", "nothing to commit\n")
+quickMocks.failure("npm install", "ENOENT", 1)
 
 // Works with spawn, exec, execSync, fork, execFile, execFileSync
-const result = execSync('git status') // Returns mocked output
+const result = execSync("git status") // Returns mocked output
 ```
 
 ### 4. **File System Domain**
@@ -202,15 +203,15 @@ const result = execSync('git status') // Returns mocked output
 
 ```typescript
 // Example: Test with temp directory
-const temp = await createTempDirectory({ prefix: 'test-' })
-await temp.writeFile('config.json', JSON.stringify({ key: 'value' }))
+const temp = await createTempDirectory({ prefix: "test-" })
+await temp.writeFile("config.json", JSON.stringify({ key: "value" }))
 await temp.createStructure({
-  'src': {
-    'index.ts': 'export const answer = 42',
-    'lib': { 'util.ts': 'export const double = (n) => n * 2' }
-  }
+  src: {
+    "index.ts": "export const answer = 42",
+    lib: { "util.ts": "export const double = (n) => n * 2" },
+  },
 })
-const content = await temp.readFile('config.json')
+const content = await temp.readFile("config.json")
 await temp.cleanup()
 ```
 
@@ -251,11 +252,11 @@ await temp.cleanup()
 
 ```typescript
 // Example: Control time and randomness
-useFakeTimers({ now: new Date('2024-01-01') })
+useFakeTimers({ now: new Date("2024-01-01") })
 controlRandomness(12345)
 
 // Predictable UUIDs
-mockCryptoUUID('test-{n}') // test-1, test-2, test-3...
+mockCryptoUUID("test-{n}") // test-1, test-2, test-3...
 
 // Advance time
 advanceTimersByTime(5000) // 5 seconds
@@ -282,8 +283,8 @@ advanceTimersByTime(5000) // 5 seconds
 ```typescript
 // Example: Postgres integration test
 const { db, cleanup } = await setupPostgresTest({
-  migrations: './migrations/*.sql',
-  seed: { users: [{ name: 'Test' }] }
+  migrations: "./migrations/*.sql",
+  seed: { users: [{ name: "Test" }] },
 })
 // ... run tests
 await cleanup()
@@ -306,10 +307,11 @@ await cleanup()
 // Example: Convex testing
 const harness = createConvexTestHarness({ schema })
 await harness.db.seed(async (ctx) => {
-  await ctx.db.insert('users', { name: 'Test User' })
+  await ctx.db.insert("users", { name: "Test User" })
 })
-const result = await harness.auth.withUser({ subject: 'user123' })
-  .run(async (ctx) => ctx.db.query('users').collect())
+const result = await harness.auth
+  .withUser({ subject: "user123" })
+  .run(async (ctx) => ctx.db.query("users").collect())
 ```
 
 ### 8. **Configuration Domain**
@@ -363,21 +365,23 @@ controlRandomness(seed)
 The MPPP architecture requires **sequential processing** with no outbox pattern. TestKit provides tools to validate these constraints:
 
 ```typescript
-import { useFakeTimers, setSystemTime } from '@template/testkit/env'
-import { createMemoryUrl, withTransaction } from '@template/testkit/sqlite'
+import { useFakeTimers, setSystemTime } from "@template/testkit/env"
+import { createMemoryUrl, withTransaction } from "@template/testkit/sqlite"
 
 // Test that operations are truly sequential (no concurrent writes)
 useFakeTimers()
 const db = new Database(createMemoryUrl())
 
 // Validate no outbox table exists
-const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all()
-expect(tables.find(t => t.name.includes('outbox'))).toBeUndefined()
+const tables = db
+  .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+  .all()
+expect(tables.find((t) => t.name.includes("outbox"))).toBeUndefined()
 
 // Test sequential staging writes
 await withTransaction(db, async (tx) => {
   const before = Date.now()
-  tx.prepare('INSERT INTO staging (id, data) VALUES (?, ?)').run('1', 'data1')
+  tx.prepare("INSERT INTO staging (id, data) VALUES (?, ?)").run("1", "data1")
   const after = Date.now()
   expect(after - before).toBeLessThan(100) // Fast synchronous write
 })
@@ -387,7 +391,7 @@ await withTransaction(db, async (tx) => {
 
 ```typescript
 // Verify direct-to-Obsidian pattern (no intermediate queues)
-const obsidianPath = await createTempDirectory({ prefix: 'vault-' })
+const obsidianPath = await createTempDirectory({ prefix: "vault-" })
 
 // Mock the file system watcher to verify writes are immediate
 const writes: string[] = []
@@ -396,8 +400,8 @@ watchFileChanges(obsidianPath.path, (filename) => {
 })
 
 // Execute capture → staging → Obsidian flow
-await captureVoice({ file: 'test.m4a' })
-await exportToObsidian({ id: '1' })
+await captureVoice({ file: "test.m4a" })
+await exportToObsidian({ id: "1" })
 
 // Verify single-pass write (no queuing)
 expect(writes).toHaveLength(1)
@@ -410,38 +414,41 @@ expect(writes[0]).toMatch(/inbox\/\d{8}-.*\.md/)
 // Test 5-minute deduplication window with controlled time
 const DEDUP_WINDOW_MS = 5 * 60 * 1000
 
-setSystemTime('2024-01-01T10:00:00Z')
-const hash = 'abc123'
+setSystemTime("2024-01-01T10:00:00Z")
+const hash = "abc123"
 
-db.prepare('INSERT INTO staging (hash, created_at) VALUES (?, ?)').run(hash, Date.now())
+db.prepare("INSERT INTO staging (hash, created_at) VALUES (?, ?)").run(
+  hash,
+  Date.now()
+)
 
 // Attempt duplicate within window
 const duplicate1 = await attemptCapture({ hash })
-expect(duplicate1.status).toBe('duplicate')
+expect(duplicate1.status).toBe("duplicate")
 
 // Advance past dedup window
 advanceTimersByTime(DEDUP_WINDOW_MS + 1000)
 
 // Duplicate after window should succeed
 const duplicate2 = await attemptCapture({ hash })
-expect(duplicate2.status).toBe('captured')
+expect(duplicate2.status).toBe("captured")
 ```
 
 ### iCloud Polling Without Watchers
 
 ```typescript
 // Test polling-based file discovery (no fs.watch in MPPP scope)
-import { quickMocks } from '@template/testkit/cli'
+import { quickMocks } from "@template/testkit/cli"
 
 quickMocks.batch([
-  { command: 'ls', output: 'file1.m4a\nfile2.m4a\n', exitCode: 0 },
-  { command: 'brctl download', output: 'Downloaded file1.m4a', exitCode: 0 }
+  { command: "ls", output: "file1.m4a\nfile2.m4a\n", exitCode: 0 },
+  { command: "brctl download", output: "Downloaded file1.m4a", exitCode: 0 },
 ])
 
 const poller = new VoiceFilePoller({ interval: 1000 })
 await poller.tick() // Single poll cycle
 
-expect(poller.discoveredFiles).toEqual(['file1.m4a', 'file2.m4a'])
+expect(poller.discoveredFiles).toEqual(["file1.m4a", "file2.m4a"])
 ```
 
 ## 📋 Common Recipes
@@ -449,16 +456,16 @@ expect(poller.discoveredFiles).toEqual(['file1.m4a', 'file2.m4a'])
 ### Recipe: Testing with Gmail API Mock
 
 ```typescript
-import { setupMSW, createDelayedResponse } from '@template/testkit/msw'
+import { setupMSW, createDelayedResponse } from "@template/testkit/msw"
 
 setupMSW([
-  http.post('https://oauth2.googleapis.com/token', () => ({
-    access_token: 'mock-token',
-    expires_in: 3600
+  http.post("https://oauth2.googleapis.com/token", () => ({
+    access_token: "mock-token",
+    expires_in: 3600,
   })),
-  http.get('https://gmail.googleapis.com/gmail/v1/users/me/messages', () =>
+  http.get("https://gmail.googleapis.com/gmail/v1/users/me/messages", () =>
     createDelayedResponse({ messages: [] }, 100)
-  )
+  ),
 ])
 ```
 
@@ -469,8 +476,11 @@ const db = new Database(createMemoryUrl())
 applyTestPragmas(db)
 
 // Control time for deduplication window
-setSystemTime('2024-01-01T10:00:00Z')
-db.prepare('INSERT INTO captures (hash, created_at) VALUES (?, ?)').run(hash, Date.now())
+setSystemTime("2024-01-01T10:00:00Z")
+db.prepare("INSERT INTO captures (hash, created_at) VALUES (?, ?)").run(
+  hash,
+  Date.now()
+)
 
 // Advance past dedup window
 advanceTimersByTime(5 * 60 * 1000) // 5 minutes
@@ -480,13 +490,13 @@ advanceTimersByTime(5 * 60 * 1000) // 5 minutes
 
 ```typescript
 quickMocks.batch([
-  { command: 'npm install', output: 'installed', exitCode: 0 },
-  { command: 'npm test', output: 'tests passed', exitCode: 0 },
-  { command: 'npm build', output: 'built', exitCode: 0 }
+  { command: "npm install", output: "installed", exitCode: 0 },
+  { command: "npm test", output: "tests passed", exitCode: 0 },
+  { command: "npm build", output: "built", exitCode: 0 },
 ])
 
 // All child_process methods work
-const result = execSync('npm install') // Returns 'installed'
+const result = execSync("npm install") // Returns 'installed'
 ```
 
 ## 🚨 Important Notes for AI Agents
@@ -540,27 +550,39 @@ Per Master PRD v2.3.0-MPPP scope reduction:
 // Common imports
 import {
   // MSW
-  setupMSW, createSuccessResponse, http,
+  setupMSW,
+  createSuccessResponse,
+  http,
   // SQLite
-  createMemoryUrl, createFileDatabase, applyTestPragmas,
+  createMemoryUrl,
+  createFileDatabase,
+  applyTestPragmas,
   // CLI
-  quickMocks, processHelpers,
+  quickMocks,
+  processHelpers,
   // FileSystem
-  createTempDirectory, useTempDirectory,
+  createTempDirectory,
+  useTempDirectory,
   // Environment
-  useFakeTimers, controlRandomness, setSystemTime,
+  useFakeTimers,
+  controlRandomness,
+  setSystemTime,
   // Utils
-  delay, retry, withTimeout
-} from '@template/testkit'
+  delay,
+  retry,
+  withTimeout,
+} from "@template/testkit"
 ```
 
 ## Related Documentation
 
 **PRDs (Product Requirements):**
+
 - [Master PRD v2.3.0-MPPP](../master/prd-master.md) - System-wide testing requirements
 - [Monorepo Foundation PRD](../cross-cutting/prd-foundation-monorepo.md) - Monorepo testing infrastructure
 
 **Cross-Cutting Specifications:**
+
 - [Monorepo Technical Spec](../cross-cutting/spec-foundation-monorepo-tech.md) - Test infrastructure architecture
 - [Capture Test Spec](../features/capture/spec-capture-test.md) - Capture testing patterns
 - [Staging Ledger Test Spec](../features/staging-ledger/spec-staging-test.md) - Database testing patterns
@@ -568,6 +590,7 @@ import {
 - [CLI Test Spec](../features/cli/spec-cli-test.md) - CLI testing patterns
 
 **Guides (How-To):**
+
 - [TDD Applicability Guide](./guide-tdd-applicability.md) - When to apply TDD with TestKit
 - [Test Strategy Guide](./guide-test-strategy.md) - Overall testing approach
 - [Phase 1 Testing Patterns](./guide-phase1-testing-patterns.md) - MPPP-specific testing patterns
@@ -576,11 +599,13 @@ import {
 - [Crash Matrix Test Plan](./guide-crash-matrix-test-plan.md) - Advanced TestKit patterns
 
 **ADRs (Architecture Decisions):**
+
 - [ADR-0012: TDD Required for High-Risk Paths](../adr/0012-tdd-required-high-risk.md) - When TestKit is mandatory
 - [ADR-0007: Sequential Processing Model](../adr/0007-sequential-processing-model.md) - Testing sequential constraints
 - [ADR-0001: Voice File Sovereignty](../adr/0001-voice-file-sovereignty.md) - Testing file handling
 
 **External Resources:**
+
 - [Vitest Documentation](https://vitest.dev/) - Test runner
 - [MSW Documentation](https://mswjs.io/) - API mocking
 - [better-sqlite3 Documentation](https://github.com/WiseLibs/better-sqlite3/wiki) - SQLite driver
@@ -588,18 +613,21 @@ import {
 ## Maintenance Notes
 
 **When to Update:**
+
 - New TestKit domains added (e.g., ChromaDB mocking in Phase 3+)
 - MPPP architecture changes (sequential processing, dedup windows)
 - Vitest or MSW major version updates
 - New testing patterns discovered in implementation
 
 **Known Limitations:**
+
 - Container domain is beta quality (use with caution)
 - Convex domain not applicable to MPPP architecture
 - ChromaDB mocking deferred to Phase 3+ (RAG/semantic search)
 - Network deny guard not implemented (optional safety net)
 
 **Gaps:**
+
 - E2E testing patterns (deferred to Phase 2+)
 - Performance testing patterns (deferred to Phase 2+)
 - Visual regression testing (not in MPPP scope)
@@ -607,4 +635,4 @@ import {
 
 ---
 
-*The test kit thinks faster than your ADHD brain switches tabs—and that's measured in microseconds. Use it wisely, test early, and keep your capture ingestion pipeline bulletproof.*
+_The test kit thinks faster than your ADHD brain switches tabs—and that's measured in microseconds. Use it wisely, test early, and keep your capture ingestion pipeline bulletproof._

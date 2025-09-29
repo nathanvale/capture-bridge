@@ -26,18 +26,19 @@ comprehensive_spec: docs/cross-cutting/spec-foundation-monorepo-mppp.md
 ### 1.1 Package Exports
 
 **@adhd-brain/foundation** (0 dependencies)
+
 ```typescript
 // packages/@adhd-brain/foundation/src/index.ts
-export * from './types/capture'
-export * from './types/common'
-export * from './errors/capture'
-export * from './errors/validation'
-export * from './constants'
+export * from "./types/capture"
+export * from "./types/common"
+export * from "./errors/capture"
+export * from "./errors/validation"
+export * from "./constants"
 
 // Core types
 export interface CaptureItem {
-  id: string           // ULID
-  source: 'voice' | 'email'
+  id: string // ULID
+  source: "voice" | "email"
   content: string
   contentHash: string
   createdAt: Date
@@ -45,9 +46,9 @@ export interface CaptureItem {
 }
 
 export interface CaptureSource {
-  type: 'voice' | 'email'
-  filePath?: string    // Voice only
-  messageId?: string   // Email only
+  type: "voice" | "email"
+  filePath?: string // Voice only
+  messageId?: string // Email only
 }
 
 // Constants
@@ -55,16 +56,17 @@ export const CONSTANTS = {
   MAX_PACKAGES: 4,
   DUPLICATE_WINDOW_MS: 5 * 60 * 1000,
   BUILD_TIMEOUT_MS: 30_000,
-  TEST_TIMEOUT_MS: 30_000
+  TEST_TIMEOUT_MS: 30_000,
 }
 ```
 
 **@adhd-brain/core** (foundation only)
+
 ```typescript
 // packages/@adhd-brain/core/src/index.ts
-export { DeduplicationService } from './deduplication'
-export { ValidationService } from './validation'
-export { normalizationService } from './normalization'
+export { DeduplicationService } from "./deduplication"
+export { ValidationService } from "./validation"
+export { normalizationService } from "./normalization"
 
 // Public API
 export class DeduplicationService {
@@ -74,11 +76,12 @@ export class DeduplicationService {
 ```
 
 **@adhd-brain/storage** (foundation only)
+
 ```typescript
 // packages/@adhd-brain/storage/src/index.ts
-export { DatabaseClient } from './database'
-export { CaptureRepository } from './repositories/capture'
-export { AuditRepository } from './repositories/audit'
+export { DatabaseClient } from "./database"
+export { CaptureRepository } from "./repositories/capture"
+export { AuditRepository } from "./repositories/audit"
 
 // Public API
 export class DatabaseClient {
@@ -95,11 +98,12 @@ export class CaptureRepository {
 ```
 
 **@adhd-brain/capture** (foundation + core + storage)
+
 ```typescript
 // packages/@adhd-brain/capture/src/index.ts
-export { VoiceProcessor } from './voice-processor'
-export { EmailProcessor } from './email-processor'
-export { ObsidianExporter } from './obsidian-exporter'
+export { VoiceProcessor } from "./voice-processor"
+export { EmailProcessor } from "./email-processor"
+export { ObsidianExporter } from "./obsidian-exporter"
 
 // Public API
 export class VoiceProcessor {
@@ -118,6 +122,7 @@ export class ObsidianExporter {
 ### 1.2 CLI Interface
 
 **Root Scripts (package.json)**
+
 ```json
 {
   "scripts": {
@@ -135,6 +140,7 @@ export class ObsidianExporter {
 ```
 
 **Doctor Command Output**
+
 ```bash
 pnpm doctor
 
@@ -151,25 +157,26 @@ pnpm doctor
 ### 1.3 External Adapters
 
 **@orchestr8/testkit Integration**
+
 ```typescript
 // vitest.config.ts
-import { defineConfig } from 'vitest/config'
-import { createBaseVitestConfig } from '@orchestr8/testkit/vitest-config'
+import { defineConfig } from "vitest/config"
+import { createBaseVitestConfig } from "@orchestr8/testkit/vitest-config"
 
 export default defineConfig(
   createBaseVitestConfig({
     test: {
-      environment: 'node',
+      environment: "node",
       globals: true,
       coverage: {
         thresholds: {
           statements: 80,
           branches: 80,
           functions: 80,
-          lines: 80
-        }
-      }
-    }
+          lines: 80,
+        },
+      },
+    },
   })
 )
 ```
@@ -181,6 +188,7 @@ export default defineConfig(
 ### 2.1 Configuration Files
 
 **pnpm-workspace.yaml**
+
 ```yaml
 packages:
   - apps/*
@@ -188,6 +196,7 @@ packages:
 ```
 
 **turbo.json** (Task Pipeline)
+
 ```json
 {
   "$schema": "./node_modules/turbo/schema.json",
@@ -222,6 +231,7 @@ packages:
 ```
 
 **tsconfig.json** (Root)
+
 ```json
 {
   "compilerOptions": {
@@ -246,28 +256,33 @@ packages:
 ```
 
 **eslint.config.mjs**
+
 ```javascript
-import js from '@eslint/js'
-import typescript from 'typescript-eslint'
-import turbo from 'eslint-plugin-turbo'
+import js from "@eslint/js"
+import typescript from "typescript-eslint"
+import turbo from "eslint-plugin-turbo"
 
 export default [
   {
-    ignores: ['**/dist/**', '**/.turbo/**', '**/coverage/**']
+    ignores: ["**/dist/**", "**/.turbo/**", "**/coverage/**"],
   },
   js.configs.recommended,
   ...typescript.configs.recommended,
   {
     plugins: { turbo },
     rules: {
-      'turbo/no-undeclared-env-vars': 'off',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }]
-    }
-  }
+      "turbo/no-undeclared-env-vars": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_" },
+      ],
+    },
+  },
 ]
 ```
 
 **.prettierrc.json**
+
 ```json
 {
   "printWidth": 100,
@@ -281,6 +296,7 @@ export default [
 ### 2.2 Package Schema
 
 **Package.json Template** (per package)
+
 ```json
 {
   "name": "@adhd-brain/<package>",
@@ -309,37 +325,41 @@ export default [
 ```
 
 **tsup.config.ts** (per package)
+
 ```typescript
-import { defineConfig } from 'tsup'
+import { defineConfig } from "tsup"
 
 export default defineConfig({
-  entry: ['src/index.ts'],
-  format: ['esm', 'cjs'],
+  entry: ["src/index.ts"],
+  format: ["esm", "cjs"],
   dts: true,
   splitting: false,
   sourcemap: true,
-  clean: true
+  clean: true,
 })
 ```
 
 ### 2.3 Dependency Lock
 
 **Package Constraints (enforced by doctor command)**
+
 ```typescript
 // tools/scripts/doctor.ts
 const REQUIRED_PACKAGES = [
-  '@adhd-brain/foundation',
-  '@adhd-brain/core',
-  '@adhd-brain/storage',
-  '@adhd-brain/capture'
+  "@adhd-brain/foundation",
+  "@adhd-brain/core",
+  "@adhd-brain/storage",
+  "@adhd-brain/capture",
 ]
 
 const MAX_PACKAGES = 4
 
 function validatePackageCount() {
-  const packages = glob.sync('packages/@adhd-brain/*')
+  const packages = glob.sync("packages/@adhd-brain/*")
   if (packages.length > MAX_PACKAGES) {
-    throw new Error(`Package count ${packages.length} exceeds maximum ${MAX_PACKAGES}`)
+    throw new Error(
+      `Package count ${packages.length} exceeds maximum ${MAX_PACKAGES}`
+    )
   }
 }
 ```
@@ -501,6 +521,7 @@ Type checking: incremental
 ### 4.2 Test Coverage by Type
 
 **Unit Testing (TDD Required)**
+
 - Dependency validation logic
 - Package boundary enforcement (ESLint rules)
 - Content hash calculation (determinism critical)
@@ -508,6 +529,7 @@ Type checking: incremental
 - Input validation (prevent bad data)
 
 **Integration Testing (TDD Required)**
+
 - Build pipeline execution (Turbo task graph)
 - Test isolation (Vitest projects)
 - Parallel execution safety (no resource conflicts)
@@ -515,34 +537,38 @@ Type checking: incremental
 - MSW mock cleanup
 
 **Contract Testing (TDD Required)**
+
 - Package export surfaces (public APIs)
 - @orchestr8/testkit integration points
 - CLI command interfaces
 - Configuration schema validation
 
 **Visual Testing (YAGNI)**
+
 - ESLint rule output (manual verification sufficient)
 - Prettier formatting (visible in diffs)
 - Package.json scripts (manual testing adequate)
 
 ### 4.3 Coverage Thresholds
 
-| Package | Statements | Branches | Functions | Lines | Rationale |
-|---------|-----------|----------|-----------|-------|-----------|
-| foundation | 90% | 85% | 90% | 90% | Shared types must be correct |
-| core | 85% | 80% | 85% | 85% | Business logic critical |
-| storage | 80% | 75% | 80% | 80% | Data integrity essential |
-| capture | 80% | 75% | 80% | 80% | Orchestration complexity |
+| Package    | Statements | Branches | Functions | Lines | Rationale                    |
+| ---------- | ---------- | -------- | --------- | ----- | ---------------------------- |
+| foundation | 90%        | 85%      | 90%       | 90%   | Shared types must be correct |
+| core       | 85%        | 80%      | 85%       | 85%   | Business logic critical      |
+| storage    | 80%        | 75%      | 80%       | 80%   | Data integrity essential     |
+| capture    | 80%        | 75%      | 80%       | 80%   | Orchestration complexity     |
 
 ### 4.4 Trigger to Revisit
 
 **Immediate Triggers (require tests before fixing):**
+
 - Build time > 2 minutes (performance regression)
 - Circular dependency detected (architectural violation)
 - Test isolation failure (flaky tests detected)
 - Package count > 4 (constraint violation)
 
 **Continuous Triggers (add tests as features grow):**
+
 - New package added (requires boundary tests)
 - External dependency updated (integration tests)
 - CLI command added (contract tests)
@@ -554,11 +580,13 @@ Type checking: incremental
 ### 5.1 Upstream Systems
 
 **Gold Standard Repository**
+
 - Location: `/Users/nathanvale/code/bun-changesets-template/`
 - Provides: Configuration patterns, tooling versions
 - Contract: Proven patterns for TypeScript monorepos
 
 **External Tooling**
+
 - pnpm@9.15.4 (package manager)
 - turbo@2.5.6 (build orchestrator)
 - vitest@3.2.4 (test runner)
@@ -568,6 +596,7 @@ Type checking: incremental
 ### 5.2 Downstream Consumers
 
 **All Feature Packages Depend on Foundation**
+
 ```text
 foundation
   ↑
@@ -583,6 +612,7 @@ foundation
 ### 5.3 External Contracts
 
 **@orchestr8/testkit** (Test Infrastructure)
+
 ```typescript
 // Expected interface
 interface TestKit {
@@ -593,6 +623,7 @@ interface TestKit {
 ```
 
 **Package Manager Contract**
+
 ```json
 {
   "packageManager": "pnpm@9.15.4",
@@ -606,6 +637,7 @@ interface TestKit {
 ### 5.4 Package Boundary Rules
 
 **Enforced by ESLint + Turbo**
+
 ```text
 ✓ foundation → (none)
 ✓ core → foundation
@@ -617,10 +649,11 @@ interface TestKit {
 ```
 
 **Turbo Task Graph Ordering**
+
 ```json
 {
   "build": {
-    "dependsOn": ["^build"]  // Wait for upstream packages
+    "dependsOn": ["^build"] // Wait for upstream packages
   }
 }
 ```
@@ -636,12 +669,14 @@ See [comprehensive monorepo spec](./spec-foundation-monorepo-mppp.md#3-package-s
 **Risk:** Accidental imports between core and storage packages
 
 **Mitigation:**
+
 - ESLint boundary enforcement plugin
 - Turbo build fails fast on circular deps
 - Doctor command validates dependency graph
 - Code review checklist includes boundary checks
 
 **Detection:**
+
 ```bash
 # Automated check in CI
 pnpm doctor  # Validates zero circular dependencies
@@ -652,6 +687,7 @@ pnpm doctor  # Validates zero circular dependencies
 **Risk:** Build time exceeds 30s target as packages grow
 
 **Mitigation:**
+
 - TSUP fast bundling (10x faster than tsc)
 - Turbo caching (subsequent builds < 5s)
 - Parallel task execution where possible
@@ -664,6 +700,7 @@ pnpm doctor  # Validates zero circular dependencies
 **Risk:** Parallel tests conflict on resources (ports, files, databases)
 
 **Mitigation:**
+
 - Vitest projects with complete isolation
 - In-memory SQLite per test context
 - MSW with auto-cleanup (no port conflicts)
@@ -671,6 +708,7 @@ pnpm doctor  # Validates zero circular dependencies
 - Deterministic test execution order
 
 **Validation:**
+
 ```bash
 # Run tests 10 times in parallel
 for i in {1..10}; do pnpm test & done
@@ -683,6 +721,7 @@ wait
 **Risk:** 4 packages + dependencies = mental model too complex
 
 **Mitigation:**
+
 - External @orchestr8/testkit (don't build custom mocks)
 - Clear dependency diagram in docs
 - Doctor command visualizes package structure
@@ -696,12 +735,14 @@ wait
 **Risk:** New contributor setup takes > 5 minutes
 
 **Mitigation:**
+
 - Single `pnpm install && pnpm build` command
 - Doctor command validates environment
 - Automated setup script checks prerequisites
 - Clear error messages with fix instructions
 
 **Validation:**
+
 ```bash
 time (git clone <repo> && cd adhd-brain && pnpm install && pnpm build)
 # Must complete < 5 minutes
@@ -714,6 +755,7 @@ time (git clone <repo> && cd adhd-brain && pnpm install && pnpm build)
 ### 7.1 Local Metrics
 
 **Doctor Command Metrics**
+
 ```typescript
 interface HealthCheckMetrics {
   nodeVersion: string
@@ -728,6 +770,7 @@ interface HealthCheckMetrics {
 ```
 
 **Build Performance Logging**
+
 ```bash
 # Turbo output includes timing
 pnpm build
@@ -739,6 +782,7 @@ pnpm build
 ```
 
 **Test Execution Metrics**
+
 ```bash
 pnpm test
 # Test Files  12 passed (12)
@@ -750,6 +794,7 @@ pnpm test
 ### 7.2 No External Telemetry
 
 **Privacy-First Design:**
+
 - No remote Turbo cache (disabled in config)
 - No analytics or tracking
 - No error reporting to external services
@@ -760,6 +805,7 @@ pnpm test
 ### 7.3 Health Monitoring
 
 **Doctor Command Output**
+
 ```text
 ADHD Brain Monorepo Health Check
 ================================
@@ -798,6 +844,7 @@ All checks passed! 🎉
 **Decision:** Monorepo foundation is all-or-nothing
 
 **Rationale:**
+
 - Can't partially enable package structure
 - Build pipeline must be complete
 - Test infrastructure is binary (working or not)
@@ -806,6 +853,7 @@ All checks passed! 🎉
 ### 7.5 Success Tracking
 
 **Manual Checklist (tracked in roadmap)**
+
 - [ ] Monorepo setup complete
 - [ ] Build < 30s achieved
 - [ ] Test < 30s achieved
@@ -822,25 +870,31 @@ See [Master PRD Success Criteria](../master/prd-master.md#12-success-criteria) f
 ## Related Specifications
 
 ### Master Documents
+
 - [Master PRD v2.3.0-MPPP](/Users/nathanvale/code/adhd-brain/docs/master/prd-master.md)
 - [Roadmap v2.0.0-MPPP](/Users/nathanvale/code/adhd-brain/docs/master/roadmap.md)
 
 ### PRD Reference
+
 - [Foundation Monorepo PRD](./prd-foundation-monorepo.md) - Product requirements and goals
 
 ### Comprehensive Spec
+
 - [Foundation Monorepo TECH Spec](./spec-foundation-monorepo-tech.md) - Technical implementation details
 - [Foundation Monorepo ARCH Spec](./spec-foundation-monorepo-arch.md) - Architecture specification
 
 ### Supporting Guides
+
 - [TDD Applicability Guide](/Users/nathanvale/code/adhd-brain/docs/guides/tdd-applicability.md)
 - [Test Strategy](/Users/nathanvale/code/adhd-brain/docs/guides/test-strategy.md)
 - [TestKit Usage](/Users/nathanvale/code/adhd-brain/docs/guides/guide-testkit-usage.md)
 
 ### Gold Standard Repository
+
 **Location:** `/Users/nathanvale/code/bun-changesets-template/`
 
 **Reference Files:**
+
 - `package.json` - Root scripts and workspace config
 - `turbo.json` - Task pipeline patterns
 - `tsconfig.json` - TypeScript strict config

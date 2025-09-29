@@ -33,6 +33,7 @@ Use this guide when:
 - Investigating failed captures or polling delays
 
 **Related Features:**
+
 - [CLI Feature PRD](../features/cli/prd-cli.md) - Doctor command requirements
 - [Health Command Tech Spec](../features/cli/spec-cli-tech.md#doctor-command) - Implementation details
 - [Gmail OAuth2 Tech Spec](../features/capture/spec-capture-tech.md#gmail-oauth2) - Email credential health
@@ -41,11 +42,13 @@ Use this guide when:
 ## Prerequisites
 
 **Required:**
+
 - ADHD Brain CLI installed and accessible (`adhd` command available)
 - Basic understanding of command-line interfaces
 - Familiarity with the capture pipeline (voice and email)
 
 **Recommended:**
+
 - [Master PRD](../master/prd-master.md) - System overview
 - [Capture PRD](../features/capture/prd-capture.md) - Capture pipeline context
 
@@ -72,20 +75,20 @@ adhd capture doctor --category=operational
 
 ### Exit Codes
 
-| Exit Code | Status | Meaning |
-|-----------|--------|---------|
-| `0` | Healthy | All checks passed or info severity only |
-| `1` | Warning | One or more checks have warnings |
-| `2` | Critical | One or more checks failed critically |
+| Exit Code | Status   | Meaning                                 |
+| --------- | -------- | --------------------------------------- |
+| `0`       | Healthy  | All checks passed or info severity only |
+| `1`       | Warning  | One or more checks have warnings        |
+| `2`       | Critical | One or more checks failed critically    |
 
 ### Health Check Categories
 
-| Category | Purpose | Checks |
-|----------|---------|--------|
-| **Infrastructure** | Validate file system and database | Vault path, disk space, SQLite connectivity |
-| **Credentials** | Verify authentication and permissions | Gmail OAuth2, icloudctl, Voice Memos access |
-| **Workers** | Monitor worker health and performance | Whisper model, transcription queue, error rates |
-| **Operational** | Track polling and backup status | Last poll timestamps, error logs, backup integrity |
+| Category           | Purpose                               | Checks                                             |
+| ------------------ | ------------------------------------- | -------------------------------------------------- |
+| **Infrastructure** | Validate file system and database     | Vault path, disk space, SQLite connectivity        |
+| **Credentials**    | Verify authentication and permissions | Gmail OAuth2, icloudctl, Voice Memos access        |
+| **Workers**        | Monitor worker health and performance | Whisper model, transcription queue, error rates    |
+| **Operational**    | Track polling and backup status       | Last poll timestamps, error logs, backup integrity |
 
 ## Step-by-Step Instructions
 
@@ -98,11 +101,13 @@ adhd capture doctor
 ```
 
 **Expected Outcome:**
+
 - Human-readable report with check results grouped by category
 - Overall status summary (✅ Healthy, ⚠️ Warning, or ❌ Critical)
 - Exit code 0 if all checks pass
 
 **Example Output:**
+
 ```
 Health Check Results
 ====================
@@ -134,6 +139,7 @@ adhd capture doctor
 ```
 
 **Example Warning Output:**
+
 ```
 ⚠️ Infrastructure (3/4 passed, 1 warning)
   ✅ Vault Path Exists
@@ -144,6 +150,7 @@ adhd capture doctor
 ```
 
 **Remediation Action:**
+
 1. Review the remediation hint (indicated by →)
 2. Apply the suggested fix
 3. Re-run health check to verify
@@ -157,6 +164,7 @@ adhd capture doctor
 ```
 
 **Example Critical Output:**
+
 ```
 ❌ Credentials (2/3 passed, 1 critical)
   ❌ Gmail OAuth2 Authentication
@@ -167,6 +175,7 @@ adhd capture doctor
 ```
 
 **Remediation Action:**
+
 1. Execute the suggested command: `adhd capture email init`
 2. Follow authentication prompts
 3. Re-run health check to verify: `adhd capture doctor`
@@ -180,6 +189,7 @@ adhd capture doctor --json > health-report.json
 ```
 
 **JSON Schema:**
+
 ```json
 {
   "schemaVersion": "1.0",
@@ -214,6 +224,7 @@ adhd capture doctor --json > health-report.json
 ```
 
 **Script Example:**
+
 ```bash
 #!/bin/bash
 adhd capture doctor --json
@@ -307,6 +318,7 @@ fi
 ### Anti-Patterns to Avoid
 
 **❌ Don't ignore warnings:**
+
 ```bash
 # BAD: Ignoring exit codes
 adhd capture doctor > /dev/null 2>&1
@@ -314,6 +326,7 @@ adhd capture doctor > /dev/null 2>&1
 ```
 
 **✅ Do handle exit codes:**
+
 ```bash
 # GOOD: Check exit codes and respond
 adhd capture doctor
@@ -326,6 +339,7 @@ fi
 ```
 
 **❌ Don't run health checks during active operations:**
+
 ```bash
 # BAD: Health check while workers are processing
 transcription_worker &
@@ -333,6 +347,7 @@ adhd capture doctor  # May report transient issues
 ```
 
 **✅ Do run health checks before starting operations:**
+
 ```bash
 # GOOD: Validate health first, then start workers
 adhd capture doctor
@@ -346,6 +361,7 @@ fi
 ### Common Error: "Vault path does not exist"
 
 **Symptom:**
+
 ```
 ❌ Vault Path Exists
     Vault path does not exist: /Users/nathan/Obsidian/vault
@@ -353,6 +369,7 @@ fi
 ```
 
 **Solution:**
+
 1. Create the vault directory: `mkdir -p "/Users/nathan/Obsidian/vault"`
 2. Verify configuration: Check `vault_path` in config
 3. Re-run health check: `adhd capture doctor --category=infrastructure`
@@ -360,6 +377,7 @@ fi
 ### Common Error: "Gmail token.json not found"
 
 **Symptom:**
+
 ```
 ❌ Gmail OAuth2 Authentication
     Gmail token.json not found - authentication required
@@ -367,6 +385,7 @@ fi
 ```
 
 **Solution:**
+
 1. Initialize Gmail authentication: `adhd capture email init`
 2. Follow OAuth2 browser prompts
 3. Verify token created: `ls ~/.adhd-brain/gmail-token.json`
@@ -375,12 +394,14 @@ fi
 ### Common Warning: "Disk space low"
 
 **Symptom:**
+
 ```
 ⚠️ Disk Space Available (4.5 GB available, 92% used)
    → Free up disk space. Only 4.5 GB available.
 ```
 
 **Solution:**
+
 1. Check largest files: `du -sh ~/Obsidian/vault/* | sort -rh | head -10`
 2. Archive or delete old captures
 3. Clean up backups: `ls -lh ./.backups/*.sqlite`
@@ -389,12 +410,14 @@ fi
 ### Common Warning: "Transcription queue backlog"
 
 **Symptom:**
+
 ```
 ⚠️ Transcription Queue Depth (25 jobs)
    → Transcription queue backlog detected. System is processing sequentially.
 ```
 
 **Solution:**
+
 1. Check queue depth: `adhd ledger status`
 2. Wait for queue to drain (transcription is sequential)
 3. Check error logs if queue not progressing: `adhd ledger dlq`
@@ -403,6 +426,7 @@ fi
 ### Common Error: "Voice Memos folder not accessible"
 
 **Symptom:**
+
 ```
 ❌ Voice Memos Folder Readable
     Voice Memos folder not accessible: Permission denied
@@ -410,6 +434,7 @@ fi
 ```
 
 **Solution:**
+
 1. Open **System Settings** > **Privacy & Security** > **Full Disk Access**
 2. Add Terminal.app (or your CLI environment)
 3. Restart terminal
@@ -418,23 +443,27 @@ fi
 ### Debugging Tips
 
 **Enable verbose mode for diagnostic details:**
+
 ```bash
 adhd capture doctor --verbose
 ```
 
 **Check specific category to isolate issue:**
+
 ```bash
 # If Gmail polling fails, check credentials only
 adhd capture doctor --category=credentials
 ```
 
 **Review error logs for context:**
+
 ```bash
 adhd ledger errors --last=24h
 adhd ledger dlq
 ```
 
 **Verify configuration paths:**
+
 ```bash
 # Check vault path
 echo $ADHD_VAULT_PATH
@@ -560,6 +589,7 @@ $ adhd capture doctor --json | jq '.summary'
 ```
 
 **Output:**
+
 ```json
 {
   "totalChecks": 14,
@@ -578,6 +608,7 @@ $ adhd capture doctor --category=credentials
 ```
 
 **Output:**
+
 ```
 Health Check Results
 ====================
@@ -599,6 +630,7 @@ Critical: 0
 ## Related Documentation
 
 **PRDs and Specs:**
+
 - [Master PRD v2.3.0-MPPP](../master/prd-master.md) - System-wide health requirements
 - [CLI Feature PRD](../features/cli/prd-cli.md) - Doctor command requirements
 - [Health Command Tech Spec](../features/cli/spec-cli-tech.md#doctor-command) - Implementation details
@@ -606,18 +638,21 @@ Critical: 0
 - [Whisper Runtime Tech Spec](../features/capture/spec-capture-tech.md#whisper-transcription) - Transcription worker health
 
 **Related Guides:**
+
 - [Backup Verification Guide](./guide-backup-verification.md) - Backup integrity validation and escalation
 - [Backup Restore Guide](./guide-backup-restore-drill.md) - Restore procedures post-health failure
 - [Capture Debugging Guide](./guide-capture-debugging.md) - Troubleshooting capture pipeline
 - [Test Strategy Guide](./guide-test-strategy.md) - Testing health checks
 
 **External Resources:**
+
 - [Gmail API OAuth2 Setup](https://developers.google.com/gmail/api/auth/about-auth) - Gmail authentication
 - [SQLite Documentation](https://www.sqlite.org/docs.html) - Database troubleshooting
 
 ## Maintenance Notes
 
 **When to Update This Guide:**
+
 - New health checks added to the system
 - Exit code behavior changes
 - JSON schema version increments
@@ -625,12 +660,14 @@ Critical: 0
 - Common troubleshooting scenarios identified
 
 **Known Limitations:**
+
 - Health checks are point-in-time diagnostics (no historical trend analysis)
 - Auto-remediation (`--fix` flag) deferred to Phase 2+
 - Check timeouts are global (5s default), not configurable per-check
 - Alerting integrations not supported (local-only command)
 
 **Future Enhancements:**
+
 - Historical trend tracking for monitoring dashboards
 - Auto-remediation capability for common issues
 - Custom check plugins and extensibility

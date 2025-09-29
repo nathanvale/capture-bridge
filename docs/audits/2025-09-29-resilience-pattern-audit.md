@@ -19,12 +19,14 @@ Comprehensive audit of all specification documents for custom retry logic, hardc
 #### A. Features with Hardcoded Patterns
 
 ##### 1. **Staging Ledger** (`features/staging-ledger/spec-staging-tech.md`)
+
 - **Line 338**: Hardcoded SQLite busy timeout: `PRAGMA busy_timeout = 5000;`
 - **Line 1056**: Hardcoded Whisper timeout: `'Whisper timeout after 30s'`
 - **Lines 925, 1199**: References to timeouts in test scenarios
 - **Recommendation**: Reference Database Resilience pattern from guide
 
 ##### 2. **Obsidian Bridge** (`features/obsidian-bridge/spec-obsidian-arch.md`)
+
 - **Line 85**: Mentions "No retry logic" as current limitation
 - **Lines 258, 262**: Custom retry eligibility classification (EACCES, ENETDOWN)
 - **Lines 375, 385, 387**: Custom retry strategies with hardcoded attempts (3x, 5x)
@@ -33,6 +35,7 @@ Comprehensive audit of all specification documents for custom retry logic, hardc
 - **Recommendation**: Reference File System Operations pattern from guide
 
 ##### 3. **Capture Feature** (`features/capture/spec-capture-tech.md`)
+
 - **Lines 26-31**: Describes resilience enhancements but with custom implementation details
 - **Lines 139-144**: Custom retry logic in state transitions
 - **Lines 191-204**: Imports resilience components but no standard reference
@@ -42,6 +45,7 @@ Comprehensive audit of all specification documents for custom retry logic, hardc
 - **Recommendation**: Reference appropriate patterns for each external service
 
 ##### 4. **CLI** (`features/cli/spec-cli-tech.md`)
+
 - **Line 60**: States "safe to retry after crash" but no pattern reference
 - **Line 298**: Retry column in error table but no standardized approach
 - **Line 396**: Mentions spinners for long operations but no timeout strategy
@@ -50,6 +54,7 @@ Comprehensive audit of all specification documents for custom retry logic, hardc
 #### B. Test Specs with Custom Error Handling
 
 ##### 1. **Obsidian Test** (`features/obsidian-bridge/spec-obsidian-test.md`)
+
 - **Lines 107-110**: Custom retry eligibility for errors
 - **Lines 151-152**: Custom retry/timeout utilities
 - **Lines 628, 644**: Retry eligibility verification in tests
@@ -57,6 +62,7 @@ Comprehensive audit of all specification documents for custom retry logic, hardc
 - **Recommendation**: Reference test patterns from guide
 
 ##### 2. **CLI Test** (`features/cli/spec-cli-test.md`)
+
 - **Lines 346-352, 419-424, 471-476**: Custom retry test scenarios
 - **Line 465**: Hardcoded retry_count
 - **Lines 605-607**: Retry export patterns
@@ -66,6 +72,7 @@ Comprehensive audit of all specification documents for custom retry logic, hardc
 ### 2. Package Reference Issues
 
 #### Critical Finding: Non-existent Package References
+
 - **Multiple specs would reference `@adhd-brain/resilience`** - This package does not exist!
 - Current approach uses conceptual patterns, not a shared package
 - This is correct for Phase 1 planning
@@ -73,16 +80,19 @@ Comprehensive audit of all specification documents for custom retry logic, hardc
 ### 3. Specs Needing Updates
 
 #### Priority 1 - Active Feature Specs
+
 1. `features/capture/spec-capture-tech.md` - Most custom patterns
 2. `features/obsidian-bridge/spec-obsidian-arch.md` - Mixed approaches
 3. `features/staging-ledger/spec-staging-tech.md` - Database-specific timeouts
 
 #### Priority 2 - Supporting Specs
+
 1. `features/cli/spec-cli-tech.md` - Error handling patterns
 2. `features/obsidian-bridge/spec-obsidian-test.md` - Test patterns
 3. `features/cli/spec-cli-test.md` - Test retry scenarios
 
 #### Priority 3 - Already Aligned
+
 1. `adr/0030-resilience-library-selection.md` - References guide correctly
 2. Cross-cutting specs - Generally don't have resilience patterns
 
@@ -90,14 +100,14 @@ Comprehensive audit of all specification documents for custom retry logic, hardc
 
 ### Pattern Mapping
 
-| Spec Area | Current Custom Logic | Recommended Pattern Reference |
-|-----------|---------------------|-------------------------------|
-| SQLite busy timeout | `5000ms` hardcoded | Database Resilience → Connection pools |
-| Whisper timeout | `30s` hardcoded | Whisper Transcription → Progressive timeouts |
-| APFS download retry | 7 attempts, custom backoff | iCloud Downloads → APFS-specific backoff |
-| File system errors | Custom classification | File System Operations → Error classification |
-| Gmail API retry | Custom implementation | Gmail API → Rate limit handling |
-| Network timeouts | Various hardcoded values | General → Circuit breakers |
+| Spec Area           | Current Custom Logic       | Recommended Pattern Reference                 |
+| ------------------- | -------------------------- | --------------------------------------------- |
+| SQLite busy timeout | `5000ms` hardcoded         | Database Resilience → Connection pools        |
+| Whisper timeout     | `30s` hardcoded            | Whisper Transcription → Progressive timeouts  |
+| APFS download retry | 7 attempts, custom backoff | iCloud Downloads → APFS-specific backoff      |
+| File system errors  | Custom classification      | File System Operations → Error classification |
+| Gmail API retry     | Custom implementation      | Gmail API → Rate limit handling               |
+| Network timeouts    | Various hardcoded values   | General → Circuit breakers                    |
 
 ### Standardization Approach
 

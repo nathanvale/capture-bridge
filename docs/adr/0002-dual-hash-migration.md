@@ -36,14 +36,14 @@ Adopt a phased dual-hash migration storing both SHA-256 (legacy) and BLAKE3 (new
 
 ### Phase Breakdown
 
-| Phase | Name | Write Behavior | Dedup Order | Read / Listing | Exit Criteria |
-|-------|------|----------------|-------------|----------------|---------------|
-| 0 | Legacy | SHA-256 only | SHA-256 | SHA-256 | Existing baseline (historical) |
-| 1 | Dual-Record Introduction | Compute + store both | BLAKE3 → SHA-256 fallback | Prefer BLAKE3 when present | 100% new rows have both hashes 7 days; no divergence >0 observed |
-| 2 | Prefer New | Both stored | BLAKE3 → SHA-256 fallback | Display BLAKE3 first | Dedup hit ratio stable (<2% change) & no integrity anomalies |
-| 3 | Primary New | Both stored | BLAKE3 only (no SHA fallback) | BLAKE3 only | Zero SHA-256-only captures created in last 14 days |
-| 4 | Sunset Legacy | Backfill audit; stop populating SHA-256 | BLAKE3 only | BLAKE3 only | Manual confirmation; archive SHA index |
-| 5 | Remove Legacy | Drop SHA-256 column | BLAKE3 only | BLAKE3 only | Backup + irreversible migration applied |
+| Phase | Name                     | Write Behavior                          | Dedup Order                   | Read / Listing             | Exit Criteria                                                    |
+| ----- | ------------------------ | --------------------------------------- | ----------------------------- | -------------------------- | ---------------------------------------------------------------- |
+| 0     | Legacy                   | SHA-256 only                            | SHA-256                       | SHA-256                    | Existing baseline (historical)                                   |
+| 1     | Dual-Record Introduction | Compute + store both                    | BLAKE3 → SHA-256 fallback     | Prefer BLAKE3 when present | 100% new rows have both hashes 7 days; no divergence >0 observed |
+| 2     | Prefer New               | Both stored                             | BLAKE3 → SHA-256 fallback     | Display BLAKE3 first       | Dedup hit ratio stable (<2% change) & no integrity anomalies     |
+| 3     | Primary New              | Both stored                             | BLAKE3 only (no SHA fallback) | BLAKE3 only                | Zero SHA-256-only captures created in last 14 days               |
+| 4     | Sunset Legacy            | Backfill audit; stop populating SHA-256 | BLAKE3 only                   | BLAKE3 only                | Manual confirmation; archive SHA index                           |
+| 5     | Remove Legacy            | Drop SHA-256 column                     | BLAKE3 only                   | BLAKE3 only                | Backup + irreversible migration applied                          |
 
 ## Rationale
 
@@ -54,21 +54,21 @@ Adopt a phased dual-hash migration storing both SHA-256 (legacy) and BLAKE3 (new
 
 ## Metrics / Observability
 
-| Metric | Description | Alert Threshold |
-|--------|-------------|-----------------|
-| hash_divergence_total | Count of mismatched recomputed vs stored hashes | >0 immediate investigate |
-| hash_compute_ms | Histogram BLAKE3 vs SHA compute latency | p95 BLAKE3 > 50% SHA p95 |
-| dual_hash_rows_ratio | Fraction of rows with both hashes | < 1.0 in phases ≥1 |
-| sha256_only_rows | Rows lacking BLAKE3 | >0 in phases ≥1 (after backfill window) |
+| Metric                | Description                                     | Alert Threshold                         |
+| --------------------- | ----------------------------------------------- | --------------------------------------- |
+| hash_divergence_total | Count of mismatched recomputed vs stored hashes | >0 immediate investigate                |
+| hash_compute_ms       | Histogram BLAKE3 vs SHA compute latency         | p95 BLAKE3 > 50% SHA p95                |
+| dual_hash_rows_ratio  | Fraction of rows with both hashes               | < 1.0 in phases ≥1                      |
+| sha256_only_rows      | Rows lacking BLAKE3                             | >0 in phases ≥1 (after backfill window) |
 
 ## Risks & Mitigations
 
-| Risk | Vector | Mitigation |
-|------|--------|------------|
-| Implementation bug in BLAKE3 wrapper | Incorrect hash persisted | Dual verification (recompute-on-read sample) |
-| Silent partial file reads for voice | Truncated hash surface | Size + partial fingerprint length validation |
-| Premature SHA column drop | Data still relying on SHA | Phase gate + doctor command hard check |
-| Performance regression | Unexpected CPU spikes | Benchmark before advancing phase |
+| Risk                                 | Vector                    | Mitigation                                   |
+| ------------------------------------ | ------------------------- | -------------------------------------------- |
+| Implementation bug in BLAKE3 wrapper | Incorrect hash persisted  | Dual verification (recompute-on-read sample) |
+| Silent partial file reads for voice  | Truncated hash surface    | Size + partial fingerprint length validation |
+| Premature SHA column drop            | Data still relying on SHA | Phase gate + doctor command hard check       |
+| Performance regression               | Unexpected CPU spikes     | Benchmark before advancing phase             |
 
 ## Alternatives Considered
 

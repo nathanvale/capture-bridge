@@ -14,32 +14,34 @@ version: 0.1.0
 
 **Proposed** | Accepted | Deprecated | Superseded
 
-*If superseded, reference the superseding ADR number and link*
+_If superseded, reference the superseding ADR number and link_
 
 ## Context
 
-*What situation, problem, or requirement prompted this architectural decision? Include:*
+_What situation, problem, or requirement prompted this architectural decision? Include:_
+
 - Business or technical drivers
 - Constraints and requirements
 - Current state that needs to change
 - Stakeholder concerns or user needs
 - Timeline pressures or scope limitations
 
-*Reference relevant PRDs, specs, or other ADRs that provide additional context.*
+_Reference relevant PRDs, specs, or other ADRs that provide additional context._
 
 ## Decision
 
-*The specific architectural choice being made. Be concrete and actionable:*
+_The specific architectural choice being made. Be concrete and actionable:_
+
 - What exactly are we choosing to do?
 - What technology, pattern, or approach will be used?
 - What are the key implementation details?
 - What are the non-negotiable requirements?
 
-*Use bullet points or numbered lists for clarity when describing multi-part decisions.*
+_Use bullet points or numbered lists for clarity when describing multi-part decisions._
 
 ## Alternatives Considered
 
-*Document the other options that were evaluated and why they were rejected:*
+_Document the other options that were evaluated and why they were rejected:_
 
 1. **Alternative 1**: Brief description
    - Pros: Benefits of this approach
@@ -59,20 +61,24 @@ version: 0.1.0
 ## Consequences
 
 ### Positive
-- *Benefits and advantages of this decision*
-- *Problems it solves*
-- *Capabilities it enables*
-- *Quality attributes it improves (performance, reliability, maintainability, etc.)*
+
+- _Benefits and advantages of this decision_
+- _Problems it solves_
+- _Capabilities it enables_
+- _Quality attributes it improves (performance, reliability, maintainability, etc.)_
 
 ### Negative
-- *Drawbacks and limitations*
-- *New complexities introduced*
-- *Future flexibility constrained*
-- *Technical debt created*
-- *Ongoing maintenance overhead*
+
+- _Drawbacks and limitations_
+- _New complexities introduced_
+- _Future flexibility constrained_
+- _Technical debt created_
+- _Ongoing maintenance overhead_
 
 ### Quality Assurance
-*If applicable, describe testing strategy, monitoring, or validation approaches:*
+
+_If applicable, describe testing strategy, monitoring, or validation approaches:_
+
 - P0 Tests: Critical functionality that must be verified
 - P1 Tests: Important operational requirements
 - P2 Tests: Nice-to-have coverage for edge cases
@@ -80,7 +86,8 @@ version: 0.1.0
 
 ## Implementation Notes
 
-*Optional section for implementation-specific details:*
+_Optional section for implementation-specific details:_
+
 - Rollout strategy or migration plan
 - Feature flags or phased deployment
 - Performance characteristics or SLAs
@@ -89,7 +96,8 @@ version: 0.1.0
 
 ## References
 
-*Links to related documentation:*
+_Links to related documentation:_
+
 - [Related PRD](../master/prd-master.md)
 - [Technical Specification](../features/<feature>/spec-<feature>-tech.md)
 - [Architecture Notes](../features/<feature>/spec-<feature>-arch.md)
@@ -108,12 +116,14 @@ version: 0.1.0
 5. **Status Management**: Update status from "proposed" to "accepted" when finalized
 
 ### Status Definitions
+
 - **Proposed**: Under review and discussion
 - **Accepted**: Approved and being implemented
 - **Deprecated**: No longer recommended but not replaced
 - **Superseded**: Replaced by a newer ADR (include reference)
 
 ### Quality Checklist
+
 - [ ] Decision is specific and actionable, not vague
 - [ ] Context explains the "why" behind the decision
 - [ ] Alternatives section shows other options were considered

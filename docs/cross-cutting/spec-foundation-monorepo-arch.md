@@ -61,6 +61,7 @@ The monorepo foundation sits at the **infrastructure layer** of the system:
 ### 1.3 Key Constraints
 
 **MPPP Boundaries:**
+
 - Maximum 4 packages (foundation, core, storage, capture)
 - No circular dependencies allowed
 - Build time < 30s
@@ -68,6 +69,7 @@ The monorepo foundation sits at the **infrastructure layer** of the system:
 - Setup time < 5 minutes
 
 **ADHD Optimization:**
+
 - External @orchestr8/testkit (no custom test infrastructure)
 - Gold standard patterns (minimal cognitive decisions)
 - Clear dependency chain (no circular complexity)
@@ -136,25 +138,35 @@ Turbo Build Order (topological):
 #### Foundation Package
 
 **Exports:**
+
 ```typescript
 // Types (read-only, immutable)
-export interface CaptureItem { /* ... */ }
-export interface CaptureSource { /* ... */ }
+export interface CaptureItem {
+  /* ... */
+}
+export interface CaptureSource {
+  /* ... */
+}
 
 // Errors (throwable)
-export class CaptureError extends Error { /* ... */ }
-export class ValidationError extends Error { /* ... */ }
+export class CaptureError extends Error {
+  /* ... */
+}
+export class ValidationError extends Error {
+  /* ... */
+}
 
 // Constants (frozen objects)
 export const CONSTANTS = Object.freeze({
   MAX_PACKAGES: 4,
   DUPLICATE_WINDOW_MS: 5 * 60 * 1000,
   BUILD_TIMEOUT_MS: 30_000,
-  TEST_TIMEOUT_MS: 30_000
+  TEST_TIMEOUT_MS: 30_000,
 })
 ```
 
 **Boundary Rules:**
+
 - No runtime dependencies on other packages
 - Cannot import from core, storage, or capture
 - Pure TypeScript (no Node.js-specific code)
@@ -163,6 +175,7 @@ export const CONSTANTS = Object.freeze({
 #### Core Package
 
 **Exports:**
+
 ```typescript
 // Business Logic (stateless services)
 export class DeduplicationService {
@@ -176,6 +189,7 @@ export class ValidationService {
 ```
 
 **Boundary Rules:**
+
 - Depends on foundation only
 - Cannot import from storage or capture
 - Stateless services only (no database access)
@@ -184,6 +198,7 @@ export class ValidationService {
 #### Storage Package
 
 **Exports:**
+
 ```typescript
 // Database Operations (stateful repositories)
 export class DatabaseClient {
@@ -200,6 +215,7 @@ export class CaptureRepository {
 ```
 
 **Boundary Rules:**
+
 - Depends on foundation only
 - Cannot import from core or capture
 - No business logic (only CRUD operations)
@@ -208,6 +224,7 @@ export class CaptureRepository {
 #### Capture Package
 
 **Exports:**
+
 ```typescript
 // Orchestration (combines core + storage)
 export class VoiceProcessor {
@@ -223,6 +240,7 @@ export class ObsidianExporter { /* ... */ }
 ```
 
 **Boundary Rules:**
+
 - Depends on foundation, core, and storage
 - Cannot import from cli
 - Coordinates business logic and storage
@@ -253,7 +271,7 @@ export class ObsidianExporter { /* ... */ }
 {
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],  // Wait for upstream packages
+      "dependsOn": ["^build"], // Wait for upstream packages
       "outputs": ["dist/**"]
     }
   }
@@ -269,10 +287,10 @@ async function validateNoCycles() {
   const cycles = detectCycles(graph)
 
   if (cycles.length > 0) {
-    throw new Error(`Circular dependencies detected: ${cycles.join(', ')}`)
+    throw new Error(`Circular dependencies detected: ${cycles.join(", ")}`)
   }
 
-  console.log('✓ Zero circular dependencies')
+  console.log("✓ Zero circular dependencies")
 }
 ```
 
@@ -313,6 +331,7 @@ async function validateNoCycles() {
 ```
 
 **Benefits:**
+
 - No custom mock infrastructure maintenance
 - Proven test isolation patterns
 - Cognitive load reduction (external expertise)
@@ -349,6 +368,7 @@ async function validateNoCycles() {
 ```
 
 **Dependency Constraints:**
+
 - `foundation`: No dependencies
 - `core`: `@adhd-brain/foundation` only
 - `storage`: `@adhd-brain/foundation` only
@@ -371,6 +391,7 @@ packages/@adhd-brain/<package>/
 ```
 
 **Build Outputs (Turbo Tracking):**
+
 - `dist/**` - All bundled code
 - `.tsbuildinfo` - TypeScript incremental build cache
 - Coverage reports tracked separately
@@ -459,6 +480,7 @@ adhd-brain/
 ```
 
 **Performance Characteristics:**
+
 - First build: ~20-30s (all packages)
 - Cached build: ~2-5s (cache hit)
 - Incremental build: ~5-10s (changed packages only)
@@ -515,6 +537,7 @@ adhd-brain/
 ```
 
 **Isolation Guarantees:**
+
 - Each test runs in isolated context (Vitest projects)
 - In-memory SQLite per test (no shared state)
 - MSW mocks with auto-cleanup (no port conflicts)
@@ -616,6 +639,7 @@ adhd-brain/
 ```
 
 **Developer Experience:**
+
 - File change detection: < 100ms
 - Incremental rebuild: < 1s
 - Type checking: incremental (tsc --watch)
@@ -628,21 +652,25 @@ adhd-brain/
 ### 5.1 Circular Dependency Detection
 
 **Failure Mode:**
+
 - Developer accidentally imports from downstream package
 - Build succeeds but creates circular dependency
 - Future changes cause unpredictable failures
 
 **Detection:**
+
 1. ESLint catches during development (pre-commit)
 2. Turbo build fails with cycle error
 3. Doctor command validates during CI
 
 **Recovery:**
+
 1. ESLint error guides to violating import
 2. Remove circular import
 3. Re-architect if necessary (extract to shared package)
 
 **Prevention:**
+
 - ESLint boundary enforcement enabled by default
 - Code review checklist includes boundary check
 - Doctor command runs in CI pipeline
@@ -650,16 +678,19 @@ adhd-brain/
 ### 5.2 Build Cache Corruption
 
 **Failure Mode:**
+
 - Turbo cache becomes stale or corrupted
 - Builds succeed but produce incorrect outputs
 - Tests pass against wrong artifacts
 
 **Detection:**
+
 1. Doctor command validates build outputs
 2. Hash mismatches in Turbo cache
 3. Test failures after "successful" build
 
 **Recovery:**
+
 ```bash
 # Clear all caches
 pnpm clean
@@ -671,6 +702,7 @@ pnpm build
 ```
 
 **Prevention:**
+
 - Turbo cache invalidation on config changes
 - Doctor command verifies output integrity
 - CI builds always from clean state
@@ -678,22 +710,26 @@ pnpm build
 ### 5.3 Test Isolation Failure
 
 **Failure Mode:**
+
 - Tests share state between executions
 - Parallel tests conflict on resources
 - Flaky tests appear randomly
 
 **Detection:**
+
 1. Run tests 10 times in parallel
 2. Look for non-deterministic failures
 3. Check for resource contention (ports, files)
 
 **Recovery:**
+
 1. Identify shared state in failing test
 2. Use TestKit isolation patterns
 3. Ensure in-memory SQLite per context
 4. Verify MSW mock cleanup
 
 **Prevention:**
+
 - Vitest projects enforce isolation
 - TestKit patterns prevent shared state
 - Doctor command validates test infrastructure
@@ -702,20 +738,24 @@ pnpm build
 ### 5.4 Package Count Violation
 
 **Failure Mode:**
+
 - Developer adds 5th package
 - Violates ADHD-optimized constraint (4 max)
 - Increases cognitive complexity
 
 **Detection:**
+
 1. Doctor command checks package count
 2. CI pipeline fails if count > 4
 
 **Recovery:**
+
 1. Merge new package into existing package
 2. Or replace existing package if justified
 3. Update architecture docs if boundary changes
 
 **Prevention:**
+
 - Doctor command enforces constraint
 - PR template reminds of 4-package limit
 - Architecture review for new packages
@@ -723,22 +763,26 @@ pnpm build
 ### 5.5 Setup Time Regression
 
 **Failure Mode:**
+
 - New dependencies slow down `pnpm install`
 - Complex build steps exceed 5-minute target
 - Developer onboarding becomes frustrating
 
 **Detection:**
+
 1. CI tracks setup time metrics
 2. Doctor command reports setup duration
 3. Developer feedback in retros
 
 **Recovery:**
+
 1. Profile `pnpm install` time
 2. Remove unnecessary dependencies
 3. Optimize build steps
 4. Cache more aggressively
 
 **Prevention:**
+
 - Setup time tracked in CI
 - Dependency additions require justification
 - Regular performance reviews
@@ -750,11 +794,13 @@ pnpm build
 ### 6.1 When to Add a New Package
 
 **Trigger Conditions:**
+
 - Current package exceeds 500 LOC (lines of code)
 - Clear architectural boundary emerges
 - Shared code used by 3+ other packages
 
 **Process:**
+
 1. Validate package count still < 4
 2. Identify clear boundary and responsibilities
 3. Create package following template
@@ -762,6 +808,7 @@ pnpm build
 5. Add to doctor command validation
 
 **Anti-Patterns:**
+
 - Don't add package for convenience (extract to shared utils)
 - Don't add package to bypass dependency rules
 - Don't add package without clear ownership
@@ -769,12 +816,14 @@ pnpm build
 ### 6.2 When to Revisit Monorepo Structure
 
 **Immediate Triggers (require action):**
+
 - Build time consistently > 2 minutes
 - Test time consistently > 5 minutes
 - Setup time > 10 minutes
 - More than 3 circular dependency incidents per quarter
 
 **Evaluation Triggers (review needed):**
+
 - Package count hits limit (4)
 - Major feature addition (Phase 3+)
 - Multi-contributor workflow begins
@@ -783,12 +832,14 @@ pnpm build
 ### 6.3 Migration to Advanced Tooling
 
 **Not Needed Now (MPPP):**
+
 - Changesets (single-user system)
 - Docker containers (macOS-only)
 - Advanced CI/CD (basic GitHub Actions sufficient)
 - Storybook (no UI components)
 
 **Trigger to Revisit:**
+
 - **Changesets:** Multi-contributor workflow emerges
 - **Docker:** Cross-platform distribution needed
 - **Advanced CI/CD:** Team >1 person, PR workflow required
@@ -797,16 +848,19 @@ pnpm build
 ### 6.4 Architectural Refactoring
 
 **Safe Refactoring:**
+
 - Extract utilities within package (no boundary change)
 - Rename internal modules (no public API change)
 - Optimize build configuration (no output change)
 
 **Requires Planning:**
+
 - Move code between packages (boundary change)
 - Add/remove package (structure change)
 - Change public API (contract change)
 
 **Process for Major Changes:**
+
 1. Document proposed change in ADR
 2. Update architecture diagrams
 3. Create migration plan
@@ -816,12 +870,14 @@ pnpm build
 ### 6.5 Performance Optimization
 
 **Current Targets (MPPP):**
+
 - Build: < 30s
 - Test: < 30s
 - Setup: < 5 min
 - Watch reload: < 1s
 
 **If Targets Missed:**
+
 1. Profile with Turbo timing output
 2. Identify bottleneck package
 3. Optimize bundling configuration
@@ -829,6 +885,7 @@ pnpm build
 5. Review dependency graph complexity
 
 **Future Optimization Opportunities:**
+
 - Remote Turbo cache (if team grows)
 - Persistent build workers
 - Incremental type checking
@@ -839,22 +896,27 @@ pnpm build
 ## 7) Related Specifications
 
 ### Foundation Documents
+
 - [Master PRD v2.3.0-MPPP](../master/prd-master.md) - Overall project vision and scope
 - [Roadmap v2.0.0-MPPP](../master/roadmap.md) - Development phases and priorities
 
 ### Monorepo Specifications
+
 - [Foundation Monorepo PRD](./prd-foundation-monorepo.md) - Product requirements and goals
 - [Foundation Monorepo TECH Spec](./spec-foundation-monorepo-tech.md) - Technical implementation details
 
 ### Supporting Guides
+
 - [TDD Applicability Guide](../guides/guide-tdd-applicability.md) - Testing strategy
 - [TestKit Usage Guide](../guides/guide-testkit-usage.md) - Test patterns
 - [Monorepo MPPP Guide](../guides/guide-monorepo-mppp.md) - MPPP-specific patterns
 
 ### Gold Standard Repository
+
 **Location:** `/Users/nathanvale/code/bun-changesets-template/`
 
 **Key Reference Files:**
+
 - `package.json` - Root scripts and workspace config
 - `turbo.json` - Task pipeline and caching
 - `tsconfig.json` - TypeScript strict configuration
@@ -870,6 +932,7 @@ pnpm build
 **Risk Class:** HIGH (ROOT dependency - blocks all features)
 
 **Rationale:**
+
 - Circular dependencies cascade to all features
 - Build pipeline errors block development
 - Test infrastructure failures destroy productivity
@@ -878,6 +941,7 @@ pnpm build
 ### TDD Decision: REQUIRED
 
 All foundation components require TDD because:
+
 1. **Zero room for error:** Foundation failures block entire project
 2. **High cascading impact:** Bugs affect all downstream packages
 3. **Difficult to fix later:** Refactoring foundation requires updating all features
@@ -886,6 +950,7 @@ All foundation components require TDD because:
 ### Test Coverage by Component
 
 **Unit Tests (TDD Required):**
+
 - Dependency graph validation
 - Package boundary enforcement
 - Build configuration parsing
@@ -893,6 +958,7 @@ All foundation components require TDD because:
 - Deduplication logic (from core package)
 
 **Integration Tests (TDD Required):**
+
 - Build pipeline execution (Turbo task graph)
 - Test isolation (Vitest projects)
 - Parallel execution safety
@@ -900,34 +966,38 @@ All foundation components require TDD because:
 - MSW mock cleanup
 
 **Contract Tests (TDD Required):**
+
 - Package export surfaces (public APIs)
 - @orchestr8/testkit integration points
 - CLI command interfaces
 - Configuration schema validation
 
 **Visual Testing (Optional):**
+
 - ESLint rule output (manual verification)
 - Prettier formatting (visible in diffs)
 - Doctor command output (manual testing)
 
 ### Coverage Thresholds
 
-| Package | Statements | Branches | Functions | Lines | Rationale |
-|---------|-----------|----------|-----------|-------|-----------|
-| foundation | 90% | 85% | 90% | 90% | Shared types must be rock solid |
-| core | 85% | 80% | 85% | 85% | Business logic is critical |
-| storage | 80% | 75% | 80% | 80% | Data integrity essential |
-| capture | 80% | 75% | 80% | 80% | Orchestration complexity |
+| Package    | Statements | Branches | Functions | Lines | Rationale                       |
+| ---------- | ---------- | -------- | --------- | ----- | ------------------------------- |
+| foundation | 90%        | 85%      | 90%       | 90%   | Shared types must be rock solid |
+| core       | 85%        | 80%      | 85%       | 85%   | Business logic is critical      |
+| storage    | 80%        | 75%      | 80%       | 80%   | Data integrity essential        |
+| capture    | 80%        | 75%      | 80%       | 80%   | Orchestration complexity        |
 
 ### Trigger to Revisit
 
 **Immediate (require tests before fixing):**
+
 - Build time > 2 minutes (performance regression)
 - Circular dependency detected (architectural violation)
 - Test isolation failure (flaky tests)
 - Package count > 4 (constraint violation)
 
 **Continuous (add tests as features grow):**
+
 - New package added (requires boundary tests)
 - External dependency updated (integration tests)
 - CLI command added (contract tests)
@@ -941,6 +1011,7 @@ The monorepo dependency graph is like a strict ADHD morning routine: foundation 
 ---
 
 **Document Status:**
+
 - Version: 1.0.0
 - Status: Draft
 - Last Updated: 2025-09-28

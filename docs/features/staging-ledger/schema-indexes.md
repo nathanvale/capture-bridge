@@ -105,16 +105,16 @@ Rules:
 
 ## 6. Invariants (Enforced / Tested)
 
-| # | Invariant | Enforcement | Test Strategy |
-|---|-----------|-------------|---------------|
-| 1 | Export filename ULID == captures.id | Convention (writer) | Property test mapping id → filename |
-| 2 | One non-placeholder export per capture | Status machine + mode values | Attempt double export must noop |
-| 3 | `(channel, channel_native_id)` unique | Index | Duplicate insert test expects constraint handling |
-| 4 | Voice hash mutates at most once | Business rule | Simulated re-transcription attempt rejected |
-| 5 | Placeholder exports immutable | No mutation path | Try update → assertion/log error |
-| 6 | Backup verification precedes pruning | Process order | Fault injection skip verifies guard |
-| 7 | No orphan audit rows | FK | Insert without capture fails |
-| 8 | Non-exported rows never trimmed | Retention job filter | Retention test dataset snapshot |
+| #   | Invariant                              | Enforcement                  | Test Strategy                                     |
+| --- | -------------------------------------- | ---------------------------- | ------------------------------------------------- |
+| 1   | Export filename ULID == captures.id    | Convention (writer)          | Property test mapping id → filename               |
+| 2   | One non-placeholder export per capture | Status machine + mode values | Attempt double export must noop                   |
+| 3   | `(channel, channel_native_id)` unique  | Index                        | Duplicate insert test expects constraint handling |
+| 4   | Voice hash mutates at most once        | Business rule                | Simulated re-transcription attempt rejected       |
+| 5   | Placeholder exports immutable          | No mutation path             | Try update → assertion/log error                  |
+| 6   | Backup verification precedes pruning   | Process order                | Fault injection skip verifies guard               |
+| 7   | No orphan audit rows                   | FK                           | Insert without capture fails                      |
+| 8   | Non-exported rows never trimmed        | Retention job filter         | Retention test dataset snapshot                   |
 
 ## 7. Retention Policies (Phase 1–2)
 
@@ -140,13 +140,13 @@ Metrics:
 
 ## 9. Query Patterns (Anticipated)
 
-| Query | Example | Index Utilization |
-|-------|---------|-------------------|
-| Fetch pending exports | `SELECT * FROM captures WHERE status IN ('staged','transcribed','failed_transcription') LIMIT ?` | `captures_status_idx` |
-| Dedup check | `SELECT id FROM captures WHERE content_hash = ?` | UNIQUE on `content_hash` |
-| Duplicate native item | `INSERT ...` (relies on unique index) | `captures_channel_native_uid` |
-| Error stage summary | `SELECT stage, COUNT(*) FROM errors_log GROUP BY stage` | `errors_stage_idx` |
-| Audit by capture | `SELECT * FROM exports_audit WHERE capture_id = ?` | `exports_capture_idx` |
+| Query                 | Example                                                                                          | Index Utilization             |
+| --------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------- |
+| Fetch pending exports | `SELECT * FROM captures WHERE status IN ('staged','transcribed','failed_transcription') LIMIT ?` | `captures_status_idx`         |
+| Dedup check           | `SELECT id FROM captures WHERE content_hash = ?`                                                 | UNIQUE on `content_hash`      |
+| Duplicate native item | `INSERT ...` (relies on unique index)                                                            | `captures_channel_native_uid` |
+| Error stage summary   | `SELECT stage, COUNT(*) FROM errors_log GROUP BY stage`                                          | `errors_stage_idx`            |
+| Audit by capture      | `SELECT * FROM exports_audit WHERE capture_id = ?`                                               | `exports_capture_idx`         |
 
 ## 10. Forbidden Patterns
 
@@ -163,11 +163,11 @@ Metrics:
 
 ## 12. Open Questions
 
-| Topic | Current Position | Revisit Trigger |
-|-------|------------------|-----------------|
-| Secondary hash (BLAKE3) | Deferred | >200 daily captures or false duplicate incident |
-| Extra index for ordering | Deferred | Query latency p95 > 11s voice pipeline root cause |
-| Partial pruning of errors_log | Deferred | File > 10MB persistent |
+| Topic                         | Current Position | Revisit Trigger                                   |
+| ----------------------------- | ---------------- | ------------------------------------------------- |
+| Secondary hash (BLAKE3)       | Deferred         | >200 daily captures or false duplicate incident   |
+| Extra index for ordering      | Deferred         | Query latency p95 > 11s voice pipeline root cause |
+| Partial pruning of errors_log | Deferred         | File > 10MB persistent                            |
 
 ## 13. References
 
@@ -183,4 +183,5 @@ Metrics:
 - [ADR-0008: Sequential Processing MPPP](../../adr/0008-sequential-processing-mppp.md)
 
 ---
+
 **Next Update Gate:** After first end-to-end walking skeleton test run validates state machine transitions.

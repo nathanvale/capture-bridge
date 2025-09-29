@@ -15,19 +15,27 @@
     }
   },
   "types": "./dist/index.d.ts",
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup",
     "clean": "rm -rf dist .tsbuildinfo",
     "dev": "tsup --watch",
     "lint": "eslint . --cache --cache-location ../../.eslintcache/foundation",
+    "lint:fix": "eslint . --fix --cache --cache-location ../../.eslintcache/foundation",
     "prepublishOnly": "pnpm run build && test -d dist",
     "test": "vitest run",
     "test:watch": "vitest watch",
+    "test:ci": "vitest run --bail 1",
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "TEST_MODE=integration vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {},
   "devDependencies": {
+    "@adhd-brain/build-config": "workspace:*",
     "@types/node": "^24.3.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.3",

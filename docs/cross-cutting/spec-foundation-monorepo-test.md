@@ -24,6 +24,7 @@ tech_reference: ./spec-foundation-monorepo-tech.md
 ### 1.1 Primary Goals
 
 **Prove Foundation Integrity (TDD Required):**
+
 1. **Zero circular dependencies** - No package can transitively depend on itself
 2. **Correct build order** - Turbo executes tasks in topological order
 3. **Test isolation** - Parallel execution with zero conflicts
@@ -44,6 +45,7 @@ This is **infrastructure/tooling code** that enables application development rat
 4. **Proven ROI:** TDD catches architectural violations early in infrastructure code
 
 **Failure Impact:**
+
 - Circular dependencies cascade to all features
 - Build order errors block development workflow
 - Test flakiness destroys productivity
@@ -57,6 +59,7 @@ This is **infrastructure/tooling code** that enables application development rat
 ### 1.3 Success Criteria
 
 **Must Pass Before Feature Work Begins:**
+
 - ✓ All dependency validation tests pass
 - ✓ Build pipeline executes in correct order
 - ✓ Tests run in parallel with zero conflicts
@@ -69,6 +72,7 @@ This is **infrastructure/tooling code** that enables application development rat
 **According to [TDD Applicability Guide](../guides/guide-tdd-applicability.md):**
 
 **Risk Classification:**
+
 - 🧠 Core cognition: N/A (no business logic)
 - 🔁 Concurrency/async: YES (parallel builds, test execution)
 - 💾 Storage/migrations: YES (build artifacts, cache management)
@@ -77,22 +81,24 @@ This is **infrastructure/tooling code** that enables application development rat
 
 **TDD Scope by Component:**
 
-| Component | TDD Required? | Test Type Focus | Rationale |
-|-----------|---------------|-----------------|------------|
-| Dependency validation | ✅ YES | Unit + Integration | Circular deps cascade to all features |
-| Build pipeline | ✅ YES | Integration | Build failures block all development |
-| Test isolation | ✅ YES | Integration | Flaky tests destroy team productivity |
-| Package boundaries | ✅ YES | Unit + Contract | Boundary violations enable circular deps |
-| Config validation | ✅ YES | Unit | Invalid configs cause subtle failures |
-| Performance monitoring | ⚠️ RECOMMENDED | Integration | Slow builds impact ADHD-friendly DX |
-| CLI output formatting | ❌ SKIP | Visual (manual) | Low risk, easily verified manually |
+| Component              | TDD Required?  | Test Type Focus    | Rationale                                |
+| ---------------------- | -------------- | ------------------ | ---------------------------------------- |
+| Dependency validation  | ✅ YES         | Unit + Integration | Circular deps cascade to all features    |
+| Build pipeline         | ✅ YES         | Integration        | Build failures block all development     |
+| Test isolation         | ✅ YES         | Integration        | Flaky tests destroy team productivity    |
+| Package boundaries     | ✅ YES         | Unit + Contract    | Boundary violations enable circular deps |
+| Config validation      | ✅ YES         | Unit               | Invalid configs cause subtle failures    |
+| Performance monitoring | ⚠️ RECOMMENDED | Integration        | Slow builds impact ADHD-friendly DX      |
+| CLI output formatting  | ❌ SKIP        | Visual (manual)    | Low risk, easily verified manually       |
 
 **Coverage Strategy:**
+
 - **P0 Components:** 90% coverage (dependency graph, build order, test isolation)
 - **P1 Components:** 80% coverage (performance, config validation)
 - **P2 Components:** Manual verification (visual formatting, docs)
 
 **Trigger to Revisit TDD Scope:**
+
 - Build time consistently > 2 minutes (add performance tests)
 - Test flakiness > 1% failure rate (increase isolation testing)
 - Package count approaches limit (add boundary enforcement tests)
@@ -104,28 +110,28 @@ This is **infrastructure/tooling code** that enables application development rat
 
 ### 2.1 PRD Requirements → Test Coverage
 
-| PRD Requirement | Test Category | Test Files | Priority |
-|-----------------|---------------|------------|----------|
-| Zero circular dependencies | Unit + Integration | `dependency-graph.test.ts` | P0 |
-| Build < 30s | Integration | `build-performance.test.ts` | P0 |
-| Test < 30s | Integration | `test-performance.test.ts` | P0 |
-| Setup < 5 min | E2E | `setup-workflow.test.ts` | P0 |
-| Package count = 4 | Unit | `package-structure.test.ts` | P0 |
-| Test isolation | Integration | `parallel-execution.test.ts` | P0 |
-| TestKit integration | Contract | `testkit-integration.test.ts` | P0 |
-| Doctor validation | Integration | `doctor-command.test.ts` | P0 |
+| PRD Requirement            | Test Category      | Test Files                    | Priority |
+| -------------------------- | ------------------ | ----------------------------- | -------- |
+| Zero circular dependencies | Unit + Integration | `dependency-graph.test.ts`    | P0       |
+| Build < 30s                | Integration        | `build-performance.test.ts`   | P0       |
+| Test < 30s                 | Integration        | `test-performance.test.ts`    | P0       |
+| Setup < 5 min              | E2E                | `setup-workflow.test.ts`      | P0       |
+| Package count = 4          | Unit               | `package-structure.test.ts`   | P0       |
+| Test isolation             | Integration        | `parallel-execution.test.ts`  | P0       |
+| TestKit integration        | Contract           | `testkit-integration.test.ts` | P0       |
+| Doctor validation          | Integration        | `doctor-command.test.ts`      | P0       |
 
 ### 2.2 Tech Spec Guarantees → Test Coverage
 
-| Tech Spec Guarantee | Test Type | Verification Method | Priority |
-|---------------------|-----------|---------------------|----------|
-| Turbo task ordering | Integration | Validate topological sort | P0 |
-| Package boundaries | Unit | ESLint rule enforcement | P0 |
-| In-memory SQLite | Contract | TestKit lifecycle | P0 |
-| MSW auto-cleanup | Contract | TestKit lifecycle | P0 |
-| Build caching | Integration | Turbo cache hits | P1 |
-| Watch mode hot reload | Integration | File change detection | P1 |
-| Prettier formatting | Visual (manual) | Diff inspection | P2 |
+| Tech Spec Guarantee   | Test Type       | Verification Method       | Priority |
+| --------------------- | --------------- | ------------------------- | -------- |
+| Turbo task ordering   | Integration     | Validate topological sort | P0       |
+| Package boundaries    | Unit            | ESLint rule enforcement   | P0       |
+| In-memory SQLite      | Contract        | TestKit lifecycle         | P0       |
+| MSW auto-cleanup      | Contract        | TestKit lifecycle         | P0       |
+| Build caching         | Integration     | Turbo cache hits          | P1       |
+| Watch mode hot reload | Integration     | File change detection     | P1       |
+| Prettier formatting   | Visual (manual) | Diff inspection           | P2       |
 
 ---
 
@@ -157,6 +163,7 @@ This is **infrastructure/tooling code** that enables application development rat
 **Target:** 50% of test suite, < 5s execution
 
 **Scope:**
+
 - Dependency graph algorithms (topological sort, cycle detection)
 - Package structure validation (count, naming conventions)
 - Configuration parsing (tsconfig, turbo.json, eslint)
@@ -164,11 +171,13 @@ This is **infrastructure/tooling code** that enables application development rat
 - Version checking (Node, pnpm, Turbo)
 
 **Out of Scope:**
+
 - Actual builds (mocked in unit tests)
 - File system operations (mocked)
 - External process execution (mocked)
 
 **Test Files:**
+
 ```
 tools/test/
 ├── dependency-graph.test.ts          # Circular dependency detection
@@ -183,6 +192,7 @@ tools/test/
 **Target:** 30% of test suite, < 15s execution
 
 **Scope:**
+
 - Turbo task pipeline execution
 - Build order validation (foundation → core/storage → capture → cli)
 - Test isolation (Vitest projects)
@@ -193,10 +203,12 @@ tools/test/
 - Watch mode hot reload
 
 **Out of Scope:**
+
 - Visual output formatting (manual verification)
 - Performance benchmarking (separate suite)
 
 **Test Files:**
+
 ```
 tools/test/integration/
 ├── build-pipeline.test.ts            # Turbo task execution order
@@ -212,6 +224,7 @@ tools/test/integration/
 **Target:** 15% of test suite, < 5s execution
 
 **Scope:**
+
 - @orchestr8/testkit integration points
 - Package export surfaces (public APIs)
 - CLI command interfaces
@@ -219,10 +232,12 @@ tools/test/integration/
 - External tooling interfaces (pnpm, Turbo, Vitest)
 
 **Out of Scope:**
+
 - Implementation details of external tools
 - Visual formatting of CLI output
 
 **Test Files:**
+
 ```
 tools/test/contract/
 ├── testkit-integration.test.ts       # @orchestr8/testkit availability
@@ -236,16 +251,19 @@ tools/test/contract/
 **Target:** 5% of test suite, < 10s execution
 
 **Scope:**
+
 - Fresh setup workflow (clone → install → build → test)
 - Doctor command full validation
 - Development workflow (watch → test → lint)
 - Error recovery scenarios
 
 **Out of Scope:**
+
 - Network failure simulation (low priority for local-first tool)
 - Multi-user collaboration (single-user MPPP)
 
 **Test Files:**
+
 ```
 tools/test/e2e/
 ├── setup-workflow.test.ts            # Fresh clone to first test
@@ -265,60 +283,76 @@ tools/test/e2e/
 **Risk:** HIGH - Circular dependencies cascade to all features
 
 **TDD Approach:**
+
 1. Write test for valid dependency graph (foundation → core/storage → capture)
 2. Write test for circular dependency detection (core → storage → core)
 3. Implement dependency graph algorithm (topological sort)
 4. Verify zero circular dependencies with madge + dependency-cruiser
 
 **Test Cases:**
+
 ```typescript
-describe('Dependency Graph', () => {
-  test('detects zero circular dependencies in valid graph', () => {
-    const graph = buildDependencyGraph(['foundation', 'core', 'storage', 'capture'])
+describe("Dependency Graph", () => {
+  test("detects zero circular dependencies in valid graph", () => {
+    const graph = buildDependencyGraph([
+      "foundation",
+      "core",
+      "storage",
+      "capture",
+    ])
     expect(detectCircularDeps(graph)).toHaveLength(0)
   })
 
-  test('detects circular dependency: core ← storage ← core', () => {
+  test("detects circular dependency: core ← storage ← core", () => {
     const graph = {
-      core: ['foundation', 'storage'],
-      storage: ['foundation', 'core'] // ❌ circular
+      core: ["foundation", "storage"],
+      storage: ["foundation", "core"], // ❌ circular
     }
     const cycles = detectCircularDeps(graph)
-    expect(cycles).toContainEqual(['core', 'storage', 'core'])
+    expect(cycles).toContainEqual(["core", "storage", "core"])
   })
 
-  test('prevents foundation from depending on anything', () => {
+  test("prevents foundation from depending on anything", () => {
     const graph = {
-      foundation: ['core'] // ❌ foundation must have 0 deps
+      foundation: ["core"], // ❌ foundation must have 0 deps
     }
-    expect(() => validatePackageRules(graph)).toThrow('foundation cannot depend on other packages')
+    expect(() => validatePackageRules(graph)).toThrow(
+      "foundation cannot depend on other packages"
+    )
   })
 
-  test('validates topological sort order', () => {
-    const graph = buildDependencyGraph(['foundation', 'core', 'storage', 'capture'])
+  test("validates topological sort order", () => {
+    const graph = buildDependencyGraph([
+      "foundation",
+      "core",
+      "storage",
+      "capture",
+    ])
     const order = topologicalSort(graph)
-    expect(order.indexOf('foundation')).toBeLessThan(order.indexOf('core'))
-    expect(order.indexOf('core')).toBeLessThan(order.indexOf('capture'))
+    expect(order.indexOf("foundation")).toBeLessThan(order.indexOf("core"))
+    expect(order.indexOf("core")).toBeLessThan(order.indexOf("capture"))
   })
 
-  test('integrates with madge for real workspace validation', async () => {
-    const madgeResult = await runMadgeAnalysis('./packages')
+  test("integrates with madge for real workspace validation", async () => {
+    const madgeResult = await runMadgeAnalysis("./packages")
     expect(madgeResult.circular).toHaveLength(0)
   })
 
-  test('integrates with dependency-cruiser for boundary enforcement', async () => {
-    const cruiserResult = await runDependencyCruiser('./packages')
+  test("integrates with dependency-cruiser for boundary enforcement", async () => {
+    const cruiserResult = await runDependencyCruiser("./packages")
     expect(cruiserResult.violations).toHaveLength(0)
   })
 })
 ```
 
 **Tools:**
+
 - `madge` - Circular dependency detection
 - `dependency-cruiser` - Boundary rule enforcement
 - Custom topological sort implementation
 
 **Success Metrics:**
+
 - Zero circular dependencies detected
 - All packages build in correct order
 - Test execution time < 2s
@@ -330,41 +364,46 @@ describe('Dependency Graph', () => {
 **Risk:** HIGH - Incorrect build order blocks development
 
 **TDD Approach:**
+
 1. Write test for correct build order (foundation first, CLI last)
 2. Write test for Turbo task graph validation
 3. Implement build pipeline orchestration
 4. Verify builds execute in topological order
 
 **Test Cases:**
+
 ```typescript
-describe('Build Pipeline', () => {
-  test('builds foundation before all other packages', async () => {
+describe("Build Pipeline", () => {
+  test("builds foundation before all other packages", async () => {
     const buildLog = await runTurboBuild()
-    const foundationBuildTime = extractBuildTime(buildLog, '@adhd-brain/foundation')
-    const coreBuildTime = extractBuildTime(buildLog, '@adhd-brain/core')
+    const foundationBuildTime = extractBuildTime(
+      buildLog,
+      "@adhd-brain/foundation"
+    )
+    const coreBuildTime = extractBuildTime(buildLog, "@adhd-brain/core")
 
     expect(foundationBuildTime.end).toBeLessThanOrEqual(coreBuildTime.start)
   })
 
-  test('builds core and storage in parallel', async () => {
+  test("builds core and storage in parallel", async () => {
     const buildLog = await runTurboBuild()
-    const coreStart = extractBuildTime(buildLog, '@adhd-brain/core').start
-    const storageStart = extractBuildTime(buildLog, '@adhd-brain/storage').start
+    const coreStart = extractBuildTime(buildLog, "@adhd-brain/core").start
+    const storageStart = extractBuildTime(buildLog, "@adhd-brain/storage").start
 
     // Parallel builds should start within 100ms of each other
     expect(Math.abs(coreStart - storageStart)).toBeLessThan(100)
   })
 
-  test('builds capture after core and storage complete', async () => {
+  test("builds capture after core and storage complete", async () => {
     const buildLog = await runTurboBuild()
-    const coreEnd = extractBuildTime(buildLog, '@adhd-brain/core').end
-    const storageEnd = extractBuildTime(buildLog, '@adhd-brain/storage').end
-    const captureStart = extractBuildTime(buildLog, '@adhd-brain/capture').start
+    const coreEnd = extractBuildTime(buildLog, "@adhd-brain/core").end
+    const storageEnd = extractBuildTime(buildLog, "@adhd-brain/storage").end
+    const captureStart = extractBuildTime(buildLog, "@adhd-brain/capture").start
 
     expect(Math.max(coreEnd, storageEnd)).toBeLessThanOrEqual(captureStart)
   })
 
-  test('completes full build in < 30s', async () => {
+  test("completes full build in < 30s", async () => {
     const start = Date.now()
     await runTurboBuild()
     const duration = Date.now() - start
@@ -372,13 +411,13 @@ describe('Build Pipeline', () => {
     expect(duration).toBeLessThan(30_000)
   })
 
-  test('validates turbo.json task graph dependencies', () => {
+  test("validates turbo.json task graph dependencies", () => {
     const config = loadTurboConfig()
-    expect(config.tasks.build.dependsOn).toContain('^build')
-    expect(config.tasks.test.dependsOn).toContain('^build')
+    expect(config.tasks.build.dependsOn).toContain("^build")
+    expect(config.tasks.test.dependsOn).toContain("^build")
   })
 
-  test('detects build cache hits on second run', async () => {
+  test("detects build cache hits on second run", async () => {
     await runTurboBuild() // First run (cold cache)
     const secondRun = await runTurboBuild() // Second run (warm cache)
 
@@ -389,11 +428,13 @@ describe('Build Pipeline', () => {
 ```
 
 **Tools:**
+
 - Turbo CLI execution
 - Build log parsing
 - Performance timing
 
 **Success Metrics:**
+
 - Correct topological build order
 - Parallel execution where possible
 - Full build < 30s
@@ -406,6 +447,7 @@ describe('Build Pipeline', () => {
 **Risk:** HIGH - Test flakiness destroys productivity
 
 **TDD Approach:**
+
 1. Write test for parallel execution without conflicts
 2. Write test for in-memory SQLite isolation
 3. Write test for MSW mock cleanup
@@ -413,63 +455,66 @@ describe('Build Pipeline', () => {
 5. Verify zero test conflicts in 10 parallel runs
 
 **Test Cases:**
+
 ```typescript
-describe('Test Isolation', () => {
-  test('runs all package tests in parallel without conflicts', async () => {
+describe("Test Isolation", () => {
+  test("runs all package tests in parallel without conflicts", async () => {
     const results = await Promise.all([
-      runPackageTests('@adhd-brain/foundation'),
-      runPackageTests('@adhd-brain/core'),
-      runPackageTests('@adhd-brain/storage'),
-      runPackageTests('@adhd-brain/capture')
+      runPackageTests("@adhd-brain/foundation"),
+      runPackageTests("@adhd-brain/core"),
+      runPackageTests("@adhd-brain/storage"),
+      runPackageTests("@adhd-brain/capture"),
     ])
 
-    results.forEach(result => {
+    results.forEach((result) => {
       expect(result.success).toBe(true)
       expect(result.flakes).toBe(0)
     })
   })
 
-  test('creates isolated in-memory SQLite per test context', async () => {
-    const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
+  test("creates isolated in-memory SQLite per test context", async () => {
+    const { createMemoryUrl } = await import("@orchestr8/testkit/sqlite")
 
     const db1 = new Database(createMemoryUrl())
     const db2 = new Database(createMemoryUrl())
 
-    db1.exec('CREATE TABLE test (id INTEGER PRIMARY KEY)')
-    db1.exec('INSERT INTO test (id) VALUES (1)')
+    db1.exec("CREATE TABLE test (id INTEGER PRIMARY KEY)")
+    db1.exec("INSERT INTO test (id) VALUES (1)")
 
     // db2 should not see db1's data
-    const result = db2.prepare('SELECT * FROM test').all()
-    expect(() => result).toThrow('no such table: test')
+    const result = db2.prepare("SELECT * FROM test").all()
+    expect(() => result).toThrow("no such table: test")
   })
 
-  test('resets MSW handlers after each test', async () => {
-    const { setupMSW, http, HttpResponse } = await import('@orchestr8/testkit/msw')
+  test("resets MSW handlers after each test", async () => {
+    const { setupMSW, http, HttpResponse } = await import(
+      "@orchestr8/testkit/msw"
+    )
 
     setupMSW([
-      http.get('http://test.local/api', () => HttpResponse.json({ data: 'test1' }))
+      http.get("http://test.local/api", () =>
+        HttpResponse.json({ data: "test1" })
+      ),
     ])
 
-    const response1 = await fetch('http://test.local/api')
+    const response1 = await fetch("http://test.local/api")
     const data1 = await response1.json()
-    expect(data1.data).toBe('test1')
+    expect(data1.data).toBe("test1")
 
     // After test, MSW should reset
     // Next test starts with clean handlers
   })
 
-  test('runs tests 10 times in parallel with zero failures', async () => {
-    const runs = Array.from({ length: 10 }, (_, i) =>
-      runTestSuite(`run-${i}`)
-    )
+  test("runs tests 10 times in parallel with zero failures", async () => {
+    const runs = Array.from({ length: 10 }, (_, i) => runTestSuite(`run-${i}`))
 
     const results = await Promise.all(runs)
-    const failures = results.filter(r => !r.success)
+    const failures = results.filter((r) => !r.success)
 
     expect(failures).toHaveLength(0)
   })
 
-  test('completes all tests in < 30s', async () => {
+  test("completes all tests in < 30s", async () => {
     const start = Date.now()
     await runTestSuite()
     const duration = Date.now() - start
@@ -477,23 +522,25 @@ describe('Test Isolation', () => {
     expect(duration).toBeLessThan(30_000)
   })
 
-  test('validates Vitest projects configuration', () => {
+  test("validates Vitest projects configuration", () => {
     const config = loadVitestConfig()
     const projects = config.test?.projects || []
 
     expect(projects.length).toBeGreaterThan(0)
     expect(config.test?.globals).toBe(true)
-    expect(config.test?.environment).toBe('node')
+    expect(config.test?.environment).toBe("node")
   })
 })
 ```
 
 **Tools:**
+
 - Vitest with projects configuration
 - @orchestr8/testkit (SQLite, MSW)
 - Parallel execution harness
 
 **Success Metrics:**
+
 - Zero test conflicts in 10 parallel runs
 - Test suite < 30s
 - Each package isolated
@@ -506,77 +553,79 @@ describe('Test Isolation', () => {
 **Risk:** HIGH - Boundary violations enable circular dependencies
 
 **TDD Approach:**
+
 1. Write test for valid package imports (foundation ← core)
 2. Write test for forbidden imports (core → storage)
 3. Implement ESLint boundary rules
 4. Verify all packages respect boundaries
 
 **Test Cases:**
+
 ```typescript
-describe('Package Boundaries', () => {
-  test('foundation has zero dependencies', () => {
-    const pkg = loadPackageJson('@adhd-brain/foundation')
+describe("Package Boundaries", () => {
+  test("foundation has zero dependencies", () => {
+    const pkg = loadPackageJson("@adhd-brain/foundation")
     expect(Object.keys(pkg.dependencies || {})).toHaveLength(0)
   })
 
-  test('core only depends on foundation', () => {
-    const pkg = loadPackageJson('@adhd-brain/core')
+  test("core only depends on foundation", () => {
+    const pkg = loadPackageJson("@adhd-brain/core")
     const deps = Object.keys(pkg.dependencies || {})
-    const internalDeps = deps.filter(d => d.startsWith('@adhd-brain/'))
+    const internalDeps = deps.filter((d) => d.startsWith("@adhd-brain/"))
 
-    expect(internalDeps).toEqual(['@adhd-brain/foundation'])
+    expect(internalDeps).toEqual(["@adhd-brain/foundation"])
   })
 
-  test('storage only depends on foundation', () => {
-    const pkg = loadPackageJson('@adhd-brain/storage')
+  test("storage only depends on foundation", () => {
+    const pkg = loadPackageJson("@adhd-brain/storage")
     const deps = Object.keys(pkg.dependencies || {})
-    const internalDeps = deps.filter(d => d.startsWith('@adhd-brain/'))
+    const internalDeps = deps.filter((d) => d.startsWith("@adhd-brain/"))
 
-    expect(internalDeps).toEqual(['@adhd-brain/foundation'])
+    expect(internalDeps).toEqual(["@adhd-brain/foundation"])
   })
 
-  test('capture depends on foundation + core + storage', () => {
-    const pkg = loadPackageJson('@adhd-brain/capture')
+  test("capture depends on foundation + core + storage", () => {
+    const pkg = loadPackageJson("@adhd-brain/capture")
     const deps = Object.keys(pkg.dependencies || {})
-    const internalDeps = deps.filter(d => d.startsWith('@adhd-brain/'))
+    const internalDeps = deps.filter((d) => d.startsWith("@adhd-brain/"))
 
-    expect(internalDeps).toContain('@adhd-brain/foundation')
-    expect(internalDeps).toContain('@adhd-brain/core')
-    expect(internalDeps).toContain('@adhd-brain/storage')
+    expect(internalDeps).toContain("@adhd-brain/foundation")
+    expect(internalDeps).toContain("@adhd-brain/core")
+    expect(internalDeps).toContain("@adhd-brain/storage")
   })
 
-  test('prevents core from importing storage (FORBIDDEN)', async () => {
-    const lintResult = await runESLint('packages/@adhd-brain/core')
+  test("prevents core from importing storage (FORBIDDEN)", async () => {
+    const lintResult = await runESLint("packages/@adhd-brain/core")
     const violations = lintResult.results
-      .flatMap(r => r.messages)
-      .filter(m => m.message.includes('storage'))
+      .flatMap((r) => r.messages)
+      .filter((m) => m.message.includes("storage"))
 
     expect(violations).toHaveLength(0)
   })
 
-  test('package count enforced (max 4 for MPPP)', () => {
-    const packages = glob.sync('packages/@adhd-brain/*')
+  test("package count enforced (max 4 for MPPP)", () => {
+    const packages = glob.sync("packages/@adhd-brain/*")
     expect(packages.length).toBeLessThanOrEqual(4)
   })
 
-  test('validates package naming convention', () => {
-    const packages = glob.sync('packages/@adhd-brain/*')
-    packages.forEach(pkg => {
+  test("validates package naming convention", () => {
+    const packages = glob.sync("packages/@adhd-brain/*")
+    packages.forEach((pkg) => {
       const name = path.basename(pkg)
       expect(name).toMatch(/^[a-z-]+$/) // kebab-case only
     })
   })
 
-  test('validates package export structure', () => {
-    const pkgs = ['foundation', 'core', 'storage', 'capture']
-    pkgs.forEach(name => {
+  test("validates package export structure", () => {
+    const pkgs = ["foundation", "core", "storage", "capture"]
+    pkgs.forEach((name) => {
       const pkg = loadPackageJson(`@adhd-brain/${name}`)
-      expect(pkg.exports).toHaveProperty('.')
-      expect(pkg.exports['.'].import).toMatch(/\.js$/)
-      expect(pkg.exports['.'].types).toMatch(/\.d\.ts$/)
+      expect(pkg.exports).toHaveProperty(".")
+      expect(pkg.exports["."].import).toMatch(/\.js$/)
+      expect(pkg.exports["."].types).toMatch(/\.d\.ts$/)
     })
   })
-  test('prevents circular dependencies between packages', async () => {
+  test("prevents circular dependencies between packages", async () => {
     // Run dependency graph analysis
     const graph = await analyzeDependencyGraph()
 
@@ -588,55 +637,62 @@ describe('Package Boundaries', () => {
 
     // If cycles found, provide clear error
     if (cycles.length > 0) {
-      const cycleDescription = cycles.map(cycle => cycle.join(' → ')).join('\n')
+      const cycleDescription = cycles
+        .map((cycle) => cycle.join(" → "))
+        .join("\n")
       throw new Error(`Circular dependencies detected:\n${cycleDescription}`)
     }
   })
 
-  test('enforces public API exports via index.ts', async () => {
-    const packages = ['foundation', 'core', 'storage', 'capture']
+  test("enforces public API exports via index.ts", async () => {
+    const packages = ["foundation", "core", "storage", "capture"]
 
     for (const pkg of packages) {
       // Get all exports from package
       const exports = await getPackageExports(`@adhd-brain/${pkg}`)
 
       // Verify all exports come from index.ts
-      exports.forEach(exp => {
+      exports.forEach((exp) => {
         expect(exp.source).toBe(`packages/${pkg}/src/index.ts`)
       })
 
       // Verify internal modules are not exported
-      const internalImports = await findImportsToInternalModules(`@adhd-brain/${pkg}`)
+      const internalImports = await findImportsToInternalModules(
+        `@adhd-brain/${pkg}`
+      )
       expect(internalImports).toEqual([])
     }
   })
 
-  test('validates import boundaries between features', async () => {
-    const featurePackages = ['core', 'storage', 'capture']
+  test("validates import boundaries between features", async () => {
+    const featurePackages = ["core", "storage", "capture"]
 
     for (const pkg of featurePackages) {
       // Analyze imports in package
       const imports = await analyzeImports(`packages/${pkg}`)
 
       // Feature packages should NOT import from other features
-      const crossFeatureImports = imports.filter(imp =>
-        imp.startsWith('@adhd-brain/') &&
-        !imp.startsWith('@adhd-brain/foundation') &&
-        !imp.startsWith('@adhd-brain/testkit') &&
-        !imp.startsWith(`@adhd-brain/${pkg}`)
+      const crossFeatureImports = imports.filter(
+        (imp) =>
+          imp.startsWith("@adhd-brain/") &&
+          !imp.startsWith("@adhd-brain/foundation") &&
+          !imp.startsWith("@adhd-brain/testkit") &&
+          !imp.startsWith(`@adhd-brain/${pkg}`)
       )
 
       expect(crossFeatureImports).toEqual([])
     }
 
     // Only @adhd-brain/foundation is allowed as shared dependency
-    const foundationImports = await analyzeImports('packages/foundation')
-    const externalImports = foundationImports.filter(imp => imp.startsWith('@adhd-brain/'))
+    const foundationImports = await analyzeImports("packages/foundation")
+    const externalImports = foundationImports.filter((imp) =>
+      imp.startsWith("@adhd-brain/")
+    )
     expect(externalImports).toEqual([]) // Foundation imports nothing from adhd-brain
   })
 
-  test('prevents dependency version drift', async () => {
-    const packages = ['foundation', 'core', 'storage', 'capture']
+  test("prevents dependency version drift", async () => {
+    const packages = ["foundation", "core", "storage", "capture"]
 
     // Collect all dependencies across packages
     const dependencyVersions = new Map<string, Set<string>>()
@@ -644,7 +700,9 @@ describe('Package Boundaries', () => {
     for (const pkg of packages) {
       const packageJson = await readPackageJson(`packages/${pkg}`)
 
-      for (const [dep, version] of Object.entries(packageJson.dependencies || {})) {
+      for (const [dep, version] of Object.entries(
+        packageJson.dependencies || {}
+      )) {
         if (!dependencyVersions.has(dep)) {
           dependencyVersions.set(dep, new Set())
         }
@@ -653,65 +711,68 @@ describe('Package Boundaries', () => {
     }
 
     // Find dependencies with multiple versions
-    const driftingDeps = Array.from(dependencyVersions.entries())
-      .filter(([_, versions]) => versions.size > 1)
+    const driftingDeps = Array.from(dependencyVersions.entries()).filter(
+      ([_, versions]) => versions.size > 1
+    )
 
     // Fail on any version drift
     expect(driftingDeps).toEqual([])
 
     if (driftingDeps.length > 0) {
       const driftDescription = driftingDeps
-        .map(([dep, versions]) => `${dep}: ${Array.from(versions).join(', ')}`)
-        .join('\n')
+        .map(([dep, versions]) => `${dep}: ${Array.from(versions).join(", ")}`)
+        .join("\n")
       throw new Error(`Dependency version drift detected:\n${driftDescription}`)
     }
   })
 
-  test('validates workspace dependency protocols', async () => {
-    const packages = ['core', 'storage', 'capture']
+  test("validates workspace dependency protocols", async () => {
+    const packages = ["core", "storage", "capture"]
 
     for (const pkg of packages) {
       const packageJson = await readPackageJson(`packages/${pkg}`)
       const deps = packageJson.dependencies || {}
 
       // All internal dependencies must use workspace: protocol
-      Object.keys(deps).forEach(depName => {
-        if (depName.startsWith('@adhd-brain/')) {
+      Object.keys(deps).forEach((depName) => {
+        if (depName.startsWith("@adhd-brain/")) {
           expect(deps[depName]).toMatch(/^workspace:/)
         }
       })
     }
   })
 
-  test('prevents deep import bypassing package boundaries', async () => {
-    const packages = ['core', 'storage', 'capture']
+  test("prevents deep import bypassing package boundaries", async () => {
+    const packages = ["core", "storage", "capture"]
 
     for (const pkg of packages) {
       const sourceFiles = await glob(`packages/${pkg}/src/**/*.ts`)
 
       for (const file of sourceFiles) {
-        const content = await fs.readFile(file, 'utf-8')
+        const content = await fs.readFile(file, "utf-8")
 
         // Look for deep imports (bypassing index.ts)
         const deepImportPattern = /@adhd-brain\/[^/]+\/(?!src\/index)[^'"]+/g
         const deepImports = content.match(deepImportPattern) || []
 
         if (deepImports.length > 0) {
-          throw new Error(`Deep imports detected in ${file}: ${deepImports.join(', ')}`)
+          throw new Error(
+            `Deep imports detected in ${file}: ${deepImports.join(", ")}`
+          )
         }
       }
     }
   })
 
-  test('validates TypeScript path mapping consistency', async () => {
-    const tsConfig = await readJSON('tsconfig.json')
+  test("validates TypeScript path mapping consistency", async () => {
+    const tsConfig = await readJSON("tsconfig.json")
     const paths = tsConfig.compilerOptions?.paths || {}
 
     const expectedPaths = {
-      '@adhd-brain/foundation': ['./packages/foundation/src/index.ts'],
-      '@adhd-brain/core': ['./packages/core/src/index.ts'],
-      '@adhd-brain/storage': ['./packages/storage/src/index.ts'],
-      '@adhd-brain/capture': ['./packages/capture/src/index.ts']
+      "@adhd-brain/foundation": ["./packages/foundation/src/index.ts"],
+      "@adhd-brain/core": ["./packages/core/src/index.ts"],
+      "@adhd-brain/storage": ["./packages/storage/src/index.ts"],
+      "@adhd-brain/capture": ["./packages/capture/src/index.ts"],
     }
 
     Object.entries(expectedPaths).forEach(([alias, expectedPath]) => {
@@ -719,30 +780,30 @@ describe('Package Boundaries', () => {
     })
   })
 
-  test('validates build order respects dependency graph', async () => {
-    const turboConfig = await readJSON('turbo.json')
+  test("validates build order respects dependency graph", async () => {
+    const turboConfig = await readJSON("turbo.json")
     const buildTask = turboConfig.tasks?.build
 
     expect(buildTask).toBeDefined()
-    expect(buildTask.dependsOn).toContain('^build')
+    expect(buildTask.dependsOn).toContain("^build")
 
     // Run actual build and validate order
-    const buildLog = await execAsync('pnpm build --dry-run')
+    const buildLog = await execAsync("pnpm build --dry-run")
     const buildOrder = extractBuildOrder(buildLog.stdout)
 
     // Foundation must be first
-    expect(buildOrder.indexOf('foundation')).toBe(0)
+    expect(buildOrder.indexOf("foundation")).toBe(0)
 
     // Core and storage can be parallel (after foundation)
-    const foundationIndex = buildOrder.indexOf('foundation')
-    const coreIndex = buildOrder.indexOf('core')
-    const storageIndex = buildOrder.indexOf('storage')
+    const foundationIndex = buildOrder.indexOf("foundation")
+    const coreIndex = buildOrder.indexOf("core")
+    const storageIndex = buildOrder.indexOf("storage")
 
     expect(coreIndex).toBeGreaterThan(foundationIndex)
     expect(storageIndex).toBeGreaterThan(foundationIndex)
 
     // Capture must be after core and storage
-    const captureIndex = buildOrder.indexOf('capture')
+    const captureIndex = buildOrder.indexOf("capture")
     expect(captureIndex).toBeGreaterThan(coreIndex)
     expect(captureIndex).toBeGreaterThan(storageIndex)
   })
@@ -750,6 +811,7 @@ describe('Package Boundaries', () => {
 ```
 
 **Tools:**
+
 - ESLint with boundary rules
 - Package.json validation
 - Glob for package discovery
@@ -758,6 +820,7 @@ describe('Package Boundaries', () => {
 - TypeScript path mapping validation
 
 **Success Metrics:**
+
 - Zero boundary violations
 - Zero circular dependencies
 - Package count ≤ 4
@@ -772,6 +835,7 @@ describe('Package Boundaries', () => {
 **Risk:** MEDIUM - Slow feedback loop breaks ADHD-friendly DX
 
 **TDD Approach:**
+
 1. Write test for build < 30s
 2. Write test for test suite < 30s
 3. Write test for setup < 5 min
@@ -779,31 +843,32 @@ describe('Package Boundaries', () => {
 5. Verify all targets met
 
 **Test Cases:**
+
 ```typescript
-describe('Performance Targets', () => {
-  test('full build completes in < 30s', async () => {
+describe("Performance Targets", () => {
+  test("full build completes in < 30s", async () => {
     const start = Date.now()
-    await execAsync('pnpm build')
+    await execAsync("pnpm build")
     const duration = Date.now() - start
 
     expect(duration).toBeLessThan(30_000)
   })
 
-  test('test suite completes in < 30s', async () => {
+  test("test suite completes in < 30s", async () => {
     const start = Date.now()
-    await execAsync('pnpm test')
+    await execAsync("pnpm test")
     const duration = Date.now() - start
 
     expect(duration).toBeLessThan(30_000)
   })
 
-  test('fresh setup completes in < 5 min', async () => {
+  test("fresh setup completes in < 5 min", async () => {
     const tempDir = await createTempDirectory()
     const start = Date.now()
 
-    await execAsync('git clone . ' + tempDir.path)
-    await execAsync('pnpm install', { cwd: tempDir.path })
-    await execAsync('pnpm build', { cwd: tempDir.path })
+    await execAsync("git clone . " + tempDir.path)
+    await execAsync("pnpm install", { cwd: tempDir.path })
+    await execAsync("pnpm build", { cwd: tempDir.path })
 
     const duration = Date.now() - start
     expect(duration).toBeLessThan(5 * 60 * 1000)
@@ -811,31 +876,31 @@ describe('Performance Targets', () => {
     await tempDir.cleanup()
   })
 
-  test('CLI startup in < 1s', async () => {
-    await execAsync('pnpm build') // Ensure CLI built
+  test("CLI startup in < 1s", async () => {
+    await execAsync("pnpm build") // Ensure CLI built
 
     const start = Date.now()
-    await execAsync('pnpm adhd --version')
+    await execAsync("pnpm adhd --version")
     const duration = Date.now() - start
 
     expect(duration).toBeLessThan(1_000)
   })
 
-  test('incremental build with cache in < 5s', async () => {
-    await execAsync('pnpm build') // First build (cold cache)
+  test("incremental build with cache in < 5s", async () => {
+    await execAsync("pnpm build") // First build (cold cache)
 
     const start = Date.now()
-    await execAsync('pnpm build') // Second build (warm cache)
+    await execAsync("pnpm build") // Second build (warm cache)
     const duration = Date.now() - start
 
     expect(duration).toBeLessThan(5_000)
   })
 
-  test('hot reload in dev mode < 1s', async () => {
-    const devProcess = spawn('pnpm dev', { shell: true })
+  test("hot reload in dev mode < 1s", async () => {
+    const devProcess = spawn("pnpm dev", { shell: true })
     await waitForDevReady(devProcess)
 
-    const testFile = 'packages/core/src/test.ts'
+    const testFile = "packages/core/src/test.ts"
     const start = Date.now()
     await fs.writeFile(testFile, 'export const test = "updated"')
     await waitForReload(devProcess)
@@ -848,11 +913,13 @@ describe('Performance Targets', () => {
 ```
 
 **Tools:**
+
 - Process execution timing
 - Temp directory for setup tests
 - Performance profiling
 
 **Success Metrics:**
+
 - Build < 30s
 - Test < 30s
 - Setup < 5 min
@@ -866,6 +933,7 @@ describe('Performance Targets', () => {
 **Risk:** MEDIUM - Invalid workspace state blocks development
 
 **TDD Approach:**
+
 1. Write test for successful doctor run (all checks pass)
 2. Write test for detecting missing dependencies
 3. Write test for detecting invalid configuration
@@ -873,91 +941,98 @@ describe('Performance Targets', () => {
 5. Verify all validations work
 
 **Test Cases:**
-```typescript
-describe('Doctor Command', () => {
-  test('reports all checks passing in healthy workspace', async () => {
-    const result = await execAsync('pnpm doctor')
 
-    expect(result.stdout).toContain('✓ Node')
-    expect(result.stdout).toContain('✓ pnpm')
-    expect(result.stdout).toContain('✓ Turbo')
-    expect(result.stdout).toContain('✓ Package Structure')
-    expect(result.stdout).toContain('✓ Configuration')
-    expect(result.stdout).toContain('✓ Test Infrastructure')
-    expect(result.stdout).toContain('All checks passed!')
+```typescript
+describe("Doctor Command", () => {
+  test("reports all checks passing in healthy workspace", async () => {
+    const result = await execAsync("pnpm doctor")
+
+    expect(result.stdout).toContain("✓ Node")
+    expect(result.stdout).toContain("✓ pnpm")
+    expect(result.stdout).toContain("✓ Turbo")
+    expect(result.stdout).toContain("✓ Package Structure")
+    expect(result.stdout).toContain("✓ Configuration")
+    expect(result.stdout).toContain("✓ Test Infrastructure")
+    expect(result.stdout).toContain("All checks passed!")
     expect(result.exitCode).toBe(0)
   })
 
-  test('detects Node version < 20.0.0', async () => {
-    vi.spyOn(process.versions, 'node').mockReturnValue('18.0.0')
+  test("detects Node version < 20.0.0", async () => {
+    vi.spyOn(process.versions, "node").mockReturnValue("18.0.0")
 
-    const result = await execAsync('pnpm doctor')
-    expect(result.stderr).toContain('Node version 18.0.0 is below minimum 20.0.0')
+    const result = await execAsync("pnpm doctor")
+    expect(result.stderr).toContain(
+      "Node version 18.0.0 is below minimum 20.0.0"
+    )
     expect(result.exitCode).toBe(1)
   })
 
-  test('detects incorrect pnpm version', async () => {
-    vi.spyOn(execSync, 'default').mockReturnValue('8.0.0')
+  test("detects incorrect pnpm version", async () => {
+    vi.spyOn(execSync, "default").mockReturnValue("8.0.0")
 
-    const result = await execAsync('pnpm doctor')
-    expect(result.stderr).toContain('pnpm version 8.0.0 does not match required 9.15.4')
+    const result = await execAsync("pnpm doctor")
+    expect(result.stderr).toContain(
+      "pnpm version 8.0.0 does not match required 9.15.4"
+    )
     expect(result.exitCode).toBe(1)
   })
 
-  test('detects package count > 4', async () => {
-    await createPackage('packages/@adhd-brain/extra')
+  test("detects package count > 4", async () => {
+    await createPackage("packages/@adhd-brain/extra")
 
-    const result = await execAsync('pnpm doctor')
-    expect(result.stderr).toContain('Package count 5 exceeds maximum 4')
+    const result = await execAsync("pnpm doctor")
+    expect(result.stderr).toContain("Package count 5 exceeds maximum 4")
     expect(result.exitCode).toBe(1)
 
-    await removePackage('packages/@adhd-brain/extra')
+    await removePackage("packages/@adhd-brain/extra")
   })
 
-  test('detects circular dependencies', async () => {
+  test("detects circular dependencies", async () => {
     // Temporarily inject circular dep
-    const corePkg = await readPackageJson('@adhd-brain/core')
-    corePkg.dependencies['@adhd-brain/storage'] = 'workspace:*'
-    await writePackageJson('@adhd-brain/core', corePkg)
+    const corePkg = await readPackageJson("@adhd-brain/core")
+    corePkg.dependencies["@adhd-brain/storage"] = "workspace:*"
+    await writePackageJson("@adhd-brain/core", corePkg)
 
-    const result = await execAsync('pnpm doctor')
-    expect(result.stderr).toContain('Circular dependencies detected')
+    const result = await execAsync("pnpm doctor")
+    expect(result.stderr).toContain("Circular dependencies detected")
     expect(result.exitCode).toBe(1)
 
     // Restore
-    delete corePkg.dependencies['@adhd-brain/storage']
-    await writePackageJson('@adhd-brain/core', corePkg)
+    delete corePkg.dependencies["@adhd-brain/storage"]
+    await writePackageJson("@adhd-brain/core", corePkg)
   })
 
-  test('detects invalid TypeScript config', async () => {
-    const tsconfig = await readJSON('tsconfig.json')
+  test("detects invalid TypeScript config", async () => {
+    const tsconfig = await readJSON("tsconfig.json")
     delete tsconfig.compilerOptions.strict
-    await writeJSON('tsconfig.json', tsconfig)
+    await writeJSON("tsconfig.json", tsconfig)
 
-    const result = await execAsync('pnpm doctor')
-    expect(result.stderr).toContain('tsconfig.json missing required strict mode')
+    const result = await execAsync("pnpm doctor")
+    expect(result.stderr).toContain(
+      "tsconfig.json missing required strict mode"
+    )
     expect(result.exitCode).toBe(1)
 
     // Restore
     tsconfig.compilerOptions.strict = true
-    await writeJSON('tsconfig.json', tsconfig)
+    await writeJSON("tsconfig.json", tsconfig)
   })
 
-  test('detects missing @orchestr8/testkit', async () => {
-    await execAsync('pnpm remove @orchestr8/testkit')
+  test("detects missing @orchestr8/testkit", async () => {
+    await execAsync("pnpm remove @orchestr8/testkit")
 
-    const result = await execAsync('pnpm doctor')
-    expect(result.stderr).toContain('@orchestr8/testkit not found')
+    const result = await execAsync("pnpm doctor")
+    expect(result.stderr).toContain("@orchestr8/testkit not found")
     expect(result.exitCode).toBe(1)
 
     // Restore
-    await execAsync('pnpm add -D @orchestr8/testkit')
+    await execAsync("pnpm add -D @orchestr8/testkit")
   })
 
-  test('validates build performance metrics', async () => {
-    const result = await execAsync('pnpm doctor')
-    const buildTime = extractMetric(result.stdout, 'Build time')
-    const testTime = extractMetric(result.stdout, 'Test time')
+  test("validates build performance metrics", async () => {
+    const result = await execAsync("pnpm doctor")
+    const buildTime = extractMetric(result.stdout, "Build time")
+    const testTime = extractMetric(result.stdout, "Test time")
 
     expect(buildTime).toBeLessThan(30_000)
     expect(testTime).toBeLessThan(30_000)
@@ -966,11 +1041,13 @@ describe('Doctor Command', () => {
 ```
 
 **Tools:**
+
 - CLI execution
 - Package.json manipulation
 - Config file validation
 
 **Success Metrics:**
+
 - All health checks pass in valid workspace
 - Invalid states correctly detected
 - Error messages actionable
@@ -987,11 +1064,14 @@ describe('Doctor Command', () => {
 **Critical TestKit Components to Validate:**
 
 **Memory SQLite Lifecycle:**
+
 ```typescript
 // tools/test/testkit/sqlite-lifecycle.test.ts
-describe('TestKit SQLite Integration', () => {
-  test('creates isolated in-memory databases per test', async () => {
-    const { createMemoryUrl, applyTestPragmas } = await import('@orchestr8/testkit/sqlite')
+describe("TestKit SQLite Integration", () => {
+  test("creates isolated in-memory databases per test", async () => {
+    const { createMemoryUrl, applyTestPragmas } = await import(
+      "@orchestr8/testkit/sqlite"
+    )
 
     const db1 = new Database(createMemoryUrl())
     const db2 = new Database(createMemoryUrl())
@@ -1000,26 +1080,28 @@ describe('TestKit SQLite Integration', () => {
     applyTestPragmas(db2)
 
     // Insert data into db1
-    db1.exec('CREATE TABLE test (id INTEGER PRIMARY KEY)')
-    db1.exec('INSERT INTO test (id) VALUES (1)')
+    db1.exec("CREATE TABLE test (id INTEGER PRIMARY KEY)")
+    db1.exec("INSERT INTO test (id) VALUES (1)")
 
     // Verify db2 is completely isolated
-    expect(() => db2.exec('SELECT * FROM test')).toThrow('no such table: test')
+    expect(() => db2.exec("SELECT * FROM test")).toThrow("no such table: test")
 
     db1.close()
     db2.close()
   })
 
-  test('applies performance pragmas correctly', () => {
-    const { createMemoryUrl, applyTestPragmas } = await import('@orchestr8/testkit/sqlite')
+  test("applies performance pragmas correctly", () => {
+    const { createMemoryUrl, applyTestPragmas } = await import(
+      "@orchestr8/testkit/sqlite"
+    )
     const db = new Database(createMemoryUrl())
 
     applyTestPragmas(db)
 
-    const pragmas = db.prepare('PRAGMA journal_mode').get()
-    expect(pragmas.journal_mode).toBe('MEMORY')
+    const pragmas = db.prepare("PRAGMA journal_mode").get()
+    expect(pragmas.journal_mode).toBe("MEMORY")
 
-    const syncMode = db.prepare('PRAGMA synchronous').get()
+    const syncMode = db.prepare("PRAGMA synchronous").get()
     expect(syncMode.synchronous).toBe(0) // OFF for tests
 
     db.close()
@@ -1028,38 +1110,43 @@ describe('TestKit SQLite Integration', () => {
 ```
 
 **MSW Mock Lifecycle:**
+
 ```typescript
 // tools/test/testkit/msw-lifecycle.test.ts
-describe('TestKit MSW Integration', () => {
-  test('provides clean MSW setup and teardown', async () => {
-    const { setupMSW, http, HttpResponse } = await import('@orchestr8/testkit/msw')
+describe("TestKit MSW Integration", () => {
+  test("provides clean MSW setup and teardown", async () => {
+    const { setupMSW, http, HttpResponse } = await import(
+      "@orchestr8/testkit/msw"
+    )
 
     const handlers = [
-      http.get('http://test.local/api', () =>
-        HttpResponse.json({ data: 'test-response' })
-      )
+      http.get("http://test.local/api", () =>
+        HttpResponse.json({ data: "test-response" })
+      ),
     ]
 
     setupMSW(handlers)
 
-    const response = await fetch('http://test.local/api')
+    const response = await fetch("http://test.local/api")
     const data = await response.json()
 
-    expect(data.data).toBe('test-response')
+    expect(data.data).toBe("test-response")
 
     // MSW should auto-cleanup after test
     // Next test starts with clean handlers
   })
 
-  test('handles parallel test execution without conflicts', async () => {
-    const { setupMSW, http, HttpResponse } = await import('@orchestr8/testkit/msw')
+  test("handles parallel test execution without conflicts", async () => {
+    const { setupMSW, http, HttpResponse } = await import(
+      "@orchestr8/testkit/msw"
+    )
 
     // Run multiple tests in parallel
     const tests = Array.from({ length: 5 }, async (_, i) => {
       setupMSW([
         http.get(`http://test${i}.local/api`, () =>
           HttpResponse.json({ test: i })
-        )
+        ),
       ])
 
       const response = await fetch(`http://test${i}.local/api`)
@@ -1074,43 +1161,48 @@ describe('TestKit MSW Integration', () => {
 ```
 
 **Vitest Config Integration:**
+
 ```typescript
 // tools/test/testkit/vitest-config.test.ts
-describe('TestKit Vitest Configuration', () => {
-  test('createBaseVitestConfig provides required options', async () => {
-    const { createBaseVitestConfig } = await import('@orchestr8/testkit/vitest-config')
+describe("TestKit Vitest Configuration", () => {
+  test("createBaseVitestConfig provides required options", async () => {
+    const { createBaseVitestConfig } = await import(
+      "@orchestr8/testkit/vitest-config"
+    )
 
     const config = createBaseVitestConfig({
       test: {
-        environment: 'node',
-        globals: true
-      }
+        environment: "node",
+        globals: true,
+      },
     })
 
-    expect(config.test?.environment).toBe('node')
+    expect(config.test?.environment).toBe("node")
     expect(config.test?.globals).toBe(true)
     expect(config.test?.testTimeout).toBeGreaterThan(0)
     expect(config.test?.hookTimeout).toBeGreaterThan(0)
   })
 
-  test('supports projects configuration for monorepo', async () => {
-    const { createBaseVitestConfig } = await import('@orchestr8/testkit/vitest-config')
+  test("supports projects configuration for monorepo", async () => {
+    const { createBaseVitestConfig } = await import(
+      "@orchestr8/testkit/vitest-config"
+    )
 
     const config = createBaseVitestConfig({
       test: {
         projects: [
           {
             test: {
-              name: 'foundation',
-              include: ['packages/@adhd-brain/foundation/**/*.test.ts']
-            }
-          }
-        ]
-      }
+              name: "foundation",
+              include: ["packages/@adhd-brain/foundation/**/*.test.ts"],
+            },
+          },
+        ],
+      },
     })
 
     expect(config.test?.projects).toHaveLength(1)
-    expect(config.test?.projects?.[0]?.test?.name).toBe('foundation')
+    expect(config.test?.projects?.[0]?.test?.name).toBe("foundation")
   })
 })
 ```
@@ -1118,6 +1210,7 @@ describe('TestKit Vitest Configuration', () => {
 ### 5.2 TestKit Gap Analysis
 
 **Current TestKit Coverage Assessment:**
+
 - ✅ In-memory SQLite: Complete
 - ✅ MSW HTTP mocking: Complete
 - ✅ Vitest configuration: Complete
@@ -1126,6 +1219,7 @@ describe('TestKit Vitest Configuration', () => {
 - ❌ Build tool integration: Missing (Turbo/pnpm mocking)
 
 **Suggested TestKit Enhancements:**
+
 ```typescript
 // Potential new TestKit helpers to request
 interface DesiredTestKitHelpers {
@@ -1142,6 +1236,7 @@ interface DesiredTestKitHelpers {
 ```
 
 **When to Create Custom Helpers vs Request TestKit Enhancement:**
+
 - **Use TestKit:** For cross-cutting concerns (DB, HTTP, file system)
 - **Request Enhancement:** When 3+ packages need the same mock pattern
 - **Custom Helper:** For monorepo-specific needs (package boundary validation)
@@ -1153,57 +1248,64 @@ interface DesiredTestKitHelpers {
 ### 6.1 Package Boundary Validation Patterns
 
 **Dependency Graph Testing:**
+
 ```typescript
 // tools/test/patterns/dependency-validation.test.ts
-import { buildPackageDependencyGraph, detectCircularDependencies } from '../utils/dependency-graph'
+import {
+  buildPackageDependencyGraph,
+  detectCircularDependencies,
+} from "../utils/dependency-graph"
 
-describe('Monorepo Dependency Patterns', () => {
-  test('validates foundation package has zero internal dependencies', () => {
+describe("Monorepo Dependency Patterns", () => {
+  test("validates foundation package has zero internal dependencies", () => {
     const graph = buildPackageDependencyGraph()
-    const foundationDeps = graph.get('@adhd-brain/foundation') || []
-    const internalDeps = foundationDeps.filter(dep => dep.startsWith('@adhd-brain/'))
+    const foundationDeps = graph.get("@adhd-brain/foundation") || []
+    const internalDeps = foundationDeps.filter((dep) =>
+      dep.startsWith("@adhd-brain/")
+    )
 
     expect(internalDeps).toHaveLength(0)
   })
 
-  test('validates linear dependency chain (no diamonds)', () => {
+  test("validates linear dependency chain (no diamonds)", () => {
     const graph = buildPackageDependencyGraph()
 
     // Core and Storage should NOT depend on each other
-    const coreDeps = graph.get('@adhd-brain/core') || []
-    const storageDeps = graph.get('@adhd-brain/storage') || []
+    const coreDeps = graph.get("@adhd-brain/core") || []
+    const storageDeps = graph.get("@adhd-brain/storage") || []
 
-    expect(coreDeps).not.toContain('@adhd-brain/storage')
-    expect(storageDeps).not.toContain('@adhd-brain/core')
+    expect(coreDeps).not.toContain("@adhd-brain/storage")
+    expect(storageDeps).not.toContain("@adhd-brain/core")
   })
 
-  test('validates capture package properly aggregates dependencies', () => {
+  test("validates capture package properly aggregates dependencies", () => {
     const graph = buildPackageDependencyGraph()
-    const captureDeps = graph.get('@adhd-brain/capture') || []
+    const captureDeps = graph.get("@adhd-brain/capture") || []
 
-    expect(captureDeps).toContain('@adhd-brain/foundation')
-    expect(captureDeps).toContain('@adhd-brain/core')
-    expect(captureDeps).toContain('@adhd-brain/storage')
+    expect(captureDeps).toContain("@adhd-brain/foundation")
+    expect(captureDeps).toContain("@adhd-brain/core")
+    expect(captureDeps).toContain("@adhd-brain/storage")
   })
 
-  test('detects transitive circular dependencies', () => {
+  test("detects transitive circular dependencies", () => {
     // Test with synthetic circular dependency
     const syntheticGraph = new Map([
-      ['@adhd-brain/core', ['@adhd-brain/foundation', '@adhd-brain/storage']],
-      ['@adhd-brain/storage', ['@adhd-brain/foundation', '@adhd-brain/core']]
+      ["@adhd-brain/core", ["@adhd-brain/foundation", "@adhd-brain/storage"]],
+      ["@adhd-brain/storage", ["@adhd-brain/foundation", "@adhd-brain/core"]],
     ])
 
     const cycles = detectCircularDependencies(syntheticGraph)
     expect(cycles).toContainEqual([
-      '@adhd-brain/core',
-      '@adhd-brain/storage',
-      '@adhd-brain/core'
+      "@adhd-brain/core",
+      "@adhd-brain/storage",
+      "@adhd-brain/core",
     ])
   })
 })
 ```
 
 **Package Export Validation:**
+
 ```typescript
 // tools/test/patterns/export-validation.test.ts
 describe('Package Export Patterns', () => {
@@ -1260,47 +1362,50 @@ describe('Package Export Patterns', () => {
 ### 6.2 Workspace Configuration Testing
 
 **PNPM Workspace Validation:**
+
 ```typescript
 // tools/test/patterns/workspace-config.test.ts
-describe('Workspace Configuration', () => {
-  test('validates pnpm-workspace.yaml discovers all packages', () => {
-    const workspaceConfig = loadYAML('pnpm-workspace.yaml')
+describe("Workspace Configuration", () => {
+  test("validates pnpm-workspace.yaml discovers all packages", () => {
+    const workspaceConfig = loadYAML("pnpm-workspace.yaml")
     const discoveredPackages = glob.sync(workspaceConfig.packages)
 
     const expectedPackages = [
-      'packages/@adhd-brain/foundation',
-      'packages/@adhd-brain/core',
-      'packages/@adhd-brain/storage',
-      'packages/@adhd-brain/capture'
+      "packages/@adhd-brain/foundation",
+      "packages/@adhd-brain/core",
+      "packages/@adhd-brain/storage",
+      "packages/@adhd-brain/capture",
     ]
 
-    expectedPackages.forEach(pkg => {
-      expect(discoveredPackages.some(discovered =>
-        discovered.includes(pkg.split('/').pop())
-      )).toBe(true)
+    expectedPackages.forEach((pkg) => {
+      expect(
+        discoveredPackages.some((discovered) =>
+          discovered.includes(pkg.split("/").pop())
+        )
+      ).toBe(true)
     })
   })
 
-  test('validates workspace dependencies use workspace: protocol', () => {
-    const packages = ['core', 'storage', 'capture']
+  test("validates workspace dependencies use workspace: protocol", () => {
+    const packages = ["core", "storage", "capture"]
 
-    packages.forEach(pkg => {
+    packages.forEach((pkg) => {
       const packageJson = loadPackageJson(`@adhd-brain/${pkg}`)
       const deps = packageJson.dependencies || {}
 
-      Object.keys(deps).forEach(depName => {
-        if (depName.startsWith('@adhd-brain/')) {
+      Object.keys(deps).forEach((depName) => {
+        if (depName.startsWith("@adhd-brain/")) {
           expect(deps[depName]).toMatch(/^workspace:/)
         }
       })
     })
   })
 
-  test('validates package manager lockfile integrity', () => {
-    expect(fs.existsSync('pnpm-lock.yaml')).toBe(true)
+  test("validates package manager lockfile integrity", () => {
+    expect(fs.existsSync("pnpm-lock.yaml")).toBe(true)
 
     // Validate lockfile is not corrupted
-    const lockfile = fs.readFileSync('pnpm-lock.yaml', 'utf-8')
+    const lockfile = fs.readFileSync("pnpm-lock.yaml", "utf-8")
     expect(() => YAML.parse(lockfile)).not.toThrow()
   })
 })
@@ -1313,45 +1418,46 @@ describe('Workspace Configuration', () => {
 ### 7.1 GitHub Actions Validation
 
 **CI Pipeline Testing:**
+
 ```typescript
 // tools/test/ci/github-actions.test.ts
-describe('CI/CD Integration', () => {
-  test('validates CI workflow configuration', () => {
-    const workflow = loadYAML('.github/workflows/ci.yml')
+describe("CI/CD Integration", () => {
+  test("validates CI workflow configuration", () => {
+    const workflow = loadYAML(".github/workflows/ci.yml")
 
-    expect(workflow.on).toContain('pull_request')
+    expect(workflow.on).toContain("pull_request")
     expect(workflow.jobs.test.steps).toContainEqual(
       expect.objectContaining({
-        name: 'Run tests',
-        run: expect.stringContaining('pnpm test')
+        name: "Run tests",
+        run: expect.stringContaining("pnpm test"),
       })
     )
   })
 
-  test('validates required checks are configured', () => {
-    const workflow = loadYAML('.github/workflows/ci.yml')
+  test("validates required checks are configured", () => {
+    const workflow = loadYAML(".github/workflows/ci.yml")
     const steps = workflow.jobs.test.steps
 
     const requiredSteps = [
-      'pnpm install',
-      'pnpm lint',
-      'pnpm typecheck',
-      'pnpm test',
-      'pnpm build',
-      'pnpm doctor'
+      "pnpm install",
+      "pnpm lint",
+      "pnpm typecheck",
+      "pnpm test",
+      "pnpm build",
+      "pnpm doctor",
     ]
 
-    requiredSteps.forEach(step => {
-      expect(steps.some(s => s.run?.includes(step))).toBe(true)
+    requiredSteps.forEach((step) => {
+      expect(steps.some((s) => s.run?.includes(step))).toBe(true)
     })
   })
 
-  test('validates performance thresholds in CI', async () => {
+  test("validates performance thresholds in CI", async () => {
     // Simulate CI environment
-    process.env.CI = 'true'
+    process.env.CI = "true"
 
     const start = Date.now()
-    await execAsync('pnpm test --run') // No watch mode in CI
+    await execAsync("pnpm test --run") // No watch mode in CI
     const testDuration = Date.now() - start
 
     expect(testDuration).toBeLessThan(60_000) // CI target: < 60s
@@ -1362,35 +1468,36 @@ describe('CI/CD Integration', () => {
 ```
 
 **Dependency Security Testing:**
+
 ```typescript
 // tools/test/ci/security-validation.test.ts
-describe('Dependency Security', () => {
-  test('validates no high-severity vulnerabilities', async () => {
-    const auditResult = await execAsync('pnpm audit --audit-level high')
+describe("Dependency Security", () => {
+  test("validates no high-severity vulnerabilities", async () => {
+    const auditResult = await execAsync("pnpm audit --audit-level high")
     expect(auditResult.exitCode).toBe(0)
   })
 
-  test('validates license compatibility', async () => {
-    const licensesResult = await execAsync('pnpm licenses list --json')
+  test("validates license compatibility", async () => {
+    const licensesResult = await execAsync("pnpm licenses list --json")
     const licenses = JSON.parse(licensesResult.stdout)
 
-    const problematicLicenses = ['GPL-3.0', 'AGPL-3.0', 'LGPL-3.0']
+    const problematicLicenses = ["GPL-3.0", "AGPL-3.0", "LGPL-3.0"]
 
     licenses.forEach(({ license }) => {
       expect(problematicLicenses).not.toContain(license)
     })
   })
 
-  test('validates reproducible builds', async () => {
+  test("validates reproducible builds", async () => {
     // Clean and rebuild
-    await execAsync('pnpm clean')
-    await execAsync('pnpm build')
+    await execAsync("pnpm clean")
+    await execAsync("pnpm build")
 
     const hash1 = await calculateBuildHash()
 
     // Clean and rebuild again
-    await execAsync('pnpm clean')
-    await execAsync('pnpm build')
+    await execAsync("pnpm clean")
+    await execAsync("pnpm build")
 
     const hash2 = await calculateBuildHash()
 
@@ -1407,18 +1514,18 @@ describe('Dependency Security', () => {
 
 **Foundation Readiness Gates:**
 
-| Criteria | Target | Measurement | Priority |
-|----------|--------|-------------|---------|
-| Zero circular dependencies | 0 violations | `madge --circular packages/` | P0 |
-| Build performance | < 30s | `time pnpm build` | P0 |
-| Test performance | < 30s | `time pnpm test` | P0 |
-| Setup performance | < 5 min | Fresh clone → first test | P0 |
-| Test isolation | 0 conflicts | 10 parallel runs, 0 failures | P0 |
-| Package count enforcement | ≤ 4 packages | Doctor command validation | P0 |
-| Coverage thresholds | Foundation: 90%, Others: 80% | Vitest coverage report | P1 |
-| Doctor health checks | All pass | `pnpm doctor` exit code 0 | P1 |
-| CLI startup time | < 1s | `time adhd --version` | P1 |
-| Hot reload speed | < 1s | File change → rebuild | P1 |
+| Criteria                   | Target                       | Measurement                  | Priority |
+| -------------------------- | ---------------------------- | ---------------------------- | -------- |
+| Zero circular dependencies | 0 violations                 | `madge --circular packages/` | P0       |
+| Build performance          | < 30s                        | `time pnpm build`            | P0       |
+| Test performance           | < 30s                        | `time pnpm test`             | P0       |
+| Setup performance          | < 5 min                      | Fresh clone → first test     | P0       |
+| Test isolation             | 0 conflicts                  | 10 parallel runs, 0 failures | P0       |
+| Package count enforcement  | ≤ 4 packages                 | Doctor command validation    | P0       |
+| Coverage thresholds        | Foundation: 90%, Others: 80% | Vitest coverage report       | P1       |
+| Doctor health checks       | All pass                     | `pnpm doctor` exit code 0    | P1       |
+| CLI startup time           | < 1s                         | `time adhd --version`        | P1       |
+| Hot reload speed           | < 1s                         | File change → rebuild        | P1       |
 
 **Quality Gates (Must Pass Before Feature Development):**
 
@@ -1452,21 +1559,25 @@ echo "✅ Foundation validation complete!"
 ### 8.2 Continuous Monitoring
 
 **Performance Regression Detection:**
+
 ```typescript
 // tools/test/monitoring/performance-regression.test.ts
-describe('Performance Regression Detection', () => {
-  test('tracks build time trends', async () => {
+describe("Performance Regression Detection", () => {
+  test("tracks build time trends", async () => {
     const buildMetrics = await loadBuildMetrics() // From previous runs
 
     const start = Date.now()
-    await execAsync('pnpm build')
+    await execAsync("pnpm build")
     const currentBuildTime = Date.now() - start
 
-    const averageBuildTime = buildMetrics.reduce((a, b) => a + b, 0) / buildMetrics.length
+    const averageBuildTime =
+      buildMetrics.reduce((a, b) => a + b, 0) / buildMetrics.length
     const regressionThreshold = averageBuildTime * 1.5 // 50% slower than average
 
     if (currentBuildTime > regressionThreshold) {
-      console.warn(`Build time regression detected: ${currentBuildTime}ms > ${regressionThreshold}ms`)
+      console.warn(
+        `Build time regression detected: ${currentBuildTime}ms > ${regressionThreshold}ms`
+      )
     }
 
     expect(currentBuildTime).toBeLessThan(30_000) // Hard limit
@@ -1474,8 +1585,8 @@ describe('Performance Regression Detection', () => {
     await saveBuildMetric(currentBuildTime)
   })
 
-  test('tracks test suite growth', async () => {
-    const testMetrics = await execAsync('pnpm test --reporter=json')
+  test("tracks test suite growth", async () => {
+    const testMetrics = await execAsync("pnpm test --reporter=json")
     const results = JSON.parse(testMetrics.stdout)
 
     expect(results.numTotalTests).toBeGreaterThan(0)
@@ -1483,7 +1594,7 @@ describe('Performance Regression Detection', () => {
 
     // Alert if test suite becomes too large
     if (results.numTotalTests > 200) {
-      console.warn('Test suite growing large, consider optimization')
+      console.warn("Test suite growing large, consider optimization")
     }
   })
 })
@@ -1494,60 +1605,62 @@ describe('Performance Regression Detection', () => {
 ## 9) Tooling & TestKit Integration
 
 **Vitest Configuration:**
+
 ```typescript
 // vitest.config.ts (root)
-import { defineConfig } from 'vitest/config'
-import { createBaseVitestConfig } from '@orchestr8/testkit/vitest-config'
+import { defineConfig } from "vitest/config"
+import { createBaseVitestConfig } from "@orchestr8/testkit/vitest-config"
 
 export default defineConfig(
   createBaseVitestConfig({
     test: {
-      name: 'adhd-brain-foundation',
-      environment: 'node',
+      name: "adhd-brain-foundation",
+      environment: "node",
       globals: true,
       coverage: {
-        enabled: process.env.CI === 'true',
-        provider: 'v8',
-        reporter: ['text', 'html', 'json'],
+        enabled: process.env.CI === "true",
+        provider: "v8",
+        reporter: ["text", "html", "json"],
         thresholds: {
           statements: 90,
           branches: 85,
           functions: 90,
-          lines: 90
-        }
+          lines: 90,
+        },
       },
       projects: [
         {
           test: {
-            name: 'foundation',
-            include: ['packages/@adhd-brain/foundation/**/*.test.ts']
-          }
+            name: "foundation",
+            include: ["packages/@adhd-brain/foundation/**/*.test.ts"],
+          },
         },
         {
           test: {
-            name: 'core',
-            include: ['packages/@adhd-brain/core/**/*.test.ts']
-          }
+            name: "core",
+            include: ["packages/@adhd-brain/core/**/*.test.ts"],
+          },
         },
         {
           test: {
-            name: 'storage',
-            include: ['packages/@adhd-brain/storage/**/*.test.ts']
-          }
+            name: "storage",
+            include: ["packages/@adhd-brain/storage/**/*.test.ts"],
+          },
         },
         {
           test: {
-            name: 'capture',
-            include: ['packages/@adhd-brain/capture/**/*.test.ts']
-          }
-        }
-      ]
-    }
+            name: "capture",
+            include: ["packages/@adhd-brain/capture/**/*.test.ts"],
+          },
+        },
+      ],
+    },
   })
 )
 ```
 
 **Dependency Validation Tools:**
+
 ```json
 {
   "devDependencies": {
@@ -1559,6 +1672,7 @@ export default defineConfig(
 ```
 
 **Madge Configuration:**
+
 ```json
 {
   "detectiveOptions": {
@@ -1573,39 +1687,44 @@ export default defineConfig(
 ```
 
 **Dependency Cruiser Configuration:**
+
 ```javascript
 module.exports = {
   forbidden: [
     {
-      name: 'no-circular',
-      severity: 'error',
+      name: "no-circular",
+      severity: "error",
       from: {},
-      to: { circular: true }
+      to: { circular: true },
     },
     {
-      name: 'foundation-has-no-deps',
-      severity: 'error',
-      from: { path: 'packages/@adhd-brain/foundation' },
-      to: { path: 'packages/@adhd-brain/', pathNot: '^packages/@adhd-brain/foundation' }
+      name: "foundation-has-no-deps",
+      severity: "error",
+      from: { path: "packages/@adhd-brain/foundation" },
+      to: {
+        path: "packages/@adhd-brain/",
+        pathNot: "^packages/@adhd-brain/foundation",
+      },
     },
     {
-      name: 'core-no-storage',
-      severity: 'error',
-      from: { path: 'packages/@adhd-brain/core' },
-      to: { path: 'packages/@adhd-brain/storage' }
-    }
-  ]
+      name: "core-no-storage",
+      severity: "error",
+      from: { path: "packages/@adhd-brain/core" },
+      to: { path: "packages/@adhd-brain/storage" },
+    },
+  ],
 }
 ```
 
 ### 5.2 TestKit Helpers
 
 **Memory SQLite for Storage Tests:**
-```typescript
-import { createMemoryUrl, applyTestPragmas } from '@orchestr8/testkit/sqlite'
-import Database from 'better-sqlite3'
 
-describe('Storage Tests', () => {
+```typescript
+import { createMemoryUrl, applyTestPragmas } from "@orchestr8/testkit/sqlite"
+import Database from "better-sqlite3"
+
+describe("Storage Tests", () => {
   let db: Database.Database
 
   beforeEach(() => {
@@ -1617,62 +1736,69 @@ describe('Storage Tests', () => {
     db.close()
   })
 
-  test('creates isolated database per test', () => {
-    db.exec('CREATE TABLE test (id INTEGER)')
-    const result = db.prepare('SELECT * FROM sqlite_master WHERE type="table"').all()
+  test("creates isolated database per test", () => {
+    db.exec("CREATE TABLE test (id INTEGER)")
+    const result = db
+      .prepare('SELECT * FROM sqlite_master WHERE type="table"')
+      .all()
     expect(result).toHaveLength(1)
   })
 })
 ```
 
 **MSW for API Mocks (Future Gmail Integration):**
-```typescript
-import { setupMSW, http, createSuccessResponse } from '@orchestr8/testkit/msw'
 
-describe('Gmail API Tests', () => {
+```typescript
+import { setupMSW, http, createSuccessResponse } from "@orchestr8/testkit/msw"
+
+describe("Gmail API Tests", () => {
   setupMSW([
-    http.post('https://oauth2.googleapis.com/token', () =>
-      createSuccessResponse({ access_token: 'mock-token', expires_in: 3600 })
+    http.post("https://oauth2.googleapis.com/token", () =>
+      createSuccessResponse({ access_token: "mock-token", expires_in: 3600 })
     ),
-    http.get('https://gmail.googleapis.com/gmail/v1/users/me/messages', () =>
+    http.get("https://gmail.googleapis.com/gmail/v1/users/me/messages", () =>
       createSuccessResponse({ messages: [] })
-    )
+    ),
   ])
 
-  test('mocks Gmail API responses', async () => {
-    const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages')
+  test("mocks Gmail API responses", async () => {
+    const response = await fetch(
+      "https://gmail.googleapis.com/gmail/v1/users/me/messages"
+    )
     expect(response.ok).toBe(true)
   })
 })
 ```
 
 **CLI Command Mocking:**
-```typescript
-import { quickMocks } from '@orchestr8/testkit/cli'
-import { execSync } from 'child_process'
 
-describe('CLI Integration', () => {
+```typescript
+import { quickMocks } from "@orchestr8/testkit/cli"
+import { execSync } from "child_process"
+
+describe("CLI Integration", () => {
   beforeEach(() => {
-    quickMocks.success('pnpm --version', '9.15.4')
-    quickMocks.success('node --version', 'v20.0.0')
-    quickMocks.success('turbo --version', 'v2.5.6')
+    quickMocks.success("pnpm --version", "9.15.4")
+    quickMocks.success("node --version", "v20.0.0")
+    quickMocks.success("turbo --version", "v2.5.6")
   })
 
-  test('validates tooling versions', () => {
-    const pnpmVersion = execSync('pnpm --version', { encoding: 'utf-8' }).trim()
-    expect(pnpmVersion).toBe('9.15.4')
+  test("validates tooling versions", () => {
+    const pnpmVersion = execSync("pnpm --version", { encoding: "utf-8" }).trim()
+    expect(pnpmVersion).toBe("9.15.4")
   })
 })
 ```
 
 **Time Control for Performance Tests:**
-```typescript
-import { useFakeTimers, advanceTimersByTime } from '@orchestr8/testkit/env'
 
-describe('Performance Tests', () => {
+```typescript
+import { useFakeTimers, advanceTimersByTime } from "@orchestr8/testkit/env"
+
+describe("Performance Tests", () => {
   useFakeTimers()
 
-  test('measures build duration', () => {
+  test("measures build duration", () => {
     const start = Date.now()
     advanceTimersByTime(25_000) // Simulate 25s build
     const duration = Date.now() - start
@@ -1684,22 +1810,23 @@ describe('Performance Tests', () => {
 ```
 
 **Temp Directory for Setup Tests:**
-```typescript
-import { createTempDirectory } from '@orchestr8/testkit/fs'
 
-describe('Setup Workflow', () => {
-  test('validates fresh setup in temp directory', async () => {
-    const temp = await createTempDirectory({ prefix: 'setup-test-' })
+```typescript
+import { createTempDirectory } from "@orchestr8/testkit/fs"
+
+describe("Setup Workflow", () => {
+  test("validates fresh setup in temp directory", async () => {
+    const temp = await createTempDirectory({ prefix: "setup-test-" })
 
     // Simulate git clone
     await execAsync(`git clone . ${temp.path}`)
 
     // Run setup
-    await execAsync('pnpm install', { cwd: temp.path })
-    await execAsync('pnpm build', { cwd: temp.path })
+    await execAsync("pnpm install", { cwd: temp.path })
+    await execAsync("pnpm build", { cwd: temp.path })
 
     // Verify outputs
-    const packages = ['foundation', 'core', 'storage', 'capture']
+    const packages = ["foundation", "core", "storage", "capture"]
     for (const pkg of packages) {
       await temp.assertFileExists(`packages/@adhd-brain/${pkg}/dist/index.js`)
       await temp.assertFileExists(`packages/@adhd-brain/${pkg}/dist/index.d.ts`)
@@ -1713,6 +1840,7 @@ describe('Setup Workflow', () => {
 ### 5.3 Custom Test Utilities
 
 **Build Log Parser:**
+
 ```typescript
 export function extractBuildTime(log: string, packageName: string) {
   const regex = new RegExp(`${packageName}.*built in (\\d+\\.\\d+)s`)
@@ -1723,31 +1851,52 @@ export function extractBuildTime(log: string, packageName: string) {
 export function extractCacheHits(log: string) {
   const hits = log.match(/cache:(\d+) hit/)?.[1]
   const misses = log.match(/cache:(\d+) miss/)?.[1]
-  return { hits: parseInt(hits || '0'), misses: parseInt(misses || '0') }
+  return { hits: parseInt(hits || "0"), misses: parseInt(misses || "0") }
 }
 ```
 
 **Package JSON Loader:**
+
 ```typescript
 export function loadPackageJson(packageName: string) {
-  const pkgPath = path.join(process.cwd(), 'packages', packageName.replace('@adhd-brain/', ''), 'package.json')
-  return JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
+  const pkgPath = path.join(
+    process.cwd(),
+    "packages",
+    packageName.replace("@adhd-brain/", ""),
+    "package.json"
+  )
+  return JSON.parse(fs.readFileSync(pkgPath, "utf-8"))
 }
 
 export function writePackageJson(packageName: string, data: object) {
-  const pkgPath = path.join(process.cwd(), 'packages', packageName.replace('@adhd-brain/', ''), 'package.json')
+  const pkgPath = path.join(
+    process.cwd(),
+    "packages",
+    packageName.replace("@adhd-brain/", ""),
+    "package.json"
+  )
   fs.writeFileSync(pkgPath, JSON.stringify(data, null, 2))
 }
 ```
 
 **Config Validators:**
+
 ```typescript
 export function validateTurboConfig() {
-  const config = JSON.parse(fs.readFileSync('turbo.json', 'utf-8'))
+  const config = JSON.parse(fs.readFileSync("turbo.json", "utf-8"))
 
-  assert(config.tasks.build.dependsOn.includes('^build'), 'build task missing ^build dependency')
-  assert(config.tasks.test.dependsOn.includes('^build'), 'test task missing ^build dependency')
-  assert(config.remoteCache.signature === false, 'remote cache must be disabled for privacy')
+  assert(
+    config.tasks.build.dependsOn.includes("^build"),
+    "build task missing ^build dependency"
+  )
+  assert(
+    config.tasks.test.dependsOn.includes("^build"),
+    "test task missing ^build dependency"
+  )
+  assert(
+    config.remoteCache.signature === false,
+    "remote cache must be disabled for privacy"
+  )
 
   return config
 }
@@ -1755,9 +1904,12 @@ export function validateTurboConfig() {
 export function validateVitestConfig() {
   const config = loadVitestConfig()
 
-  assert(config.test?.globals === true, 'Vitest globals must be enabled')
-  assert(config.test?.environment === 'node', 'Vitest environment must be node')
-  assert(config.test?.coverage?.thresholds?.statements >= 80, 'Coverage threshold too low')
+  assert(config.test?.globals === true, "Vitest globals must be enabled")
+  assert(config.test?.environment === "node", "Vitest environment must be node")
+  assert(
+    config.test?.coverage?.thresholds?.statements >= 80,
+    "Coverage threshold too low"
+  )
 
   return config
 }
@@ -1770,6 +1922,7 @@ export function validateVitestConfig() {
 ### 6.1 Out of Scope for MPPP
 
 **Visual Testing (P2 Priority):**
+
 - ❌ Snapshot testing of CLI output formatting
 - ❌ Color/styling verification in terminal
 - ❌ Logo/branding display tests
@@ -1777,6 +1930,7 @@ export function validateVitestConfig() {
 - **Trigger to Revisit:** Multi-user adoption requires polished UX
 
 **Performance Benchmarking (Phase 2+):**
+
 - ❌ Continuous performance regression testing
 - ❌ Build time trend analysis
 - ❌ Memory profiling and optimization
@@ -1784,6 +1938,7 @@ export function validateVitestConfig() {
 - **Trigger to Revisit:** Performance degrades below targets (>2x baseline)
 
 **Advanced Monitoring (Phase 3+):**
+
 - ❌ Real-time build metrics dashboard
 - ❌ Test suite execution trend analysis
 - ❌ Package size tracking over time
@@ -1791,6 +1946,7 @@ export function validateVitestConfig() {
 - **Trigger to Revisit:** Multi-contributor workflow needs observability
 
 **E2E Network Failure Simulation (Low Priority):**
+
 - ❌ Network interruption during pnpm install
 - ❌ Registry unavailability scenarios
 - ❌ Offline development workflow
@@ -1798,6 +1954,7 @@ export function validateVitestConfig() {
 - **Trigger to Revisit:** Frequent offline work patterns emerge
 
 **Multi-Platform Testing (Out of Scope):**
+
 - ❌ Windows compatibility tests
 - ❌ Linux distribution testing
 - ❌ Docker container validation
@@ -1807,6 +1964,7 @@ export function validateVitestConfig() {
 ### 6.2 Explicit YAGNI Boundaries
 
 **What We're NOT Testing:**
+
 - Changesets workflow (no versioning in MPPP)
 - Remote Turbo cache behavior (disabled for privacy)
 - Storybook components (no UI library in MPPP)
@@ -1815,6 +1973,7 @@ export function validateVitestConfig() {
 - CI/CD pipeline validation (beyond basic GitHub Actions)
 
 **Deferred to Phase 3+:**
+
 - Advanced caching strategies (Turbo cache sufficient)
 - Distributed build orchestration (single-user doesn't need it)
 - Monorepo plugin architecture (no extensibility in MPPP)
@@ -1827,6 +1986,7 @@ export function validateVitestConfig() {
 ### 7.1 Local Development Workflow
 
 **Pre-Commit Hook (fast feedback):**
+
 ```bash
 #!/bin/sh
 # .husky/pre-commit
@@ -1841,6 +2001,7 @@ git add -u
 ```
 
 **Pre-Push Hook (comprehensive validation):**
+
 ```bash
 #!/bin/sh
 # .husky/pre-push
@@ -1854,6 +2015,7 @@ pnpm doctor         # Health check
 ```
 
 **Watch Mode (development):**
+
 ```bash
 # Terminal 1: Watch mode for code changes
 pnpm dev
@@ -1868,6 +2030,7 @@ pnpm typecheck --watch
 ### 7.2 CI Pipeline (GitHub Actions)
 
 **Pull Request Validation:**
+
 ```yaml
 name: CI
 on: [pull_request]
@@ -1883,7 +2046,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -1913,11 +2076,12 @@ jobs:
 ```
 
 **Nightly Performance Validation:**
+
 ```yaml
 name: Nightly Performance
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: "0 0 * * *"
 
 jobs:
   performance:
@@ -1952,6 +2116,7 @@ jobs:
 ### 7.3 Test Execution Modes
 
 **Mode 1: Fast Feedback (< 10s)**
+
 ```bash
 # Unit tests only
 pnpm test:unit
@@ -1961,6 +2126,7 @@ pnpm test --filter=@adhd-brain/foundation
 ```
 
 **Mode 2: Comprehensive (< 60s)**
+
 ```bash
 # All tests with coverage
 pnpm test --coverage
@@ -1970,6 +2136,7 @@ CI=true pnpm test
 ```
 
 **Mode 3: Integration Only (< 30s)**
+
 ```bash
 # Integration tests only
 pnpm test:integration
@@ -1979,6 +2146,7 @@ pnpm test:e2e
 ```
 
 **Mode 4: Continuous (watch mode)**
+
 ```bash
 # Watch all packages
 pnpm test:watch
@@ -1994,6 +2162,7 @@ pnpm test:watch --filter=@adhd-brain/core
 ### 8.1 Coverage Thresholds
 
 **Per-Package Thresholds:**
+
 ```typescript
 // vitest.config.ts
 export default defineConfig({
@@ -2001,53 +2170,56 @@ export default defineConfig({
     coverage: {
       thresholds: {
         // Foundation (highest risk - shared types)
-        'packages/@adhd-brain/foundation/**': {
+        "packages/@adhd-brain/foundation/**": {
           statements: 90,
           branches: 85,
           functions: 90,
-          lines: 90
+          lines: 90,
         },
         // Core (high risk - business logic)
-        'packages/@adhd-brain/core/**': {
+        "packages/@adhd-brain/core/**": {
           statements: 85,
           branches: 80,
           functions: 85,
-          lines: 85
+          lines: 85,
         },
         // Storage (high risk - data integrity)
-        'packages/@adhd-brain/storage/**': {
+        "packages/@adhd-brain/storage/**": {
           statements: 80,
           branches: 75,
           functions: 80,
-          lines: 80
+          lines: 80,
         },
         // Capture (medium risk - orchestration)
-        'packages/@adhd-brain/capture/**': {
+        "packages/@adhd-brain/capture/**": {
           statements: 80,
           branches: 75,
           functions: 80,
-          lines: 80
-        }
-      }
-    }
-  }
+          lines: 80,
+        },
+      },
+    },
+  },
 })
 ```
 
 ### 8.2 Reporting Formats
 
 **CI Report (JSON + Text):**
+
 ```bash
 pnpm test --coverage --reporter=json --reporter=text
 ```
 
 **Local Report (HTML):**
+
 ```bash
 pnpm test --coverage --reporter=html
 open coverage/index.html
 ```
 
 **Coverage Badge (README):**
+
 ```markdown
 [![Coverage](https://codecov.io/gh/nathanvale/adhd-brain/branch/main/graph/badge.svg)](https://codecov.io/gh/nathanvale/adhd-brain)
 ```
@@ -2055,12 +2227,14 @@ open coverage/index.html
 ### 8.3 Uncovered Code Analysis
 
 **Identify Critical Gaps:**
+
 ```bash
 # Show uncovered lines in high-risk files
 pnpm test --coverage --reporter=text | grep -A 5 "foundation\|core\|storage"
 ```
 
 **Coverage Diff (PR Context):**
+
 ```bash
 # Compare coverage before/after PR
 npx coverage-diff compare main HEAD
@@ -2073,16 +2247,19 @@ npx coverage-diff compare main HEAD
 ### 9.1 Test Maintenance Schedule
 
 **Weekly (Automated):**
+
 - Run full test suite in CI
 - Validate performance targets
 - Check dependency security alerts
 
 **Monthly (Manual Review):**
+
 - Review flaky test reports
 - Update test timeouts if needed
 - Audit coverage gaps in new code
 
 **Quarterly (Refactoring):**
+
 - Refactor brittle tests
 - Update test utilities
 - Review YAGNI boundaries
@@ -2090,12 +2267,14 @@ npx coverage-diff compare main HEAD
 ### 9.2 Test Debt Tracking
 
 **Technical Debt Categories:**
+
 1. **P0 Critical:** Broken tests blocking development
 2. **P1 High:** Missing tests for high-risk code
 3. **P2 Medium:** Flaky tests needing stabilization
 4. **P3 Low:** Coverage gaps in low-risk code
 
 **Tracking Process:**
+
 - Create GitHub issues for test debt
 - Tag with `test-debt` label
 - Link to failing CI runs or coverage reports
@@ -2104,6 +2283,7 @@ npx coverage-diff compare main HEAD
 ### 9.3 Version Compatibility Testing
 
 **Node.js Versions:**
+
 ```yaml
 # .github/workflows/compatibility.yml
 strategy:
@@ -2112,6 +2292,7 @@ strategy:
 ```
 
 **Tooling Updates:**
+
 - Monitor pnpm release notes
 - Test Turbo upgrades in feature branch
 - Validate Vitest updates with full suite
@@ -2122,23 +2303,28 @@ strategy:
 ## 14) Related Documentation
 
 ### Foundation Documents
+
 - [Master PRD v2.3.0-MPPP](/Users/nathanvale/code/adhd-brain/docs/master/prd-master.md) - Overall system requirements
 - [Roadmap v2.0.0-MPPP](/Users/nathanvale/code/adhd-brain/docs/master/roadmap.md) - Dependency-ordered delivery plan
 
 ### Feature Specifications
+
 - [Foundation Monorepo PRD](/Users/nathanvale/code/adhd-brain/docs/cross-cutting/prd-foundation-monorepo.md) - Product requirements
 - [Foundation Monorepo Tech Spec](/Users/nathanvale/code/adhd-brain/docs/cross-cutting/spec-foundation-monorepo-tech.md) - Technical contracts
 
 ### Testing Guides
+
 - [TDD Applicability Guide](/Users/nathanvale/code/adhd-brain/docs/guides/guide-tdd-applicability.md) - When to apply TDD
 - [TestKit Usage Guide](/Users/nathanvale/code/adhd-brain/docs/guides/guide-testkit-usage.md) - Testing patterns
 - [Test Strategy Guide](/Users/nathanvale/code/adhd-brain/docs/guides/guide-test-strategy.md) - Overall testing approach
 - [Phase 1 Testing Patterns](/Users/nathanvale/code/adhd-brain/docs/guides/guide-phase1-testing-patterns.md) - MPPP-specific patterns
 
 ### Gold Standard Repository
+
 **Location:** `/Users/nathanvale/code/bun-changesets-template/`
 
 **Reference Files:**
+
 - `vitest.config.ts` - Multi-project test configuration
 - `package.json` - Test scripts and coverage setup
 - `.husky/pre-commit` - Git hook examples
@@ -2153,6 +2339,7 @@ This test suite is like a well-organized ADHD brain's filing system—comprehens
 ---
 
 **Next Steps:**
+
 1. **Week 2:** Implement critical dependency validation tests (P0)
 2. **Week 2:** Add build pipeline integration tests
 3. **Week 2:** Validate test isolation with parallel execution

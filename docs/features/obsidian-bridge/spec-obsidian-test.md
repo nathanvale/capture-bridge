@@ -34,6 +34,7 @@ This test specification defines comprehensive testing for the **Obsidian Bridge*
 **Risk Level:** **HIGH**
 
 **Justification:**
+
 - **Data loss risk:** Vault corruption = permanent data loss (P0 failure mode)
 - **Sync conflicts:** Partial writes create Obsidian Sync conflicts + user anxiety
 - **Integrity violations:** ULID collisions with different content = data corruption
@@ -45,11 +46,13 @@ This test specification defines comprehensive testing for the **Obsidian Bridge*
 **Decision:** **TDD Required**
 
 **Scope Under TDD:**
+
 - **Unit Tests:** AtomicWriter contract, path resolution, collision detection, content formatting
 - **Integration Tests:** End-to-end atomic write with filesystem, SQLite audit trail integration
 - **Contract Tests:** `exports_audit` foreign key constraints, filesystem atomicity guarantees
 
 **Out-of-Scope (YAGNI):**
+
 - Multi-vault support (single vault assumption in Phase 1)
 - Template-based filename generation (ULID-only in Phase 1)
 - Daily note backlinks (deferred to Phase 3+)
@@ -57,6 +60,7 @@ This test specification defines comprehensive testing for the **Obsidian Bridge*
 - Visual UI testing (no UI component in atomic writer)
 
 **Trigger to Revisit:**
+
 - Export failure rate > 5% (indicates reliability regression)
 - ULID collision detected in production (requires investigation)
 - Obsidian Sync conflicts reported (atomic rename not working)
@@ -68,12 +72,12 @@ This test specification defines comprehensive testing for the **Obsidian Bridge*
 
 ### 3.1 Test Pyramid Structure
 
-| Test Layer | Purpose | Coverage Target | Tooling |
-|------------|---------|-----------------|---------|
-| **Unit Tests** | Pure logic, path resolution, collision detection | 100% | Vitest + TestKit |
-| **Integration Tests** | End-to-end atomic write + audit trail | 100% critical paths | Vitest + TestKit/fs + TestKit/sqlite |
-| **Contract Tests** | SQLite foreign keys, filesystem atomicity | 100% | Vitest + TestKit/sqlite |
-| **Failure Tests** | Error handling, crash recovery | 100% error paths | Vitest + TestKit mocks |
+| Test Layer            | Purpose                                          | Coverage Target     | Tooling                              |
+| --------------------- | ------------------------------------------------ | ------------------- | ------------------------------------ |
+| **Unit Tests**        | Pure logic, path resolution, collision detection | 100%                | Vitest + TestKit                     |
+| **Integration Tests** | End-to-end atomic write + audit trail            | 100% critical paths | Vitest + TestKit/fs + TestKit/sqlite |
+| **Contract Tests**    | SQLite foreign keys, filesystem atomicity        | 100%                | Vitest + TestKit/sqlite              |
+| **Failure Tests**     | Error handling, crash recovery                   | 100% error paths    | Vitest + TestKit mocks               |
 
 ### 3.2 Critical Test Categories
 
@@ -155,11 +159,16 @@ All tests MUST use TestKit patterns per [TestKit Standardization Guide](../../gu
 
 ```typescript
 // Standard test setup pattern
-import { createTempDirectory, createMemoryUrl, useFakeTimers, controlRandomness } from '@template/testkit'
+import {
+  createTempDirectory,
+  createMemoryUrl,
+  useFakeTimers,
+  controlRandomness,
+} from "@template/testkit"
 
 beforeEach(async () => {
   // Isolated filesystem
-  const tempVault = await createTempDirectory({ prefix: 'obsidian-test-' })
+  const tempVault = await createTempDirectory({ prefix: "obsidian-test-" })
 
   // Isolated database
   const dbUrl = createMemoryUrl()
@@ -167,7 +176,7 @@ beforeEach(async () => {
   applyTestPragmas(db)
 
   // Deterministic behavior
-  useFakeTimers({ now: new Date('2025-09-27T10:00:00Z') })
+  useFakeTimers({ now: new Date("2025-09-27T10:00:00Z") })
   controlRandomness(12345)
 })
 ```
@@ -183,25 +192,34 @@ beforeEach(async () => {
 **Test Cases:**
 
 ```typescript
-describe('Path Resolution', () => {
-  it('should generate correct temp path from ULID', () => {
-    const result = resolveTempPath('/vault', '01HZVM8YWRQT5J3M3K7YPTX9RZ')
-    expect(result).toBe('/vault/.trash/01HZVM8YWRQT5J3M3K7YPTX9RZ.tmp')
+describe("Path Resolution", () => {
+  it("should generate correct temp path from ULID", () => {
+    const result = resolveTempPath("/vault", "01HZVM8YWRQT5J3M3K7YPTX9RZ")
+    expect(result).toBe("/vault/.trash/01HZVM8YWRQT5J3M3K7YPTX9RZ.tmp")
   })
 
-  it('should generate correct export path from ULID', () => {
-    const result = resolveExportPath('/vault', '01HZVM8YWRQT5J3M3K7YPTX9RZ')
-    expect(result).toBe('/vault/inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md')
+  it("should generate correct export path from ULID", () => {
+    const result = resolveExportPath("/vault", "01HZVM8YWRQT5J3M3K7YPTX9RZ")
+    expect(result).toBe("/vault/inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md")
   })
 
-  it('should reject invalid ULID format', () => {
-    expect(() => resolveTempPath('/vault', 'invalid-ulid')).toThrow('Invalid capture_id format')
-    expect(() => resolveTempPath('/vault', '../../../etc/passwd')).toThrow('Invalid capture_id format')
+  it("should reject invalid ULID format", () => {
+    expect(() => resolveTempPath("/vault", "invalid-ulid")).toThrow(
+      "Invalid capture_id format"
+    )
+    expect(() => resolveTempPath("/vault", "../../../etc/passwd")).toThrow(
+      "Invalid capture_id format"
+    )
   })
 
-  it('should handle special characters in vault path', () => {
-    const result = resolveTempPath('/vault with spaces', '01HZVM8YWRQT5J3M3K7YPTX9RZ')
-    expect(result).toBe('/vault with spaces/.trash/01HZVM8YWRQT5J3M3K7YPTX9RZ.tmp')
+  it("should handle special characters in vault path", () => {
+    const result = resolveTempPath(
+      "/vault with spaces",
+      "01HZVM8YWRQT5J3M3K7YPTX9RZ"
+    )
+    expect(result).toBe(
+      "/vault with spaces/.trash/01HZVM8YWRQT5J3M3K7YPTX9RZ.tmp"
+    )
   })
 })
 ```
@@ -211,30 +229,33 @@ describe('Path Resolution', () => {
 **Test Cases:**
 
 ```typescript
-describe('Collision Detection', () => {
-  it('should return NO_COLLISION when file does not exist', async () => {
-    const result = await checkCollision('/nonexistent/file.md', 'hash123')
+describe("Collision Detection", () => {
+  it("should return NO_COLLISION when file does not exist", async () => {
+    const result = await checkCollision("/nonexistent/file.md", "hash123")
     expect(result).toBe(CollisionResult.NO_COLLISION)
   })
 
-  it('should return DUPLICATE when file exists with same content hash', async () => {
+  it("should return DUPLICATE when file exists with same content hash", async () => {
     // Setup: Create file with known content
     const tempDir = await createTempDirectory()
-    const content = 'test content'
+    const content = "test content"
     const hash = computeSHA256(content)
-    await tempDir.writeFile('test.md', content)
+    await tempDir.writeFile("test.md", content)
 
-    const result = await checkCollision(tempDir.getPath('test.md'), hash)
+    const result = await checkCollision(tempDir.getPath("test.md"), hash)
     expect(result).toBe(CollisionResult.DUPLICATE)
   })
 
-  it('should return CONFLICT when file exists with different content hash', async () => {
+  it("should return CONFLICT when file exists with different content hash", async () => {
     // Setup: Create file with different content
     const tempDir = await createTempDirectory()
-    await tempDir.writeFile('test.md', 'original content')
+    await tempDir.writeFile("test.md", "original content")
 
-    const differentHash = computeSHA256('different content')
-    const result = await checkCollision(tempDir.getPath('test.md'), differentHash)
+    const differentHash = computeSHA256("different content")
+    const result = await checkCollision(
+      tempDir.getPath("test.md"),
+      differentHash
+    )
     expect(result).toBe(CollisionResult.CONFLICT)
   })
 })
@@ -245,40 +266,40 @@ describe('Collision Detection', () => {
 **Test Cases:**
 
 ```typescript
-describe('Markdown Formatting', () => {
-  it('should format voice capture with correct frontmatter', () => {
+describe("Markdown Formatting", () => {
+  it("should format voice capture with correct frontmatter", () => {
     const capture = {
-      id: '01HZVM8YWRQT5J3M3K7YPTX9RZ',
-      source: 'voice',
-      content: 'This is a test transcription',
-      content_hash: 'abc123',
-      captured_at: '2025-09-27T10:00:00Z'
+      id: "01HZVM8YWRQT5J3M3K7YPTX9RZ",
+      source: "voice",
+      content: "This is a test transcription",
+      content_hash: "abc123",
+      captured_at: "2025-09-27T10:00:00Z",
     }
 
     const result = formatMarkdownExport(capture)
 
-    expect(result).toContain('---')
-    expect(result).toContain('id: 01HZVM8YWRQT5J3M3K7YPTX9RZ')
-    expect(result).toContain('source: voice')
-    expect(result).toContain('content_hash: abc123')
-    expect(result).toContain('This is a test transcription')
+    expect(result).toContain("---")
+    expect(result).toContain("id: 01HZVM8YWRQT5J3M3K7YPTX9RZ")
+    expect(result).toContain("source: voice")
+    expect(result).toContain("content_hash: abc123")
+    expect(result).toContain("This is a test transcription")
   })
 
-  it('should format email capture with correct metadata', () => {
+  it("should format email capture with correct metadata", () => {
     const capture = {
-      id: '01HZVM8YWRQT5J3M3K7YPTX9RZ',
-      source: 'email',
-      content: 'Email body content',
-      content_hash: 'def456',
-      captured_at: '2025-09-27T10:00:00Z',
-      meta_json: { from: 'test@example.com', subject: 'Test Subject' }
+      id: "01HZVM8YWRQT5J3M3K7YPTX9RZ",
+      source: "email",
+      content: "Email body content",
+      content_hash: "def456",
+      captured_at: "2025-09-27T10:00:00Z",
+      meta_json: { from: "test@example.com", subject: "Test Subject" },
     }
 
     const result = formatMarkdownExport(capture)
 
-    expect(result).toContain('source: email')
-    expect(result).toContain('From: test@example.com')
-    expect(result).toContain('Subject: Test Subject')
+    expect(result).toContain("source: email")
+    expect(result).toContain("From: test@example.com")
+    expect(result).toContain("Subject: Test Subject")
   })
 })
 ```
@@ -290,95 +311,127 @@ describe('Markdown Formatting', () => {
 **Test Cases:**
 
 ```typescript
-describe('Atomic Write Operations', () => {
+describe("Atomic Write Operations", () => {
   let tempVault: TempDirectory
   let db: Database
   let atomicWriter: ObsidianAtomicWriter
 
   beforeEach(async () => {
-    tempVault = await createTempDirectory({ prefix: 'vault-' })
+    tempVault = await createTempDirectory({ prefix: "vault-" })
     db = new Database(createMemoryUrl())
     applyTestPragmas(db)
     await setupCapturesTable(db)
     atomicWriter = new ObsidianAtomicWriter(tempVault.path, db)
 
-    useFakeTimers({ now: new Date('2025-09-27T10:00:00Z') })
+    useFakeTimers({ now: new Date("2025-09-27T10:00:00Z") })
   })
 
-  it('should perform complete atomic write with audit trail', async () => {
-    const capture_id = '01HZVM8YWRQT5J3M3K7YPTX9RZ'
-    const content = '---\nid: test\n---\nTest content'
+  it("should perform complete atomic write with audit trail", async () => {
+    const capture_id = "01HZVM8YWRQT5J3M3K7YPTX9RZ"
+    const content = "---\nid: test\n---\nTest content"
 
-    const result = await atomicWriter.writeAtomic(capture_id, content, tempVault.path)
+    const result = await atomicWriter.writeAtomic(
+      capture_id,
+      content,
+      tempVault.path
+    )
 
     // Verify success
     expect(result.success).toBe(true)
-    expect(result.export_path).toBe('inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md')
+    expect(result.export_path).toBe("inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md")
 
     // Verify file exists with correct content
-    const exportPath = tempVault.getPath('inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md')
+    const exportPath = tempVault.getPath("inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md")
     assertFileExists(exportPath)
-    const fileContent = await tempVault.readFile('inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md')
+    const fileContent = await tempVault.readFile(
+      "inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md"
+    )
     expect(fileContent).toBe(content)
 
     // Verify no temp file remains
-    const tempPath = tempVault.getPath('.trash/01HZVM8YWRQT5J3M3K7YPTX9RZ.tmp')
+    const tempPath = tempVault.getPath(".trash/01HZVM8YWRQT5J3M3K7YPTX9RZ.tmp")
     expect(fs.existsSync(tempPath)).toBe(false)
 
     // Verify audit trail
-    const auditRecord = db.prepare('SELECT * FROM exports_audit WHERE capture_id = ?').get(capture_id)
+    const auditRecord = db
+      .prepare("SELECT * FROM exports_audit WHERE capture_id = ?")
+      .get(capture_id)
     expect(auditRecord).toBeDefined()
-    expect(auditRecord.vault_path).toBe('inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md')
-    expect(auditRecord.mode).toBe('initial')
+    expect(auditRecord.vault_path).toBe("inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md")
+    expect(auditRecord.mode).toBe("initial")
   })
 
-  it('should handle duplicate export idempotently', async () => {
-    const capture_id = '01HZVM8YWRQT5J3M3K7YPTX9RZ'
-    const content = '---\nid: test\n---\nTest content'
+  it("should handle duplicate export idempotently", async () => {
+    const capture_id = "01HZVM8YWRQT5J3M3K7YPTX9RZ"
+    const content = "---\nid: test\n---\nTest content"
 
     // First export
-    const result1 = await atomicWriter.writeAtomic(capture_id, content, tempVault.path)
+    const result1 = await atomicWriter.writeAtomic(
+      capture_id,
+      content,
+      tempVault.path
+    )
     expect(result1.success).toBe(true)
 
     // Second export (duplicate)
-    const result2 = await atomicWriter.writeAtomic(capture_id, content, tempVault.path)
+    const result2 = await atomicWriter.writeAtomic(
+      capture_id,
+      content,
+      tempVault.path
+    )
     expect(result2.success).toBe(true)
-    expect(result2.export_path).toBe('inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md')
+    expect(result2.export_path).toBe("inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md")
 
     // Verify only one file exists
-    const files = await tempVault.listFiles('inbox')
+    const files = await tempVault.listFiles("inbox")
     expect(files).toHaveLength(1)
 
     // Verify two audit records (initial + duplicate)
-    const auditRecords = db.prepare('SELECT * FROM exports_audit WHERE capture_id = ? ORDER BY exported_at').all(capture_id)
+    const auditRecords = db
+      .prepare(
+        "SELECT * FROM exports_audit WHERE capture_id = ? ORDER BY exported_at"
+      )
+      .all(capture_id)
     expect(auditRecords).toHaveLength(2)
-    expect(auditRecords[0].mode).toBe('initial')
-    expect(auditRecords[1].mode).toBe('duplicate_skip')
+    expect(auditRecords[0].mode).toBe("initial")
+    expect(auditRecords[1].mode).toBe("duplicate_skip")
   })
 
-  it('should detect and halt on ULID collision with different content', async () => {
-    const capture_id = '01HZVM8YWRQT5J3M3K7YPTX9RZ'
-    const content1 = '---\nid: test\n---\nOriginal content'
-    const content2 = '---\nid: test\n---\nDifferent content'
+  it("should detect and halt on ULID collision with different content", async () => {
+    const capture_id = "01HZVM8YWRQT5J3M3K7YPTX9RZ"
+    const content1 = "---\nid: test\n---\nOriginal content"
+    const content2 = "---\nid: test\n---\nDifferent content"
 
     // First export
-    const result1 = await atomicWriter.writeAtomic(capture_id, content1, tempVault.path)
+    const result1 = await atomicWriter.writeAtomic(
+      capture_id,
+      content1,
+      tempVault.path
+    )
     expect(result1.success).toBe(true)
 
     // Second export with different content (CRITICAL ERROR)
-    const result2 = await atomicWriter.writeAtomic(capture_id, content2, tempVault.path)
+    const result2 = await atomicWriter.writeAtomic(
+      capture_id,
+      content2,
+      tempVault.path
+    )
     expect(result2.success).toBe(false)
-    expect(result2.error?.code).toBe('EEXIST')
-    expect(result2.error?.message).toContain('ULID collision')
+    expect(result2.error?.code).toBe("EEXIST")
+    expect(result2.error?.message).toContain("ULID collision")
 
     // Verify original file unchanged
-    const fileContent = await tempVault.readFile('inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md')
+    const fileContent = await tempVault.readFile(
+      "inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md"
+    )
     expect(fileContent).toBe(content1)
 
     // Verify error logged
-    const errorRecord = db.prepare('SELECT * FROM errors_log WHERE capture_id = ? AND stage = ?').get(capture_id, 'export')
+    const errorRecord = db
+      .prepare("SELECT * FROM errors_log WHERE capture_id = ? AND stage = ?")
+      .get(capture_id, "export")
     expect(errorRecord).toBeDefined()
-    expect(errorRecord.message).toContain('ULID collision')
+    expect(errorRecord.message).toContain("ULID collision")
   })
 })
 ```
@@ -388,14 +441,15 @@ describe('Atomic Write Operations', () => {
 **Crash Simulation Procedures:**
 
 For complete crash simulation methodology and fault injection hook usage, refer to:
+
 - [Crash Matrix Test Plan Guide](../../guides/guide-crash-matrix-test-plan.md) - Systematic crash testing approach
 - [Fault Injection Registry](../../guides/guide-fault-injection-registry.md) - Available crash points and hooks
 
 **Test Cases:**
 
 ```typescript
-describe('Crash Recovery', () => {
-  it('should leave no partial files on crash during write', async () => {
+describe("Crash Recovery", () => {
+  it("should leave no partial files on crash during write", async () => {
     const tempVault = await createTempDirectory()
     const db = new Database(createMemoryUrl())
     applyTestPragmas(db)
@@ -403,74 +457,94 @@ describe('Crash Recovery', () => {
 
     // ✅ Use TestKit fault injection (not vi.spyOn)
     const faultInjector = createFaultInjector()
-    faultInjector.injectWriteError(new Error('CRASH'))
+    faultInjector.injectWriteError(new Error("CRASH"))
 
-    const atomicWriter = new ObsidianAtomicWriter(tempVault.path, db, { faultInjector })
-    const result = await atomicWriter.writeAtomic('01HZVM8YWRQT5J3M3K7YPTX9RZ', 'content', tempVault.path)
+    const atomicWriter = new ObsidianAtomicWriter(tempVault.path, db, {
+      faultInjector,
+    })
+    const result = await atomicWriter.writeAtomic(
+      "01HZVM8YWRQT5J3M3K7YPTX9RZ",
+      "content",
+      tempVault.path
+    )
 
     // Verify failure
     expect(result.success).toBe(false)
 
     // Verify no partial file in inbox
-    const inboxFiles = await tempVault.listFiles('inbox')
+    const inboxFiles = await tempVault.listFiles("inbox")
     expect(inboxFiles).toHaveLength(0)
 
     // Verify no temp file remains
-    const trashFiles = await tempVault.listFiles('.trash')
+    const trashFiles = await tempVault.listFiles(".trash")
     expect(trashFiles).toHaveLength(0)
 
     // Verify no audit record created
-    const auditRecords = db.prepare('SELECT * FROM exports_audit').all()
+    const auditRecords = db.prepare("SELECT * FROM exports_audit").all()
     expect(auditRecords).toHaveLength(0)
 
     // Cleanup happens automatically with TestKit
   })
 
-  it('should clean up temp file on crash during fsync', async () => {
+  it("should clean up temp file on crash during fsync", async () => {
     const tempVault = await createTempDirectory()
     const db = new Database(createMemoryUrl())
 
     // ✅ Use TestKit fault injection (not vi.spyOn)
     const faultInjector = createFaultInjector()
-    faultInjector.injectFsyncError(new Error('FSYNC_CRASH'))
+    faultInjector.injectFsyncError(new Error("FSYNC_CRASH"))
 
-    const atomicWriter = new ObsidianAtomicWriter(tempVault.path, db, { faultInjector })
-    const result = await atomicWriter.writeAtomic('01HZVM8YWRQT5J3M3K7YPTX9RZ', 'content', tempVault.path)
+    const atomicWriter = new ObsidianAtomicWriter(tempVault.path, db, {
+      faultInjector,
+    })
+    const result = await atomicWriter.writeAtomic(
+      "01HZVM8YWRQT5J3M3K7YPTX9RZ",
+      "content",
+      tempVault.path
+    )
 
     expect(result.success).toBe(false)
 
     // Verify temp file cleaned up
-    const tempPath = tempVault.getPath('.trash/01HZVM8YWRQT5J3M3K7YPTX9RZ.tmp')
+    const tempPath = tempVault.getPath(".trash/01HZVM8YWRQT5J3M3K7YPTX9RZ.tmp")
     expect(fs.existsSync(tempPath)).toBe(false)
 
     // Cleanup happens automatically with TestKit
   })
 
-  it('should handle process restart with pending exports', async () => {
+  it("should handle process restart with pending exports", async () => {
     const tempVault = await createTempDirectory()
     const db = new Database(createMemoryUrl())
     applyTestPragmas(db)
     await setupCapturesTable(db)
 
     // Insert capture that was staged but not exported
-    const capture_id = '01HZVM8YWRQT5J3M3K7YPTX9RZ'
-    db.prepare('INSERT INTO captures (id, source, raw_content, status) VALUES (?, ?, ?, ?)').run(
-      capture_id, 'voice', 'test content', 'transcribed'
-    )
+    const capture_id = "01HZVM8YWRQT5J3M3K7YPTX9RZ"
+    db.prepare(
+      "INSERT INTO captures (id, source, raw_content, status) VALUES (?, ?, ?, ?)"
+    ).run(capture_id, "voice", "test content", "transcribed")
 
     // Simulate restart - should detect and export pending capture
     const atomicWriter = new ObsidianAtomicWriter(tempVault.path, db)
-    const pendingCaptures = db.prepare('SELECT * FROM captures WHERE status = ? AND id NOT IN (SELECT capture_id FROM exports_audit)').all('transcribed')
+    const pendingCaptures = db
+      .prepare(
+        "SELECT * FROM captures WHERE status = ? AND id NOT IN (SELECT capture_id FROM exports_audit)"
+      )
+      .all("transcribed")
 
     expect(pendingCaptures).toHaveLength(1)
     expect(pendingCaptures[0].id).toBe(capture_id)
 
     // Resume export
     const content = formatMarkdownExport(pendingCaptures[0])
-    const result = await atomicWriter.writeAtomic(capture_id, content, tempVault.path)
+    const result = await atomicWriter.writeAtomic(
+      capture_id,
+      content,
+      tempVault.path
+    )
 
     expect(result.success).toBe(true)
-    assertFileExists(tempVault.getPath('inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md'))
+    assertFileExists(tempVault.getPath("inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md"))
   })
 })
 ```
@@ -482,7 +556,7 @@ describe('Crash Recovery', () => {
 **Test Cases:**
 
 ```typescript
-describe('SQLite Audit Contract', () => {
+describe("SQLite Audit Contract", () => {
   let db: Database
 
   beforeEach(async () => {
@@ -491,63 +565,69 @@ describe('SQLite Audit Contract', () => {
     await setupStagingLedgerSchema(db)
   })
 
-  it('should enforce foreign key constraint on exports_audit', async () => {
+  it("should enforce foreign key constraint on exports_audit", async () => {
     // Try to insert audit record without corresponding capture
     expect(() => {
-      db.prepare('INSERT INTO exports_audit (id, capture_id, vault_path) VALUES (?, ?, ?)').run(
-        'audit1', 'nonexistent_capture', 'inbox/test.md'
-      )
+      db.prepare(
+        "INSERT INTO exports_audit (id, capture_id, vault_path) VALUES (?, ?, ?)"
+      ).run("audit1", "nonexistent_capture", "inbox/test.md")
     }).toThrow(/FOREIGN KEY constraint failed/)
   })
 
-  it('should cascade delete audit records when capture is deleted', async () => {
-    const capture_id = '01HZVM8YWRQT5J3M3K7YPTX9RZ'
+  it("should cascade delete audit records when capture is deleted", async () => {
+    const capture_id = "01HZVM8YWRQT5J3M3K7YPTX9RZ"
 
     // Insert capture
-    db.prepare('INSERT INTO captures (id, source, raw_content, status) VALUES (?, ?, ?, ?)').run(
-      capture_id, 'voice', 'test', 'exported'
-    )
+    db.prepare(
+      "INSERT INTO captures (id, source, raw_content, status) VALUES (?, ?, ?, ?)"
+    ).run(capture_id, "voice", "test", "exported")
 
     // Insert audit record
-    db.prepare('INSERT INTO exports_audit (id, capture_id, vault_path) VALUES (?, ?, ?)').run(
-      'audit1', capture_id, 'inbox/test.md'
-    )
+    db.prepare(
+      "INSERT INTO exports_audit (id, capture_id, vault_path) VALUES (?, ?, ?)"
+    ).run("audit1", capture_id, "inbox/test.md")
 
     // Verify audit record exists
-    const auditBefore = db.prepare('SELECT * FROM exports_audit WHERE capture_id = ?').get(capture_id)
+    const auditBefore = db
+      .prepare("SELECT * FROM exports_audit WHERE capture_id = ?")
+      .get(capture_id)
     expect(auditBefore).toBeDefined()
 
     // Delete capture
-    db.prepare('DELETE FROM captures WHERE id = ?').run(capture_id)
+    db.prepare("DELETE FROM captures WHERE id = ?").run(capture_id)
 
     // Verify audit record was cascade deleted
-    const auditAfter = db.prepare('SELECT * FROM exports_audit WHERE capture_id = ?').get(capture_id)
+    const auditAfter = db
+      .prepare("SELECT * FROM exports_audit WHERE capture_id = ?")
+      .get(capture_id)
     expect(auditAfter).toBeUndefined()
   })
 
-  it('should allow multiple audit records for same export (initial + duplicate)', async () => {
-    const capture_id = '01HZVM8YWRQT5J3M3K7YPTX9RZ'
+  it("should allow multiple audit records for same export (initial + duplicate)", async () => {
+    const capture_id = "01HZVM8YWRQT5J3M3K7YPTX9RZ"
 
     // Insert capture
-    db.prepare('INSERT INTO captures (id, source, raw_content, status) VALUES (?, ?, ?, ?)').run(
-      capture_id, 'voice', 'test', 'exported'
-    )
+    db.prepare(
+      "INSERT INTO captures (id, source, raw_content, status) VALUES (?, ?, ?, ?)"
+    ).run(capture_id, "voice", "test", "exported")
 
     // Insert first audit record
-    db.prepare('INSERT INTO exports_audit (id, capture_id, vault_path, mode) VALUES (?, ?, ?, ?)').run(
-      'audit1', capture_id, 'inbox/test.md', 'initial'
-    )
+    db.prepare(
+      "INSERT INTO exports_audit (id, capture_id, vault_path, mode) VALUES (?, ?, ?, ?)"
+    ).run("audit1", capture_id, "inbox/test.md", "initial")
 
     // Insert second audit record (duplicate detection, allowed)
-    db.prepare('INSERT INTO exports_audit (id, capture_id, vault_path, mode) VALUES (?, ?, ?, ?)').run(
-      'audit2', capture_id, 'inbox/test.md', 'duplicate_skip'
-    )
+    db.prepare(
+      "INSERT INTO exports_audit (id, capture_id, vault_path, mode) VALUES (?, ?, ?, ?)"
+    ).run("audit2", capture_id, "inbox/test.md", "duplicate_skip")
 
     // Both records should exist
-    const auditRecords = db.prepare('SELECT * FROM exports_audit WHERE capture_id = ?').all(capture_id)
+    const auditRecords = db
+      .prepare("SELECT * FROM exports_audit WHERE capture_id = ?")
+      .all(capture_id)
     expect(auditRecords).toHaveLength(2)
-    expect(auditRecords[0].mode).toBe('initial')
-    expect(auditRecords[1].mode).toBe('duplicate_skip')
+    expect(auditRecords[0].mode).toBe("initial")
+    expect(auditRecords[1].mode).toBe("duplicate_skip")
   })
 })
 ```
@@ -559,8 +639,8 @@ describe('SQLite Audit Contract', () => {
 **Test Cases:**
 
 ```typescript
-describe('Filesystem Error Handling', () => {
-  it('should handle EACCES (permission denied) gracefully', async () => {
+describe("Filesystem Error Handling", () => {
+  it("should handle EACCES (permission denied) gracefully", async () => {
     const tempVault = await createTempDirectory()
     const db = new Database(createMemoryUrl())
 
@@ -568,81 +648,109 @@ describe('Filesystem Error Handling', () => {
     await fs.chmod(tempVault.path, 0o444)
 
     const atomicWriter = new ObsidianAtomicWriter(tempVault.path, db)
-    const result = await atomicWriter.writeAtomic('01HZVM8YWRQT5J3M3K7YPTX9RZ', 'content', tempVault.path)
+    const result = await atomicWriter.writeAtomic(
+      "01HZVM8YWRQT5J3M3K7YPTX9RZ",
+      "content",
+      tempVault.path
+    )
 
     expect(result.success).toBe(false)
-    expect(result.error?.code).toBe('EACCES')
-    expect(result.error?.message).toContain('permission denied')
+    expect(result.error?.code).toBe("EACCES")
+    expect(result.error?.message).toContain("permission denied")
 
     // Verify error logged
-    const errorRecord = db.prepare('SELECT * FROM errors_log WHERE stage = ?').get('export')
+    const errorRecord = db
+      .prepare("SELECT * FROM errors_log WHERE stage = ?")
+      .get("export")
     expect(errorRecord).toBeDefined()
-    expect(errorRecord.message).toContain('permission denied')
+    expect(errorRecord.message).toContain("permission denied")
 
     // Restore permissions for cleanup
     await fs.chmod(tempVault.path, 0o755)
   })
 
-  it('should handle ENOSPC (disk full) by halting worker', async () => {
+  it("should handle ENOSPC (disk full) by halting worker", async () => {
     const tempVault = await createTempDirectory()
     const db = new Database(createMemoryUrl())
 
     // ✅ Use TestKit fault injection (not vi.spyOn)
     const faultInjector = createFaultInjector()
     faultInjector.injectWriteError(
-      Object.assign(new Error('No space left on device'), { code: 'ENOSPC' })
+      Object.assign(new Error("No space left on device"), { code: "ENOSPC" })
     )
 
-    const atomicWriter = new ObsidianAtomicWriter(tempVault.path, db, { faultInjector })
-    const result = await atomicWriter.writeAtomic('01HZVM8YWRQT5J3M3K7YPTX9RZ', 'content', tempVault.path)
+    const atomicWriter = new ObsidianAtomicWriter(tempVault.path, db, {
+      faultInjector,
+    })
+    const result = await atomicWriter.writeAtomic(
+      "01HZVM8YWRQT5J3M3K7YPTX9RZ",
+      "content",
+      tempVault.path
+    )
 
     expect(result.success).toBe(false)
-    expect(result.error?.code).toBe('ENOSPC')
+    expect(result.error?.code).toBe("ENOSPC")
 
     // Verify worker halt logged
-    const errorRecord = db.prepare('SELECT * FROM errors_log WHERE message LIKE ?').get('%disk full%')
+    const errorRecord = db
+      .prepare("SELECT * FROM errors_log WHERE message LIKE ?")
+      .get("%disk full%")
     expect(errorRecord).toBeDefined()
 
     // Cleanup automatic with TestKit
   })
 
-  it('should handle EROFS (read-only filesystem) by halting worker', async () => {
+  it("should handle EROFS (read-only filesystem) by halting worker", async () => {
     const tempVault = await createTempDirectory()
     const db = new Database(createMemoryUrl())
 
     // ✅ Use TestKit fault injection (not vi.spyOn)
     const faultInjector = createFaultInjector()
     faultInjector.injectWriteError(
-      Object.assign(new Error('Read-only file system'), { code: 'EROFS' })
+      Object.assign(new Error("Read-only file system"), { code: "EROFS" })
     )
 
-    const atomicWriter = new ObsidianAtomicWriter(tempVault.path, db, { faultInjector })
-    const result = await atomicWriter.writeAtomic('01HZVM8YWRQT5J3M3K7YPTX9RZ', 'content', tempVault.path)
+    const atomicWriter = new ObsidianAtomicWriter(tempVault.path, db, {
+      faultInjector,
+    })
+    const result = await atomicWriter.writeAtomic(
+      "01HZVM8YWRQT5J3M3K7YPTX9RZ",
+      "content",
+      tempVault.path
+    )
 
     expect(result.success).toBe(false)
-    expect(result.error?.code).toBe('EROFS')
+    expect(result.error?.code).toBe("EROFS")
 
     // Cleanup automatic with TestKit
   })
 
-  it('should handle ENETDOWN per [Network Pattern](../../guides/guide-resilience-patterns.md#network-errors)', async () => {
+  it("should handle ENETDOWN per [Network Pattern](../../guides/guide-resilience-patterns.md#network-errors)", async () => {
     const tempVault = await createTempDirectory()
     const db = new Database(createMemoryUrl())
 
     // ✅ Use TestKit fault injection (not vi.spyOn)
     const faultInjector = createFaultInjector()
     faultInjector.injectWriteError(
-      Object.assign(new Error('Network is down'), { code: 'ENETDOWN' })
+      Object.assign(new Error("Network is down"), { code: "ENETDOWN" })
     )
 
-    const atomicWriter = new ObsidianAtomicWriter(tempVault.path, db, { faultInjector })
-    const result = await atomicWriter.writeAtomic('01HZVM8YWRQT5J3M3K7YPTX9RZ', 'content', tempVault.path)
+    const atomicWriter = new ObsidianAtomicWriter(tempVault.path, db, {
+      faultInjector,
+    })
+    const result = await atomicWriter.writeAtomic(
+      "01HZVM8YWRQT5J3M3K7YPTX9RZ",
+      "content",
+      tempVault.path
+    )
 
     expect(result.success).toBe(false)
-    expect(result.error?.code).toBe('ENETDOWN')
+    expect(result.error?.code).toBe("ENETDOWN")
 
     // Verify retry eligibility per [Resilience Guide](../../guides/guide-resilience-patterns.md)
-    const errorRecord = db.prepare('SELECT * FROM errors_log WHERE message LIKE ?').get('%network%')
+    const errorRecord = db
+      .prepare("SELECT * FROM errors_log WHERE message LIKE ?")
+      .get("%network%")
     expect(errorRecord).toBeDefined()
 
     // Cleanup automatic with TestKit
@@ -659,6 +767,7 @@ describe('Filesystem Error Handling', () => {
 #### Test Suite: Export Performance (`performance.test.ts`)
 
 **Performance Requirements:**
+
 - Export time < 50ms p95 for 1KB markdown files
 - Memory usage < 10MB during export
 - Disk I/O: 1x write amplification (temp file only)
@@ -666,8 +775,8 @@ describe('Filesystem Error Handling', () => {
 **Test Cases:**
 
 ```typescript
-describe('Export Performance', () => {
-  it('should complete export within 50ms p95', async () => {
+describe("Export Performance", () => {
+  it("should complete export within 50ms p95", async () => {
     const tempVault = await createTempDirectory()
     const db = new Database(createMemoryUrl())
     const atomicWriter = new ObsidianAtomicWriter(tempVault.path, db)
@@ -679,8 +788,8 @@ describe('Export Performance', () => {
       const startTime = performance.now()
 
       const result = await atomicWriter.writeAtomic(
-        `01HZVM8YWRQT5J3M3K7YPTX9R${i.toString().padStart(2, '0')}`,
-        'x'.repeat(1024), // 1KB content
+        `01HZVM8YWRQT5J3M3K7YPTX9R${i.toString().padStart(2, "0")}`,
+        "x".repeat(1024), // 1KB content
         tempVault.path
       )
 
@@ -698,23 +807,29 @@ describe('Export Performance', () => {
     expect(p95Latency).toBeLessThan(50) // 50ms target
   })
 
-  it('should handle large markdown files efficiently', async () => {
+  it("should handle large markdown files efficiently", async () => {
     const tempVault = await createTempDirectory()
     const db = new Database(createMemoryUrl())
     const atomicWriter = new ObsidianAtomicWriter(tempVault.path, db)
 
     // Test with 100KB markdown file
-    const largeContent = 'x'.repeat(100 * 1024)
+    const largeContent = "x".repeat(100 * 1024)
 
     const startTime = performance.now()
-    const result = await atomicWriter.writeAtomic('01HZVM8YWRQT5J3M3K7YPTX9RZ', largeContent, tempVault.path)
+    const result = await atomicWriter.writeAtomic(
+      "01HZVM8YWRQT5J3M3K7YPTX9RZ",
+      largeContent,
+      tempVault.path
+    )
     const endTime = performance.now()
 
     expect(result.success).toBe(true)
     expect(endTime - startTime).toBeLessThan(200) // 200ms for large files
 
     // Verify file written correctly
-    const fileContent = await tempVault.readFile('inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md')
+    const fileContent = await tempVault.readFile(
+      "inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md"
+    )
     expect(fileContent).toBe(largeContent)
   })
 })
@@ -725,12 +840,12 @@ describe('Export Performance', () => {
 **Note:** Sequential processing only in Phase 1, but prepare test infrastructure for Phase 2.
 
 ```typescript
-describe('Concurrent Access (Phase 2)', () => {
-  it.skip('should handle concurrent writes to different files safely', async () => {
+describe("Concurrent Access (Phase 2)", () => {
+  it.skip("should handle concurrent writes to different files safely", async () => {
     // Deferred to Phase 2 when concurrency is introduced
   })
 
-  it.skip('should detect and prevent concurrent writes to same ULID', async () => {
+  it.skip("should detect and prevent concurrent writes to same ULID", async () => {
     // Deferred to Phase 2 when worker pool is implemented
   })
 })
@@ -843,7 +958,7 @@ async function setupStagingLedgerSchema(db: Database): Promise<void> {
   `)
 
   // Enable foreign keys
-  db.pragma('foreign_keys = ON')
+  db.pragma("foreign_keys = ON")
 }
 ```
 
@@ -855,9 +970,9 @@ async function setupStagingLedgerSchema(db: Database): Promise<void> {
 
 ```typescript
 // ✅ CORRECT: TestKit fault injection
-import { createFaultInjector } from '@adhd-brain/testkit/fault-injection'
+import { createFaultInjector } from "@adhd-brain/testkit/fault-injection"
 
-describe('Filesystem Error Handling', () => {
+describe("Filesystem Error Handling", () => {
   let faultInjector: FaultInjector
   let tempVault: TempDirectory
   let atomicWriter: ObsidianAtomicWriter
@@ -865,7 +980,9 @@ describe('Filesystem Error Handling', () => {
   beforeEach(async () => {
     faultInjector = createFaultInjector()
     tempVault = await createTempDirectory()
-    atomicWriter = new ObsidianAtomicWriter(tempVault.path, db, { faultInjector })
+    atomicWriter = new ObsidianAtomicWriter(tempVault.path, db, {
+      faultInjector,
+    })
   })
 
   afterEach(async () => {
@@ -873,52 +990,69 @@ describe('Filesystem Error Handling', () => {
     // Fault injector auto-resets between tests
   })
 
-  test('handles disk full error (ENOSPC)', async () => {
+  test("handles disk full error (ENOSPC)", async () => {
     faultInjector.injectWriteError(
-      Object.assign(new Error('No space left on device'), { code: 'ENOSPC' })
+      Object.assign(new Error("No space left on device"), { code: "ENOSPC" })
     )
 
-    const result = await atomicWriter.writeAtomic('01HZVM...', 'content', tempVault.path)
-
-    expect(result.success).toBe(false)
-    expect(result.error?.code).toBe('ENOSPC')
-  })
-
-  test('handles permission denied (EACCES)', async () => {
-    faultInjector.injectWriteError(
-      Object.assign(new Error('Permission denied'), { code: 'EACCES' })
+    const result = await atomicWriter.writeAtomic(
+      "01HZVM...",
+      "content",
+      tempVault.path
     )
 
-    const result = await atomicWriter.writeAtomic('01HZVM...', 'content', tempVault.path)
-
     expect(result.success).toBe(false)
-    expect(result.error?.code).toBe('EACCES')
+    expect(result.error?.code).toBe("ENOSPC")
   })
 
-  test('handles network mount failure (ENETDOWN)', async () => {
+  test("handles permission denied (EACCES)", async () => {
     faultInjector.injectWriteError(
-      Object.assign(new Error('Network is down'), { code: 'ENETDOWN' })
+      Object.assign(new Error("Permission denied"), { code: "EACCES" })
     )
 
-    const result = await atomicWriter.writeAtomic('01HZVM...', 'content', tempVault.path)
+    const result = await atomicWriter.writeAtomic(
+      "01HZVM...",
+      "content",
+      tempVault.path
+    )
 
     expect(result.success).toBe(false)
-    expect(result.error?.code).toBe('ENETDOWN')
+    expect(result.error?.code).toBe("EACCES")
   })
 
-  test('handles fsync crash', async () => {
-    faultInjector.injectFsyncError(new Error('FSYNC_CRASH'))
+  test("handles network mount failure (ENETDOWN)", async () => {
+    faultInjector.injectWriteError(
+      Object.assign(new Error("Network is down"), { code: "ENETDOWN" })
+    )
 
-    const result = await atomicWriter.writeAtomic('01HZVM...', 'content', tempVault.path)
+    const result = await atomicWriter.writeAtomic(
+      "01HZVM...",
+      "content",
+      tempVault.path
+    )
+
+    expect(result.success).toBe(false)
+    expect(result.error?.code).toBe("ENETDOWN")
+  })
+
+  test("handles fsync crash", async () => {
+    faultInjector.injectFsyncError(new Error("FSYNC_CRASH"))
+
+    const result = await atomicWriter.writeAtomic(
+      "01HZVM...",
+      "content",
+      tempVault.path
+    )
 
     expect(result.success).toBe(false)
     // Temp file should be cleaned up
-    expect(await tempVault.exists('.trash/*.tmp')).toBe(false)
+    expect(await tempVault.exists(".trash/*.tmp")).toBe(false)
   })
 })
 ```
 
 **Key Advantages of TestKit Fault Injection:**
+
 - ✅ No manual `vi.spyOn` cleanup required
 - ✅ Automatic reset between tests
 - ✅ Type-safe error injection
@@ -926,6 +1060,7 @@ describe('Filesystem Error Handling', () => {
 - ✅ Reusable across all packages
 
 **See Also:**
+
 - [Fault Injection Registry](../../guides/guide-fault-injection-registry.md) - Complete error code catalog
 - [TestKit Standardization Guide](../../guides/guide-testkit-standardization.md) - Migration patterns
 
@@ -964,11 +1099,11 @@ name: Obsidian Bridge Tests
 on:
   push:
     paths:
-      - 'packages/obsidian-bridge/**'
-      - 'packages/staging-ledger/**'
+      - "packages/obsidian-bridge/**"
+      - "packages/staging-ledger/**"
   pull_request:
     paths:
-      - 'packages/obsidian-bridge/**'
+      - "packages/obsidian-bridge/**"
 
 jobs:
   test:
@@ -979,8 +1114,8 @@ jobs:
       - uses: pnpm/action-setup@v2
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          node-version: "20"
+          cache: "pnpm"
 
       - run: pnpm install
 
@@ -1016,8 +1151,8 @@ jobs:
 
 ```typescript
 // Global test setup (vitest.setup.ts)
-import '@template/testkit/register'
-import { setupMSWGlobal } from '@template/testkit/msw'
+import "@template/testkit/register"
+import { setupMSWGlobal } from "@template/testkit/msw"
 
 // Setup MSW with empty handlers (tests add their own)
 setupMSWGlobal([])
@@ -1025,7 +1160,7 @@ setupMSWGlobal([])
 // Per-test isolation (each test file)
 beforeEach(async () => {
   // Reset time to deterministic baseline
-  useFakeTimers({ now: new Date('2025-09-27T10:00:00Z') })
+  useFakeTimers({ now: new Date("2025-09-27T10:00:00Z") })
 
   // Reset randomness to deterministic seed
   controlRandomness(12345)
@@ -1052,33 +1187,33 @@ afterEach(async () => {
 
 ### 8.1 Test Coverage Requirements
 
-| Component | Coverage Target | Metric |
-|-----------|----------------|--------|
-| **AtomicWriter Core** | 100% | Line coverage |
-| **Path Resolution** | 100% | Branch coverage |
-| **Collision Detection** | 100% | All collision types tested |
-| **Error Handling** | 100% | All error codes tested |
-| **Audit Trail** | 100% | All audit modes tested |
-| **Content Formatting** | 95% | Edge cases covered |
+| Component               | Coverage Target | Metric                     |
+| ----------------------- | --------------- | -------------------------- |
+| **AtomicWriter Core**   | 100%            | Line coverage              |
+| **Path Resolution**     | 100%            | Branch coverage            |
+| **Collision Detection** | 100%            | All collision types tested |
+| **Error Handling**      | 100%            | All error codes tested     |
+| **Audit Trail**         | 100%            | All audit modes tested     |
+| **Content Formatting**  | 95%             | Edge cases covered         |
 
 ### 8.2 Performance Gates
 
-| Test | Requirement | Tolerance |
-|------|-------------|-----------|
-| **Export Latency** | < 50ms p95 | ±5ms |
-| **Memory Usage** | < 10MB peak | ±2MB |
-| **Disk I/O** | 1x write amplification | No higher |
-| **Test Suite Runtime** | < 30 seconds total | ±5 seconds |
+| Test                   | Requirement            | Tolerance  |
+| ---------------------- | ---------------------- | ---------- |
+| **Export Latency**     | < 50ms p95             | ±5ms       |
+| **Memory Usage**       | < 10MB peak            | ±2MB       |
+| **Disk I/O**           | 1x write amplification | No higher  |
+| **Test Suite Runtime** | < 30 seconds total     | ±5 seconds |
 
 ### 8.3 Reliability Gates
 
-| Test Category | Success Rate | Requirement |
-|---------------|--------------|-------------|
-| **Unit Tests** | 100% | All tests pass |
-| **Integration Tests** | 100% | All tests pass |
-| **Contract Tests** | 100% | All tests pass |
-| **Crash Recovery** | 100% | No data loss |
-| **Error Handling** | 100% | Graceful degradation |
+| Test Category         | Success Rate | Requirement          |
+| --------------------- | ------------ | -------------------- |
+| **Unit Tests**        | 100%         | All tests pass       |
+| **Integration Tests** | 100%         | All tests pass       |
+| **Contract Tests**    | 100%         | All tests pass       |
+| **Crash Recovery**    | 100%         | No data loss         |
+| **Error Handling**    | 100%         | Graceful degradation |
 
 ### 8.4 Quality Metrics
 
@@ -1105,17 +1240,20 @@ afterEach(async () => {
 ### 9.1 Phase 2 Enhancements
 
 **Retry Logic Testing (Phase 2):**
+
 - Test patterns from [Resilience Guide](../../guides/guide-resilience-patterns.md#retry-parameters)
 - Verify exponential backoff per guide
 - Max retry limits per pattern
 - Jitter verification per guide
 
 **Metrics Collection Testing (Phase 2):**
+
 - NDJSON log format validation
 - Metric accuracy verification
 - Local-only privacy compliance
 
 **Health Command Integration (Phase 2):**
+
 - Vault validation testing
 - Orphaned file detection
 - Export consistency checks
@@ -1123,11 +1261,13 @@ afterEach(async () => {
 ### 9.2 Phase 3+ Testing
 
 **PARA Classification Testing (Phase 3+):**
+
 - Dynamic export path resolution
 - Template-based filename generation
 - Conflict resolution beyond atomicity
 
 **Multi-Vault Support Testing (Phase 5+):**
+
 - Cross-vault export testing
 - Vault configuration validation
 - Concurrent vault write testing
@@ -1135,6 +1275,7 @@ afterEach(async () => {
 ### 9.3 Long-term Monitoring
 
 **Production Testing Hooks:**
+
 - Canary testing infrastructure
 - A/B testing for performance optimizations
 - Real-world usage metrics validation
@@ -1154,6 +1295,7 @@ afterEach(async () => {
 - **TestKit Guide:** `../../guides/guide-testkit-usage.md` (v0.1.0) - Testing utilities reference
 
 **Related ADRs:**
+
 - [ADR 0009: Atomic Write via Temp-Then-Rename Pattern](../../adr/0009-atomic-write-temp-rename-pattern.md) - Testing requirements for atomicity guarantees
 - [ADR 0010: ULID-Based Deterministic Filenames](../../adr/0010-ulid-deterministic-filenames.md) - Test scenarios for collision detection and idempotency
 - [ADR 0011: Inbox-Only Export Pattern](../../adr/0011-inbox-only-export-pattern.md) - Test implications of single-directory export strategy
@@ -1182,18 +1324,19 @@ afterEach(async () => {
 These tests verify the atomic handoff between the staging ledger and Obsidian bridge components, ensuring P0 cross-feature risks are covered.
 
 #### Test Suite: Staging Ledger → Obsidian Bridge Integration
+
 ```typescript
-describe('Staging Ledger → Obsidian Bridge Integration', () => {
+describe("Staging Ledger → Obsidian Bridge Integration", () => {
   let ledger: StagingLedger
   let atomicWriter: ObsidianAtomicWriter
   let tempVault: TempDirectory
 
   beforeEach(async () => {
-    tempVault = await createTempDirectory({ prefix: 'vault-integration-' })
+    tempVault = await createTempDirectory({ prefix: "vault-integration-" })
     ledger = createTestLedger()
     atomicWriter = new ObsidianAtomicWriter(tempVault.path, ledger.db)
 
-    useFakeTimers({ now: new Date('2025-09-27T10:00:00Z') })
+    useFakeTimers({ now: new Date("2025-09-27T10:00:00Z") })
     controlRandomness(12345)
   })
 
@@ -1203,181 +1346,213 @@ describe('Staging Ledger → Obsidian Bridge Integration', () => {
     vi.useRealTimers()
   })
 
-  it('maintains transactional integrity during export pipeline', async () => {
+  it("maintains transactional integrity during export pipeline", async () => {
     // === STAGE 1: Set up staged capture ===
-    const captureId = '01HZVM8YWRQT5J3M3K7YPTX9RZ'
-    const content = 'Test content for transactional integrity'
+    const captureId = "01HZVM8YWRQT5J3M3K7YPTX9RZ"
+    const content = "Test content for transactional integrity"
     const contentHash = computeContentHash(content)
 
     await ledger.insertCapture({
       id: captureId,
-      source: 'email',
+      source: "email",
       raw_content: content,
       content_hash: contentHash,
       meta_json: {
-        channel: 'email',
-        channel_native_id: 'msg_123',
-        from: 'test@example.com',
-        subject: 'Test Subject'
-      }
+        channel: "email",
+        channel_native_id: "msg_123",
+        from: "test@example.com",
+        subject: "Test Subject",
+      },
     })
 
     // === STAGE 2: Export via atomic writer ===
-    const markdownContent = formatCaptureMarkdown(await ledger.getCapture(captureId))
-    const exportResult = await atomicWriter.writeAtomic(captureId, markdownContent, tempVault.path)
+    const markdownContent = formatCaptureMarkdown(
+      await ledger.getCapture(captureId)
+    )
+    const exportResult = await atomicWriter.writeAtomic(
+      captureId,
+      markdownContent,
+      tempVault.path
+    )
 
     expect(exportResult.success).toBe(true)
-    expect(exportResult.export_path).toBe('inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md')
+    expect(exportResult.export_path).toBe("inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md")
 
     // === STAGE 3: Record export in staging ledger ===
     await ledger.recordExport(captureId, {
       vault_path: exportResult.export_path,
       hash_at_export: contentHash,
-      mode: 'initial',
-      error_flag: false
+      mode: "initial",
+      error_flag: false,
     })
 
     // === STAGE 4: Verify transactional consistency ===
     // Check capture status updated
     const exportedCapture = await ledger.getCapture(captureId)
-    expect(exportedCapture?.status).toBe('exported')
+    expect(exportedCapture?.status).toBe("exported")
 
     // Check audit record created
     const auditRecords = await ledger.getExportAudits(captureId)
     expect(auditRecords).toHaveLength(1)
     expect(auditRecords[0]).toMatchObject({
       capture_id: captureId,
-      vault_path: 'inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md',
+      vault_path: "inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md",
       hash_at_export: contentHash,
-      mode: 'initial',
-      error_flag: 0
+      mode: "initial",
+      error_flag: 0,
     })
 
     // Check vault file exists and has correct content
-    const vaultFile = tempVault.getPath('inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md')
+    const vaultFile = tempVault.getPath("inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md")
     assertFileExists(vaultFile)
 
-    const fileContent = await tempVault.readFile('inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md')
+    const fileContent = await tempVault.readFile(
+      "inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md"
+    )
     expect(fileContent).toContain(content)
-    expect(fileContent).toContain('id: 01HZVM8YWRQT5J3M3K7YPTX9RZ')
-    expect(fileContent).toContain('From: test@example.com')
+    expect(fileContent).toContain("id: 01HZVM8YWRQT5J3M3K7YPTX9RZ")
+    expect(fileContent).toContain("From: test@example.com")
   })
 
-  it('handles duplicate export detection across components', async () => {
-    const captureId = '01HZVM8YWRQT5J3M3K7YPTX9RZ'
-    const content = 'Duplicate test content'
+  it("handles duplicate export detection across components", async () => {
+    const captureId = "01HZVM8YWRQT5J3M3K7YPTX9RZ"
+    const content = "Duplicate test content"
     const contentHash = computeContentHash(content)
 
     // Stage capture
     await ledger.insertCapture({
       id: captureId,
-      source: 'voice',
+      source: "voice",
       raw_content: content,
       content_hash: contentHash,
       meta_json: {
-        channel: 'voice',
-        channel_native_id: '/path/test.m4a',
-        audio_fp: 'test_fingerprint'
-      }
+        channel: "voice",
+        channel_native_id: "/path/test.m4a",
+        audio_fp: "test_fingerprint",
+      },
     })
 
     // === FIRST EXPORT ===
-    const markdownContent = formatCaptureMarkdown(await ledger.getCapture(captureId))
+    const markdownContent = formatCaptureMarkdown(
+      await ledger.getCapture(captureId)
+    )
 
-    const firstExport = await atomicWriter.writeAtomic(captureId, markdownContent, tempVault.path)
+    const firstExport = await atomicWriter.writeAtomic(
+      captureId,
+      markdownContent,
+      tempVault.path
+    )
     expect(firstExport.success).toBe(true)
 
     await ledger.recordExport(captureId, {
       vault_path: firstExport.export_path,
       hash_at_export: contentHash,
-      mode: 'initial',
-      error_flag: false
+      mode: "initial",
+      error_flag: false,
     })
 
     // === SECOND EXPORT (DUPLICATE) ===
-    const secondExport = await atomicWriter.writeAtomic(captureId, markdownContent, tempVault.path)
+    const secondExport = await atomicWriter.writeAtomic(
+      captureId,
+      markdownContent,
+      tempVault.path
+    )
     expect(secondExport.success).toBe(true) // Should succeed but detect duplicate
 
     await ledger.recordExport(captureId, {
       vault_path: secondExport.export_path,
       hash_at_export: contentHash,
-      mode: 'duplicate_skip',
-      error_flag: false
+      mode: "duplicate_skip",
+      error_flag: false,
     })
 
     // === VERIFICATION ===
     // Only one file should exist
-    const vaultFiles = await tempVault.listFiles('inbox')
+    const vaultFiles = await tempVault.listFiles("inbox")
     expect(vaultFiles).toHaveLength(1)
 
     // Two audit records should exist (initial + duplicate)
     const auditRecords = await ledger.getExportAudits(captureId)
     expect(auditRecords).toHaveLength(2)
-    expect(auditRecords[0].mode).toBe('initial')
-    expect(auditRecords[1].mode).toBe('duplicate_skip')
+    expect(auditRecords[0].mode).toBe("initial")
+    expect(auditRecords[1].mode).toBe("duplicate_skip")
 
     // Capture should remain in exported state
     const capture = await ledger.getCapture(captureId)
-    expect(capture?.status).toBe('exported')
+    expect(capture?.status).toBe("exported")
   })
 
-  it('handles ULID collision detection between components', async () => {
-    const conflictingULID = '01HZVM8YWRQT5J3M3K7YPTX9RZ'
-    const content1 = 'Original content'
-    const content2 = 'Different content with same ULID'
+  it("handles ULID collision detection between components", async () => {
+    const conflictingULID = "01HZVM8YWRQT5J3M3K7YPTX9RZ"
+    const content1 = "Original content"
+    const content2 = "Different content with same ULID"
     const hash1 = computeContentHash(content1)
     const hash2 = computeContentHash(content2)
 
     // === FIRST CAPTURE WITH ULID ===
     await ledger.insertCapture({
       id: conflictingULID,
-      source: 'email',
+      source: "email",
       raw_content: content1,
       content_hash: hash1,
-      meta_json: { channel: 'email', channel_native_id: 'msg_1' }
+      meta_json: { channel: "email", channel_native_id: "msg_1" },
     })
 
-    const markdown1 = formatCaptureMarkdown(await ledger.getCapture(conflictingULID))
-    const export1 = await atomicWriter.writeAtomic(conflictingULID, markdown1, tempVault.path)
+    const markdown1 = formatCaptureMarkdown(
+      await ledger.getCapture(conflictingULID)
+    )
+    const export1 = await atomicWriter.writeAtomic(
+      conflictingULID,
+      markdown1,
+      tempVault.path
+    )
     expect(export1.success).toBe(true)
 
     await ledger.recordExport(conflictingULID, {
       vault_path: export1.export_path,
       hash_at_export: hash1,
-      mode: 'initial',
-      error_flag: false
+      mode: "initial",
+      error_flag: false,
     })
 
     // === SECOND CAPTURE WITH SAME ULID (CONFLICT) ===
     // This simulates a ULID collision scenario (extremely rare but must be handled)
     const markdown2 = formatCaptureMarkdown({
       id: conflictingULID,
-      source: 'email',
+      source: "email",
       raw_content: content2,
       content_hash: hash2,
-      meta_json: { channel: 'email', channel_native_id: 'msg_2' }
+      meta_json: { channel: "email", channel_native_id: "msg_2" },
     })
 
-    const export2 = await atomicWriter.writeAtomic(conflictingULID, markdown2, tempVault.path)
+    const export2 = await atomicWriter.writeAtomic(
+      conflictingULID,
+      markdown2,
+      tempVault.path
+    )
     expect(export2.success).toBe(false) // Should fail due to content conflict
-    expect(export2.error?.code).toBe('EEXIST')
-    expect(export2.error?.message).toContain('ULID collision')
+    expect(export2.error?.code).toBe("EEXIST")
+    expect(export2.error?.message).toContain("ULID collision")
 
     // === VERIFICATION ===
     // Original file should remain unchanged
-    const vaultContent = await tempVault.readFile('inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md')
+    const vaultContent = await tempVault.readFile(
+      "inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md"
+    )
     expect(vaultContent).toContain(content1)
     expect(vaultContent).not.toContain(content2)
 
     // Only one audit record should exist
     const auditRecords = await ledger.getExportAudits(conflictingULID)
     expect(auditRecords).toHaveLength(1)
-    expect(auditRecords[0].mode).toBe('initial')
+    expect(auditRecords[0].mode).toBe("initial")
 
     // Error should be logged
     const errorLogs = await ledger.getErrorLogs()
-    const collisionError = errorLogs.find(log =>
-      log.capture_id === conflictingULID && log.message.includes('ULID collision')
+    const collisionError = errorLogs.find(
+      (log) =>
+        log.capture_id === conflictingULID &&
+        log.message.includes("ULID collision")
     )
     expect(collisionError).toBeDefined()
   })
@@ -1387,18 +1562,19 @@ describe('Staging Ledger → Obsidian Bridge Integration', () => {
 ### 12.2 End-to-End Export Pipeline Tests
 
 #### Test Suite: Multi-Source Export Pipeline
+
 ```typescript
-describe('Multi-Source Export Pipeline', () => {
+describe("Multi-Source Export Pipeline", () => {
   let ledger: StagingLedger
   let atomicWriter: ObsidianAtomicWriter
   let tempVault: TempDirectory
 
   beforeEach(async () => {
-    tempVault = await createTempDirectory({ prefix: 'pipeline-' })
+    tempVault = await createTempDirectory({ prefix: "pipeline-" })
     ledger = createTestLedger()
     atomicWriter = new ObsidianAtomicWriter(tempVault.path, ledger.db)
 
-    useFakeTimers({ now: new Date('2025-09-27T10:00:00Z') })
+    useFakeTimers({ now: new Date("2025-09-27T10:00:00Z") })
   })
 
   afterEach(async () => {
@@ -1407,37 +1583,49 @@ describe('Multi-Source Export Pipeline', () => {
     vi.useRealTimers()
   })
 
-  it('processes mixed voice and email captures in pipeline order', async () => {
+  it("processes mixed voice and email captures in pipeline order", async () => {
     // === SET UP MIXED CAPTURES ===
     const captures = [
       {
-        id: '01VOICE001',
-        source: 'voice',
-        content: 'Voice memo about project planning',
-        meta: { channel: 'voice', channel_native_id: '/path/memo1.m4a', audio_fp: 'fp_1' }
+        id: "01VOICE001",
+        source: "voice",
+        content: "Voice memo about project planning",
+        meta: {
+          channel: "voice",
+          channel_native_id: "/path/memo1.m4a",
+          audio_fp: "fp_1",
+        },
       },
       {
-        id: '01EMAIL001',
-        source: 'email',
-        content: 'Email about meeting agenda',
-        meta: { channel: 'email', channel_native_id: 'msg_1', from: 'manager@company.com' }
+        id: "01EMAIL001",
+        source: "email",
+        content: "Email about meeting agenda",
+        meta: {
+          channel: "email",
+          channel_native_id: "msg_1",
+          from: "manager@company.com",
+        },
       },
       {
-        id: '01VOICE002',
-        source: 'voice',
-        content: 'Voice memo with task reminder',
-        meta: { channel: 'voice', channel_native_id: '/path/memo2.m4a', audio_fp: 'fp_2' }
-      }
+        id: "01VOICE002",
+        source: "voice",
+        content: "Voice memo with task reminder",
+        meta: {
+          channel: "voice",
+          channel_native_id: "/path/memo2.m4a",
+          audio_fp: "fp_2",
+        },
+      },
     ]
 
     // Stage all captures
     for (const capture of captures) {
       await ledger.insertCapture({
         id: capture.id,
-        source: capture.source as 'voice' | 'email',
+        source: capture.source as "voice" | "email",
         raw_content: capture.content,
         content_hash: computeContentHash(capture.content),
-        meta_json: capture.meta
+        meta_json: capture.meta,
       })
     }
 
@@ -1446,61 +1634,66 @@ describe('Multi-Source Export Pipeline', () => {
       const captureData = await ledger.getCapture(capture.id)
       const markdownContent = formatCaptureMarkdown(captureData)
 
-      const exportResult = await atomicWriter.writeAtomic(capture.id, markdownContent, tempVault.path)
+      const exportResult = await atomicWriter.writeAtomic(
+        capture.id,
+        markdownContent,
+        tempVault.path
+      )
       expect(exportResult.success).toBe(true)
 
       await ledger.recordExport(capture.id, {
         vault_path: exportResult.export_path,
         hash_at_export: computeContentHash(capture.content),
-        mode: 'initial',
-        error_flag: false
+        mode: "initial",
+        error_flag: false,
       })
     }
 
     // === VERIFICATION ===
     // All files should exist in vault
-    const vaultFiles = await tempVault.listFiles('inbox')
+    const vaultFiles = await tempVault.listFiles("inbox")
     expect(vaultFiles).toHaveLength(3)
-    expect(vaultFiles).toContain('01VOICE001.md')
-    expect(vaultFiles).toContain('01EMAIL001.md')
-    expect(vaultFiles).toContain('01VOICE002.md')
+    expect(vaultFiles).toContain("01VOICE001.md")
+    expect(vaultFiles).toContain("01EMAIL001.md")
+    expect(vaultFiles).toContain("01VOICE002.md")
 
     // All captures should be exported
     const allCaptures = await ledger.getAllCaptures()
-    expect(allCaptures.every(c => c.status === 'exported')).toBe(true)
+    expect(allCaptures.every((c) => c.status === "exported")).toBe(true)
 
     // Verify content specificity
-    const voiceContent = await tempVault.readFile('inbox/01VOICE001.md')
-    expect(voiceContent).toContain('Voice memo about project planning')
-    expect(voiceContent).toContain('source: voice')
+    const voiceContent = await tempVault.readFile("inbox/01VOICE001.md")
+    expect(voiceContent).toContain("Voice memo about project planning")
+    expect(voiceContent).toContain("source: voice")
 
-    const emailContent = await tempVault.readFile('inbox/01EMAIL001.md')
-    expect(emailContent).toContain('Email about meeting agenda')
-    expect(emailContent).toContain('source: email')
-    expect(emailContent).toContain('From: manager@company.com')
+    const emailContent = await tempVault.readFile("inbox/01EMAIL001.md")
+    expect(emailContent).toContain("Email about meeting agenda")
+    expect(emailContent).toContain("source: email")
+    expect(emailContent).toContain("From: manager@company.com")
   })
 
-  it('handles concurrent multi-source exports without race conditions', async () => {
+  it("handles concurrent multi-source exports without race conditions", async () => {
     // Create captures from multiple sources
     const captureSpecs = [
-      { id: ulid(), source: 'voice', content: 'Concurrent voice 1' },
-      { id: ulid(), source: 'email', content: 'Concurrent email 1' },
-      { id: ulid(), source: 'voice', content: 'Concurrent voice 2' },
-      { id: ulid(), source: 'email', content: 'Concurrent email 2' },
-      { id: ulid(), source: 'voice', content: 'Concurrent voice 3' }
+      { id: ulid(), source: "voice", content: "Concurrent voice 1" },
+      { id: ulid(), source: "email", content: "Concurrent email 1" },
+      { id: ulid(), source: "voice", content: "Concurrent voice 2" },
+      { id: ulid(), source: "email", content: "Concurrent email 2" },
+      { id: ulid(), source: "voice", content: "Concurrent voice 3" },
     ]
 
     // Stage all captures
     for (const spec of captureSpecs) {
       await ledger.insertCapture({
         id: spec.id,
-        source: spec.source as 'voice' | 'email',
+        source: spec.source as "voice" | "email",
         raw_content: spec.content,
         content_hash: computeContentHash(spec.content),
         meta_json: {
           channel: spec.source,
-          channel_native_id: spec.source === 'voice' ? `/path/${spec.id}.m4a` : `msg_${spec.id}`
-        }
+          channel_native_id:
+            spec.source === "voice" ? `/path/${spec.id}.m4a` : `msg_${spec.id}`,
+        },
       })
     }
 
@@ -1509,14 +1702,18 @@ describe('Multi-Source Export Pipeline', () => {
       const captureData = await ledger.getCapture(spec.id)
       const markdownContent = formatCaptureMarkdown(captureData)
 
-      const exportResult = await atomicWriter.writeAtomic(spec.id, markdownContent, tempVault.path)
+      const exportResult = await atomicWriter.writeAtomic(
+        spec.id,
+        markdownContent,
+        tempVault.path
+      )
 
       if (exportResult.success) {
         await ledger.recordExport(spec.id, {
           vault_path: exportResult.export_path,
           hash_at_export: computeContentHash(spec.content),
-          mode: 'initial',
-          error_flag: false
+          mode: "initial",
+          error_flag: false,
         })
       }
 
@@ -1526,22 +1723,22 @@ describe('Multi-Source Export Pipeline', () => {
     const results = await Promise.allSettled(exportPromises)
 
     // All exports should succeed
-    const successful = results.filter(r => r.status === 'fulfilled')
+    const successful = results.filter((r) => r.status === "fulfilled")
     expect(successful).toHaveLength(5)
 
     // Verify all files exist
-    const vaultFiles = await tempVault.listFiles('inbox')
+    const vaultFiles = await tempVault.listFiles("inbox")
     expect(vaultFiles).toHaveLength(5)
 
     // Verify all captures exported
     const finalCaptures = await ledger.getAllCaptures()
-    expect(finalCaptures.every(c => c.status === 'exported')).toBe(true)
+    expect(finalCaptures.every((c) => c.status === "exported")).toBe(true)
 
     // Verify audit trail integrity
     for (const spec of captureSpecs) {
       const auditRecords = await ledger.getExportAudits(spec.id)
       expect(auditRecords).toHaveLength(1)
-      expect(auditRecords[0].mode).toBe('initial')
+      expect(auditRecords[0].mode).toBe("initial")
     }
   })
 })
@@ -1553,16 +1750,16 @@ describe('Multi-Source Export Pipeline', () => {
 
 ```typescript
 // Cross-feature integration utilities
-import { createTestLedger } from '@adhd-brain/staging-ledger/test-utils'
-import { ObsidianAtomicWriter } from '@adhd-brain/obsidian-bridge'
-import { createTempDirectory, assertFileExists } from '@orchestr8/testkit/fs'
-import { useFakeTimers, controlRandomness } from '@orchestr8/testkit/env'
+import { createTestLedger } from "@adhd-brain/staging-ledger/test-utils"
+import { ObsidianAtomicWriter } from "@adhd-brain/obsidian-bridge"
+import { createTempDirectory, assertFileExists } from "@orchestr8/testkit/fs"
+import { useFakeTimers, controlRandomness } from "@orchestr8/testkit/env"
 
 // Content formatters for different capture types
 function formatCaptureMarkdown(capture: CaptureRecord): string {
-  if (capture.source === 'voice') {
+  if (capture.source === "voice") {
     return formatVoiceMarkdown(capture)
-  } else if (capture.source === 'email') {
+  } else if (capture.source === "email") {
     return formatEmailMarkdown(capture)
   }
   throw new Error(`Unsupported capture source: ${capture.source}`)
@@ -1575,7 +1772,7 @@ id: ${capture.id}
 source: voice
 captured_at: ${capture.created_at}
 content_hash: ${capture.content_hash}
-audio_file: ${metadata.channel_native_id || 'unknown'}
+audio_file: ${metadata.channel_native_id || "unknown"}
 ---
 
 # Voice Capture
@@ -1586,8 +1783,8 @@ ${capture.raw_content}
 
 **Metadata:**
 - Source: Voice Recording
-- Audio File: ${metadata.channel_native_id || 'N/A'}
-- Audio Fingerprint: ${metadata.audio_fp || 'N/A'}
+- Audio File: ${metadata.channel_native_id || "N/A"}
+- Audio Fingerprint: ${metadata.audio_fp || "N/A"}
 - Captured: ${capture.created_at}`
 }
 
@@ -1598,48 +1795,63 @@ id: ${capture.id}
 source: email
 captured_at: ${capture.created_at}
 content_hash: ${capture.content_hash}
-message_id: ${metadata.channel_native_id || 'unknown'}
+message_id: ${metadata.channel_native_id || "unknown"}
 ---
 
-# Email: ${metadata.subject || 'No Subject'}
+# Email: ${metadata.subject || "No Subject"}
 
-**From:** ${metadata.from || 'Unknown'}
-**Subject:** ${metadata.subject || 'No Subject'}
+**From:** ${metadata.from || "Unknown"}
+**Subject:** ${metadata.subject || "No Subject"}
 
 ${capture.raw_content}`
 }
 
 // Custom matchers for cross-feature testing
 expect.extend({
-  async toHaveConsistentPipelineState(ledger: StagingLedger, captureId: string, expectedState: string) {
+  async toHaveConsistentPipelineState(
+    ledger: StagingLedger,
+    captureId: string,
+    expectedState: string
+  ) {
     const capture = await ledger.getCapture(captureId)
     const auditRecords = await ledger.getExportAudits(captureId)
 
     const captureStateMatch = capture?.status === expectedState
-    const auditConsistent = expectedState === 'exported' ? auditRecords.length > 0 : auditRecords.length === 0
+    const auditConsistent =
+      expectedState === "exported"
+        ? auditRecords.length > 0
+        : auditRecords.length === 0
 
     return {
       pass: captureStateMatch && auditConsistent,
-      message: () => `Expected capture ${captureId} to have consistent pipeline state: ${expectedState}`
+      message: () =>
+        `Expected capture ${captureId} to have consistent pipeline state: ${expectedState}`,
     }
   },
 
-  async toHaveValidExportChain(ledger: StagingLedger, tempVault: any, captureId: string) {
+  async toHaveValidExportChain(
+    ledger: StagingLedger,
+    tempVault: any,
+    captureId: string
+  ) {
     const capture = await ledger.getCapture(captureId)
     const auditRecords = await ledger.getExportAudits(captureId)
 
     if (!capture || auditRecords.length === 0) {
-      return { pass: false, message: () => 'Missing capture or audit records' }
+      return { pass: false, message: () => "Missing capture or audit records" }
     }
 
     const vaultPath = path.join(tempVault.path, auditRecords[0].vault_path)
-    const fileExists = await fs.access(vaultPath).then(() => true).catch(() => false)
+    const fileExists = await fs
+      .access(vaultPath)
+      .then(() => true)
+      .catch(() => false)
 
     return {
-      pass: capture.status === 'exported' && fileExists,
-      message: () => `Expected complete export chain for ${captureId}`
+      pass: capture.status === "exported" && fileExists,
+      message: () => `Expected complete export chain for ${captureId}`,
     }
-  }
+  },
 })
 ```
 
@@ -1654,8 +1866,8 @@ Performance regression gates ensure that the Obsidian Bridge maintains P0 atomic
 **Risk Classification: P1** - Performance regressions in atomic write operations impact user experience and export reliability.
 
 ```typescript
-describe('Performance Regression Detection (P1)', () => {
-  test('detects p95 latency regression for atomic write operations', async () => {
+describe("Performance Regression Detection (P1)", () => {
+  test("detects p95 latency regression for atomic write operations", async () => {
     const tempVault = await createTempDirectory()
     const ledger = createTestLedger()
     const bridge = new ObsidianAtomicWriter(tempVault.path, ledger.db)
@@ -1675,9 +1887,9 @@ describe('Performance Regression Detection (P1)', () => {
       const start = performance.now()
 
       await bridge.writeAtomic(captureId, content, contentHash, {
-        source: 'voice',
+        source: "voice",
         captured_at: new Date().toISOString(),
-        transcribed_at: new Date().toISOString()
+        transcribed_at: new Date().toISOString(),
       })
 
       latencies.push(performance.now() - start)
@@ -1691,13 +1903,15 @@ describe('Performance Regression Detection (P1)', () => {
     expect(p95).toBeLessThan(REGRESSION_THRESHOLD)
 
     // Log metrics for tracking
-    console.log(`Atomic write P95 latency: ${p95}ms (baseline: ${BASELINE_P95}ms)`)
+    console.log(
+      `Atomic write P95 latency: ${p95}ms (baseline: ${BASELINE_P95}ms)`
+    )
 
     await cleanupTempDirectory(tempVault)
     ledger.close()
   })
 
-  test('detects p95 latency regression for collision detection', async () => {
+  test("detects p95 latency regression for collision detection", async () => {
     const tempVault = await createTempDirectory()
     const ledger = createTestLedger()
     const bridge = new ObsidianAtomicWriter(tempVault.path, ledger.db)
@@ -1705,10 +1919,15 @@ describe('Performance Regression Detection (P1)', () => {
     // Pre-create files to test collision detection
     for (let i = 0; i < 50; i++) {
       const captureId = ulid()
-      await bridge.writeAtomic(captureId, `Test content ${i}`, computeContentHash(`Test content ${i}`), {
-        source: 'email',
-        captured_at: new Date().toISOString()
-      })
+      await bridge.writeAtomic(
+        captureId,
+        `Test content ${i}`,
+        computeContentHash(`Test content ${i}`),
+        {
+          source: "email",
+          captured_at: new Date().toISOString(),
+        }
+      )
     }
 
     const BASELINE_P95 = 2 // ms
@@ -1730,13 +1949,15 @@ describe('Performance Regression Detection (P1)', () => {
     const p95 = latencies[Math.floor(latencies.length * 0.95)]
 
     expect(p95).toBeLessThan(REGRESSION_THRESHOLD)
-    console.log(`Collision detection P95 latency: ${p95}ms (baseline: ${BASELINE_P95}ms)`)
+    console.log(
+      `Collision detection P95 latency: ${p95}ms (baseline: ${BASELINE_P95}ms)`
+    )
 
     await cleanupTempDirectory(tempVault)
     ledger.close()
   })
 
-  test('detects p95 latency regression for audit trail write', async () => {
+  test("detects p95 latency regression for audit trail write", async () => {
     const tempVault = await createTempDirectory()
     const ledger = createTestLedger()
     const bridge = new ObsidianAtomicWriter(tempVault.path, ledger.db)
@@ -1753,8 +1974,8 @@ describe('Performance Regression Detection (P1)', () => {
       await ledger.recordExport(captureId, {
         vault_path: `inbox/${captureId}.md`,
         hash_at_export: computeContentHash(`Test ${i}`),
-        mode: 'initial',
-        error_flag: false
+        mode: "initial",
+        error_flag: false,
       })
 
       latencies.push(performance.now() - start)
@@ -1764,13 +1985,15 @@ describe('Performance Regression Detection (P1)', () => {
     const p95 = latencies[Math.floor(latencies.length * 0.95)]
 
     expect(p95).toBeLessThan(REGRESSION_THRESHOLD)
-    console.log(`Audit trail write P95 latency: ${p95}ms (baseline: ${BASELINE_P95}ms)`)
+    console.log(
+      `Audit trail write P95 latency: ${p95}ms (baseline: ${BASELINE_P95}ms)`
+    )
 
     await cleanupTempDirectory(tempVault)
     ledger.close()
   })
 
-  test('detects throughput regression for export operations', async () => {
+  test("detects throughput regression for export operations", async () => {
     const tempVault = await createTempDirectory()
     const ledger = createTestLedger()
     const bridge = new ObsidianAtomicWriter(tempVault.path, ledger.db)
@@ -1786,11 +2009,15 @@ describe('Performance Regression Detection (P1)', () => {
 
     while (Date.now() - startTime < duration) {
       const captureId = ulid()
-      await bridge.writeAtomic(captureId, `Throughput test ${operationsCompleted}`,
-        computeContentHash(`Throughput test ${operationsCompleted}`), {
-        source: 'voice',
-        captured_at: new Date().toISOString()
-      })
+      await bridge.writeAtomic(
+        captureId,
+        `Throughput test ${operationsCompleted}`,
+        computeContentHash(`Throughput test ${operationsCompleted}`),
+        {
+          source: "voice",
+          captured_at: new Date().toISOString(),
+        }
+      )
       operationsCompleted++
     }
 
@@ -1800,13 +2027,15 @@ describe('Performance Regression Detection (P1)', () => {
     // Gate: fail if throughput drops > 25%
     expect(throughput).toBeGreaterThan(MIN_THROUGHPUT)
 
-    console.log(`Export throughput: ${throughput.toFixed(1)} ops/sec (baseline: ${BASELINE_THROUGHPUT})`)
+    console.log(
+      `Export throughput: ${throughput.toFixed(1)} ops/sec (baseline: ${BASELINE_THROUGHPUT})`
+    )
 
     await cleanupTempDirectory(tempVault)
     ledger.close()
   })
 
-  test('detects memory leak during sustained exports', async () => {
+  test("detects memory leak during sustained exports", async () => {
     const tempVault = await createTempDirectory()
     const ledger = createTestLedger()
     const bridge = new ObsidianAtomicWriter(tempVault.path, ledger.db)
@@ -1819,11 +2048,15 @@ describe('Performance Regression Detection (P1)', () => {
     // Run 1,000 operations
     for (let i = 0; i < 1_000; i++) {
       const captureId = ulid()
-      await bridge.writeAtomic(captureId, `Memory test ${i}`,
-        computeContentHash(`Memory test ${i}`), {
-        source: 'email',
-        captured_at: new Date().toISOString()
-      })
+      await bridge.writeAtomic(
+        captureId,
+        `Memory test ${i}`,
+        computeContentHash(`Memory test ${i}`),
+        {
+          source: "email",
+          captured_at: new Date().toISOString(),
+        }
+      )
 
       // Simulate normal cleanup
       if (i % 100 === 0) {
@@ -1840,7 +2073,9 @@ describe('Performance Regression Detection (P1)', () => {
     // Gate: heap growth < 5MB for 1k operations
     expect(heapGrowth).toBeLessThan(5 * 1024 * 1024)
 
-    console.log(`Heap growth: ${(heapGrowth / 1024 / 1024).toFixed(2)}MB for 1k operations`)
+    console.log(
+      `Heap growth: ${(heapGrowth / 1024 / 1024).toFixed(2)}MB for 1k operations`
+    )
 
     await cleanupTempDirectory(tempVault)
     ledger.close()
@@ -1857,7 +2092,7 @@ describe('Performance Regression Detection (P1)', () => {
 Cross-feature integration tests with failure injection ensure robust error handling and recovery across the obsidian bridge and other components.
 
 ```typescript
-describe('Full Pipeline Integration with Fault Injection (P1)', () => {
+describe("Full Pipeline Integration with Fault Injection (P1)", () => {
   let testPipeline: TestPipeline
 
   beforeEach(async () => {
@@ -1869,39 +2104,41 @@ describe('Full Pipeline Integration with Fault Injection (P1)', () => {
     await testPipeline.cleanup()
   })
 
-  test('handles vault filesystem failure during atomic write', async () => {
+  test("handles vault filesystem failure during atomic write", async () => {
     // Setup: Successful capture ready for export
-    const captureId = await testPipeline.completeCaptureFlow('/icloud/test.m4a')
+    const captureId = await testPipeline.completeCaptureFlow("/icloud/test.m4a")
 
     // Inject: Filesystem failure during temp file write
-    testPipeline.injectFault('vault-write', 'ENOSPC')
+    testPipeline.injectFault("vault-write", "ENOSPC")
 
     // Attempt export
     const result = await testPipeline.attemptExport(captureId)
 
     // Verify: Export fails cleanly
     expect(result.success).toBe(false)
-    expect(result.error.code).toBe('ENOSPC')
+    expect(result.error.code).toBe("ENOSPC")
 
     // Verify: No partial files exist
     const vaultFiles = await testPipeline.getVault().listFiles()
-    expect(vaultFiles.filter(f => f.includes('tmp'))).toHaveLength(0)
+    expect(vaultFiles.filter((f) => f.includes("tmp"))).toHaveLength(0)
 
     // Verify: Staging ledger unchanged
     const capture = await testPipeline.getStagingLedger().getCapture(captureId)
-    expect(capture.status).toBe('transcribed')
+    expect(capture.status).toBe("transcribed")
 
     // Verify: Error logged with context
     const errors = await testPipeline.getErrorLog()
-    expect(errors).toContainEqual(expect.objectContaining({
-      code: 'VAULT_WRITE_FAILED',
-      severity: 'critical',
-      message: expect.stringContaining('disk full'),
-      component: 'obsidian-bridge'
-    }))
+    expect(errors).toContainEqual(
+      expect.objectContaining({
+        code: "VAULT_WRITE_FAILED",
+        severity: "critical",
+        message: expect.stringContaining("disk full"),
+        component: "obsidian-bridge",
+      })
+    )
   })
 
-  test('handles concurrent exports with atomic guarantee', async () => {
+  test("handles concurrent exports with atomic guarantee", async () => {
     // Setup: Multiple captures ready for export
     const captureIds = []
     for (let i = 0; i < 5; i++) {
@@ -1910,45 +2147,47 @@ describe('Full Pipeline Integration with Fault Injection (P1)', () => {
     }
 
     // Concurrent export attempts
-    const exportPromises = captureIds.map(id =>
+    const exportPromises = captureIds.map((id) =>
       testPipeline.attemptExport(id)
     )
 
     const results = await Promise.all(exportPromises)
 
     // Verify: All exports succeeded
-    expect(results.every(r => r.success)).toBe(true)
+    expect(results.every((r) => r.success)).toBe(true)
 
     // Verify: No partial files from race conditions
     const vaultFiles = await testPipeline.getVault().listFiles()
-    const mdFiles = vaultFiles.filter(f => f.endsWith('.md'))
+    const mdFiles = vaultFiles.filter((f) => f.endsWith(".md"))
     expect(mdFiles).toHaveLength(5)
 
     // Verify: No temp files remain
-    const tempFiles = vaultFiles.filter(f => f.includes('tmp'))
+    const tempFiles = vaultFiles.filter((f) => f.includes("tmp"))
     expect(tempFiles).toHaveLength(0)
 
     // Verify: All audit records created
     for (const captureId of captureIds) {
-      const auditRecords = await testPipeline.getStagingLedger().getExportAudits(captureId)
+      const auditRecords = await testPipeline
+        .getStagingLedger()
+        .getExportAudits(captureId)
       expect(auditRecords).toHaveLength(1)
-      expect(auditRecords[0].mode).toBe('initial')
+      expect(auditRecords[0].mode).toBe("initial")
     }
   })
 
-  test('handles staging ledger failure during audit write', async () => {
+  test("handles staging ledger failure during audit write", async () => {
     // Setup: Successful capture
-    const captureId = await testPipeline.completeCaptureFlow('/icloud/test.m4a')
+    const captureId = await testPipeline.completeCaptureFlow("/icloud/test.m4a")
 
     // Inject: Database lock during audit write
-    testPipeline.injectFault('audit-write', 'SQLITE_BUSY')
+    testPipeline.injectFault("audit-write", "SQLITE_BUSY")
 
     // Attempt export
     const result = await testPipeline.attemptExport(captureId)
 
     // Verify: Export retries per [Resilience Guide](../../guides/guide-resilience-patterns.md#retry-parameters)
     expect(result.success).toBe(false)
-    expect(result.error.code).toBe('AUDIT_WRITE_FAILED')
+    expect(result.error.code).toBe("AUDIT_WRITE_FAILED")
 
     // Clear fault and retry per [Recovery Pattern](../../guides/guide-resilience-patterns.md#fault-recovery)
     testPipeline.clearFaults()
@@ -1958,62 +2197,73 @@ describe('Full Pipeline Integration with Fault Injection (P1)', () => {
 
     // Verify: Final state is consistent
     const capture = await testPipeline.getStagingLedger().getCapture(captureId)
-    expect(capture.status).toBe('exported')
+    expect(capture.status).toBe("exported")
 
-    const auditRecords = await testPipeline.getStagingLedger().getExportAudits(captureId)
+    const auditRecords = await testPipeline
+      .getStagingLedger()
+      .getExportAudits(captureId)
     expect(auditRecords).toHaveLength(1)
   })
 
-  test('handles ULID collision with different content gracefully', async () => {
+  test("handles ULID collision with different content gracefully", async () => {
     // Setup: First capture with specific ULID
-    const fixedUlid = '01HWZQK5H0000000000000000G'
-    const firstContent = 'First capture content'
+    const fixedUlid = "01HWZQK5H0000000000000000G"
+    const firstContent = "First capture content"
 
     await testPipeline.exportWithUlid(fixedUlid, firstContent)
 
     // Inject: Force same ULID for different content
-    const secondContent = 'Second capture content (different)'
-    testPipeline.injectFault('ulid-collision', fixedUlid)
+    const secondContent = "Second capture content (different)"
+    testPipeline.injectFault("ulid-collision", fixedUlid)
 
     // Attempt second export with different content
-    const result = await testPipeline.attemptExportWithUlid(fixedUlid, secondContent)
+    const result = await testPipeline.attemptExportWithUlid(
+      fixedUlid,
+      secondContent
+    )
 
     // Verify: Collision detected and handled
     expect(result.success).toBe(false)
-    expect(result.error.code).toBe('ULID_CONTENT_CONFLICT')
+    expect(result.error.code).toBe("ULID_CONTENT_CONFLICT")
 
     // Verify: First file unchanged
-    const vaultFile = await testPipeline.getVault().readFile(`inbox/${fixedUlid}.md`)
+    const vaultFile = await testPipeline
+      .getVault()
+      .readFile(`inbox/${fixedUlid}.md`)
     expect(vaultFile).toContain(firstContent)
     expect(vaultFile).not.toContain(secondContent)
 
     // Verify: Conflict logged for investigation
     const errors = await testPipeline.getErrorLog()
-    expect(errors).toContainEqual(expect.objectContaining({
-      code: 'ULID_CONTENT_CONFLICT',
-      severity: 'critical',
-      message: expect.stringContaining('ULID collision with different content'),
-      ulid: fixedUlid
-    }))
+    expect(errors).toContainEqual(
+      expect.objectContaining({
+        code: "ULID_CONTENT_CONFLICT",
+        severity: "critical",
+        message: expect.stringContaining(
+          "ULID collision with different content"
+        ),
+        ulid: fixedUlid,
+      })
+    )
   })
 
-  test('handles filesystem permission changes during export', async () => {
+  test("handles filesystem permission changes during export", async () => {
     // Setup: Successful capture
-    const captureId = await testPipeline.completeCaptureFlow('/icloud/test.m4a')
+    const captureId = await testPipeline.completeCaptureFlow("/icloud/test.m4a")
 
     // Make vault read-only during export
-    testPipeline.injectFault('vault-permission', 'READ_ONLY')
+    testPipeline.injectFault("vault-permission", "READ_ONLY")
 
     // Attempt export
     const result = await testPipeline.attemptExport(captureId)
 
     // Verify: Permission error handled gracefully
     expect(result.success).toBe(false)
-    expect(result.error.code).toBe('VAULT_PERMISSION_DENIED')
+    expect(result.error.code).toBe("VAULT_PERMISSION_DENIED")
 
     // Verify: Descriptive error message
-    expect(result.error.message).toContain('vault directory is not writable')
-    expect(result.error.message).toContain('check permissions')
+    expect(result.error.message).toContain("vault directory is not writable")
+    expect(result.error.message).toContain("check permissions")
 
     // Verify: No partial files created
     const vaultFiles = await testPipeline.getVault().listFiles()
@@ -2035,8 +2285,8 @@ describe('Full Pipeline Integration with Fault Injection (P1)', () => {
 ### 12.1 Sustained Load Testing
 
 ```typescript
-describe('Sustained Load (P1)', () => {
-  test('handles 1000 exports over 10 minutes', async () => {
+describe("Sustained Load (P1)", () => {
+  test("handles 1000 exports over 10 minutes", async () => {
     const loadTest = new LoadTestHarness()
     const tempVault = await createTempDirectory()
     const ledger = createTestLedger()
@@ -2054,25 +2304,30 @@ describe('Sustained Load (P1)', () => {
         const content = `# Sustained Load Test ${iteration}\n\nContent for export ${iteration}`
         const start = performance.now()
 
-        await bridge.writeAtomic(captureId, content, computeContentHash(content), {
-          source: 'voice',
-          captured_at: new Date().toISOString()
-        })
+        await bridge.writeAtomic(
+          captureId,
+          content,
+          computeContentHash(content),
+          {
+            source: "voice",
+            captured_at: new Date().toISOString(),
+          }
+        )
 
         return {
           duration: performance.now() - start,
           success: true,
           memory: process.memoryUsage().heapUsed,
-          iteration
+          iteration,
         }
       },
       count: totalOperations,
-      interval
+      interval,
     })
 
     // Verify: No performance degradation over time
-    const firstHalf = results.slice(0, 500).map(r => r.duration)
-    const secondHalf = results.slice(500).map(r => r.duration)
+    const firstHalf = results.slice(0, 500).map((r) => r.duration)
+    const secondHalf = results.slice(500).map((r) => r.duration)
 
     const firstHalfP95 = percentile(firstHalf, 95)
     const secondHalfP95 = percentile(secondHalf, 95)
@@ -2085,81 +2340,95 @@ describe('Sustained Load (P1)', () => {
     expect(memoryGrowth).toBeLessThan(20 * 1024 * 1024) // < 20MB growth
 
     // Verify: All operations succeeded
-    const failures = results.filter(r => !r.success)
+    const failures = results.filter((r) => !r.success)
     expect(failures).toHaveLength(0)
 
     // Verify: All files exist in vault
-    const vaultFiles = await listDirectory(path.join(tempVault.path, 'inbox'))
-    expect(vaultFiles.filter(f => f.endsWith('.md'))).toHaveLength(1000)
+    const vaultFiles = await listDirectory(path.join(tempVault.path, "inbox"))
+    expect(vaultFiles.filter((f) => f.endsWith(".md"))).toHaveLength(1000)
 
-    console.log(`Sustained export load: ${firstHalfP95.toFixed(2)}ms → ${secondHalfP95.toFixed(2)}ms P95`)
+    console.log(
+      `Sustained export load: ${firstHalfP95.toFixed(2)}ms → ${secondHalfP95.toFixed(2)}ms P95`
+    )
 
     await cleanupTempDirectory(tempVault)
     ledger.close()
   })
 
-  test('maintains vault integrity under sustained load', async () => {
+  test("maintains vault integrity under sustained load", async () => {
     const loadTest = new LoadTestHarness()
     const tempVault = await createTempDirectory()
     const ledger = createTestLedger()
     const bridge = new ObsidianAtomicWriter(tempVault.path, ledger.db)
 
     // Run concurrent export operations
-    const concurrentPromises = Array.from({ length: 10 }, async (_, threadId) => {
-      const threadResults = []
+    const concurrentPromises = Array.from(
+      { length: 10 },
+      async (_, threadId) => {
+        const threadResults = []
 
-      for (let i = 0; i < 50; i++) {
-        const captureId = ulid()
-        const operationId = `${threadId}_${i}`
+        for (let i = 0; i < 50; i++) {
+          const captureId = ulid()
+          const operationId = `${threadId}_${i}`
 
-        try {
-          await bridge.writeAtomic(captureId,
-            `# Thread ${threadId} Export ${i}\n\nContent for operation ${operationId}`,
-            computeContentHash(`Thread ${threadId} Export ${i}`), {
-            source: 'email',
-            captured_at: new Date().toISOString()
-          })
+          try {
+            await bridge.writeAtomic(
+              captureId,
+              `# Thread ${threadId} Export ${i}\n\nContent for operation ${operationId}`,
+              computeContentHash(`Thread ${threadId} Export ${i}`),
+              {
+                source: "email",
+                captured_at: new Date().toISOString(),
+              }
+            )
 
-          threadResults.push({ operationId, success: true })
-        } catch (error) {
-          threadResults.push({ operationId, success: false, error: error.message })
+            threadResults.push({ operationId, success: true })
+          } catch (error) {
+            threadResults.push({
+              operationId,
+              success: false,
+              error: error.message,
+            })
+          }
         }
-      }
 
-      return threadResults
-    })
+        return threadResults
+      }
+    )
 
     const allResults = await Promise.all(concurrentPromises)
     const flatResults = allResults.flat()
 
     // Verify: All operations succeeded
-    const failures = flatResults.filter(r => !r.success)
+    const failures = flatResults.filter((r) => !r.success)
     expect(failures).toHaveLength(0)
 
     // Verify: Vault consistency
-    const vaultFiles = await listDirectory(path.join(tempVault.path, 'inbox'))
-    const mdFiles = vaultFiles.filter(f => f.endsWith('.md'))
+    const vaultFiles = await listDirectory(path.join(tempVault.path, "inbox"))
+    const mdFiles = vaultFiles.filter((f) => f.endsWith(".md"))
     expect(mdFiles).toHaveLength(500) // 10 threads × 50 operations
 
     // Verify: No temp files remain
-    const tempFiles = vaultFiles.filter(f => f.includes('tmp'))
+    const tempFiles = vaultFiles.filter((f) => f.includes("tmp"))
     expect(tempFiles).toHaveLength(0)
 
     // Verify: All audit records created
-    const auditCount = await ledger.db.prepare('SELECT COUNT(*) as count FROM exports_audit').get()
+    const auditCount = await ledger.db
+      .prepare("SELECT COUNT(*) as count FROM exports_audit")
+      .get()
     expect(auditCount.count).toBe(500)
 
     // Verify: Database integrity
     const integrityCheck = await ledger.db.get(`PRAGMA integrity_check`)
-    expect(integrityCheck.integrity_check).toBe('ok')
+    expect(integrityCheck.integrity_check).toBe("ok")
 
     await cleanupTempDirectory(tempVault)
     ledger.close()
   })
 })
 
-describe('Burst Load (P1)', () => {
-  test('handles 100 exports in 10 seconds', async () => {
+describe("Burst Load (P1)", () => {
+  test("handles 100 exports in 10 seconds", async () => {
     const loadTest = new LoadTestHarness()
     const tempVault = await createTempDirectory()
     const ledger = createTestLedger()
@@ -2177,24 +2446,27 @@ describe('Burst Load (P1)', () => {
       const start = performance.now()
 
       try {
-        await bridge.writeAtomic(captureId,
+        await bridge.writeAtomic(
+          captureId,
           `# Burst Test ${operationCount}\n\nBurst export content ${operationCount}`,
-          computeContentHash(`Burst Test ${operationCount}`), {
-          source: 'voice',
-          captured_at: new Date().toISOString()
-        })
+          computeContentHash(`Burst Test ${operationCount}`),
+          {
+            source: "voice",
+            captured_at: new Date().toISOString(),
+          }
+        )
 
         results.push({
           duration: performance.now() - start,
           success: true,
-          operationCount
+          operationCount,
         })
       } catch (error) {
         results.push({
           duration: performance.now() - start,
           success: false,
           error: error.message,
-          operationCount
+          operationCount,
         })
       }
 
@@ -2202,31 +2474,36 @@ describe('Burst Load (P1)', () => {
     }
 
     // Verify: No data loss
-    const successCount = results.filter(r => r.success).length
+    const successCount = results.filter((r) => r.success).length
     expect(successCount).toBe(Math.min(100, operationCount))
 
     // Verify: Reasonable latency under burst load
-    const p95 = percentile(results.map(r => r.duration), 95)
+    const p95 = percentile(
+      results.map((r) => r.duration),
+      95
+    )
     expect(p95).toBeLessThan(150) // Allow 3x baseline under burst (50ms * 3)
 
     // Verify: All files exist and are valid
-    const vaultFiles = await listDirectory(path.join(tempVault.path, 'inbox'))
-    const mdFiles = vaultFiles.filter(f => f.endsWith('.md'))
+    const vaultFiles = await listDirectory(path.join(tempVault.path, "inbox"))
+    const mdFiles = vaultFiles.filter((f) => f.endsWith(".md"))
     expect(mdFiles).toHaveLength(successCount)
 
     // Verify: No temp files remain
-    const tempFiles = vaultFiles.filter(f => f.includes('tmp'))
+    const tempFiles = vaultFiles.filter((f) => f.includes("tmp"))
     expect(tempFiles).toHaveLength(0)
 
-    console.log(`Burst export load: ${results.length} operations, P95: ${p95.toFixed(2)}ms`)
+    console.log(
+      `Burst export load: ${results.length} operations, P95: ${p95.toFixed(2)}ms`
+    )
 
     await cleanupTempDirectory(tempVault)
     ledger.close()
   })
 })
 
-describe('Resource Exhaustion (P1)', () => {
-  test('handles graceful degradation approaching disk limit', async () => {
+describe("Resource Exhaustion (P1)", () => {
+  test("handles graceful degradation approaching disk limit", async () => {
     const loadTest = new LoadTestHarness()
     const tempVault = await createTempDirectory()
     const ledger = createTestLedger()
@@ -2236,18 +2513,22 @@ describe('Resource Exhaustion (P1)', () => {
     loadTest.setAvailableDiskSpace(10 * 1024 * 1024) // 10MB available
 
     // Create large content exports
-    const largeContent = 'x'.repeat(500 * 1024) // 500KB per export
+    const largeContent = "x".repeat(500 * 1024) // 500KB per export
 
     const results = []
-    for (let i = 0; i < 25; i++) { // Should exceed disk space
+    for (let i = 0; i < 25; i++) {
+      // Should exceed disk space
       try {
         const captureId = ulid()
-        await bridge.writeAtomic(captureId,
+        await bridge.writeAtomic(
+          captureId,
           `# Large Export ${i}\n\n${largeContent}`,
-          computeContentHash(`Large Export ${i}\n\n${largeContent}`), {
-          source: 'voice',
-          captured_at: new Date().toISOString()
-        })
+          computeContentHash(`Large Export ${i}\n\n${largeContent}`),
+          {
+            source: "voice",
+            captured_at: new Date().toISOString(),
+          }
+        )
 
         results.push({ success: true, operation: i })
       } catch (error) {
@@ -2259,30 +2540,33 @@ describe('Resource Exhaustion (P1)', () => {
     // Verify: System detects low space and fails gracefully
     const lastResult = results[results.length - 1]
     if (!lastResult.success) {
-      expect(lastResult.error).toContain('disk space')
+      expect(lastResult.error).toContain("disk space")
 
       // Verify: Error provides actionable guidance
-      expect(lastResult.error).toContain('free up space')
+      expect(lastResult.error).toContain("free up space")
     }
 
     // Verify: No partial files from failed writes
     const vaultFiles = await listDirectory(tempVault.path)
-    const tempFiles = vaultFiles.filter(f => f.includes('tmp'))
+    const tempFiles = vaultFiles.filter((f) => f.includes("tmp"))
     expect(tempFiles).toHaveLength(0)
 
     // Verify: Database remains consistent
     const integrityCheck = await ledger.db.get(`PRAGMA integrity_check`)
-    expect(integrityCheck.integrity_check).toBe('ok')
+    expect(integrityCheck.integrity_check).toBe("ok")
 
     // Verify: System can recover after space is freed
     loadTest.setAvailableDiskSpace(1024 * 1024 * 1024) // Restore 1GB
 
-    const recoveryResult = await bridge.writeAtomic(ulid(),
-      '# Recovery Test\n\nRecovery export after disk space freed',
-      computeContentHash('Recovery Test'), {
-      source: 'voice',
-      captured_at: new Date().toISOString()
-    })
+    const recoveryResult = await bridge.writeAtomic(
+      ulid(),
+      "# Recovery Test\n\nRecovery export after disk space freed",
+      computeContentHash("Recovery Test"),
+      {
+        source: "voice",
+        captured_at: new Date().toISOString(),
+      }
+    )
 
     expect(recoveryResult.success).toBe(true)
 
@@ -2290,7 +2574,7 @@ describe('Resource Exhaustion (P1)', () => {
     ledger.close()
   })
 
-  test('handles inode exhaustion gracefully', async () => {
+  test("handles inode exhaustion gracefully", async () => {
     const loadTest = new LoadTestHarness()
     const tempVault = await createTempDirectory()
     const ledger = createTestLedger()
@@ -2300,21 +2584,28 @@ describe('Resource Exhaustion (P1)', () => {
     loadTest.setAvailableInodes(1000)
 
     const results = []
-    for (let i = 0; i < 1200; i++) { // Should exceed inode limit
+    for (let i = 0; i < 1200; i++) {
+      // Should exceed inode limit
       try {
         const captureId = ulid()
-        await bridge.writeAtomic(captureId,
+        await bridge.writeAtomic(
+          captureId,
           `# Inode Test ${i}\n\nTesting inode exhaustion`,
-          computeContentHash(`Inode Test ${i}`), {
-          source: 'email',
-          captured_at: new Date().toISOString()
-        })
+          computeContentHash(`Inode Test ${i}`),
+          {
+            source: "email",
+            captured_at: new Date().toISOString(),
+          }
+        )
 
         results.push({ success: true, operation: i })
       } catch (error) {
         results.push({ success: false, operation: i, error: error.message })
 
-        if (error.message.includes('inode') || error.message.includes('ENOSPC')) {
+        if (
+          error.message.includes("inode") ||
+          error.message.includes("ENOSPC")
+        ) {
           break
         }
       }
@@ -2328,7 +2619,7 @@ describe('Resource Exhaustion (P1)', () => {
 
     // Verify: No partial files remain
     const vaultFiles = await listDirectory(tempVault.path)
-    const tempFiles = vaultFiles.filter(f => f.includes('tmp'))
+    const tempFiles = vaultFiles.filter((f) => f.includes("tmp"))
     expect(tempFiles).toHaveLength(0)
 
     await cleanupTempDirectory(tempVault)
@@ -2372,7 +2663,7 @@ class LoadTestHarness {
           success: false,
           error: error.message,
           iteration: i,
-          duration: Date.now() - startTime
+          duration: Date.now() - startTime,
         })
       }
 
@@ -2387,33 +2678,34 @@ class LoadTestHarness {
     return results
   }
 
-  async checkVaultIntegrity(vaultPath: string): Promise<{ valid: boolean, issues: string[] }> {
+  async checkVaultIntegrity(
+    vaultPath: string
+  ): Promise<{ valid: boolean; issues: string[] }> {
     const issues = []
 
     try {
       // Check for temp files
       const files = await listDirectory(vaultPath)
-      const tempFiles = files.filter(f => f.includes('tmp'))
+      const tempFiles = files.filter((f) => f.includes("tmp"))
       if (tempFiles.length > 0) {
         issues.push(`Found ${tempFiles.length} temp files`)
       }
 
       // Check for malformed markdown files
-      const mdFiles = files.filter(f => f.endsWith('.md'))
+      const mdFiles = files.filter((f) => f.endsWith(".md"))
       for (const file of mdFiles) {
-        const content = await fs.readFile(path.join(vaultPath, file), 'utf-8')
-        if (!content.startsWith('---') || !content.includes('---\n\n#')) {
+        const content = await fs.readFile(path.join(vaultPath, file), "utf-8")
+        if (!content.startsWith("---") || !content.includes("---\n\n#")) {
           issues.push(`Malformed markdown file: ${file}`)
         }
       }
-
     } catch (error) {
       issues.push(`Vault access error: ${error.message}`)
     }
 
     return {
       valid: issues.length === 0,
-      issues
+      issues,
     }
   }
 }
@@ -2434,7 +2726,7 @@ function percentile(values: number[], p: number): number {
 }
 
 function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 async function listDirectory(dirPath: string): Promise<string[]> {

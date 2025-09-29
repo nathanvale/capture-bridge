@@ -13,6 +13,7 @@ Accepted - 2025-09-27
 ## Context
 
 When voice memo transcription fails (corrupt audio, Whisper timeout, OOM errors), the system must decide whether to:
+
 1. **Export placeholder**: Create a markdown file with error information and audio file reference
 2. **Skip export**: Leave capture in staging ledger until transcription succeeds
 3. **Export with retry mechanism**: Create placeholder but update it when transcription eventually succeeds
@@ -20,12 +21,14 @@ When voice memo transcription fails (corrupt audio, Whisper timeout, OOM errors)
 The question arises: should placeholder exports be **immutable** (never updated) or **mutable** (retrofilled when transcription succeeds)?
 
 ### MPPP Complexity Constraints
+
 - Minimize state machine complexity in Phase 1-2
 - Avoid complicated retry/update mechanisms
 - Ensure deterministic export behavior
 - Maintain clear audit trails
 
 ### Placeholder Export Scenarios
+
 - **Voice file corruption**: Permanent failure, no retry possible
 - **Transcription timeout**: Transient failure, retry may succeed
 - **OOM errors**: System resource limitation, retry possible with smaller model
@@ -44,6 +47,7 @@ The question arises: should placeholder exports be **immutable** (never updated)
 5. **Manual Intervention**: User must manually delete placeholder if they want retry export
 
 ### Placeholder File Format
+
 ```markdown
 ---
 id: 01HZVM8YWRQT5J3M3K7YPTX9RZ
@@ -62,12 +66,14 @@ error_type: transcription_failed
 This capture could not be automatically transcribed. The original voice memo is available at the path above.
 
 To retry transcription:
+
 1. Verify audio file accessibility
 2. Delete this placeholder file
 3. Run: `adhd capture retry 01HZVM8YWRQT5J3M3K7YPTX9RZ`
 ```
 
 ### State Machine Implications
+
 ```
 Voice Capture → Transcription Failed → DLQ → Placeholder Export (TERMINAL)
                                     ↑
@@ -83,6 +89,7 @@ Voice Capture → Transcription Failed → DLQ → Placeholder Export (TERMINAL)
 ## Consequences
 
 ### Positive
+
 - **Deterministic Behavior**: Each capture exports exactly once, no update logic needed
 - **Simple State Machine**: Terminal states remain terminal, no backwards transitions
 - **Clear Audit Trail**: `exports_audit` records show single export event per capture
@@ -90,6 +97,7 @@ Voice Capture → Transcription Failed → DLQ → Placeholder Export (TERMINAL)
 - **Easier Testing**: No complex update scenarios to test
 
 ### Negative
+
 - **Manual Recovery Required**: User must delete placeholder and manually retry for transient failures
 - **Potential Duplicate Files**: If user retries, may end up with both placeholder and successful export
 - **Lost Transcription Opportunity**: Transient failures that later resolve don't automatically benefit user
@@ -98,6 +106,7 @@ Voice Capture → Transcription Failed → DLQ → Placeholder Export (TERMINAL)
 ### Technical Implementation
 
 **Exports Audit Schema:**
+
 ```sql
 -- exported_placeholder status is terminal - no updates allowed
 UPDATE captures SET status = 'exported_placeholder' WHERE id = ?;
@@ -106,16 +115,20 @@ VALUES (?, 'placeholder', NULL);  -- NULL hash for placeholder
 ```
 
 **DLQ Processing:**
+
 ```typescript
-async function handleTranscriptionFailure(capture: CaptureRecord, error: TranscriptionError): Promise<void> {
+async function handleTranscriptionFailure(
+  capture: CaptureRecord,
+  error: TranscriptionError
+): Promise<void> {
   // Move to DLQ
-  await moveToDLQ(capture.id, error);
+  await moveToDLQ(capture.id, error)
 
   // Export placeholder (immutable)
-  await exportPlaceholder(capture);
+  await exportPlaceholder(capture)
 
   // Mark as terminal state
-  await updateCaptureStatus(capture.id, 'exported_placeholder');
+  await updateCaptureStatus(capture.id, "exported_placeholder")
 
   // No retry mechanism - user must intervene manually
 }
@@ -124,6 +137,7 @@ async function handleTranscriptionFailure(capture: CaptureRecord, error: Transcr
 ### Trigger to Reconsider
 
 Immutability should be reconsidered if:
+
 - **Placeholder export ratio exceeds 5%** rolling 7-day average (indicates systematic issues)
 - **User feedback indicates significant friction** with manual recovery process
 - **Phase 2 introduces automated retry systems** that would benefit from mutable placeholders
@@ -131,6 +145,7 @@ Immutability should be reconsidered if:
 ### Recovery Process
 
 **For Transient Failures (User-Initiated):**
+
 1. User identifies placeholder file in vault
 2. User deletes placeholder file manually
 3. User runs `adhd capture retry <capture_id>`
@@ -138,6 +153,7 @@ Immutability should be reconsidered if:
 5. If successful, new file created (different from deleted placeholder)
 
 **For Permanent Failures:**
+
 - Placeholder serves as permanent record
 - User can manually transcribe audio and update file content
 - Original audio path preserved for manual access
@@ -145,11 +161,13 @@ Immutability should be reconsidered if:
 ## Monitoring and Metrics
 
 **Key Metrics to Track:**
+
 - `placeholder_export_ratio`: Percentage of voice captures exported as placeholder
 - `manual_retry_requests`: Count of user-initiated retries after placeholder export
 - `placeholder_resolution_time`: Time from placeholder to successful retry (if any)
 
 **Alert Thresholds:**
+
 - Daily placeholder ratio > 5%: Investigate transcription pipeline health
 - Weekly manual retries > 10: Consider mutable placeholder implementation
 

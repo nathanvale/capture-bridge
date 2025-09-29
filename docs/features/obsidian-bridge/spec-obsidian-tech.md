@@ -21,16 +21,16 @@ roadmap_version: 2.0.0-MPPP
 
 ```typescript
 export interface AtomicWriteResult {
-  success: boolean;
-  export_path?: string;
-  error?: AtomicWriteError;
+  success: boolean
+  export_path?: string
+  error?: AtomicWriteError
 }
 
 export interface AtomicWriteError {
-  code: 'EACCES' | 'ENOSPC' | 'EEXIST' | 'EROFS' | 'ENETDOWN' | 'EUNKNOWN';
-  message: string;
-  temp_path?: string;
-  export_path?: string;
+  code: "EACCES" | "ENOSPC" | "EEXIST" | "EROFS" | "ENETDOWN" | "EUNKNOWN"
+  message: string
+  temp_path?: string
+  export_path?: string
 }
 
 export interface AtomicWriter {
@@ -53,7 +53,7 @@ export interface AtomicWriter {
     capture_id: string,
     content: string,
     vault_path: string
-  ): Promise<AtomicWriteResult>;
+  ): Promise<AtomicWriteResult>
 }
 ```
 
@@ -70,18 +70,24 @@ export class ObsidianAtomicWriter implements AtomicWriter {
     capture_id: string,
     content: string,
     vault_path: string
-  ): Promise<AtomicWriteResult>;
+  ): Promise<AtomicWriteResult>
 }
 
 // Path resolution utilities
-export function resolveTempPath(vault_path: string, capture_id: string): string;
-export function resolveExportPath(vault_path: string, capture_id: string): string;
+export function resolveTempPath(vault_path: string, capture_id: string): string
+export function resolveExportPath(
+  vault_path: string,
+  capture_id: string
+): string
 
 // Collision detection
-export function checkCollision(export_path: string, content_hash: string): Promise<CollisionResult>;
+export function checkCollision(
+  export_path: string,
+  content_hash: string
+): Promise<CollisionResult>
 
 // Temp file cleanup (used in error paths)
-export function cleanupTempFile(temp_path: string): Promise<void>;
+export function cleanupTempFile(temp_path: string): Promise<void>
 ```
 
 ### 1.3 CLI Integration
@@ -147,12 +153,12 @@ adhd doctor
 ```typescript
 function resolveTempPath(vault_path: string, capture_id: string): string {
   // MUST be on same filesystem as export_path for atomic rename
-  return path.join(vault_path, '.trash', `${capture_id}.tmp`);
+  return path.join(vault_path, ".trash", `${capture_id}.tmp`)
 }
 
 function resolveExportPath(vault_path: string, capture_id: string): string {
   // Final destination in inbox/
-  return path.join(vault_path, 'inbox', `${capture_id}.md`);
+  return path.join(vault_path, "inbox", `${capture_id}.md`)
 }
 ```
 
@@ -161,11 +167,11 @@ function resolveExportPath(vault_path: string, capture_id: string): string {
 ```typescript
 // Idempotent directory creation (called during writeAtomic)
 async function ensureDirectories(vault_path: string): Promise<void> {
-  const trash_dir = path.join(vault_path, '.trash');
-  const inbox_dir = path.join(vault_path, 'inbox');
+  const trash_dir = path.join(vault_path, ".trash")
+  const inbox_dir = path.join(vault_path, "inbox")
 
-  await fs.mkdir(trash_dir, { recursive: true });
-  await fs.mkdir(inbox_dir, { recursive: true });
+  await fs.mkdir(trash_dir, { recursive: true })
+  await fs.mkdir(inbox_dir, { recursive: true })
 }
 ```
 
@@ -175,10 +181,10 @@ async function ensureDirectories(vault_path: string): Promise<void> {
 
 ```markdown
 ---
-id: {ULID}
-source: {voice|email}
-captured_at: {ISO8601 timestamp}
-content_hash: {SHA-256 hex}
+id: { ULID }
+source: { voice|email }
+captured_at: { ISO8601 timestamp }
+content_hash: { SHA-256 hex }
 ---
 
 # {Title extracted from content or "Untitled Capture"}
@@ -188,6 +194,7 @@ content_hash: {SHA-256 hex}
 ---
 
 **Metadata:**
+
 - Source: {voice|email}
 - Captured: {human-readable timestamp}
 - Export: {export timestamp}
@@ -276,29 +283,29 @@ async function writeAtomicWithFsync(
   export_path: string,
   content: string
 ): Promise<void> {
-  let fd: number | undefined;
+  let fd: number | undefined
 
   try {
     // 1. Write content to temp file
-    fd = await fs.open(temp_path, 'w');
-    await fs.write(fd, content, 0, 'utf-8');
+    fd = await fs.open(temp_path, "w")
+    await fs.write(fd, content, 0, "utf-8")
 
     // 2. CRITICAL: fsync before rename
-    await fs.fsync(fd);
+    await fs.fsync(fd)
 
     // 3. Close file descriptor
-    await fs.close(fd);
-    fd = undefined;
+    await fs.close(fd)
+    fd = undefined
 
     // 4. Atomic rename (now safe because content is on disk)
-    await fs.rename(temp_path, export_path);
+    await fs.rename(temp_path, export_path)
   } catch (error) {
     // Cleanup temp file on any error
     if (fd !== undefined) {
-      await fs.close(fd).catch(() => {});
+      await fs.close(fd).catch(() => {})
     }
-    await cleanupTempFile(temp_path);
-    throw error;
+    await cleanupTempFile(temp_path)
+    throw error
   }
 }
 ```
@@ -309,40 +316,40 @@ async function writeAtomicWithFsync(
 
 ```typescript
 enum CollisionResult {
-  NO_COLLISION,        // File doesn't exist, safe to write
-  DUPLICATE,           // File exists with identical content_hash
-  CONFLICT             // File exists with DIFFERENT content_hash (CRITICAL ERROR)
+  NO_COLLISION, // File doesn't exist, safe to write
+  DUPLICATE, // File exists with identical content_hash
+  CONFLICT, // File exists with DIFFERENT content_hash (CRITICAL ERROR)
 }
 
 async function checkCollision(
   export_path: string,
   content_hash: string
 ): Promise<CollisionResult> {
-  const exists = await fs.exists(export_path);
+  const exists = await fs.exists(export_path)
 
   if (!exists) {
-    return CollisionResult.NO_COLLISION;
+    return CollisionResult.NO_COLLISION
   }
 
   // File exists, check if content matches
-  const existing_content = await fs.readFile(export_path, 'utf-8');
-  const existing_hash = computeSHA256(existing_content);
+  const existing_content = await fs.readFile(export_path, "utf-8")
+  const existing_hash = computeSHA256(existing_content)
 
   if (existing_hash === content_hash) {
-    return CollisionResult.DUPLICATE;
+    return CollisionResult.DUPLICATE
   } else {
-    return CollisionResult.CONFLICT;
+    return CollisionResult.CONFLICT
   }
 }
 ```
 
 **Collision Handling Policy**:
 
-| Collision Type | Action | Rationale |
-|----------------|--------|-----------|
-| **NO_COLLISION** | Proceed with atomic write | Normal case, file doesn't exist |
-| **DUPLICATE** | Skip write, mark as `exported_duplicate` in audit | Idempotent retry, same content already exported |
-| **CONFLICT** | **HALT**, log CRITICAL error to `errors_log` | ULID collision with different content = data integrity violation |
+| Collision Type   | Action                                            | Rationale                                                        |
+| ---------------- | ------------------------------------------------- | ---------------------------------------------------------------- |
+| **NO_COLLISION** | Proceed with atomic write                         | Normal case, file doesn't exist                                  |
+| **DUPLICATE**    | Skip write, mark as `exported_duplicate` in audit | Idempotent retry, same content already exported                  |
+| **CONFLICT**     | **HALT**, log CRITICAL error to `errors_log`      | ULID collision with different content = data integrity violation |
 
 **Conflict Resolution**:
 
@@ -428,58 +435,82 @@ async function checkCollision(
 
 **Error Taxonomy**:
 
-| Error Code | Category | Description | Recovery Strategy |
-|------------|----------|-------------|-------------------|
-| **EACCES** | Permission | Vault directory not writable | Retry with exponential backoff (3x), then alert via `doctor` |
-| **ENOSPC** | Disk Full | No space available for temp file | **HALT** export worker, alert via metrics |
-| **EEXIST** | Collision | File exists (rare with ULID) | Check content_hash, handle per collision policy |
-| **EROFS** | Read-Only FS | Vault on read-only filesystem | **HALT** export worker, alert via `doctor` |
-| **ENETDOWN** | Network Mount | Network drive disconnected | Retry with backoff (5x), then fail with audit entry |
-| **EUNKNOWN** | Unknown | Unexpected filesystem error | Log to `errors_log`, retry once, then fail |
+| Error Code   | Category      | Description                      | Recovery Strategy                                            |
+| ------------ | ------------- | -------------------------------- | ------------------------------------------------------------ |
+| **EACCES**   | Permission    | Vault directory not writable     | Retry with exponential backoff (3x), then alert via `doctor` |
+| **ENOSPC**   | Disk Full     | No space available for temp file | **HALT** export worker, alert via metrics                    |
+| **EEXIST**   | Collision     | File exists (rare with ULID)     | Check content_hash, handle per collision policy              |
+| **EROFS**    | Read-Only FS  | Vault on read-only filesystem    | **HALT** export worker, alert via `doctor`                   |
+| **ENETDOWN** | Network Mount | Network drive disconnected       | Retry with backoff (5x), then fail with audit entry          |
+| **EUNKNOWN** | Unknown       | Unexpected filesystem error      | Log to `errors_log`, retry once, then fail                   |
 
 **Error Handling Strategy**:
 
 ```typescript
-async function handleWriteError(error: NodeJS.ErrnoException, context: WriteContext): Promise<AtomicWriteResult> {
-  const error_code = error.code || 'EUNKNOWN';
+async function handleWriteError(
+  error: NodeJS.ErrnoException,
+  context: WriteContext
+): Promise<AtomicWriteResult> {
+  const error_code = error.code || "EUNKNOWN"
 
   switch (error_code) {
-    case 'EACCES':
+    case "EACCES":
       // Permission denied - retry with backoff
-      await logError('EACCES', 'Permission denied writing to vault', context);
-      return { success: false, error: { code: 'EACCES', message: error.message } };
-
-    case 'ENOSPC':
-      // Disk full - critical failure, halt worker
-      await logError('ENOSPC', 'Disk full during export', context);
-      await haltExportWorker('Disk full');
-      return { success: false, error: { code: 'ENOSPC', message: error.message } };
-
-    case 'EEXIST':
-      // Collision detected during rename (shouldn't happen with ULID)
-      const collision_result = await checkCollision(context.export_path, context.content_hash);
-      if (collision_result === CollisionResult.DUPLICATE) {
-        return { success: true, export_path: context.export_path }; // Idempotent
-      } else {
-        await logCriticalError('ULID collision with different content', context);
-        return { success: false, error: { code: 'EEXIST', message: 'ULID collision detected' } };
+      await logError("EACCES", "Permission denied writing to vault", context)
+      return {
+        success: false,
+        error: { code: "EACCES", message: error.message },
       }
 
-    case 'EROFS':
-      // Read-only filesystem - halt worker
-      await logError('EROFS', 'Vault is read-only', context);
-      await haltExportWorker('Read-only vault');
-      return { success: false, error: { code: 'EROFS', message: error.message } };
+    case "ENOSPC":
+      // Disk full - critical failure, halt worker
+      await logError("ENOSPC", "Disk full during export", context)
+      await haltExportWorker("Disk full")
+      return {
+        success: false,
+        error: { code: "ENOSPC", message: error.message },
+      }
 
-    case 'ENETDOWN':
+    case "EEXIST":
+      // Collision detected during rename (shouldn't happen with ULID)
+      const collision_result = await checkCollision(
+        context.export_path,
+        context.content_hash
+      )
+      if (collision_result === CollisionResult.DUPLICATE) {
+        return { success: true, export_path: context.export_path } // Idempotent
+      } else {
+        await logCriticalError("ULID collision with different content", context)
+        return {
+          success: false,
+          error: { code: "EEXIST", message: "ULID collision detected" },
+        }
+      }
+
+    case "EROFS":
+      // Read-only filesystem - halt worker
+      await logError("EROFS", "Vault is read-only", context)
+      await haltExportWorker("Read-only vault")
+      return {
+        success: false,
+        error: { code: "EROFS", message: error.message },
+      }
+
+    case "ENETDOWN":
       // Network mount failure - retry with backoff
-      await logError('ENETDOWN', 'Network mount disconnected', context);
-      return { success: false, error: { code: 'ENETDOWN', message: error.message } };
+      await logError("ENETDOWN", "Network mount disconnected", context)
+      return {
+        success: false,
+        error: { code: "ENETDOWN", message: error.message },
+      }
 
     default:
       // Unknown error - log and fail
-      await logError('EUNKNOWN', `Unexpected error: ${error.message}`, context);
-      return { success: false, error: { code: 'EUNKNOWN', message: error.message } };
+      await logError("EUNKNOWN", `Unexpected error: ${error.message}`, context)
+      return {
+        success: false,
+        error: { code: "EUNKNOWN", message: error.message },
+      }
   }
 }
 ```
@@ -531,12 +562,12 @@ writeAtomic(capture_id, content, vault_path) can be called N times safely
 
 **Retry Scenarios**:
 
-| Scenario | Behavior | Audit Record |
-|----------|----------|--------------|
-| First export succeeds | File written, audit created | `status = exported` |
-| Retry with same content | File exists, skip write | `status = exported_duplicate` |
-| Crash mid-write, then retry | Temp file cleaned, retry succeeds | `status = exported` (only 1 record) |
-| Collision conflict (different content) | **HALT**, manual investigation | `status = failed_export`, notes = "ULID conflict" |
+| Scenario                               | Behavior                          | Audit Record                                      |
+| -------------------------------------- | --------------------------------- | ------------------------------------------------- |
+| First export succeeds                  | File written, audit created       | `status = exported`                               |
+| Retry with same content                | File exists, skip write           | `status = exported_duplicate`                     |
+| Crash mid-write, then retry            | Temp file cleaned, retry succeeds | `status = exported` (only 1 record)               |
+| Collision conflict (different content) | **HALT**, manual investigation    | `status = failed_export`, notes = "ULID conflict" |
 
 **Implementation**:
 
@@ -546,29 +577,38 @@ async function writeAtomic(
   content: string,
   vault_path: string
 ): Promise<AtomicWriteResult> {
-  const temp_path = resolveTempPath(vault_path, capture_id);
-  const export_path = resolveExportPath(vault_path, capture_id);
+  const temp_path = resolveTempPath(vault_path, capture_id)
+  const export_path = resolveExportPath(vault_path, capture_id)
 
   // Idempotency check: If file exists with same content, return success
-  const collision_result = await checkCollision(export_path, computeSHA256(content));
+  const collision_result = await checkCollision(
+    export_path,
+    computeSHA256(content)
+  )
   if (collision_result === CollisionResult.DUPLICATE) {
-    await recordAuditDuplicate(capture_id, export_path);
-    return { success: true, export_path };
+    await recordAuditDuplicate(capture_id, export_path)
+    return { success: true, export_path }
   }
 
   if (collision_result === CollisionResult.CONFLICT) {
-    await logCriticalError('ULID collision with different content', { capture_id, export_path });
-    return { success: false, error: { code: 'EEXIST', message: 'ULID collision detected' } };
+    await logCriticalError("ULID collision with different content", {
+      capture_id,
+      export_path,
+    })
+    return {
+      success: false,
+      error: { code: "EEXIST", message: "ULID collision detected" },
+    }
   }
 
   // Proceed with atomic write (temp → fsync → rename)
   try {
-    await writeAtomicWithFsync(temp_path, export_path, content);
-    await recordAuditSuccess(capture_id, export_path);
-    return { success: true, export_path };
+    await writeAtomicWithFsync(temp_path, export_path, content)
+    await recordAuditSuccess(capture_id, export_path)
+    return { success: true, export_path }
   } catch (error) {
-    await cleanupTempFile(temp_path);
-    return await handleWriteError(error, { capture_id, temp_path, export_path });
+    await cleanupTempFile(temp_path)
+    return await handleWriteError(error, { capture_id, temp_path, export_path })
   }
 }
 ```
@@ -680,6 +720,7 @@ adhd doctor
 - **TDD Guide**: `../../guides/tdd-applicability.md` - Risk assessment framework
 
 **Related ADRs:**
+
 - [ADR 0009: Atomic Write via Temp-Then-Rename Pattern](../../adr/0009-atomic-write-temp-rename-pattern.md) - Technical implementation of atomicity guarantees
 - [ADR 0010: ULID-Based Deterministic Filenames](../../adr/0010-ulid-deterministic-filenames.md) - Filename generation and collision policy
 - [ADR 0012: TDD Required for High-Risk Obsidian Bridge](../../adr/0012-tdd-required-high-risk.md) - Risk classification and testing requirements
@@ -721,17 +762,17 @@ adhd doctor
 ```typescript
 function validateCaptureId(capture_id: string): boolean {
   // ULID format: 26 characters, alphanumeric
-  const ulid_regex = /^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$/;
-  return ulid_regex.test(capture_id);
+  const ulid_regex = /^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$/
+  return ulid_regex.test(capture_id)
 }
 
 function resolveTempPath(vault_path: string, capture_id: string): string {
   if (!validateCaptureId(capture_id)) {
-    throw new Error('Invalid capture_id format');
+    throw new Error("Invalid capture_id format")
   }
 
   // Safe to concatenate (no path traversal possible with validated ULID)
-  return path.join(vault_path, '.trash', `${capture_id}.tmp`);
+  return path.join(vault_path, ".trash", `${capture_id}.tmp`)
 }
 ```
 

@@ -15,6 +15,7 @@ Accepted
 The Obsidian Bridge component requires writing markdown files to an Obsidian vault without risking partial writes, sync conflicts, or vault corruption. The vault may be synchronized via Obsidian Sync or iCloud Drive, which can create race conditions if files are modified during sync operations.
 
 Key risks from direct vault writes:
+
 - Partial writes during process crashes
 - Sync conflicts when Obsidian Sync catches files mid-write
 - Duplicate files with slightly different names
@@ -44,17 +45,20 @@ Implement atomic writes using the temp-then-rename pattern with these specificat
 ## Consequences
 
 **Positive:**
+
 - Zero partial writes: Files appear complete or not at all
 - Sync-safe: Obsidian Sync never sees files being written
 - Crash-resistant: Process crashes leave vault unchanged
 - Idempotent: Retries are safe due to deterministic ULID filenames
 
 **Negative:**
+
 - Requires same filesystem for temp and final destination
 - Adds 1x write amplification (temp file + rename)
 - Temporary disk space usage during writes
 
 **Technical Requirements:**
+
 - POSIX-compliant filesystem with atomic rename semantics
 - fsync support for durability guarantees
 - Same filesystem mount for temp and destination paths

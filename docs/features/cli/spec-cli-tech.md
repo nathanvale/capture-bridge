@@ -23,6 +23,7 @@ This specification defines the **complete CLI tool** for the ADHD Brain monorepo
 ### Problem Statement
 
 The simplified architecture (voice + email → staging → Obsidian) requires:
+
 - **Manual capture interface**: For testing and batch processing
 - **Health diagnostics**: Verify staging ledger, folder permissions, dependencies
 - **Ledger inspection**: Query and inspect staged captures
@@ -50,7 +51,7 @@ adhd hash:migrate           # Hash algorithm migration
 adhd metrics:dump            # Local metrics
 ```
 
-*Nerdy joke: Our CLI is like a Swiss Army knife for ADHD thoughts—simple enough to use during a hyperfocus session, powerful enough to debug at 2am when everything breaks.*
+_Nerdy joke: Our CLI is like a Swiss Army knife for ADHD thoughts—simple enough to use during a hyperfocus session, powerful enough to debug at 2am when everything breaks._
 
 ---
 
@@ -133,20 +134,20 @@ apps/
 
 ### 4.1 Command Surface (MVP)
 
-| Command | Purpose | Inputs | Output (default) | JSON Shape Key |
-|---------|---------|--------|------------------|----------------|
-| `capture:voice` | Register existing voice memo path(s) | file path(s) | Count + queued message | `{ id, content_hash, status }` |
-| `capture:email` | Register email file | .eml file path | Parse + stage summary | `{ id, content_hash, attachments }` |
-| `capture:list` | List unfiled/staged captures | filters (source, limit) | Table summary | `{ items: [...] }` |
-| `capture:show` | Show one capture (raw + metadata) | id | Formatted envelope | `{ envelope, ingest_state }` |
-| `capture:file` | Force file one capture to vault | id, optional path override | Path written | `{ id, vault_path }` |
-| `inbox:process` | Batch file all READY using PARA suggestion | flags (dry-run, limit) | Summary counts | `{ processed, skipped }` |
-| `doctor` | Health & integrity checks | flags (--verbose) | Status lines | `{ checks: [...] }` |
-| `ledger:list` | List staged captures | filters | Table | `{ items: [...] }` |
-| `ledger:inspect` | Show single capture details | id | Details | `{ envelope }` |
-| `ledger:dlq` | View dead letter queue | none | DLQ items | `{ items: [...] }` |
-| `hash:migrate` | Progress hash migration phases | phase target | Plan + results | `{ phase, updated, skipped }` |
-| `metrics:dump` | Emit current counters (local) | none | Key:value list | `{ metrics: { ... } }` |
+| Command          | Purpose                                    | Inputs                     | Output (default)       | JSON Shape Key                      |
+| ---------------- | ------------------------------------------ | -------------------------- | ---------------------- | ----------------------------------- |
+| `capture:voice`  | Register existing voice memo path(s)       | file path(s)               | Count + queued message | `{ id, content_hash, status }`      |
+| `capture:email`  | Register email file                        | .eml file path             | Parse + stage summary  | `{ id, content_hash, attachments }` |
+| `capture:list`   | List unfiled/staged captures               | filters (source, limit)    | Table summary          | `{ items: [...] }`                  |
+| `capture:show`   | Show one capture (raw + metadata)          | id                         | Formatted envelope     | `{ envelope, ingest_state }`        |
+| `capture:file`   | Force file one capture to vault            | id, optional path override | Path written           | `{ id, vault_path }`                |
+| `inbox:process`  | Batch file all READY using PARA suggestion | flags (dry-run, limit)     | Summary counts         | `{ processed, skipped }`            |
+| `doctor`         | Health & integrity checks                  | flags (--verbose)          | Status lines           | `{ checks: [...] }`                 |
+| `ledger:list`    | List staged captures                       | filters                    | Table                  | `{ items: [...] }`                  |
+| `ledger:inspect` | Show single capture details                | id                         | Details                | `{ envelope }`                      |
+| `ledger:dlq`     | View dead letter queue                     | none                       | DLQ items              | `{ items: [...] }`                  |
+| `hash:migrate`   | Progress hash migration phases             | phase target               | Plan + results         | `{ phase, updated, skipped }`       |
+| `metrics:dump`   | Emit current counters (local)              | none                       | Key:value list         | `{ metrics: { ... } }`              |
 
 ### 4.2 Capture Voice Command
 
@@ -167,12 +168,14 @@ Examples:
 ```
 
 **Exit Codes:**
+
 - `0`: Success
 - `1`: Validation error (file not found, invalid format)
 - `2`: Storage error (staging ledger unavailable)
 - `3`: Duplicate detected (if --no-allow-duplicates flag)
 
 **JSON Output Schema:**
+
 ```json
 {
   "id": "01HZQK...",
@@ -199,11 +202,13 @@ Examples:
 ```
 
 **Exit Codes:**
+
 - `0`: Success
 - `1`: Invalid email file
 - `2`: Parse error
 
 **JSON Output Schema:**
+
 ```json
 {
   "id": "01HZQK...",
@@ -234,11 +239,13 @@ Checks:
 ```
 
 **Exit Codes:**
+
 - `0`: All checks passed
 - `1`: Critical check failed
 - `2`: Warning (non-critical)
 
 **JSON Output Schema:**
+
 ```json
 {
   "checks": [
@@ -297,18 +304,19 @@ Options:
 
 Central registry with stable codes (prefix `CLI_`). Mapping includes `code`, `exit_code`, and `category`.
 
-| Code | Exit | Category | Meaning | Retry Strategy |
-|------|------|----------|---------|----------------|
-| `CLI_INPUT_INVALID` | 2 | user | Validation failed | Per [User Error Pattern](../../guides/guide-resilience-patterns.md#user-errors) |
-| `CLI_CAPTURE_NOT_FOUND` | 3 | user | Capture id unknown | depends |
-| `CLI_VOICE_FILE_MISSING` | 4 | integrity | Voice memo path missing | after-fix |
-| `CLI_DB_UNAVAILABLE` | 10 | infra | SQLite open / lock error | yes |
-| `CLI_HASH_MIGRATION_UNSAFE` | 20 | safety | Phase precondition unmet | after-fix |
-| `CLI_VAULT_NOT_WRITABLE` | 11 | infra | Vault path not writable | after-fix |
+| Code                        | Exit | Category  | Meaning                  | Retry Strategy                                                                  |
+| --------------------------- | ---- | --------- | ------------------------ | ------------------------------------------------------------------------------- |
+| `CLI_INPUT_INVALID`         | 2    | user      | Validation failed        | Per [User Error Pattern](../../guides/guide-resilience-patterns.md#user-errors) |
+| `CLI_CAPTURE_NOT_FOUND`     | 3    | user      | Capture id unknown       | depends                                                                         |
+| `CLI_VOICE_FILE_MISSING`    | 4    | integrity | Voice memo path missing  | after-fix                                                                       |
+| `CLI_DB_UNAVAILABLE`        | 10   | infra     | SQLite open / lock error | yes                                                                             |
+| `CLI_HASH_MIGRATION_UNSAFE` | 20   | safety    | Phase precondition unmet | after-fix                                                                       |
+| `CLI_VAULT_NOT_WRITABLE`    | 11   | infra     | Vault path not writable  | after-fix                                                                       |
 
 ### 5.2 Error Output Formats
 
 **JSON Mode (stderr):**
+
 ```json
 {
   "error": {
@@ -321,6 +329,7 @@ Central registry with stable codes (prefix `CLI_`). Mapping includes `code`, `ex
 ```
 
 **Human Mode (stderr):**
+
 ```
 Error (CLI_INPUT_INVALID): text argument required
 Hint: Pass --text or pipe content
@@ -333,16 +342,16 @@ Hint: Pass --text or pipe content
 export const errorRegistry = {
   CLI_INPUT_INVALID: {
     exit: 2,
-    category: 'user',
+    category: "user",
     message: (details: string) => `Invalid input: ${details}`,
   },
   CLI_DB_UNAVAILABLE: {
     exit: 10,
-    category: 'infra',
+    category: "infra",
     message: (details: string) => `Database unavailable: ${details}`,
   },
   // ... more errors
-};
+}
 ```
 
 ---
@@ -380,6 +389,7 @@ Minimal environment variables (all optional):
 ```
 
 **Config Loading Priority:**
+
 1. CLI flags (highest priority)
 2. Environment variables
 3. .adhd-brain.json
@@ -415,16 +425,17 @@ No interactive config wizard (deferred). `doctor` reports effective config.
 - **Clear hints**: Provide actionable error messages
 
 Example:
+
 ```typescript
 const voiceCaptureSchema = z.object({
-  filePath: z.string().min(1).refine(
-    (path) => existsSync(path),
-    { message: "File not found" }
-  ),
+  filePath: z
+    .string()
+    .min(1)
+    .refine((path) => existsSync(path), { message: "File not found" }),
   transcribe: z.boolean().optional(),
   tags: z.array(z.string()).optional(),
-  priority: z.enum(['low', 'normal', 'high']).default('normal'),
-});
+  priority: z.enum(["low", "normal", "high"]).default("normal"),
+})
 ```
 
 ---
@@ -443,6 +454,7 @@ const voiceCaptureSchema = z.object({
 Relies on ingestion metrics file writer; CLI simply reads present counters for `metrics:dump`. No daemonization. If file absent → empty object.
 
 **Local-only counters (when `CAPTURE_METRICS=1`):**
+
 - `capture_sqlite_ms`, `classify_ms`, `outbox_write_ms`, `vault_write_ms`
 - `dedup_hits_total`, `outbox_retries_total`, `outbox_dlq_total`
 
@@ -468,6 +480,7 @@ Options:
 ```
 
 **Pre-flight checks**:
+
 - Row counts
 - Existing divergence audit (hash recompute sample 100 random rows)
 - No ongoing captures
@@ -491,13 +504,13 @@ CLI executes single command then exits. **No persistent workers**. Commands usin
 
 ## 14. Performance Targets
 
-| Operation | Target | Measurement |
-|-----------|---------|------------|
-| Cold start | < 150ms | Time to first command execution |
-| `capture:text` | < 50ms | Arg parse → SQLite insert |
-| `capture:voice` | < 100ms | Validation → staging |
-| `capture:list` | < 50ms | Query 1000 items |
-| `doctor` checks | < 500ms | All health checks |
+| Operation       | Target  | Measurement                     |
+| --------------- | ------- | ------------------------------- |
+| Cold start      | < 150ms | Time to first command execution |
+| `capture:text`  | < 50ms  | Arg parse → SQLite insert       |
+| `capture:voice` | < 100ms | Validation → staging            |
+| `capture:list`  | < 50ms  | Query 1000 items                |
+| `doctor` checks | < 500ms | All health checks               |
 
 ---
 
@@ -512,6 +525,7 @@ CLI is the primary user interface for the system, with critical data integrity p
 ### Scope Under TDD
 
 **Unit Tests:**
+
 - Argument parsing and validation logic
 - Command execution logic (isolated from I/O)
 - Error code mapping and structured error generation
@@ -519,28 +533,30 @@ CLI is the primary user interface for the system, with critical data integrity p
 - Hash computation and idempotency checks
 
 **Integration Tests:**
+
 - Database operations (capture staging, filing)
 - File system interactions (voice file access, vault writing)
 - Full command execution with real SQLite
 - Doctor health checks against actual database state
 
 **Contract Tests:**
+
 - JSON output schemas remain stable
 - Exit codes match documented registry
 - Help text snapshot consistency
 
 ### Priority Test Coverage
 
-| Area | Priority | Test Requirement |
-|------|----------|-----------------|
-| Argument parsing | P0 | Invalid flags surface structured errors |
-| Idempotent capture:text | P0 | Duplicate text returns same hash |
-| Voice file missing | P0 | Returns CLI_VOICE_FILE_MISSING error |
-| JSON output stability | P0 | Schema validation + snapshots |
-| Hash migration guardrails | P0 | Forbid phase skipping |
-| Doctor integrity check | P1 | Simulates missing tables |
-| Metrics dump empty | P1 | Returns `{}` not error |
-| Performance cold start | P2 | <150ms baseline (optional CI) |
+| Area                      | Priority | Test Requirement                        |
+| ------------------------- | -------- | --------------------------------------- |
+| Argument parsing          | P0       | Invalid flags surface structured errors |
+| Idempotent capture:text   | P0       | Duplicate text returns same hash        |
+| Voice file missing        | P0       | Returns CLI_VOICE_FILE_MISSING error    |
+| JSON output stability     | P0       | Schema validation + snapshots           |
+| Hash migration guardrails | P0       | Forbid phase skipping                   |
+| Doctor integrity check    | P1       | Simulates missing tables                |
+| Metrics dump empty        | P1       | Returns `{}` not error                  |
+| Performance cold start    | P2       | <150ms baseline (optional CI)           |
 
 ### YAGNI Deferrals
 
@@ -581,64 +597,67 @@ Excluded until activation criteria met (tracked in guide-cli-extensibility-defer
 
 ```typescript
 // src/commands/capture-voice.ts
-import { Command } from 'commander';
-import { CaptureService } from '@adhd-brain/capture-service';
-import ora from 'ora';
-import chalk from 'chalk';
+import { Command } from "commander"
+import { CaptureService } from "@adhd-brain/capture-service"
+import ora from "ora"
+import chalk from "chalk"
 
 export function registerCaptureVoiceCommand(program: Command) {
   program
-    .command('capture voice')
-    .description('Capture voice memo file')
-    .argument('<file>', 'Path to voice memo file')
-    .option('-t, --transcribe', 'Transcribe immediately')
-    .option('--tag <tags>', 'Comma-separated tags')
-    .option('--priority <level>', 'Priority level', 'normal')
-    .option('--dry-run', 'Validate without staging')
-    .option('-j, --json', 'JSON output')
+    .command("capture voice")
+    .description("Capture voice memo file")
+    .argument("<file>", "Path to voice memo file")
+    .option("-t, --transcribe", "Transcribe immediately")
+    .option("--tag <tags>", "Comma-separated tags")
+    .option("--priority <level>", "Priority level", "normal")
+    .option("--dry-run", "Validate without staging")
+    .option("-j, --json", "JSON output")
     .action(async (file, options) => {
-      const spinner = options.json ? null : ora('Capturing voice memo...').start();
+      const spinner = options.json
+        ? null
+        : ora("Capturing voice memo...").start()
 
       try {
-        const service = new CaptureService();
+        const service = new CaptureService()
         const result = await service.captureVoice({
           filePath: file,
           transcribe: options.transcribe,
-          tags: options.tag?.split(','),
+          tags: options.tag?.split(","),
           priority: options.priority,
           dryRun: options.dryRun,
-        });
+        })
 
         if (options.json) {
-          console.log(JSON.stringify(result, null, 2));
+          console.log(JSON.stringify(result, null, 2))
         } else {
           spinner?.succeed(
             `Captured voice memo: ${result.id}\n` +
-            `Status: ${result.status}\n` +
-            `Hash: ${result.contentHash.slice(0, 12)}...`
-          );
+              `Status: ${result.status}\n` +
+              `Hash: ${result.contentHash.slice(0, 12)}...`
+          )
 
           if (result.duplicate) {
             console.warn(
-              chalk.yellow(`⚠️  Duplicate detected (existing ID: ${result.duplicateId})`)
-            );
+              chalk.yellow(
+                `⚠️  Duplicate detected (existing ID: ${result.duplicateId})`
+              )
+            )
           }
         }
 
-        process.exit(0);
+        process.exit(0)
       } catch (error) {
         if (options.json) {
-          console.error(JSON.stringify({ error: error.toJSON() }, null, 2));
+          console.error(JSON.stringify({ error: error.toJSON() }, null, 2))
         } else {
-          spinner?.fail('Failed to capture voice memo');
-          console.error(chalk.red(error.message));
+          spinner?.fail("Failed to capture voice memo")
+          console.error(chalk.red(error.message))
         }
-        process.exit(error.exitCode ?? 1);
+        process.exit(error.exitCode ?? 1)
       }
-    });
+    })
 }
 ```
-
 
 ---
 
@@ -729,5 +748,6 @@ The perfect minimal CLI is like a good capture: short, atomic, and doesn't hang 
 **Last Updated:** 2025-09-27
 **Status:** Draft - Consolidated from core + foundation specs
 **Change Log:**
+
 - v1.0.0 (2025-09-27): Consolidated spec-cli-core-tech.md and spec-cli-foundation-tech.md
 - v0.1.0 (2025-09-26): Initial core spec

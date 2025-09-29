@@ -13,12 +13,14 @@ Accepted
 ## Context
 
 The Obsidian Bridge needs to generate consistent, collision-resistant filenames for exported markdown files. Requirements include:
+
 - Deterministic naming: Same capture → same filename (idempotent exports)
 - Collision resistance: Avoid filename conflicts
 - Time ordering: Chronological sorting capability
 - No duplicates: Retry exports should not create multiple files
 
 Traditional approaches have limitations:
+
 - Timestamp-based: Collisions possible with rapid captures
 - UUID v4: No time ordering, not deterministic for same input
 - Sequential IDs: Require coordination, gap handling complexity
@@ -47,6 +49,7 @@ Use ULID (Universally Unique Lexicographically Sortable Identifier) from `captur
 ## Consequences
 
 **Positive:**
+
 - Deterministic: Same capture always produces same filename
 - Collision resistant: < 1 collision per 1 billion ULIDs (per spec)
 - Time ordered: Lexicographic sorting equals chronological sorting
@@ -54,11 +57,13 @@ Use ULID (Universally Unique Lexicographically Sortable Identifier) from `captur
 - Deduplication: Content hash comparison resolves true duplicates
 
 **Negative:**
+
 - Dependent on ULID generator quality in staging ledger
 - ULID collision with different content is unrecoverable error
 - Filenames not human-friendly (opaque 26-character strings)
 
 **Design Constraints:**
+
 - Staging Ledger must provide valid ULID format (26 chars, Crockford Base32)
 - Export layer cannot generate new ULIDs (must use existing capture.id)
 - Collision conflicts require manual investigation

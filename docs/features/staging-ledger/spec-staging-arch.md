@@ -413,6 +413,7 @@ The staging ledger sits **between capture sources and Obsidian vault export**, p
 The `captures.status` field drives all processing logic and enforces lifecycle invariants. This state machine coordinates with error recovery, transcription, and export operations.
 
 **Related Documentation:**
+
 - [Error Recovery Guide](../../guides/guide-error-recovery.md) - Failure state transitions and retry logic
 - [Whisper Transcription Guide](../../guides/guide-whisper-transcription.md) - Transcription states and timeouts
 - [Gmail OAuth2 Setup Guide](../../guides/guide-gmail-oauth2-setup.md) - Email capture states
@@ -462,55 +463,59 @@ The `captures.status` field drives all processing logic and enforces lifecycle i
 **State Flow Narratives:**
 
 **Voice Capture Happy Path:**
+
 1. `staged` (file detected, audio fingerprint computed, DB insert) →
 2. `transcribed` (Whisper success, SHA-256 computed, hash stored) →
 3. Duplicate check (query by hash) →
 4. `exported` (unique hash, Obsidian file written, audit logged)
 
 **Voice Capture Failure Path:**
+
 1. `staged` (file detected, audio fingerprint computed, DB insert) →
 2. `failed_transcription` (Whisper timeout 30s OR corrupt audio detected) →
 3. `exported_placeholder` (placeholder markdown written, audit logged with error_flag=1)
 
 **Email Capture Happy Path:**
+
 1. `staged` (email fetched, SHA-256 computed immediately, DB insert) →
 2. Duplicate check (query by hash OR message_id) →
 3. `exported` (unique hash, Obsidian file written, audit logged)
 
 **Email Capture Duplicate Path:**
+
 1. `staged` (email fetched, SHA-256 computed) →
 2. Duplicate check (hash OR message_id match found) →
 3. `exported_duplicate` (no vault write, audit logged with mode='duplicate_skip')
 
 ### 5.2 Status Definitions
 
-| Status | Meaning | Hash State | Next Allowed States | Terminal? | Error Recovery |
-|--------|---------|------------|---------------------|-----------|----------------|
-| `staged` | Capture inserted, awaiting processing | NULL (voice) or SHA-256 (email) | transcribed, failed_transcription, exported_duplicate | No | Retry transcription on crash (see [Error Recovery Guide](../../guides/guide-error-recovery.md)) |
-| `transcribed` | Transcription complete, awaiting export | SHA-256 set | exported, exported_duplicate | No | Retry export on crash (idempotent via hash check) |
-| `failed_transcription` | Transcription failed, placeholder needed | NULL | exported_placeholder | No | No retry - export placeholder immediately (see [ADR-0014](../../adr/0014-placeholder-export-immutability.md)) |
-| `exported` | Successfully exported to vault | SHA-256 set | None | **Yes** | N/A - immutable success state |
-| `exported_duplicate` | Detected duplicate, no vault write | SHA-256 set | None | **Yes** | N/A - immutable success state (dedup working) |
-| `exported_placeholder` | Placeholder exported after failure | NULL or audio_fp | None | **Yes** | N/A - permanent failure documented (see [Placeholder Immutability](../../adr/0014-placeholder-export-immutability.md)) |
+| Status                 | Meaning                                  | Hash State                      | Next Allowed States                                   | Terminal? | Error Recovery                                                                                                         |
+| ---------------------- | ---------------------------------------- | ------------------------------- | ----------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `staged`               | Capture inserted, awaiting processing    | NULL (voice) or SHA-256 (email) | transcribed, failed_transcription, exported_duplicate | No        | Retry transcription on crash (see [Error Recovery Guide](../../guides/guide-error-recovery.md))                        |
+| `transcribed`          | Transcription complete, awaiting export  | SHA-256 set                     | exported, exported_duplicate                          | No        | Retry export on crash (idempotent via hash check)                                                                      |
+| `failed_transcription` | Transcription failed, placeholder needed | NULL                            | exported_placeholder                                  | No        | No retry - export placeholder immediately (see [ADR-0014](../../adr/0014-placeholder-export-immutability.md))          |
+| `exported`             | Successfully exported to vault           | SHA-256 set                     | None                                                  | **Yes**   | N/A - immutable success state                                                                                          |
+| `exported_duplicate`   | Detected duplicate, no vault write       | SHA-256 set                     | None                                                  | **Yes**   | N/A - immutable success state (dedup working)                                                                          |
+| `exported_placeholder` | Placeholder exported after failure       | NULL or audio_fp                | None                                                  | **Yes**   | N/A - permanent failure documented (see [Placeholder Immutability](../../adr/0014-placeholder-export-immutability.md)) |
 
 ### 5.3 Failure Branch Mapping
 
 The following table maps failure scenarios to state transitions and recovery actions:
 
-| Failure Scenario | From State | Error Type | To State | Recovery Action | Reference |
-|------------------|------------|------------|----------|-----------------|-----------|
-| Whisper timeout (30s) | `staged` | `transcription.timeout` | `failed_transcription` → `exported_placeholder` | Export placeholder immediately | [Whisper Guide](../../guides/guide-whisper-transcription.md) |
-| Corrupt audio file | `staged` | `transcription.corrupt_audio` | `failed_transcription` → `exported_placeholder` | Export placeholder immediately | [Error Recovery](../../guides/guide-error-recovery.md) |
-| Whisper OOM error | `staged` | `transcription.oom` | `failed_transcription` → `exported_placeholder` | Export placeholder immediately | [Whisper Guide](../../guides/guide-whisper-transcription.md) |
-| iCloud dataless file | `staged` | `file.dataless_icloud` | Retry in same state | Retry with exponential backoff (max 10 attempts) | [Error Recovery](../../guides/guide-error-recovery.md) |
-| Gmail token expired | N/A (polling) | `auth.invalid_grant` | N/A (system error) | Require user re-authentication | [Gmail OAuth2 Guide](../../guides/guide-gmail-oauth2-setup.md) |
-| Gmail rate limited | N/A (polling) | `api.rate_limited` | N/A (system error) | Exponential backoff, circuit breaker | [Error Recovery](../../guides/guide-error-recovery.md) |
-| Duplicate hash detected | `transcribed` | N/A (not error) | `exported_duplicate` | Skip vault write, log audit | [Deduplication §6](spec-staging-arch.md#6-deduplication-architecture) |
-| Duplicate message_id | `staged` | N/A (not error) | `exported_duplicate` | Skip vault write, log audit | [Deduplication §6](spec-staging-arch.md#6-deduplication-architecture) |
-| Vault unreachable | `transcribed` | `export.vault_unreachable` | Retry in same state | Retry with exponential backoff (max 5 attempts) | [Error Recovery](../../guides/guide-error-recovery.md) |
-| Disk full | `transcribed` | `export.disk_full` | Retry in same state | Alert user, retry after cleanup | [Error Recovery](../../guides/guide-error-recovery.md) |
-| App crash after insert | `staged` | N/A (crash) | Resume from `staged` | Query recoverable captures on startup | [Crash Recovery §4.4](spec-staging-arch.md#44-crash-recovery-flow) |
-| App crash after transcribe | `transcribed` | N/A (crash) | Resume from `transcribed` | Query recoverable captures on startup | [Crash Recovery §4.4](spec-staging-arch.md#44-crash-recovery-flow) |
+| Failure Scenario           | From State    | Error Type                    | To State                                        | Recovery Action                                  | Reference                                                             |
+| -------------------------- | ------------- | ----------------------------- | ----------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------- |
+| Whisper timeout (30s)      | `staged`      | `transcription.timeout`       | `failed_transcription` → `exported_placeholder` | Export placeholder immediately                   | [Whisper Guide](../../guides/guide-whisper-transcription.md)          |
+| Corrupt audio file         | `staged`      | `transcription.corrupt_audio` | `failed_transcription` → `exported_placeholder` | Export placeholder immediately                   | [Error Recovery](../../guides/guide-error-recovery.md)                |
+| Whisper OOM error          | `staged`      | `transcription.oom`           | `failed_transcription` → `exported_placeholder` | Export placeholder immediately                   | [Whisper Guide](../../guides/guide-whisper-transcription.md)          |
+| iCloud dataless file       | `staged`      | `file.dataless_icloud`        | Retry in same state                             | Retry with exponential backoff (max 10 attempts) | [Error Recovery](../../guides/guide-error-recovery.md)                |
+| Gmail token expired        | N/A (polling) | `auth.invalid_grant`          | N/A (system error)                              | Require user re-authentication                   | [Gmail OAuth2 Guide](../../guides/guide-gmail-oauth2-setup.md)        |
+| Gmail rate limited         | N/A (polling) | `api.rate_limited`            | N/A (system error)                              | Exponential backoff, circuit breaker             | [Error Recovery](../../guides/guide-error-recovery.md)                |
+| Duplicate hash detected    | `transcribed` | N/A (not error)               | `exported_duplicate`                            | Skip vault write, log audit                      | [Deduplication §6](spec-staging-arch.md#6-deduplication-architecture) |
+| Duplicate message_id       | `staged`      | N/A (not error)               | `exported_duplicate`                            | Skip vault write, log audit                      | [Deduplication §6](spec-staging-arch.md#6-deduplication-architecture) |
+| Vault unreachable          | `transcribed` | `export.vault_unreachable`    | Retry in same state                             | Retry with exponential backoff (max 5 attempts)  | [Error Recovery](../../guides/guide-error-recovery.md)                |
+| Disk full                  | `transcribed` | `export.disk_full`            | Retry in same state                             | Alert user, retry after cleanup                  | [Error Recovery](../../guides/guide-error-recovery.md)                |
+| App crash after insert     | `staged`      | N/A (crash)                   | Resume from `staged`                            | Query recoverable captures on startup            | [Crash Recovery §4.4](spec-staging-arch.md#44-crash-recovery-flow)    |
+| App crash after transcribe | `transcribed` | N/A (crash)                   | Resume from `transcribed`                       | Query recoverable captures on startup            | [Crash Recovery §4.4](spec-staging-arch.md#44-crash-recovery-flow)    |
 
 **Key Principles:**
 
@@ -532,26 +537,30 @@ The following table maps failure scenarios to state transitions and recovery act
 ```typescript
 function validateTransition(current: Status, next: Status): boolean {
   // Terminal states cannot transition
-  if (current.startsWith('exported')) {
-    return false;
+  if (current.startsWith("exported")) {
+    return false
   }
 
   // Staged can go to transcribed, failed, or duplicate
-  if (current === 'staged') {
-    return ['transcribed', 'failed_transcription', 'exported_duplicate'].includes(next);
+  if (current === "staged") {
+    return [
+      "transcribed",
+      "failed_transcription",
+      "exported_duplicate",
+    ].includes(next)
   }
 
   // Transcribed can only go to exported states
-  if (current === 'transcribed') {
-    return ['exported', 'exported_duplicate'].includes(next);
+  if (current === "transcribed") {
+    return ["exported", "exported_duplicate"].includes(next)
   }
 
   // Failed transcription can only go to placeholder export
-  if (current === 'failed_transcription') {
-    return next === 'exported_placeholder';
+  if (current === "failed_transcription") {
+    return next === "exported_placeholder"
   }
 
-  return false;
+  return false
 }
 ```
 
@@ -661,13 +670,15 @@ SELECT id FROM captures WHERE content_hash = ? LIMIT 1;
 
 ```typescript
 interface VoiceCaptureInput {
-  file_path: string;        // Apple Voice Memos path (never moved per ADR-0001)
-  audio_fp: string;         // SHA-256 of first 4MB
-  detected_at: Date;        // Poll timestamp
+  file_path: string // Apple Voice Memos path (never moved per ADR-0001)
+  audio_fp: string // SHA-256 of first 4MB
+  detected_at: Date // Poll timestamp
 }
 
 // Staging ledger provides:
-function insertVoiceCapture(input: VoiceCaptureInput): Promise<{ capture_id: string }>;
+function insertVoiceCapture(
+  input: VoiceCaptureInput
+): Promise<{ capture_id: string }>
 ```
 
 **Data Flow:**
@@ -691,15 +702,17 @@ function insertVoiceCapture(input: VoiceCaptureInput): Promise<{ capture_id: str
 
 ```typescript
 interface EmailCaptureInput {
-  message_id: string;       // Gmail Message-ID
-  from: string;
-  subject: string;
-  body_text: string;        // Plain text body
-  received_at: Date;
+  message_id: string // Gmail Message-ID
+  from: string
+  subject: string
+  body_text: string // Plain text body
+  received_at: Date
 }
 
 // Staging ledger provides:
-function insertEmailCapture(input: EmailCaptureInput): Promise<{ capture_id: string; is_duplicate: boolean }>;
+function insertEmailCapture(
+  input: EmailCaptureInput
+): Promise<{ capture_id: string; is_duplicate: boolean }>
 ```
 
 **Data Flow:**
@@ -718,14 +731,17 @@ function insertEmailCapture(input: EmailCaptureInput): Promise<{ capture_id: str
 
 ```typescript
 interface TranscriptionUpdate {
-  capture_id: string;
-  transcript_text: string;  // Whisper output
-  content_hash: string;     // SHA-256 of transcript
+  capture_id: string
+  transcript_text: string // Whisper output
+  content_hash: string // SHA-256 of transcript
 }
 
 // Staging ledger provides:
-function updateTranscription(update: TranscriptionUpdate): Promise<void>;
-function markTranscriptionFailed(capture_id: string, error: string): Promise<void>;
+function updateTranscription(update: TranscriptionUpdate): Promise<void>
+function markTranscriptionFailed(
+  capture_id: string,
+  error: string
+): Promise<void>
 ```
 
 **Data Flow:**
@@ -744,15 +760,15 @@ function markTranscriptionFailed(capture_id: string, error: string): Promise<voi
 
 ```typescript
 interface ExportInput {
-  capture_id: string;
-  vault_path: string;       // inbox/<ulid>.md
-  content: string;          // Markdown to write
-  is_placeholder: boolean;
+  capture_id: string
+  vault_path: string // inbox/<ulid>.md
+  content: string // Markdown to write
+  is_placeholder: boolean
 }
 
 // Staging ledger provides:
-function recordExport(input: ExportInput): Promise<void>;
-function queryPendingExports(): Promise<Capture[]>;
+function recordExport(input: ExportInput): Promise<void>
+function queryPendingExports(): Promise<Capture[]>
 ```
 
 **Data Flow:**
@@ -771,14 +787,14 @@ function queryPendingExports(): Promise<Capture[]>;
 ```typescript
 // Staging ledger provides:
 interface HealthStatus {
-  queue_depth: number;              // Count of pending captures
-  last_backup: Date | null;
-  errors_24h: Array<{ stage: string; count: number }>;
-  placeholder_ratio_7d: number;     // Percentage
-  database_size_mb: number;
+  queue_depth: number // Count of pending captures
+  last_backup: Date | null
+  errors_24h: Array<{ stage: string; count: number }>
+  placeholder_ratio_7d: number // Percentage
+  database_size_mb: number
 }
 
-function getHealthStatus(): Promise<HealthStatus>;
+function getHealthStatus(): Promise<HealthStatus>
 ```
 
 **Data Flow:**
@@ -794,13 +810,13 @@ function getHealthStatus(): Promise<HealthStatus>;
 
 ### 8.1 Performance Targets
 
-| Operation | Target | Percentile | Rationale |
-|-----------|--------|------------|-----------|
-| Capture insert | < 100ms | p95 | Burst capture must feel instant |
-| Duplicate check | < 10ms | p95 | Pre-export validation, frequent |
-| Recovery query | < 50ms | p95 | Startup time critical for UX |
-| Crash recovery | < 250ms | p95 | Full restart → resume latency |
-| Backup creation | < 5s | p95 | Hourly, non-blocking |
+| Operation       | Target  | Percentile | Rationale                       |
+| --------------- | ------- | ---------- | ------------------------------- |
+| Capture insert  | < 100ms | p95        | Burst capture must feel instant |
+| Duplicate check | < 10ms  | p95        | Pre-export validation, frequent |
+| Recovery query  | < 50ms  | p95        | Startup time critical for UX    |
+| Crash recovery  | < 250ms | p95        | Full restart → resume latency   |
+| Backup creation | < 5s    | p95        | Hourly, non-blocking            |
 
 ### 8.2 Performance Design Decisions
 
@@ -970,14 +986,14 @@ function getHealthStatus(): Promise<HealthStatus>;
 
 These invariants MUST hold at all times:
 
-| # | Invariant | Enforcement | Recovery |
-|---|-----------|-------------|----------|
-| 1 | No orphan audit rows | FOREIGN KEY constraint | Prevent at insert time |
-| 2 | Terminal states immutable | Business logic validation | None (prevent transition) |
-| 3 | Hash mutates at most once | Business logic validation | Reject re-transcription |
-| 4 | (channel, native_id) unique | UNIQUE INDEX | Constraint violation error |
-| 5 | Vault filename == capture.id | Convention + validation | Re-export with correct ULID |
-| 6 | Backup before pruning | Process ordering | Escalation policy (pause prune) |
+| #   | Invariant                    | Enforcement               | Recovery                        |
+| --- | ---------------------------- | ------------------------- | ------------------------------- |
+| 1   | No orphan audit rows         | FOREIGN KEY constraint    | Prevent at insert time          |
+| 2   | Terminal states immutable    | Business logic validation | None (prevent transition)       |
+| 3   | Hash mutates at most once    | Business logic validation | Reject re-transcription         |
+| 4   | (channel, native_id) unique  | UNIQUE INDEX              | Constraint violation error      |
+| 5   | Vault filename == capture.id | Convention + validation   | Re-export with correct ULID     |
+| 6   | Backup before pruning        | Process ordering          | Escalation policy (pause prune) |
 
 ---
 
@@ -1029,12 +1045,12 @@ These invariants MUST hold at all times:
 
 **Triggers to Revisit:**
 
-| Feature | Trigger Condition |
-|---------|------------------|
-| Composite indexes | p95 query > 11s traced to index scan |
-| Concurrent transcription | Backlog depth > 20 for > 30m |
-| BLAKE3 dual-hash | > 200 daily captures OR false duplicate incident |
-| FTS5 indexes | User explicitly requests ledger search (not vault search) |
+| Feature                  | Trigger Condition                                         |
+| ------------------------ | --------------------------------------------------------- |
+| Composite indexes        | p95 query > 11s traced to index scan                      |
+| Concurrent transcription | Backlog depth > 20 for > 30m                              |
+| BLAKE3 dual-hash         | > 200 daily captures OR false duplicate incident          |
+| FTS5 indexes             | User explicitly requests ledger search (not vault search) |
 
 ---
 
@@ -1053,28 +1069,28 @@ These invariants MUST hold at all times:
 ```typescript
 interface StagingMetrics {
   // Performance
-  capture_staging_ms: number;              // Insert latency
-  dedup_check_ms: number;                  // Hash query latency
-  recovery_query_ms: number;               // Startup recovery time
-  backup_duration_ms: number;              // Hourly backup latency
+  capture_staging_ms: number // Insert latency
+  dedup_check_ms: number // Hash query latency
+  recovery_query_ms: number // Startup recovery time
+  backup_duration_ms: number // Hourly backup latency
 
   // Throughput
-  captures_inserted_total: number;         // Counter
-  captures_exported_total: number;         // Counter
-  dedup_hits_total: number;                // Counter by layer
+  captures_inserted_total: number // Counter
+  captures_exported_total: number // Counter
+  dedup_hits_total: number // Counter by layer
 
   // Queue Health
-  transcription_queue_depth: number;       // Gauge (staged count)
-  export_queue_depth: number;              // Gauge (transcribed count)
+  transcription_queue_depth: number // Gauge (staged count)
+  export_queue_depth: number // Gauge (transcribed count)
 
   // Failures
-  export_failures_total: number;           // Counter
-  transcription_failures_total: number;    // Counter
-  placeholder_export_ratio: number;        // Daily aggregation
+  export_failures_total: number // Counter
+  transcription_failures_total: number // Counter
+  placeholder_export_ratio: number // Daily aggregation
 
   // Backup
-  backup_verification_result: string;      // "success" | "failure"
-  backup_size_bytes: number;               // Gauge
+  backup_verification_result: string // "success" | "failure"
+  backup_size_bytes: number // Gauge
 }
 ```
 
@@ -1147,13 +1163,13 @@ interface StagingMetrics {
 
 ### 12.2 Scaling Triggers
 
-| Metric | Threshold | Action |
-|--------|-----------|--------|
-| Database size | > 500MB | Evaluate aggressive pruning or partitioning |
-| p95 insert latency | > 100ms | Profile and optimize (index overhead?) |
-| Queue depth | > 20 sustained | Consider concurrent transcription (ADR required) |
-| Backup duration | > 30s | Evaluate incremental backup or compression |
-| False duplicate | 1 incident | Evaluate BLAKE3 dual-hash per ADR-0002 |
+| Metric             | Threshold      | Action                                           |
+| ------------------ | -------------- | ------------------------------------------------ |
+| Database size      | > 500MB        | Evaluate aggressive pruning or partitioning      |
+| p95 insert latency | > 100ms        | Profile and optimize (index overhead?)           |
+| Queue depth        | > 20 sustained | Consider concurrent transcription (ADR required) |
+| Backup duration    | > 30s          | Evaluate incremental backup or compression       |
+| False duplicate    | 1 incident     | Evaluate BLAKE3 dual-hash per ADR-0002           |
 
 ### 12.3 Schema Evolution
 
@@ -1185,32 +1201,32 @@ interface StagingMetrics {
 
 ### Upstream Dependencies
 
-| Document | Relationship |
-|----------|--------------|
+| Document                                             | Relationship                |
+| ---------------------------------------------------- | --------------------------- |
 | [Master PRD v2.3.0-MPPP](../../master/prd-master.md) | Parent specification (§4.2) |
-| [Roadmap v2.0.0-MPPP](../../master/roadmap.md) | Phase 1-2 scope |
-| [Staging Ledger PRD v1.0.0-MPPP](./prd-staging.md) | Requirements source |
+| [Roadmap v2.0.0-MPPP](../../master/roadmap.md)       | Phase 1-2 scope             |
+| [Staging Ledger PRD v1.0.0-MPPP](./prd-staging.md)   | Requirements source         |
 
 ### Downstream Specifications
 
-| Document | Relationship |
-|----------|--------------|
+| Document                                           | Relationship                          |
+| -------------------------------------------------- | ------------------------------------- |
 | [Staging Ledger Tech Spec](./spec-staging-tech.md) | Implementation details (SQLite, APIs) |
-| [Staging Ledger Test Spec](./spec-staging-test.md) | Test strategy and coverage |
+| [Staging Ledger Test Spec](./spec-staging-test.md) | Test strategy and coverage            |
 
 ### Cross-Cutting
 
-| Document | Relationship |
-|----------|--------------|
-| [TDD Applicability Guide](../../guides/guide-tdd-applicability.md) | Risk classification framework |
-| [ADR-0001: Voice File Sovereignty](../../adr/0001-voice-file-sovereignty.md) | Never move voice files |
-| [ADR-0002: Dual Hash Migration](../../adr/0002-dual-hash-migration.md) | SHA-256 → BLAKE3 path (superseded) |
-| [ADR-0003: Four-Table Hard Cap](../../adr/0003-four-table-hard-cap.md) | Schema boundary enforcement |
-| [ADR-0004: Status-Driven State Machine](../../adr/0004-status-driven-state-machine.md) | Capture lifecycle management |
-| [ADR-0005: WAL Mode Normal Sync](../../adr/0005-wal-mode-normal-sync.md) | SQLite durability configuration |
-| [ADR-0006: Late Hash Binding Voice](../../adr/0006-late-hash-binding-voice.md) | Voice processing strategy |
-| [ADR-0007: 90-Day Retention Exported Only](../../adr/0007-90-day-retention-exported-only.md) | Data cleanup policy |
-| [ADR-0008: Sequential Processing MPPP](../../adr/0008-sequential-processing-mppp.md) | Processing concurrency model |
+| Document                                                                                     | Relationship                       |
+| -------------------------------------------------------------------------------------------- | ---------------------------------- |
+| [TDD Applicability Guide](../../guides/guide-tdd-applicability.md)                           | Risk classification framework      |
+| [ADR-0001: Voice File Sovereignty](../../adr/0001-voice-file-sovereignty.md)                 | Never move voice files             |
+| [ADR-0002: Dual Hash Migration](../../adr/0002-dual-hash-migration.md)                       | SHA-256 → BLAKE3 path (superseded) |
+| [ADR-0003: Four-Table Hard Cap](../../adr/0003-four-table-hard-cap.md)                       | Schema boundary enforcement        |
+| [ADR-0004: Status-Driven State Machine](../../adr/0004-status-driven-state-machine.md)       | Capture lifecycle management       |
+| [ADR-0005: WAL Mode Normal Sync](../../adr/0005-wal-mode-normal-sync.md)                     | SQLite durability configuration    |
+| [ADR-0006: Late Hash Binding Voice](../../adr/0006-late-hash-binding-voice.md)               | Voice processing strategy          |
+| [ADR-0007: 90-Day Retention Exported Only](../../adr/0007-90-day-retention-exported-only.md) | Data cleanup policy                |
+| [ADR-0008: Sequential Processing MPPP](../../adr/0008-sequential-processing-mppp.md)         | Processing concurrency model       |
 
 ---
 

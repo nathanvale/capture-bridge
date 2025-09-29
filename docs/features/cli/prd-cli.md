@@ -18,7 +18,7 @@ The ADHD Brain system requires a user interface for manual capture operations, s
 
 - Test capture workflows manually
 - Debug staging ledger issues
-- Inspect staged captures *(Note: MPPP uses direct export - outbox pattern deferred to Phase 5+)*
+- Inspect staged captures _(Note: MPPP uses direct export - outbox pattern deferred to Phase 5+)_
 - Verify system health
 - Perform batch operations
 
@@ -96,14 +96,14 @@ The ADHD Brain system requires a user interface for manual capture operations, s
 
 ### 3.1 YAGNI Deferrals Table
 
-| Feature | Defer Phase | Trigger to Revisit |
-|---------|-------------|--------------------|
-| Quick text capture | 5+ | Sustained manual friction > 10 notes/day manually created for 7 days |
-| Shell completion | 5+ | Daily CLI invocation > 30 commands |
-| Plugin/extensibility | 5+ | 3+ external integration requests |
-| Interactive REPL | 5+ | User feedback citing discoverability pain |
-| Real-time transcription view | 5+ | Voice export latency > p95 target for 14 days |
-| Batch inbox processing | 3+ | Inbox backlog > 300 items |
+| Feature                      | Defer Phase | Trigger to Revisit                                                   |
+| ---------------------------- | ----------- | -------------------------------------------------------------------- |
+| Quick text capture           | 5+          | Sustained manual friction > 10 notes/day manually created for 7 days |
+| Shell completion             | 5+          | Daily CLI invocation > 30 commands                                   |
+| Plugin/extensibility         | 5+          | 3+ external integration requests                                     |
+| Interactive REPL             | 5+          | User feedback citing discoverability pain                            |
+| Real-time transcription view | 5+          | Voice export latency > p95 target for 14 days                        |
+| Batch inbox processing       | 3+          | Inbox backlog > 300 items                                            |
 
 ---
 
@@ -227,13 +227,13 @@ The ADHD Brain system requires a user interface for manual capture operations, s
 
 ### Decision: TDD Required (Targeted Scope)
 
-| Layer | Required | Reason |
-|-------|----------|--------|
-| Unit (command handlers) | Yes | Deterministic parsing & validation |
-| Integration (spawn CLI) | Yes (core commands) | Contract + exit codes |
-| Contract (JSON schema) | Yes | Automation stability |
-| Performance smoke | Optional | Only if cold start > 150ms |
-| Snapshot formatting | No | Presentation not critical now |
+| Layer                   | Required            | Reason                             |
+| ----------------------- | ------------------- | ---------------------------------- |
+| Unit (command handlers) | Yes                 | Deterministic parsing & validation |
+| Integration (spawn CLI) | Yes (core commands) | Contract + exit codes              |
+| Contract (JSON schema)  | Yes                 | Automation stability               |
+| Performance smoke       | Optional            | Only if cold start > 150ms         |
+| Snapshot formatting     | No                  | Presentation not critical now      |
 
 ### Scope
 
@@ -249,11 +249,11 @@ The ADHD Brain system requires a user interface for manual capture operations, s
 
 ### Triggers to Revisit
 
-| Trigger | Expansion Action |
-|---------|------------------|
-| Add email capture command | Add email flow integration tests |
-| Exit code regression incident | Add regression harness |
-| >5% user-reported CLI confusion | Introduce richer UX tests |
+| Trigger                         | Expansion Action                 |
+| ------------------------------- | -------------------------------- |
+| Add email capture command       | Add email flow integration tests |
+| Exit code regression incident   | Add regression harness           |
+| >5% user-reported CLI confusion | Introduce richer UX tests        |
 
 ---
 
@@ -263,22 +263,22 @@ This PRD delivers the following Master PRD v2.3.0-MPPP §12 success criteria:
 
 ### Phase 1 (MVP) Criteria Mapping
 
-| Master PRD Criterion | CLI PRD Deliverable | Verification Test |
-|---------------------|---------------------|-------------------|
+| Master PRD Criterion                        | CLI PRD Deliverable               | Verification Test         |
+| ------------------------------------------- | --------------------------------- | ------------------------- |
 | ✅ Infrastructure health command functional | `adhd doctor` command with checks | `test-cli-doctor.spec.ts` |
 
 ### Phase 2 (Production Ready) Criteria Mapping
 
-| Master PRD Criterion | CLI PRD Deliverable | Verification Test |
-|---------------------|---------------------|-------------------|
+| Master PRD Criterion                            | CLI PRD Deliverable   | Verification Test                      |
+| ----------------------------------------------- | --------------------- | -------------------------------------- |
 | ✅ Doctor command detects 95%+ of common issues | Health check coverage | Manual validation with fault injection |
 
 ### Test Infrastructure Criteria
 
-| Master PRD Criterion | CLI PRD Deliverable | Verification Test |
-|---------------------|---------------------|-------------------|
+| Master PRD Criterion                      | CLI PRD Deliverable         | Verification Test               |
+| ----------------------------------------- | --------------------------- | ------------------------------- |
 | ✅ TestKit integrated across all packages | CLI test suite uses TestKit | All CLI tests pass with TestKit |
-| ✅ Test suite runs in < 30 seconds | CLI unit tests optimized | CI pipeline timing validation |
+| ✅ Test suite runs in < 30 seconds        | CLI unit tests optimized    | CI pipeline timing validation   |
 
 ### Test Traceability
 

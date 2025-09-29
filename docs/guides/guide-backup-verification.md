@@ -29,6 +29,7 @@ Use this guide when:
 - Responding to backup verification escalation alerts
 
 **Related Features:**
+
 - [Master PRD Section 6.2.1](../master/prd-master.md) - Backup & Verification Policy
 - [Staging Ledger PRD](../features/staging-ledger/prd-staging.md) - Database schema and durability requirements
 - [Health Command Guide](./guide-health-command.md) - Integration with `adhd doctor` command
@@ -37,12 +38,14 @@ Use this guide when:
 ## Prerequisites
 
 **Required:**
+
 - ADHD Brain system installed with SQLite staging ledger initialized
 - SQLite3 CLI tool available (`sqlite3` command)
 - Access to backup directory (default: `${VAULT_ROOT}/.adhd-brain/.backups/`)
 - Basic understanding of cron scheduling (for automation)
 
 **Recommended:**
+
 - Familiarity with SQLite `PRAGMA` commands
 - Understanding of SHA-256 checksums for file integrity
 - Knowledge of backup retention policies (24 hourly + 7 daily)
@@ -171,12 +174,12 @@ cat ~/.adhd-brain/.metrics/$(date +%Y-%m-%d).ndjson | grep backup_verification
 
 **Metrics Emitted:**
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `backup.verification.success` | Counter | Successful verification count |
-| `backup.verification.failure` | Counter (by error type) | Failed verification count |
-| `backup.verification.duration_ms` | Histogram | Verification execution time |
-| `backup.last_verified_at` | Timestamp | Last successful verification |
+| Metric                            | Type                    | Description                   |
+| --------------------------------- | ----------------------- | ----------------------------- |
+| `backup.verification.success`     | Counter                 | Successful verification count |
+| `backup.verification.failure`     | Counter (by error type) | Failed verification count     |
+| `backup.verification.duration_ms` | Histogram               | Verification execution time   |
+| `backup.last_verified_at`         | Timestamp               | Last successful verification  |
 
 ### Step 5: Respond to Verification Failures
 
@@ -332,12 +335,12 @@ A backup passes verification when:
 
 ## Escalation Policy Summary
 
-| Failures | Status | Action | Pruning | Ingestion |
-|----------|--------|--------|---------|-----------|
-| 0 | `HEALTHY` | No action | Active | Active |
-| 1 | `WARN` | Log warning | Active | Active |
-| 2 | `DEGRADED_BACKUP` | Alert via doctor | Active | Active |
-| 3+ | `HALT_PRUNING` | Manual intervention | **PAUSED** | Active |
+| Failures | Status            | Action              | Pruning    | Ingestion |
+| -------- | ----------------- | ------------------- | ---------- | --------- |
+| 0        | `HEALTHY`         | No action           | Active     | Active    |
+| 1        | `WARN`            | Log warning         | Active     | Active    |
+| 2        | `DEGRADED_BACKUP` | Alert via doctor    | Active     | Active    |
+| 3+       | `HALT_PRUNING`    | Manual intervention | **PAUSED** | Active    |
 
 **Recovery:** Automatic reset to `WARN` after single successful verification.
 
@@ -528,16 +531,19 @@ adhd doctor --category=infrastructure
 ## Related Documentation
 
 ### Core References
+
 - [Master PRD v2.3.0-MPPP Section 6.2.1](../master/prd-master.md) - Backup & Verification Policy (authoritative)
 - [Staging Ledger PRD](../features/staging-ledger/prd-staging.md) - Database schema and requirements
 - [Staging Ledger Tech Spec](../features/staging-ledger/spec-staging-tech.md) - Backup API implementation
 
 ### Related Guides
+
 - [Backup Restore Guide](./guide-backup-restore-drill.md) - Step-by-step restore procedures
 - [Health Command Guide](./guide-health-command.md) - Integration with `adhd doctor`
 - [Error Recovery Guide](./guide-error-recovery.md) - Error classification and retry logic
 
 ### Technical Specs
+
 - [CLI Doctor Tech Spec](../features/cli/spec-cli-tech.md#doctor-command) - Health check implementation
 
 ## Maintenance Notes

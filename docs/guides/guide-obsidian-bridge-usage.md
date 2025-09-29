@@ -38,6 +38,7 @@ Before using the Obsidian Bridge, ensure:
 5. **Familiarity with ULID identifiers** from Staging Ledger
 
 **Required Packages:**
+
 ```bash
 pnpm add @adhd-brain/obsidian-bridge @adhd-brain/staging-ledger
 ```
@@ -47,39 +48,41 @@ pnpm add @adhd-brain/obsidian-bridge @adhd-brain/staging-ledger
 ### Step 1: Install and Import
 
 ```typescript
-import { ObsidianAtomicWriter } from '@adhd-brain/obsidian-bridge';
-import { Database } from '@adhd-brain/staging-ledger';
+import { ObsidianAtomicWriter } from "@adhd-brain/obsidian-bridge"
+import { Database } from "@adhd-brain/staging-ledger"
 ```
 
 ### Step 2: Initialize Writer
 
 ```typescript
-const vault_path = '/Users/nathan/vault'; // Absolute path to Obsidian vault
-const db = new Database('~/.adhd-brain/staging.db');
-const writer = new ObsidianAtomicWriter(vault_path, db);
+const vault_path = "/Users/nathan/vault" // Absolute path to Obsidian vault
+const db = new Database("~/.adhd-brain/staging.db")
+const writer = new ObsidianAtomicWriter(vault_path, db)
 ```
 
 ### Step 3: Export Capture
 
 ```typescript
 // Retrieve capture from staging ledger
-const capture = await db.getCapture(capture_id);
+const capture = await db.getCapture(capture_id)
 
 // Format capture as markdown
-const content = formatMarkdownExport(capture);
+const content = formatMarkdownExport(capture)
 
 // Atomic write with automatic retry handling
 const result = await writer.writeAtomic(
-  capture.id,        // ULID (becomes filename)
-  content,           // Formatted markdown
+  capture.id, // ULID (becomes filename)
+  content, // Formatted markdown
   vault_path
-);
+)
 
 if (result.success) {
-  console.log(`Exported to: ${result.export_path}`);
+  console.log(`Exported to: ${result.export_path}`)
   // Example: "Exported to: inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md"
 } else {
-  console.error(`Export failed: ${result.error?.code} - ${result.error?.message}`);
+  console.error(
+    `Export failed: ${result.error?.code} - ${result.error?.message}`
+  )
 }
 ```
 
@@ -90,17 +93,17 @@ if (result.success) {
 **Configure Vault Path:**
 
 ```typescript
-import * as path from 'path';
-import * as fs from 'fs/promises';
+import * as path from "path"
+import * as fs from "fs/promises"
 
 // Resolve vault path (supports tilde expansion)
-const vault_path = path.resolve(process.env.OBSIDIAN_VAULT_PATH || '~/vault');
+const vault_path = path.resolve(process.env.OBSIDIAN_VAULT_PATH || "~/vault")
 
 // Verify vault exists and is writable
 try {
-  await fs.access(vault_path, fs.constants.W_OK);
+  await fs.access(vault_path, fs.constants.W_OK)
 } catch (error) {
-  throw new Error(`Vault path not writable: ${vault_path}`);
+  throw new Error(`Vault path not writable: ${vault_path}`)
 }
 ```
 
@@ -128,22 +131,23 @@ id: ${capture.id}
 source: ${capture.source}
 captured_at: ${capture.captured_at}
 content_hash: ${capture.content_hash}
----`;
+---`
 
-  const title = extractTitle(capture.content) || 'Untitled Capture';
+  const title = extractTitle(capture.content) || "Untitled Capture"
 
-  const body = capture.source === 'voice'
-    ? formatVoiceCapture(capture)
-    : formatEmailCapture(capture);
+  const body =
+    capture.source === "voice"
+      ? formatVoiceCapture(capture)
+      : formatEmailCapture(capture)
 
   const metadata = `---
 
 **Metadata:**
-- Source: ${capture.source === 'voice' ? 'Voice Recording' : 'Email'}
+- Source: ${capture.source === "voice" ? "Voice Recording" : "Email"}
 - Captured: ${new Date(capture.captured_at).toUTCString()}
-- Export: ${new Date().toUTCString()}`;
+- Export: ${new Date().toUTCString()}`
 
-  return `${frontmatter}\n\n# ${title}\n\n${body}\n${metadata}`;
+  return `${frontmatter}\n\n# ${title}\n\n${body}\n${metadata}`
 }
 ```
 
@@ -164,6 +168,7 @@ Remember to buy groceries for the weekend party
 ---
 
 **Metadata:**
+
 - Source: Voice Recording
 - Captured: Wed, 27 Sep 2025 10:00:00 GMT
 - Export: Sat, 28 Sep 2025 14:30:00 GMT
@@ -174,17 +179,13 @@ Remember to buy groceries for the weekend party
 **Basic Export:**
 
 ```typescript
-const result = await writer.writeAtomic(
-  capture.id,
-  content,
-  vault_path
-);
+const result = await writer.writeAtomic(capture.id, content, vault_path)
 
 // Check result
 if (result.success) {
-  console.log(`✅ Export successful: ${result.export_path}`);
+  console.log(`✅ Export successful: ${result.export_path}`)
 } else {
-  console.error(`❌ Export failed: ${result.error?.code}`);
+  console.error(`❌ Export failed: ${result.error?.code}`)
 }
 ```
 
@@ -192,39 +193,39 @@ if (result.success) {
 
 ```typescript
 try {
-  const result = await writer.writeAtomic(capture.id, content, vault_path);
+  const result = await writer.writeAtomic(capture.id, content, vault_path)
 
   if (!result.success) {
     switch (result.error?.code) {
-      case 'EACCES':
+      case "EACCES":
         // Permission denied - check vault permissions
-        throw new Error(`Permission denied writing to vault: ${vault_path}`);
+        throw new Error(`Permission denied writing to vault: ${vault_path}`)
 
-      case 'ENOSPC':
+      case "ENOSPC":
         // Disk full - alert user to free space
-        throw new Error('Disk full - please free space and retry');
+        throw new Error("Disk full - please free space and retry")
 
-      case 'EEXIST':
+      case "EEXIST":
         // ULID collision with different content (CRITICAL)
-        throw new Error(`CRITICAL: ULID collision detected for ${capture.id}`);
+        throw new Error(`CRITICAL: ULID collision detected for ${capture.id}`)
 
-      case 'EROFS':
+      case "EROFS":
         // Read-only filesystem - remount or check vault location
-        throw new Error('Vault is on read-only filesystem');
+        throw new Error("Vault is on read-only filesystem")
 
-      case 'ENETDOWN':
+      case "ENETDOWN":
         // Network mount failure - retry later
-        throw new Error('Network mount disconnected - will retry');
+        throw new Error("Network mount disconnected - will retry")
 
       default:
-        throw new Error(`Unknown error: ${result.error?.message}`);
+        throw new Error(`Unknown error: ${result.error?.message}`)
     }
   }
 
-  return result.export_path;
+  return result.export_path
 } catch (error) {
-  console.error('Export failed:', error);
-  throw error;
+  console.error("Export failed:", error)
+  throw error
 }
 ```
 
@@ -234,15 +235,19 @@ try {
 
 ```typescript
 // Query exports_audit table to verify export recorded
-const auditRecord = db.prepare(`
+const auditRecord = db
+  .prepare(
+    `
   SELECT * FROM exports_audit
   WHERE capture_id = ?
   ORDER BY exported_at DESC
   LIMIT 1
-`).get(capture_id);
+`
+  )
+  .get(capture_id)
 
 if (auditRecord) {
-  console.log(`Export audit: ${auditRecord.mode} at ${auditRecord.exported_at}`);
+  console.log(`Export audit: ${auditRecord.mode} at ${auditRecord.exported_at}`)
   // Example: "Export audit: initial at 2025-09-28T14:30:00Z"
 }
 ```
@@ -250,15 +255,15 @@ if (auditRecord) {
 **Verify File Exists:**
 
 ```typescript
-import * as fs from 'fs/promises';
+import * as fs from "fs/promises"
 
-const export_path = path.join(vault_path, 'inbox', `${capture.id}.md`);
+const export_path = path.join(vault_path, "inbox", `${capture.id}.md`)
 
 try {
-  const stats = await fs.stat(export_path);
-  console.log(`File exists: ${export_path} (${stats.size} bytes)`);
+  const stats = await fs.stat(export_path)
+  console.log(`File exists: ${export_path} (${stats.size} bytes)`)
 } catch (error) {
-  console.error('File not found - export may have failed');
+  console.error("File not found - export may have failed")
 }
 ```
 
@@ -275,31 +280,33 @@ async function exportWithRetry(
   vault_path: string,
   maxRetries: number = 3
 ): Promise<string> {
-  const writer = new ObsidianAtomicWriter(vault_path, db);
-  let lastError: AtomicWriteError | undefined;
+  const writer = new ObsidianAtomicWriter(vault_path, db)
+  let lastError: AtomicWriteError | undefined
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    const result = await writer.writeAtomic(capture_id, content, vault_path);
+    const result = await writer.writeAtomic(capture_id, content, vault_path)
 
     if (result.success) {
-      return result.export_path!;
+      return result.export_path!
     }
 
-    lastError = result.error;
+    lastError = result.error
 
     // Only retry transient errors
-    const retryableCodes = ['EACCES', 'ENETDOWN'];
-    if (!retryableCodes.includes(result.error?.code || '')) {
-      throw new Error(`Non-retryable error: ${result.error?.code}`);
+    const retryableCodes = ["EACCES", "ENETDOWN"]
+    if (!retryableCodes.includes(result.error?.code || "")) {
+      throw new Error(`Non-retryable error: ${result.error?.code}`)
     }
 
     // Exponential backoff: 1s, 2s, 4s
-    const delayMs = Math.pow(2, attempt - 1) * 1000;
-    console.log(`Retry ${attempt}/${maxRetries} after ${delayMs}ms...`);
-    await new Promise(resolve => setTimeout(resolve, delayMs));
+    const delayMs = Math.pow(2, attempt - 1) * 1000
+    console.log(`Retry ${attempt}/${maxRetries} after ${delayMs}ms...`)
+    await new Promise((resolve) => setTimeout(resolve, delayMs))
   }
 
-  throw new Error(`Export failed after ${maxRetries} retries: ${lastError?.message}`);
+  throw new Error(
+    `Export failed after ${maxRetries} retries: ${lastError?.message}`
+  )
 }
 ```
 
@@ -311,32 +318,36 @@ async function exportWithRetry(
 async function batchExport(
   capture_ids: string[],
   vault_path: string
-): Promise<{ success: string[], failed: string[] }> {
-  const writer = new ObsidianAtomicWriter(vault_path, db);
-  const results = { success: [], failed: [] };
+): Promise<{ success: string[]; failed: string[] }> {
+  const writer = new ObsidianAtomicWriter(vault_path, db)
+  const results = { success: [], failed: [] }
 
   for (const [index, capture_id] of capture_ids.entries()) {
-    console.log(`Exporting ${index + 1}/${capture_ids.length}: ${capture_id}`);
+    console.log(`Exporting ${index + 1}/${capture_ids.length}: ${capture_id}`)
 
     try {
-      const capture = await db.getCapture(capture_id);
-      const content = formatMarkdownExport(capture);
-      const result = await writer.writeAtomic(capture_id, content, vault_path);
+      const capture = await db.getCapture(capture_id)
+      const content = formatMarkdownExport(capture)
+      const result = await writer.writeAtomic(capture_id, content, vault_path)
 
       if (result.success) {
-        results.success.push(capture_id);
+        results.success.push(capture_id)
       } else {
-        console.error(`Failed: ${result.error?.code} - ${result.error?.message}`);
-        results.failed.push(capture_id);
+        console.error(
+          `Failed: ${result.error?.code} - ${result.error?.message}`
+        )
+        results.failed.push(capture_id)
       }
     } catch (error) {
-      console.error(`Exception exporting ${capture_id}:`, error);
-      results.failed.push(capture_id);
+      console.error(`Exception exporting ${capture_id}:`, error)
+      results.failed.push(capture_id)
     }
   }
 
-  console.log(`Batch export complete: ${results.success.length} succeeded, ${results.failed.length} failed`);
-  return results;
+  console.log(
+    `Batch export complete: ${results.success.length} succeeded, ${results.failed.length} failed`
+  )
+  return results
 }
 ```
 
@@ -348,27 +359,31 @@ async function batchExport(
 async function idempotentExport(
   capture_id: string,
   vault_path: string
-): Promise<'exported' | 'duplicate' | 'failed'> {
-  const writer = new ObsidianAtomicWriter(vault_path, db);
+): Promise<"exported" | "duplicate" | "failed"> {
+  const writer = new ObsidianAtomicWriter(vault_path, db)
 
-  const capture = await db.getCapture(capture_id);
-  const content = formatMarkdownExport(capture);
+  const capture = await db.getCapture(capture_id)
+  const content = formatMarkdownExport(capture)
 
-  const result = await writer.writeAtomic(capture_id, content, vault_path);
+  const result = await writer.writeAtomic(capture_id, content, vault_path)
 
   if (result.success) {
     // Check if this was a duplicate export
-    const auditRecord = db.prepare(`
+    const auditRecord = db
+      .prepare(
+        `
       SELECT mode FROM exports_audit
       WHERE capture_id = ?
       ORDER BY exported_at DESC
       LIMIT 1
-    `).get(capture_id);
+    `
+      )
+      .get(capture_id)
 
-    return auditRecord?.mode === 'duplicate_skip' ? 'duplicate' : 'exported';
+    return auditRecord?.mode === "duplicate_skip" ? "duplicate" : "exported"
   }
 
-  return 'failed';
+  return "failed"
 }
 ```
 
@@ -377,41 +392,41 @@ async function idempotentExport(
 **Use Case:** Verify exported content matches staging ledger hash.
 
 ```typescript
-import * as crypto from 'crypto';
+import * as crypto from "crypto"
 
 function computeSHA256(content: string): string {
-  return crypto.createHash('sha256').update(content).digest('hex');
+  return crypto.createHash("sha256").update(content).digest("hex")
 }
 
 async function exportWithVerification(
   capture_id: string,
   vault_path: string
 ): Promise<boolean> {
-  const writer = new ObsidianAtomicWriter(vault_path, db);
+  const writer = new ObsidianAtomicWriter(vault_path, db)
 
   // Get capture and compute expected hash
-  const capture = await db.getCapture(capture_id);
-  const content = formatMarkdownExport(capture);
-  const expectedHash = computeSHA256(content);
+  const capture = await db.getCapture(capture_id)
+  const content = formatMarkdownExport(capture)
+  const expectedHash = computeSHA256(content)
 
   // Perform atomic write
-  const result = await writer.writeAtomic(capture_id, content, vault_path);
+  const result = await writer.writeAtomic(capture_id, content, vault_path)
 
   if (!result.success) {
-    return false;
+    return false
   }
 
   // Read exported file and verify hash
-  const exportPath = path.join(vault_path, result.export_path!);
-  const exportedContent = await fs.readFile(exportPath, 'utf-8');
-  const actualHash = computeSHA256(exportedContent);
+  const exportPath = path.join(vault_path, result.export_path!)
+  const exportedContent = await fs.readFile(exportPath, "utf-8")
+  const actualHash = computeSHA256(exportedContent)
 
   if (actualHash !== expectedHash) {
-    console.error(`Hash mismatch: expected ${expectedHash}, got ${actualHash}`);
-    return false;
+    console.error(`Hash mismatch: expected ${expectedHash}, got ${actualHash}`)
+    return false
   }
 
-  return true;
+  return true
 }
 ```
 
@@ -422,6 +437,7 @@ async function exportWithVerification(
 **Symptom:** Export fails with `EACCES` error code.
 
 **Causes:**
+
 - Vault directory not writable by current user
 - `.trash/` or `inbox/` directories have restrictive permissions
 - macOS sandbox restrictions (if running in sandboxed context)
@@ -446,9 +462,11 @@ touch /path/to/vault/.trash/test.tmp && rm /path/to/vault/.trash/test.tmp
 ```typescript
 // Add permission check before export
 try {
-  await fs.access(vault_path, fs.constants.W_OK);
+  await fs.access(vault_path, fs.constants.W_OK)
 } catch (error) {
-  throw new Error(`Vault not writable: ${vault_path}. Run: chmod u+w ${vault_path}`);
+  throw new Error(
+    `Vault not writable: ${vault_path}. Run: chmod u+w ${vault_path}`
+  )
 }
 ```
 
@@ -457,6 +475,7 @@ try {
 **Symptom:** Export fails with `ENOSPC` error code.
 
 **Causes:**
+
 - Vault disk has insufficient free space
 - Filesystem quota exceeded
 - Temp directory on different mount point (rare)
@@ -478,22 +497,27 @@ du -sh /path/to/vault
 
 ```typescript
 // Add disk space check before export
-import { statfs } from 'fs/promises';
+import { statfs } from "fs/promises"
 
-async function checkDiskSpace(vault_path: string, minFreeMB: number = 100): Promise<boolean> {
-  const stats = await statfs(vault_path);
-  const freeMB = (stats.bavail * stats.bsize) / (1024 * 1024);
+async function checkDiskSpace(
+  vault_path: string,
+  minFreeMB: number = 100
+): Promise<boolean> {
+  const stats = await statfs(vault_path)
+  const freeMB = (stats.bavail * stats.bsize) / (1024 * 1024)
 
   if (freeMB < minFreeMB) {
-    throw new Error(`Insufficient disk space: ${freeMB.toFixed(2)} MB free, need ${minFreeMB} MB`);
+    throw new Error(
+      `Insufficient disk space: ${freeMB.toFixed(2)} MB free, need ${minFreeMB} MB`
+    )
   }
 
-  return true;
+  return true
 }
 
 // Use before export
-await checkDiskSpace(vault_path);
-const result = await writer.writeAtomic(capture_id, content, vault_path);
+await checkDiskSpace(vault_path)
+const result = await writer.writeAtomic(capture_id, content, vault_path)
 ```
 
 ### Problem: ULID Collision (EEXIST)
@@ -501,6 +525,7 @@ const result = await writer.writeAtomic(capture_id, content, vault_path);
 **Symptom:** Export fails with `EEXIST` error code and "ULID collision detected" message.
 
 **Causes:**
+
 - **CRITICAL:** Same ULID with different content (data integrity violation)
 - Extremely rare (~1 in 1 billion with proper ULID generation)
 - May indicate ULID generator failure or staging ledger corruption
@@ -522,28 +547,33 @@ cat /path/to/vault/inbox/01HZVM8YWRQT5J3M3K7YPTX9RZ.md
 **Diagnostic Script:**
 
 ```typescript
-async function diagnoseULIDCollision(capture_id: string, vault_path: string): Promise<void> {
+async function diagnoseULIDCollision(
+  capture_id: string,
+  vault_path: string
+): Promise<void> {
   // Get capture from staging ledger
-  const capture = await db.getCapture(capture_id);
-  const expectedHash = capture.content_hash;
+  const capture = await db.getCapture(capture_id)
+  const expectedHash = capture.content_hash
 
   // Read existing file from vault
-  const export_path = path.join(vault_path, 'inbox', `${capture_id}.md`);
-  const existingContent = await fs.readFile(export_path, 'utf-8');
-  const actualHash = computeSHA256(existingContent);
+  const export_path = path.join(vault_path, "inbox", `${capture_id}.md`)
+  const existingContent = await fs.readFile(export_path, "utf-8")
+  const actualHash = computeSHA256(existingContent)
 
-  console.log(`Expected hash: ${expectedHash}`);
-  console.log(`Actual hash:   ${actualHash}`);
-  console.log(`Match: ${expectedHash === actualHash}`);
+  console.log(`Expected hash: ${expectedHash}`)
+  console.log(`Actual hash:   ${actualHash}`)
+  console.log(`Match: ${expectedHash === actualHash}`)
 
   if (expectedHash !== actualHash) {
-    console.error('CRITICAL: ULID collision with different content!');
-    console.error('This indicates data corruption. Manual investigation required.');
-    console.error(`1. Review staging ledger: ${capture_id}`);
-    console.error(`2. Review vault file: ${export_path}`);
-    console.error(`3. Check ULID generator integrity`);
+    console.error("CRITICAL: ULID collision with different content!")
+    console.error(
+      "This indicates data corruption. Manual investigation required."
+    )
+    console.error(`1. Review staging ledger: ${capture_id}`)
+    console.error(`2. Review vault file: ${export_path}`)
+    console.error(`3. Check ULID generator integrity`)
   } else {
-    console.log('Hash match - safe to skip duplicate export.');
+    console.log("Hash match - safe to skip duplicate export.")
   }
 }
 ```
@@ -553,6 +583,7 @@ async function diagnoseULIDCollision(capture_id: string, vault_path: string): Pr
 **Symptom:** Files with `.tmp` extension accumulate in `.trash/` directory.
 
 **Causes:**
+
 - Process crash during export (normal)
 - Export worker killed mid-write
 - Filesystem errors during cleanup
@@ -574,28 +605,29 @@ find /path/to/vault/.trash -name "*.tmp" -mtime +1 -ls
 
 ```typescript
 async function cleanupOrphanedTempFiles(vault_path: string): Promise<number> {
-  const trash_dir = path.join(vault_path, '.trash');
-  const files = await fs.readdir(trash_dir);
+  const trash_dir = path.join(vault_path, ".trash")
+  const files = await fs.readdir(trash_dir)
 
-  let cleanedCount = 0;
+  let cleanedCount = 0
 
   for (const file of files) {
-    if (file.endsWith('.tmp')) {
-      const temp_path = path.join(trash_dir, file);
+    if (file.endsWith(".tmp")) {
+      const temp_path = path.join(trash_dir, file)
 
       // Check if file is older than 1 hour (safe to delete)
-      const stats = await fs.stat(temp_path);
-      const ageMs = Date.now() - stats.mtimeMs;
+      const stats = await fs.stat(temp_path)
+      const ageMs = Date.now() - stats.mtimeMs
 
-      if (ageMs > 3600000) { // 1 hour
-        await fs.unlink(temp_path);
-        cleanedCount++;
-        console.log(`Cleaned orphaned temp file: ${file}`);
+      if (ageMs > 3600000) {
+        // 1 hour
+        await fs.unlink(temp_path)
+        cleanedCount++
+        console.log(`Cleaned orphaned temp file: ${file}`)
       }
     }
   }
 
-  return cleanedCount;
+  return cleanedCount
 }
 ```
 
@@ -604,6 +636,7 @@ async function cleanupOrphanedTempFiles(vault_path: string): Promise<number> {
 **Symptom:** Export fails with `ENETDOWN` error code.
 
 **Causes:**
+
 - Vault on network mount (iCloud Drive, NAS, etc.)
 - Network mount temporarily unavailable
 - Obsidian Sync folder disconnected
@@ -631,26 +664,28 @@ async function exportWithNetworkRetry(
   content: string,
   vault_path: string
 ): Promise<string> {
-  const maxRetries = 5;
+  const maxRetries = 5
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    const result = await writer.writeAtomic(capture_id, content, vault_path);
+    const result = await writer.writeAtomic(capture_id, content, vault_path)
 
     if (result.success) {
-      return result.export_path!;
+      return result.export_path!
     }
 
-    if (result.error?.code === 'ENETDOWN' && attempt < maxRetries) {
-      const delayMs = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s, 16s, 32s
-      console.log(`Network mount unavailable, retrying in ${delayMs / 1000}s...`);
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-      continue;
+    if (result.error?.code === "ENETDOWN" && attempt < maxRetries) {
+      const delayMs = Math.pow(2, attempt) * 1000 // 2s, 4s, 8s, 16s, 32s
+      console.log(
+        `Network mount unavailable, retrying in ${delayMs / 1000}s...`
+      )
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+      continue
     }
 
-    throw new Error(`Export failed: ${result.error?.message}`);
+    throw new Error(`Export failed: ${result.error?.message}`)
   }
 
-  throw new Error('Export failed after network retries');
+  throw new Error("Export failed after network retries")
 }
 ```
 
@@ -661,33 +696,33 @@ async function exportWithNetworkRetry(
 **Scenario:** Implement `adhd export <capture-id>` CLI command.
 
 ```typescript
-import { Command } from 'commander';
-import { ObsidianAtomicWriter } from '@adhd-brain/obsidian-bridge';
-import { Database } from '@adhd-brain/staging-ledger';
-import * as path from 'path';
+import { Command } from "commander"
+import { ObsidianAtomicWriter } from "@adhd-brain/obsidian-bridge"
+import { Database } from "@adhd-brain/staging-ledger"
+import * as path from "path"
 
-const program = new Command();
+const program = new Command()
 
 program
-  .command('export <capture-id>')
-  .description('Export a capture to Obsidian vault')
-  .option('-v, --vault <path>', 'Vault path', process.env.OBSIDIAN_VAULT_PATH)
-  .option('--retry <count>', 'Retry attempts', '3')
+  .command("export <capture-id>")
+  .description("Export a capture to Obsidian vault")
+  .option("-v, --vault <path>", "Vault path", process.env.OBSIDIAN_VAULT_PATH)
+  .option("--retry <count>", "Retry attempts", "3")
   .action(async (captureId: string, options) => {
-    const vault_path = path.resolve(options.vault);
-    const db = new Database('~/.adhd-brain/staging.db');
-    const writer = new ObsidianAtomicWriter(vault_path, db);
+    const vault_path = path.resolve(options.vault)
+    const db = new Database("~/.adhd-brain/staging.db")
+    const writer = new ObsidianAtomicWriter(vault_path, db)
 
     try {
       // Retrieve capture
-      const capture = await db.getCapture(captureId);
+      const capture = await db.getCapture(captureId)
       if (!capture) {
-        console.error(`Capture not found: ${captureId}`);
-        process.exit(1);
+        console.error(`Capture not found: ${captureId}`)
+        process.exit(1)
       }
 
       // Format markdown
-      const content = formatMarkdownExport(capture);
+      const content = formatMarkdownExport(capture)
 
       // Export with retry
       const result = await exportWithRetry(
@@ -695,16 +730,16 @@ program
         content,
         vault_path,
         parseInt(options.retry)
-      );
+      )
 
-      console.log(`✅ Exported to: ${result}`);
+      console.log(`✅ Exported to: ${result}`)
     } catch (error) {
-      console.error(`❌ Export failed:`, error.message);
-      process.exit(1);
+      console.error(`❌ Export failed:`, error.message)
+      process.exit(1)
     }
-  });
+  })
 
-program.parse();
+program.parse()
 ```
 
 ### Real-World Usage: Batch Export Script
@@ -713,72 +748,80 @@ program.parse();
 
 ```typescript
 #!/usr/bin/env node
-import { ObsidianAtomicWriter } from '@adhd-brain/obsidian-bridge';
-import { Database } from '@adhd-brain/staging-ledger';
+import { ObsidianAtomicWriter } from "@adhd-brain/obsidian-bridge"
+import { Database } from "@adhd-brain/staging-ledger"
 
 async function batchExportPending() {
-  const vault_path = process.env.OBSIDIAN_VAULT_PATH;
-  const db = new Database('~/.adhd-brain/staging.db');
-  const writer = new ObsidianAtomicWriter(vault_path, db);
+  const vault_path = process.env.OBSIDIAN_VAULT_PATH
+  const db = new Database("~/.adhd-brain/staging.db")
+  const writer = new ObsidianAtomicWriter(vault_path, db)
 
   // Query pending captures (transcribed but not exported)
-  const pending = db.prepare(`
+  const pending = db
+    .prepare(
+      `
     SELECT id FROM captures
     WHERE status = 'transcribed'
     AND id NOT IN (SELECT capture_id FROM exports_audit)
     ORDER BY created_at ASC
-  `).all();
+  `
+    )
+    .all()
 
-  console.log(`Found ${pending.length} pending captures`);
+  console.log(`Found ${pending.length} pending captures`)
 
-  let exported = 0;
-  let failed = 0;
+  let exported = 0
+  let failed = 0
 
   for (const { id } of pending) {
     try {
-      const capture = await db.getCapture(id);
-      const content = formatMarkdownExport(capture);
-      const result = await writer.writeAtomic(id, content, vault_path);
+      const capture = await db.getCapture(id)
+      const content = formatMarkdownExport(capture)
+      const result = await writer.writeAtomic(id, content, vault_path)
 
       if (result.success) {
-        exported++;
-        console.log(`✅ Exported ${id}`);
+        exported++
+        console.log(`✅ Exported ${id}`)
       } else {
-        failed++;
-        console.error(`❌ Failed ${id}: ${result.error?.code}`);
+        failed++
+        console.error(`❌ Failed ${id}: ${result.error?.code}`)
       }
     } catch (error) {
-      failed++;
-      console.error(`❌ Exception ${id}:`, error.message);
+      failed++
+      console.error(`❌ Exception ${id}:`, error.message)
     }
   }
 
-  console.log(`\nBatch export complete:`);
-  console.log(`  Exported: ${exported}`);
-  console.log(`  Failed:   ${failed}`);
+  console.log(`\nBatch export complete:`)
+  console.log(`  Exported: ${exported}`)
+  console.log(`  Failed:   ${failed}`)
 }
 
-batchExportPending().catch(console.error);
+batchExportPending().catch(console.error)
 ```
 
 ## Related Documentation
 
 ### Primary Specifications
+
 - **[PRD](../features/obsidian-bridge/prd-obsidian.md)** - Product requirements and user jobs-to-be-done
 - **[Architecture Spec](../features/obsidian-bridge/spec-obsidian-arch.md)** - System design and failure modes
 - **[Tech Spec](../features/obsidian-bridge/spec-obsidian-tech.md)** - Implementation details and contracts
 - **[Test Spec](../features/obsidian-bridge/spec-obsidian-test.md)** - Testing patterns and coverage requirements
 
 ### Cross-Cutting Guides
+
 - **[Error Recovery Guide](./guide-error-recovery.md)** - Retry orchestration patterns for transient failures
 - **[Backup Verification Guide](./guide-backup-verification.md)** - Vault backup verification strategies
 - **[Health Command Guide](./guide-health-command.md)** - Health check implementation for export validation
 - **[Crash Matrix Test Plan](./guide-crash-matrix-test-plan.md)** - Crash simulation testing for atomic writes
 
 ### Related ADRs
+
 - **[ADR-0001: Voice File Sovereignty](../adr/0001-voice-file-sovereignty.md)** - File referencing patterns (applies to vault writes)
 
 ### Staging Ledger Integration
+
 - **[Staging Ledger PRD](../features/staging-ledger/prd-staging.md)** - Audit trail contract and export status
 - **[Staging Ledger Tech Spec](../features/staging-ledger/spec-staging-tech.md)** - Database schema and foreign keys
 
@@ -787,12 +830,14 @@ batchExportPending().catch(console.error);
 ### When to Update This Guide
 
 **Update Required:**
+
 - New error codes added to AtomicWriter contract
 - Export path patterns change (e.g., PARA classification added in Phase 3+)
 - Retry strategy changes (exponential backoff parameters)
 - New troubleshooting scenarios discovered in production
 
 **Update Triggers:**
+
 - Export failure rate > 5% (indicates new error patterns)
 - ULID collision detected in production (add diagnostic procedures)
 - User reports vault corruption (refine troubleshooting steps)
@@ -801,12 +846,14 @@ batchExportPending().catch(console.error);
 ### Known Limitations
 
 **Phase 1 Constraints:**
+
 - Sequential exports only (no concurrency)
 - Single vault support (no multi-vault configuration)
 - ULID-only filenames (no custom templates)
 - Inbox-only exports (no PARA classification)
 
 **Future Enhancements (Phase 2+):**
+
 - Concurrent export worker pool
 - Retry backoff configuration
 - Health monitoring integration

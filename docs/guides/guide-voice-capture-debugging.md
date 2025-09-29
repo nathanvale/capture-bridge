@@ -16,6 +16,7 @@ roadmap_version: 3.0.0
 This guide helps developers diagnose and resolve issues with voice memo capture, particularly APFS dataless file handling, iCloud synchronization, and transcription failures. It provides systematic debugging approaches for common failure modes and performance issues specific to macOS Voice Memos integration.
 
 **Target Audience:**
+
 - Developers debugging voice capture failures
 - Operations engineers troubleshooting production issues
 - QA engineers testing voice memo scenarios
@@ -23,6 +24,7 @@ This guide helps developers diagnose and resolve issues with voice memo capture,
 ## When to Use This Guide
 
 Use this guide when encountering:
+
 - Voice memos not being captured or processed
 - APFS dataless file download failures
 - iCloud synchronization issues
@@ -34,6 +36,7 @@ Use this guide when encountering:
 ## Prerequisites
 
 **Required Tools:**
+
 - macOS terminal with admin access
 - `xattr` command for extended attributes
 - `ffprobe` for audio file inspection
@@ -42,6 +45,7 @@ Use this guide when encountering:
 - `fs_usage` for file system monitoring
 
 **Required Access:**
+
 - Voice Memos folder: `~/Library/Group Containers/group.com.apple.VoiceMemos.shared/`
 - SQLite database: `./.adhd-brain/ledger.sqlite`
 - Logs directory: `./.metrics/`
@@ -77,6 +81,7 @@ sqlite3 ./.adhd-brain/ledger.sqlite "SELECT * FROM errors_log WHERE operation='v
 ### Issue 1: Voice Memos Not Being Detected
 
 **Symptoms:**
+
 - No voice memos appear in capture queue
 - Polling reports 0 files found
 - `adhd capture doctor` shows no voice activity
@@ -84,6 +89,7 @@ sqlite3 ./.adhd-brain/ledger.sqlite "SELECT * FROM errors_log WHERE operation='v
 **Diagnostic Steps:**
 
 1. **Verify folder permissions:**
+
 ```bash
 # Check folder exists and is readable
 ls -ld ~/Library/Group\ Containers/group.com.apple.VoiceMemos.shared/Recordings/
@@ -94,6 +100,7 @@ chmod 755 ~/Library/Group\ Containers/group.com.apple.VoiceMemos.shared/Recordin
 ```
 
 2. **Check for Voice Memos.app installation:**
+
 ```bash
 # Verify app exists
 ls -la /System/Applications/VoiceMemos.app
@@ -105,6 +112,7 @@ pgrep -l VoiceMemos
 ```
 
 3. **Verify iCloud sync status:**
+
 ```bash
 # Check if folder is managed by iCloud
 xattr ~/Library/Group\ Containers/group.com.apple.VoiceMemos.shared/Recordings/ | grep com.apple.icloud
@@ -115,16 +123,17 @@ brctl status | grep VoiceMemos
 
 **Solution Matrix:**
 
-| Root Cause | Solution |
-|-----------|----------|
+| Root Cause           | Solution                                      |
+| -------------------- | --------------------------------------------- |
 | Folder doesn't exist | Open Voice Memos.app once to create structure |
-| Permission denied | Fix permissions with `chmod 755` |
-| iCloud disabled | Enable iCloud Drive in System Preferences |
+| Permission denied    | Fix permissions with `chmod 755`              |
+| iCloud disabled      | Enable iCloud Drive in System Preferences     |
 | Wrong path in config | Update `VOICE_MEMO_PATH` environment variable |
 
 ### Issue 2: APFS Dataless File Download Failures
 
 **Symptoms:**
+
 - Files show as 0 bytes or very small size
 - "File not downloaded" errors in logs
 - Transcription fails with "file unreadable"
@@ -132,6 +141,7 @@ brctl status | grep VoiceMemos
 **Diagnostic Steps:**
 
 1. **Identify dataless files:**
+
 ```bash
 # Find placeholder files
 find ~/Library/Group\ Containers/group.com.apple.VoiceMemos.shared/Recordings/ \
@@ -142,6 +152,7 @@ stat -f "%z %N" ~/Library/Group\ Containers/group.com.apple.VoiceMemos.shared/Re
 ```
 
 2. **Check iCloud download status:**
+
 ```bash
 # View extended attributes
 xattr -l [voice_memo_file.m4a] | grep -E "downloading|progress"
@@ -154,6 +165,7 @@ log stream --predicate 'subsystem == "com.apple.bird"' | grep -i download
 ```
 
 3. **Test icloudctl helper:**
+
 ```bash
 # Check if icloudctl is installed
 which icloudctl || echo "icloudctl not found"
@@ -167,16 +179,17 @@ icloudctl download "~/Library/Group Containers/.../Recording.m4a" --timeout 60
 
 **Common Failure Modes:**
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `NSURLErrorDomain -1009` | Network offline | Check network connectivity |
-| `NSUbiquitousErrorDomain 507` | iCloud storage full | Free up iCloud space |
-| `POSIX error 1` | Permission denied | Fix file permissions |
-| `Timeout after 60s` | Slow network or large file | Increase timeout or retry |
+| Error                         | Cause                      | Solution                   |
+| ----------------------------- | -------------------------- | -------------------------- |
+| `NSURLErrorDomain -1009`      | Network offline            | Check network connectivity |
+| `NSUbiquitousErrorDomain 507` | iCloud storage full        | Free up iCloud space       |
+| `POSIX error 1`               | Permission denied          | Fix file permissions       |
+| `Timeout after 60s`           | Slow network or large file | Increase timeout or retry  |
 
 ### Issue 3: Transcription Failures
 
 **Symptoms:**
+
 - Placeholder exports instead of transcribed content
 - "Whisper model not found" errors
 - Transcription timeouts
@@ -184,6 +197,7 @@ icloudctl download "~/Library/Group Containers/.../Recording.m4a" --timeout 60
 **Diagnostic Steps:**
 
 1. **Verify Whisper model installation:**
+
 ```bash
 # Check model file exists
 ls -lh ~/.adhd-brain/models/whisper-medium.pt
@@ -197,6 +211,7 @@ pnpm whisper-download medium
 ```
 
 2. **Test audio file integrity:**
+
 ```bash
 # Verify audio file is valid
 ffprobe -v error [voice_memo.m4a]
@@ -209,6 +224,7 @@ ffmpeg -i [voice_memo.m4a] -t 30 -c copy test_clip.m4a
 ```
 
 3. **Monitor resource usage during transcription:**
+
 ```bash
 # Watch memory usage
 while true; do ps aux | grep whisper | grep -v grep; sleep 1; done
@@ -241,6 +257,7 @@ Transcription fails?
 ### Issue 4: Duplicate Voice Memos
 
 **Symptoms:**
+
 - Same voice memo exported multiple times
 - Duplicate entries in staging ledger
 - Fingerprint mismatch warnings
@@ -248,6 +265,7 @@ Transcription fails?
 **Diagnostic Steps:**
 
 1. **Check for duplicate captures:**
+
 ```sql
 -- Find duplicate external_refs
 SELECT external_ref, COUNT(*) as count
@@ -265,6 +283,7 @@ HAVING count > 1;
 ```
 
 2. **Verify fingerprint consistency:**
+
 ```bash
 # Compute fingerprint for specific file
 head -c 4194304 [voice_memo.m4a] | shasum -a 256
@@ -275,6 +294,7 @@ sqlite3 ./.adhd-brain/ledger.sqlite \
 ```
 
 3. **Check for file modifications:**
+
 ```bash
 # Get file modification times
 stat -f "%Sm %N" ~/Library/Group\ Containers/group.com.apple.VoiceMemos.shared/Recordings/*.m4a
@@ -295,6 +315,7 @@ fswatch ~/Library/Group\ Containers/group.com.apple.VoiceMemos.shared/Recordings
 ### Large Library Performance Issues
 
 **Symptoms:**
+
 - Polling takes > 30 seconds
 - High memory usage during scan
 - Database queries slow
@@ -302,13 +323,15 @@ fswatch ~/Library/Group\ Containers/group.com.apple.VoiceMemos.shared/Recordings
 **Optimization Checklist:**
 
 1. **Enable incremental scanning:**
+
 ```typescript
 // Use checkpoint-based scanning
-const lastScan = await loadCheckpoint();
-const modifiedFiles = await getModifiedSince(lastScan);
+const lastScan = await loadCheckpoint()
+const modifiedFiles = await getModifiedSince(lastScan)
 ```
 
 2. **Optimize database indexes:**
+
 ```sql
 -- Check existing indexes
 .indexes captures
@@ -323,22 +346,24 @@ ANALYZE captures;
 ```
 
 3. **Implement caching:**
+
 ```typescript
 // Use LRU cache for fingerprints
-const fingerprintCache = new LRU({ max: 10000 });
+const fingerprintCache = new LRU({ max: 10000 })
 
 // Cache hit ratio monitoring
-console.log(`Cache hit ratio: ${cache.hits / (cache.hits + cache.misses)}`);
+console.log(`Cache hit ratio: ${cache.hits / (cache.hits + cache.misses)}`)
 ```
 
 4. **Batch processing:**
+
 ```typescript
 // Process in batches of 50
-const BATCH_SIZE = 50;
+const BATCH_SIZE = 50
 for (let i = 0; i < files.length; i += BATCH_SIZE) {
-  const batch = files.slice(i, i + BATCH_SIZE);
-  await processBatch(batch);
-  await sleep(100); // Yield to event loop
+  const batch = files.slice(i, i + BATCH_SIZE)
+  await processBatch(batch)
+  await sleep(100) // Yield to event loop
 }
 ```
 
@@ -347,6 +372,7 @@ for (let i = 0; i < files.length; i += BATCH_SIZE) {
 ### System-Level Tracing
 
 **DTrace for file system operations:**
+
 ```bash
 # Trace all file operations in Voice Memos folder
 sudo dtrace -n 'syscall::open*:entry /execname == "node"/ { printf("%s %s", execname, copyinstr(arg0)); }'
@@ -356,6 +382,7 @@ sudo dtrace -n 'proc:::exec-success /execname == "bird"/ { trace(execname); }'
 ```
 
 **System logs analysis:**
+
 ```bash
 # Stream Voice Memos related logs
 log stream --predicate 'process == "VoiceMemos" OR subsystem CONTAINS "com.apple.VoiceMemos"'
@@ -415,38 +442,41 @@ async function voiceCaptureHealthCheck(): Promise<HealthReport> {
     icloudConnected: false,
     whisperModelReady: false,
     databaseHealthy: false,
-    recentCaptures: false
-  };
+    recentCaptures: false,
+  }
 
   // Check folder access
   try {
-    await fs.access(VOICE_MEMO_PATH, fs.constants.R_OK);
-    checks.folderAccessible = true;
+    await fs.access(VOICE_MEMO_PATH, fs.constants.R_OK)
+    checks.folderAccessible = true
   } catch (error) {
-    logger.error('Voice memo folder not accessible', { error });
+    logger.error("Voice memo folder not accessible", { error })
   }
 
   // Check for voice memos
-  const files = await glob(`${VOICE_MEMO_PATH}/*.m4a`);
-  checks.hasVoiceMemos = files.length > 0;
+  const files = await glob(`${VOICE_MEMO_PATH}/*.m4a`)
+  checks.hasVoiceMemos = files.length > 0
 
   // Check iCloud status
   try {
-    const status = await icloudctl.checkConnection();
-    checks.icloudConnected = status.connected;
+    const status = await icloudctl.checkConnection()
+    checks.icloudConnected = status.connected
   } catch (error) {
-    logger.error('iCloud check failed', { error });
+    logger.error("iCloud check failed", { error })
   }
 
   // Check Whisper model
-  const modelPath = '~/.adhd-brain/models/whisper-medium.pt';
-  checks.whisperModelReady = await fs.access(modelPath)
+  const modelPath = "~/.adhd-brain/models/whisper-medium.pt"
+  checks.whisperModelReady = await fs
+    .access(modelPath)
     .then(() => true)
-    .catch(() => false);
+    .catch(() => false)
 
   // Check database
-  const dbStats = await db.get('SELECT COUNT(*) as count FROM captures WHERE source_type = "voice"');
-  checks.databaseHealthy = dbStats.count >= 0;
+  const dbStats = await db.get(
+    'SELECT COUNT(*) as count FROM captures WHERE source_type = "voice"'
+  )
+  checks.databaseHealthy = dbStats.count >= 0
 
   // Check recent activity
   const recent = await db.get(`
@@ -454,14 +484,14 @@ async function voiceCaptureHealthCheck(): Promise<HealthReport> {
     FROM captures
     WHERE source_type = 'voice'
       AND created_at > datetime('now', '-24 hours')
-  `);
-  checks.recentCaptures = recent.count > 0;
+  `)
+  checks.recentCaptures = recent.count > 0
 
   return {
-    healthy: Object.values(checks).every(v => v),
+    healthy: Object.values(checks).every((v) => v),
     checks,
-    recommendations: generateRecommendations(checks)
-  };
+    recommendations: generateRecommendations(checks),
+  }
 }
 ```
 
@@ -473,56 +503,67 @@ async function voiceCaptureHealthCheck(): Promise<HealthReport> {
 // Critical metrics for voice capture
 const VOICE_METRICS = {
   // Latency metrics
-  'voice_poll_duration_ms': { threshold: 5000, alert: 'Slow polling' },
-  'voice_download_duration_ms': { threshold: 60000, alert: 'Download timeout' },
-  'transcription_duration_ms': { threshold: 300000, alert: 'Transcription timeout' },
+  voice_poll_duration_ms: { threshold: 5000, alert: "Slow polling" },
+  voice_download_duration_ms: { threshold: 60000, alert: "Download timeout" },
+  transcription_duration_ms: {
+    threshold: 300000,
+    alert: "Transcription timeout",
+  },
 
   // Error metrics
-  'voice_download_failures': { threshold: 3, window: '1h', alert: 'High download failure rate' },
-  'transcription_failures': { threshold: 5, window: '1h', alert: 'High transcription failure rate' },
-  'placeholder_export_ratio': { threshold: 0.05, alert: 'Too many placeholders' },
+  voice_download_failures: {
+    threshold: 3,
+    window: "1h",
+    alert: "High download failure rate",
+  },
+  transcription_failures: {
+    threshold: 5,
+    window: "1h",
+    alert: "High transcription failure rate",
+  },
+  placeholder_export_ratio: { threshold: 0.05, alert: "Too many placeholders" },
 
   // Volume metrics
-  'voice_queue_depth': { threshold: 50, alert: 'Queue backing up' },
-  'dataless_file_ratio': { threshold: 0.3, alert: 'Many files not downloaded' }
-};
+  voice_queue_depth: { threshold: 50, alert: "Queue backing up" },
+  dataless_file_ratio: { threshold: 0.3, alert: "Many files not downloaded" },
+}
 ```
 
 ### Alert Conditions
 
 ```typescript
 function checkAlertConditions(metrics: Metrics): Alert[] {
-  const alerts: Alert[] = [];
+  const alerts: Alert[] = []
 
   // Check download failures
   if (metrics.downloadFailures > 3) {
     alerts.push({
-      severity: 'HIGH',
-      message: 'Voice memo downloads failing repeatedly',
-      action: 'Check network and iCloud status'
-    });
+      severity: "HIGH",
+      message: "Voice memo downloads failing repeatedly",
+      action: "Check network and iCloud status",
+    })
   }
 
   // Check transcription performance
   if (metrics.avgTranscriptionTime > 60000) {
     alerts.push({
-      severity: 'MEDIUM',
-      message: 'Transcription taking too long',
-      action: 'Check Whisper model and system resources'
-    });
+      severity: "MEDIUM",
+      message: "Transcription taking too long",
+      action: "Check Whisper model and system resources",
+    })
   }
 
   // Check placeholder ratio
-  const placeholderRatio = metrics.placeholders / metrics.totalExports;
+  const placeholderRatio = metrics.placeholders / metrics.totalExports
   if (placeholderRatio > 0.05) {
     alerts.push({
-      severity: 'HIGH',
+      severity: "HIGH",
       message: `${(placeholderRatio * 100).toFixed(1)}% exports are placeholders`,
-      action: 'Investigate transcription failures'
-    });
+      action: "Investigate transcription failures",
+    })
   }
 
-  return alerts;
+  return alerts
 }
 ```
 
@@ -653,17 +694,19 @@ WHERE source = 'voice_poller';
 ## Maintenance Notes
 
 **When to Update This Guide:**
+
 - New failure modes discovered in production
 - Changes to Voice Memos.app behavior in macOS updates
 - Updates to iCloud sync mechanisms
 - New debugging tools or techniques identified
 
 **Known Limitations:**
+
 - Cannot force iCloud downloads programmatically without user interaction
 - Some system logs require SIP disabled for full access
 - Voice Memos database schema is undocumented and may change
 
 ---
 
-*Last Updated: 2025-09-29*
-*Version: 1.0.0*
+_Last Updated: 2025-09-29_
+_Version: 1.0.0_

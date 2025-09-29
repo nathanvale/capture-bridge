@@ -19,11 +19,12 @@ This guide explains how to use the `wallaby-tdd-agent` in conjunction with exist
 
 This guide supports the **MPPP scope** and demonstrates how Wallaby MCP tools accelerate the red-green-refactor cycle for voice and email capture features.
 
-*Nerdy aside: Think of Wallaby as your TDD co-pilot with X-ray vision—it sees test failures before you even save the file, like a time-traveling debugger from the future of testing.*
+_Nerdy aside: Think of Wallaby as your TDD co-pilot with X-ray vision—it sees test failures before you even save the file, like a time-traveling debugger from the future of testing._
 
 ## When to Use This Guide
 
 Use this guide when:
+
 - Starting TDD implementation of a new feature
 - Setting up Wallaby for the first time
 - Coordinating between testing-strategist and wallaby-tdd-agent
@@ -34,17 +35,20 @@ Use this guide when:
 ## Prerequisites
 
 **Required Setup:**
+
 - Wallaby.js extension installed (v1.0.437+)
 - Valid Wallaby license or trial
 - Project configured with wallaby.js config file
 - Vitest as test runner (per project standards)
 
 **Required Knowledge:**
+
 - Basic TDD principles (red-green-refactor)
 - Understanding of risk classifications (P0/P1/P2)
 - Familiarity with TestKit patterns from [TestKit Usage Guide](./guide-testkit-usage.md)
 
 **Required Reading:**
+
 - [TDD Applicability Guide](./guide-tdd-applicability.md)
 - [TestKit Usage Guide](./guide-testkit-usage.md)
 - [Agent Workflow Guide](./guide-agent-workflow.md)
@@ -52,6 +56,7 @@ Use this guide when:
 ## Quick Reference
 
 **Agent Coordination Flow:**
+
 ```
 testing-strategist (strategy) → wallaby-tdd-agent (execution)
      ↓                              ↓
@@ -63,6 +68,7 @@ Test spec document           Working tested code
 ```
 
 **Key Commands:**
+
 ```typescript
 // Start TDD cycle
 "Use wallaby-tdd-agent to implement [feature] with TDD"
@@ -80,40 +86,46 @@ Test spec document           Working tested code
 ## Wallaby MCP Tools Reference
 
 ### Test Execution Tools
-| Tool | Purpose | When to Use |
-|------|---------|-------------|
-| `mcp__wallaby__wallaby_failingTests` | Get all failing tests | RED phase verification |
-| `mcp__wallaby__wallaby_allTests` | Get all project tests | Overall status check |
-| `mcp__wallaby__wallaby_testById` | Get specific test details | Focused debugging |
-| `mcp__wallaby__wallaby_failingTestsForFile` | File-specific failures | Module TDD |
-| `mcp__wallaby__wallaby_allTestsForFile` | All tests for file | Coverage check |
+
+| Tool                                        | Purpose                   | When to Use            |
+| ------------------------------------------- | ------------------------- | ---------------------- |
+| `mcp__wallaby__wallaby_failingTests`        | Get all failing tests     | RED phase verification |
+| `mcp__wallaby__wallaby_allTests`            | Get all project tests     | Overall status check   |
+| `mcp__wallaby__wallaby_testById`            | Get specific test details | Focused debugging      |
+| `mcp__wallaby__wallaby_failingTestsForFile` | File-specific failures    | Module TDD             |
+| `mcp__wallaby__wallaby_allTestsForFile`     | All tests for file        | Coverage check         |
 
 ### Runtime Debugging Tools
-| Tool | Purpose | When to Use |
-|------|---------|-------------|
-| `mcp__wallaby__wallaby_runtimeValues` | Inspect variable values | Debug unexpected failures |
-| `mcp__wallaby__wallaby_runtimeValuesByTest` | Test-specific values | Isolate test issues |
+
+| Tool                                        | Purpose                 | When to Use               |
+| ------------------------------------------- | ----------------------- | ------------------------- |
+| `mcp__wallaby__wallaby_runtimeValues`       | Inspect variable values | Debug unexpected failures |
+| `mcp__wallaby__wallaby_runtimeValuesByTest` | Test-specific values    | Isolate test issues       |
 
 ### Coverage Tools
-| Tool | Purpose | When to Use |
-|------|---------|-------------|
-| `mcp__wallaby__wallaby_coveredLinesForFile` | File coverage | Identify untested code |
+
+| Tool                                        | Purpose       | When to Use               |
+| ------------------------------------------- | ------------- | ------------------------- |
+| `mcp__wallaby__wallaby_coveredLinesForFile` | File coverage | Identify untested code    |
 | `mcp__wallaby__wallaby_coveredLinesForTest` | Test coverage | Verify test effectiveness |
 
 ### Snapshot Tools
-| Tool | Purpose | When to Use |
-|------|---------|-------------|
-| `mcp__wallaby__wallaby_updateTestSnapshots` | Update test snapshots | After intentional changes |
-| `mcp__wallaby__wallaby_updateFileSnapshots` | Update file snapshots | Bulk snapshot updates |
-| `mcp__wallaby__wallaby_updateProjectSnapshots` | Update all snapshots | Major refactoring |
+
+| Tool                                           | Purpose               | When to Use               |
+| ---------------------------------------------- | --------------------- | ------------------------- |
+| `mcp__wallaby__wallaby_updateTestSnapshots`    | Update test snapshots | After intentional changes |
+| `mcp__wallaby__wallaby_updateFileSnapshots`    | Update file snapshots | Bulk snapshot updates     |
+| `mcp__wallaby__wallaby_updateProjectSnapshots` | Update all snapshots  | Major refactoring         |
 
 ## Step-by-Step TDD Workflow
 
 ### Step 1: Receive Test Strategy
 
 **From testing-strategist:**
+
 ```markdown
 ## TDD Applicability Decision
+
 - Risk class: P0 (Data integrity)
 - Decision: TDD Required
 - Scope:
@@ -125,20 +137,22 @@ Test spec document           Working tested code
 ### Step 2: Start RED Phase
 
 **Invoke wallaby-tdd-agent:**
+
 ```
 "Use wallaby-tdd-agent to start TDD for deduplication feature"
 ```
 
 **Write failing test:**
+
 ```typescript
 // packages/staging-ledger/src/deduplication.spec.ts
-import { describe, it, expect } from 'vitest'
-import { DeduplicationService } from './deduplication'
+import { describe, it, expect } from "vitest"
+import { DeduplicationService } from "./deduplication"
 
-describe('DeduplicationService', () => {
-  it('should reject duplicate content within window', () => {
+describe("DeduplicationService", () => {
+  it("should reject duplicate content within window", () => {
     const service = new DeduplicationService()
-    const hash = 'abc123'
+    const hash = "abc123"
 
     // First occurrence should not be duplicate
     expect(service.isDuplicate(hash)).toBe(false)
@@ -150,6 +164,7 @@ describe('DeduplicationService', () => {
 ```
 
 **Verify RED status:**
+
 ```typescript
 await mcp__wallaby__wallaby_failingTests()
 // Returns: Test failing - "DeduplicationService is not defined"
@@ -158,6 +173,7 @@ await mcp__wallaby__wallaby_failingTests()
 ### Step 3: Enter GREEN Phase
 
 **Write minimal implementation:**
+
 ```typescript
 // packages/staging-ledger/src/deduplication.ts
 export class DeduplicationService {
@@ -174,6 +190,7 @@ export class DeduplicationService {
 ```
 
 **Verify GREEN status:**
+
 ```typescript
 await mcp__wallaby__wallaby_allTests()
 // Returns: All tests passing!
@@ -182,9 +199,9 @@ await mcp__wallaby__wallaby_allTests()
 ### Step 4: Add Time Window Test (RED Again)
 
 ```typescript
-it('should accept duplicate after window expires', async () => {
+it("should accept duplicate after window expires", async () => {
   const service = new DeduplicationService()
-  const hash = 'abc123'
+  const hash = "abc123"
 
   // First occurrence
   expect(service.isDuplicate(hash)).toBe(false)
@@ -200,12 +217,13 @@ it('should accept duplicate after window expires', async () => {
 ### Step 5: Debug with Runtime Values
 
 **When test fails unexpectedly:**
+
 ```typescript
 await mcp__wallaby__wallaby_runtimeValues({
-  file: 'deduplication.ts',
+  file: "deduplication.ts",
   line: 8,
-  lineContent: 'const age = now - lastSeen',
-  expression: 'age'
+  lineContent: "const age = now - lastSeen",
+  expression: "age",
 })
 // Returns: Runtime value: -300001 (negative time!)
 ```
@@ -213,6 +231,7 @@ await mcp__wallaby__wallaby_runtimeValues({
 ### Step 6: REFACTOR Phase
 
 **After all tests green:**
+
 ```typescript
 export class DeduplicationService {
   private static readonly WINDOW_MS = 5 * 60 * 1000
@@ -236,10 +255,11 @@ export class DeduplicationService {
 ```
 
 **Continuous verification during refactor:**
+
 ```typescript
 // After each change
 await mcp__wallaby__wallaby_allTestsForFile({
-  file: 'deduplication.ts'
+  file: "deduplication.ts",
 })
 // Ensure still green
 ```
@@ -248,14 +268,15 @@ await mcp__wallaby__wallaby_allTestsForFile({
 
 ```typescript
 await mcp__wallaby__wallaby_coveredLinesForFile({
-  file: 'deduplication.ts'
+  file: "deduplication.ts",
 })
 // Returns: 95% coverage, lines 18-20 not covered (error handling)
 ```
 
 **Add test for uncovered branch:**
+
 ```typescript
-it('should handle null hash gracefully', () => {
+it("should handle null hash gracefully", () => {
   const service = new DeduplicationService()
   expect(() => service.isDuplicate(null)).not.toThrow()
   expect(service.isDuplicate(null)).toBe(false)
@@ -267,12 +288,12 @@ it('should handle null hash gracefully', () => {
 ### Using TestKit Patterns with Wallaby
 
 ```typescript
-import { describe, it, expect, beforeEach } from 'vitest'
-import { createMemoryUrl, applyTestPragmas } from '@template/testkit/sqlite'
-import { useFakeTimers } from '@template/testkit/env'
-import Database from 'better-sqlite3'
+import { describe, it, expect, beforeEach } from "vitest"
+import { createMemoryUrl, applyTestPragmas } from "@template/testkit/sqlite"
+import { useFakeTimers } from "@template/testkit/env"
+import Database from "better-sqlite3"
 
-describe('DeduplicationService with DB', () => {
+describe("DeduplicationService with DB", () => {
   let db: Database.Database
 
   beforeEach(() => {
@@ -282,9 +303,9 @@ describe('DeduplicationService with DB', () => {
     applyTestPragmas(db)
   })
 
-  it('should persist deduplication state', () => {
+  it("should persist deduplication state", () => {
     const service = new DeduplicationService(db)
-    const hash = 'abc123'
+    const hash = "abc123"
 
     // TDD cycle with Wallaby feedback
     expect(service.isDuplicate(hash)).toBe(false)
@@ -303,6 +324,7 @@ describe('DeduplicationService with DB', () => {
 
 ```markdown
 ## Current TDD Cycle
+
 ⏱️ Started: 10:15 AM
 🔴 RED: Write test for hash validation (2 min)
 🟢 GREEN: Implement validation (2 min)
@@ -315,19 +337,19 @@ Next: Test for timestamp handling...
 ### Pattern 2: Visual Progress Tracking
 
 ```typescript
-describe('Voice Capture Features', () => {
+describe("Voice Capture Features", () => {
   // ✅ Completed
-  describe('metadata extraction', () => {
-    it('✅ extracts duration', () => {})
-    it('✅ extracts format', () => {})
-    it('✅ extracts creation date', () => {})
+  describe("metadata extraction", () => {
+    it("✅ extracts duration", () => {})
+    it("✅ extracts format", () => {})
+    it("✅ extracts creation date", () => {})
   })
 
   // 🚧 In Progress
-  describe('deduplication', () => {
-    it('✅ rejects duplicates', () => {})
-    it('🔴 handles time window', () => {}) // Current focus
-    it('⏸️ cleans old entries', () => {})  // Next
+  describe("deduplication", () => {
+    it("✅ rejects duplicates", () => {})
+    it("🔴 handles time window", () => {}) // Current focus
+    it("⏸️ cleans old entries", () => {}) // Next
   })
 })
 ```
@@ -338,12 +360,14 @@ describe('Voice Capture Features', () => {
 // Wallaby shows inline indicators:
 function calculateHash(content: string): string {
   const normalized = content.trim() // ✅ covered, passing
-  if (!normalized) { // ⚠️ partially covered
-    return '' // ❌ not covered
+  if (!normalized) {
+    // ⚠️ partially covered
+    return "" // ❌ not covered
   }
-  return crypto.createHash('sha256') // ✅ covered
+  return crypto
+    .createHash("sha256") // ✅ covered
     .update(normalized) // ✅ covered
-    .digest('hex') // ✅ covered
+    .digest("hex") // ✅ covered
 }
 ```
 
@@ -353,20 +377,20 @@ function calculateHash(content: string): string {
 
 ```typescript
 // Test is failing, need to understand why
-it('should handle concurrent captures', async () => {
+it("should handle concurrent captures", async () => {
   const results = await Promise.all([
-    captureVoice('file1.m4a'),
-    captureVoice('file2.m4a')
+    captureVoice("file1.m4a"),
+    captureVoice("file2.m4a"),
   ])
   expect(results).toHaveLength(2)
 })
 
 // Use Wallaby to inspect
 await mcp__wallaby__wallaby_runtimeValuesByTest({
-  testId: 'test-123',
-  file: 'capture.ts',
+  testId: "test-123",
+  file: "capture.ts",
   line: 45,
-  expression: 'this.activeCaptures'
+  expression: "this.activeCaptures",
 })
 // Shows: Map { 'file1.m4a' => 'processing' }
 // Missing file2! Race condition found
@@ -377,7 +401,7 @@ await mcp__wallaby__wallaby_runtimeValuesByTest({
 ```typescript
 // Check integration test effectiveness
 await mcp__wallaby__wallaby_coveredLinesForTest({
-  testId: 'integration-gmail-sync'
+  testId: "integration-gmail-sync",
 })
 // Returns: Covers gmail-adapter.ts (85%), retry-logic.ts (92%)
 // Missing: Error handling paths in gmail-adapter.ts lines 67-74
@@ -388,7 +412,7 @@ await mcp__wallaby__wallaby_coveredLinesForTest({
 ```typescript
 // After intentional API response format change
 await mcp__wallaby__wallaby_updateTestSnapshots({
-  testId: 'api-response-transform'
+  testId: "api-response-transform",
 })
 // Snapshots updated for new format
 ```
@@ -398,15 +422,18 @@ await mcp__wallaby__wallaby_updateTestSnapshots({
 ### Testing-Strategist → Wallaby-TDD-Agent
 
 **Handoff format:**
+
 ```markdown
 ## TDD Task Assignment
+
 Feature: Email Capture Polling
 Risk Level: P0
 Test Strategy:
+
 - Unit: Polling interval logic, backoff calculation
 - Integration: Gmail API with MSW mocks
 - Contract: OAuth token refresh
-TestKit Patterns: Use MSW handlers, fake timers
+  TestKit Patterns: Use MSW handlers, fake timers
 
 → wallaby-tdd-agent implements with TDD discipline
 ```
@@ -414,14 +441,18 @@ TestKit Patterns: Use MSW handlers, fake timers
 ### Risk-YAGNI-Enforcer → Wallaby-TDD-Agent
 
 **Scope verification:**
+
 ```markdown
 ## YAGNI Verification
+
 In Scope for TDD:
+
 - Basic polling (15-minute interval)
 - Simple exponential backoff
 - Token refresh
 
 Out of Scope (Skip TDD):
+
 - Advanced scheduling
 - Multi-account support
 - Push notifications
@@ -434,6 +465,7 @@ Out of Scope (Skip TDD):
 ### Problem: Wallaby not detecting tests
 
 **Solution:**
+
 1. Check wallaby.js configuration
 2. Verify test file pattern matches
 3. Ensure Vitest is properly configured
@@ -442,6 +474,7 @@ Out of Scope (Skip TDD):
 ### Problem: Runtime values not available
 
 **Solution:**
+
 1. Ensure Wallaby is running (check status bar)
 2. Verify line number is correct
 3. Check that code is actually executed in test
@@ -450,6 +483,7 @@ Out of Scope (Skip TDD):
 ### Problem: Coverage seems incorrect
 
 **Solution:**
+
 1. Clear Wallaby cache (Restart Wallaby)
 2. Check for multiple test runs affecting results
 3. Verify all test files are included
@@ -458,6 +492,7 @@ Out of Scope (Skip TDD):
 ### Problem: Tests pass in Wallaby but fail in CI
 
 **Solution:**
+
 1. Check for timing dependencies
 2. Verify TestKit fake timers are used
 3. Look for environment-specific code
@@ -476,26 +511,21 @@ Out of Scope (Skip TDD):
 
 ```javascript
 // wallaby.js
-module.exports = function() {
+module.exports = function () {
   return {
-    files: [
-      'packages/*/src/**/*.ts',
-      '!packages/*/src/**/*.spec.ts'
-    ],
-    tests: [
-      'packages/*/src/**/*.spec.ts'
-    ],
+    files: ["packages/*/src/**/*.ts", "!packages/*/src/**/*.spec.ts"],
+    tests: ["packages/*/src/**/*.spec.ts"],
     env: {
-      type: 'node'
+      type: "node",
     },
-    testFramework: 'vitest',
+    testFramework: "vitest",
     // Performance optimizations
     workers: {
       initial: 1,
       regular: 1,
-      recycle: true
+      recycle: true,
     },
-    runMode: 'onsave' // or 'automatic' for continuous
+    runMode: "onsave", // or 'automatic' for continuous
   }
 }
 ```
@@ -503,6 +533,7 @@ module.exports = function() {
 ## Best Practices
 
 ### DO:
+
 ✅ Write one test at a time
 ✅ Keep cycles under 10 minutes
 ✅ Use runtime values for debugging
@@ -511,6 +542,7 @@ module.exports = function() {
 ✅ Commit after each complete cycle
 
 ### DON'T:
+
 ❌ Write multiple tests before implementing
 ❌ Skip the red phase
 ❌ Ignore Wallaby's inline warnings
@@ -521,21 +553,25 @@ module.exports = function() {
 ## Related Documentation
 
 ### Foundation
+
 - [Master PRD v2.3.0-MPPP](../master/prd-master.md)
 - [Roadmap v2.0.0-MPPP](../master/roadmap.md)
 
 ### Testing Infrastructure
+
 - [TDD Applicability Guide](./guide-tdd-applicability.md)
 - [TestKit Usage Guide](./guide-testkit-usage.md)
 - [Test Strategy Guide](./guide-test-strategy.md)
 - [Agent Workflow Guide](./guide-agent-workflow.md)
 
 ### Agent Specifications
+
 - [Testing Strategist Agent](./.claude/agents/testing-strategist.md)
 - [Wallaby TDD Agent](./.claude/agents/wallaby-tdd-agent.md)
 - [Risk YAGNI Enforcer](./.claude/agents/risk-yagni-enforcer.md)
 
 ### External Resources
+
 - [Wallaby.js Documentation](https://wallabyjs.com/docs/)
 - [Wallaby MCP Server Guide](https://wallabyjs.com/docs/features/mcp/)
 - [Vitest Documentation](https://vitest.dev/)
@@ -545,6 +581,7 @@ module.exports = function() {
 ### When to Update This Guide
 
 **Review Triggers:**
+
 - New Wallaby MCP tools added
 - Changes to TDD workflow
 - Updates to TestKit patterns
@@ -552,15 +589,18 @@ module.exports = function() {
 - Performance optimizations identified
 
 **Change Process:**
+
 1. Test new patterns thoroughly
 2. Update guide with examples
 3. Verify with wallaby-tdd-agent
 4. Update agent specification if needed
 
 ### Version History
+
 - v1.0.0 (2025-09-29): Initial guide with Wallaby MCP integration
 
 ### Known Limitations
+
 - Wallaby requires license after trial period
 - Some advanced features require Pro version
 - MCP server requires specific extension versions
@@ -568,4 +608,4 @@ module.exports = function() {
 
 ---
 
-*Remember: Wallaby turns TDD from a discipline into a dialogue—you write a test, it instantly responds with feedback, you adjust, and the conversation continues until your feature emerges fully tested and refactored.*
+_Remember: Wallaby turns TDD from a discipline into a dialogue—you write a test, it instantly responds with feedback, you adjust, and the conversation continues until your feature emerges fully tested and refactored._

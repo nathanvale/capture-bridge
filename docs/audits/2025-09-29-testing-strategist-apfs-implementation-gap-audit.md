@@ -21,6 +21,7 @@ roadmap_version: 2.0.0-MPPP
 ## Risk Assessment
 
 ### TDD Applicability Classification
+
 - **Risk Class**: P0 CRITICAL (High Risk)
 - **TDD Decision**: REQUIRED (per TDD Applicability Guide)
 - **Rationale**:
@@ -30,6 +31,7 @@ roadmap_version: 2.0.0-MPPP
   - 🔐 Security/integrity (SHA-256 verification, quarantine handling)
 
 ### Impact Analysis
+
 1. **Data Loss Risk**: Voice memos may fail to capture if APFS dataless files are not properly detected
 2. **User Experience Risk**: Silent failures or indefinite hangs when encountering dataless files
 3. **Recovery Risk**: Complex error scenarios (network offline, quota exceeded) lack validated recovery paths
@@ -38,12 +40,14 @@ roadmap_version: 2.0.0-MPPP
 ## Current State Analysis
 
 ### What Exists (Specification Only)
+
 - ✅ Comprehensive test specification in Section 4.1 of `docs/features/capture/spec-capture-test.md`
 - ✅ Detailed test scenarios covering all critical edge cases
 - ✅ Clear TDD requirements and risk classification
 - ✅ TestKit integration patterns defined
 
 ### What's Missing (Complete Implementation Gap)
+
 - ❌ No test implementation files exist for APFS handling
 - ❌ No TestKit helpers for `MockICloudController` or `MockXAttrProvider`
 - ❌ No unit tests for `detectAPFSStatus()` function
@@ -52,6 +56,7 @@ roadmap_version: 2.0.0-MPPP
 - ❌ No error recovery test scenarios
 
 ### Discovery Findings
+
 ```bash
 # Search results for existing APFS test implementation
 $ find . -name "*.test.ts" -o -name "*.spec.ts" | xargs grep -l "APFS\|dataless\|icloud" 2>/dev/null
@@ -69,24 +74,26 @@ $ ls packages/capture/
 **File**: `packages/capture/src/__tests__/apfs-detection.test.ts`
 
 **Required Test Components**:
+
 ```typescript
-describe('APFS Dataless Detection', () => {
+describe("APFS Dataless Detection", () => {
   // CRITICAL: Test .icloud placeholder file detection
-  it('detects .icloud placeholder files')
+  it("detects .icloud placeholder files")
 
   // CRITICAL: Test size-based dataless detection
-  it('detects files with size < 1KB as dataless')
+  it("detects files with size < 1KB as dataless")
 
   // CRITICAL: Test extended attribute checking
-  it('checks extended attributes for download state')
+  it("checks extended attributes for download state")
 
   // CRITICAL: Test error scenarios
-  it('handles permission denied on xattr access')
-  it('handles corrupted extended attributes')
+  it("handles permission denied on xattr access")
+  it("handles corrupted extended attributes")
 })
 ```
 
 **TestKit Dependencies Needed**:
+
 - `@template/testkit/fs` for file system mocking
 - New TestKit helper: `MockXAttrProvider` for extended attribute simulation
 - New TestKit helper: `MockAPFSFileSystem` for comprehensive APFS state simulation
@@ -96,23 +103,25 @@ describe('APFS Dataless Detection', () => {
 **File**: `packages/capture/src/__tests__/apfs-download-integration.test.ts`
 
 **Required Test Components**:
+
 ```typescript
-describe('APFS Download Handling', () => {
+describe("APFS Download Handling", () => {
   // CRITICAL: Test sequential processing constraint
-  it('triggers sequential download for dataless files')
+  it("triggers sequential download for dataless files")
 
   // CRITICAL: Test timeout and retry logic
-  it('handles download timeout with retry')
+  it("handles download timeout with retry")
 
   // CRITICAL: Test exponential backoff
-  it('applies exponential backoff during download polling')
+  it("applies exponential backoff during download polling")
 
   // CRITICAL: Test download completion detection
-  it('detects download completion via extended attributes')
+  it("detects download completion via extended attributes")
 })
 ```
 
 **TestKit Dependencies Needed**:
+
 - New TestKit helper: `MockICloudController` for simulating iCloud operations
 - `@template/testkit/env` for time control in backoff tests
 - Enhanced fs mocking for extended attribute simulation
@@ -122,19 +131,20 @@ describe('APFS Download Handling', () => {
 **File**: `packages/capture/src/__tests__/apfs-error-recovery.test.ts`
 
 **Required Test Components**:
+
 ```typescript
-describe('APFS Error Recovery', () => {
+describe("APFS Error Recovery", () => {
   // CRITICAL: Test network offline scenarios
-  it('recovers from network offline during download')
+  it("recovers from network offline during download")
 
   // CRITICAL: Test quota exceeded handling
-  it('handles iCloud quota exceeded error')
+  it("handles iCloud quota exceeded error")
 
   // CRITICAL: Test integrity verification
-  it('quarantines file on SHA-256 mismatch after download')
+  it("quarantines file on SHA-256 mismatch after download")
 
   // CRITICAL: Test permanent error classification
-  it('marks corruption errors as non-retriable')
+  it("marks corruption errors as non-retriable")
 })
 ```
 
@@ -143,25 +153,27 @@ describe('APFS Error Recovery', () => {
 **File**: `packages/capture/src/__tests__/apfs-edge-cases.test.ts`
 
 **Required Test Components**:
+
 ```typescript
-describe('APFS Edge Cases', () => {
+describe("APFS Edge Cases", () => {
   // CRITICAL: Test race conditions
-  it('handles race condition: file becomes dataless during processing')
+  it("handles race condition: file becomes dataless during processing")
 
   // CRITICAL: Test concurrency control
-  it('handles concurrent download requests for same file')
+  it("handles concurrent download requests for same file")
 
   // CRITICAL: Test deletion scenarios
-  it('handles file deletion during download')
+  it("handles file deletion during download")
 
   // CRITICAL: Test partial download recovery
-  it('resumes interrupted downloads correctly')
+  it("resumes interrupted downloads correctly")
 })
 ```
 
 ## Implementation Strategy
 
 ### Phase 1: TestKit Infrastructure (Priority 1)
+
 1. **Create MockICloudController TestKit helper**
    - Simulate iCloud download operations
    - Control download progress and timing
@@ -178,6 +190,7 @@ describe('APFS Edge Cases', () => {
    - Enable file size manipulation for dataless detection
 
 ### Phase 2: Unit Test Implementation (Priority 1)
+
 1. **Implement `detectAPFSStatus()` unit tests**
    - Cover all detection methods (.icloud files, size thresholds, xattrs)
    - Test error handling for each detection path
@@ -189,6 +202,7 @@ describe('APFS Edge Cases', () => {
    - Test error message normalization
 
 ### Phase 3: Integration Test Implementation (Priority 1)
+
 1. **Implement download coordination tests**
    - Verify sequential processing with semaphore
    - Test timeout and retry mechanisms
@@ -200,6 +214,7 @@ describe('APFS Edge Cases', () => {
    - Test corruption detection and quarantine
 
 ### Phase 4: Edge Case Coverage (Priority 2)
+
 1. **Implement race condition tests**
    - Test file state changes during processing
    - Test concurrent access scenarios
@@ -208,6 +223,7 @@ describe('APFS Edge Cases', () => {
 ## Risk Mitigation Requirements
 
 ### Immediate Actions Required
+
 1. **Block Phase 1.2 voice polling until APFS tests implemented**
    - Cannot safely enable VOICE_POLLING_ICLOUD without test coverage
    - Implement P0 test scenarios before any voice polling activation
@@ -222,6 +238,7 @@ describe('APFS Edge Cases', () => {
    - Validate error recovery paths comprehensively
 
 ### Quality Gates
+
 - **Unit Test Coverage**: 100% of APFS detection logic
 - **Integration Test Coverage**: All download coordination scenarios
 - **Error Recovery Coverage**: All error taxonomy classifications
@@ -233,6 +250,7 @@ describe('APFS Edge Cases', () => {
 ### New TestKit Helpers Required
 
 1. **MockICloudController** (`@template/testkit/icloud`)
+
 ```typescript
 interface MockICloudController {
   startDownload(filePath: string): Promise<void>
@@ -244,6 +262,7 @@ interface MockICloudController {
 ```
 
 2. **MockXAttrProvider** (`@template/testkit/xattr`)
+
 ```typescript
 interface MockXAttrProvider {
   setExtendedAttribute(filePath: string, name: string, value: Buffer): void
@@ -254,6 +273,7 @@ interface MockXAttrProvider {
 ```
 
 3. **MockAPFSFileSystem** (`@template/testkit/apfs`)
+
 ```typescript
 interface MockAPFSFileSystem {
   createDatalessFile(filePath: string, originalSize: number): void
@@ -266,6 +286,7 @@ interface MockAPFSFileSystem {
 ## Compliance Validation
 
 ### TDD Applicability Compliance
+
 - ✅ Risk classification: P0 CRITICAL (High Risk) - Correct
 - ✅ TDD decision: REQUIRED - Compliant with guide
 - ✅ Test layer distribution: Unit + Integration + Contract - Appropriate
@@ -273,6 +294,7 @@ interface MockAPFSFileSystem {
 - ✅ TestKit usage: Required for all mock infrastructure - Compliant
 
 ### Test Strategy Compliance
+
 - ✅ Focuses on P0 risk coverage over line coverage
 - ✅ Emphasizes deterministic behavior and error recovery
 - ✅ Maintains test suite performance requirements
@@ -282,16 +304,19 @@ interface MockAPFSFileSystem {
 ## Next Steps
 
 ### Immediate (This Sprint)
+
 1. **Create TestKit infrastructure** - Priority 1, 2-3 days
 2. **Implement unit tests** - Priority 1, 3-4 days
 3. **Block voice polling feature** - Immediate
 
 ### Short Term (Next Sprint)
+
 1. **Implement integration tests** - Priority 1, 4-5 days
 2. **Implement error recovery tests** - Priority 1, 2-3 days
 3. **Validate edge case coverage** - Priority 2, 2-3 days
 
 ### Quality Assurance
+
 1. **Run full test suite** - Verify < 5 minute execution
 2. **Validate deterministic behavior** - No flaky tests
 3. **Test coverage audit** - Ensure P0 risk coverage complete

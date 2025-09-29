@@ -60,13 +60,13 @@ Current ADHD capture approaches fail in these ways:
 
 ### Failure Modes We're Preventing
 
-| Failure Mode | Without Staging | With Staging Ledger |
-|--------------|-----------------|---------------------|
-| **App crash mid-capture** | Thought lost forever | Staged row persists, resumes on restart |
-| **Duplicate uncertainty** | Manual checking, anxiety | Content hash prevents duplicate exports |
-| **Vault corruption** | Partial markdown files | Atomic writes only after staging complete |
-| **Lost error context** | Opaque failures | Structured error log with capture linkage |
-| **Sync conflicts** | Multiple partial writes | Single atomic export per capture |
+| Failure Mode              | Without Staging          | With Staging Ledger                       |
+| ------------------------- | ------------------------ | ----------------------------------------- |
+| **App crash mid-capture** | Thought lost forever     | Staged row persists, resumes on restart   |
+| **Duplicate uncertainty** | Manual checking, anxiety | Content hash prevents duplicate exports   |
+| **Vault corruption**      | Partial markdown files   | Atomic writes only after staging complete |
+| **Lost error context**    | Opaque failures          | Structured error log with capture linkage |
+| **Sync conflicts**        | Multiple partial writes  | Single atomic export per capture          |
 
 ---
 
@@ -152,12 +152,12 @@ Current ADHD capture approaches fail in these ways:
 
 ❌ **Deferred Features with Triggers:**
 
-| Feature | Defer Reason | Trigger to Revisit |
-|---------|--------------|-------------------|
-| BLAKE3 dual-hash | SHA-256 sufficient for MPPP | >200 daily captures OR false duplicate incident |
-| Composite indexes | No performance regression yet | Query p95 > 11s AND traced to index scan |
-| Partial indexes | Schema simplicity prioritized | Measured 5%+ latency regression over 5k rows |
-| Error log pruning | Storage not constrained | errors_log file > 10MB persistent |
+| Feature           | Defer Reason                  | Trigger to Revisit                              |
+| ----------------- | ----------------------------- | ----------------------------------------------- |
+| BLAKE3 dual-hash  | SHA-256 sufficient for MPPP   | >200 daily captures OR false duplicate incident |
+| Composite indexes | No performance regression yet | Query p95 > 11s AND traced to index scan        |
+| Partial indexes   | Schema simplicity prioritized | Measured 5%+ latency regression over 5k rows    |
+| Error log pruning | Storage not constrained       | errors_log file > 10MB persistent               |
 
 ---
 
@@ -485,13 +485,13 @@ Result: User has visibility into system health
 
 ### 7.1 Performance Targets
 
-| Operation | Target | Measurement | Priority |
-|-----------|--------|-------------|----------|
-| Capture → SQLite insert | < 100ms | Time to first write | P0 |
-| Duplicate check (hash query) | < 10ms | Query execution | P0 |
-| Backup creation | < 5s | .backup command | P1 |
-| Backup verification | < 10s | Hash computation | P1 |
-| Retention cleanup (90d) | < 30s | DELETE batch | P2 |
+| Operation                    | Target  | Measurement         | Priority |
+| ---------------------------- | ------- | ------------------- | -------- |
+| Capture → SQLite insert      | < 100ms | Time to first write | P0       |
+| Duplicate check (hash query) | < 10ms  | Query execution     | P0       |
+| Backup creation              | < 5s    | .backup command     | P1       |
+| Backup verification          | < 10s   | Hash computation    | P1       |
+| Retention cleanup (90d)      | < 30s   | DELETE batch        | P2       |
 
 **Monitoring:**
 
@@ -501,13 +501,13 @@ Result: User has visibility into system health
 
 ### 7.2 Reliability Requirements
 
-| Aspect | Requirement | Verification Method |
-|--------|-------------|---------------------|
-| Durability | 100% capture retention | 50 captures with zero loss |
-| Idempotency | Zero duplicate exports | Replay same capture 3x → 1 vault file |
-| Atomicity | No partial writes | Crash mid-export → no temp files remain |
-| Recovery | Auto-resume on restart | Kill process mid-transcription → restart → resume |
-| Backup verification | 7 consecutive successes | Phase 2 hardening gate |
+| Aspect              | Requirement             | Verification Method                               |
+| ------------------- | ----------------------- | ------------------------------------------------- |
+| Durability          | 100% capture retention  | 50 captures with zero loss                        |
+| Idempotency         | Zero duplicate exports  | Replay same capture 3x → 1 vault file             |
+| Atomicity           | No partial writes       | Crash mid-export → no temp files remain           |
+| Recovery            | Auto-resume on restart  | Kill process mid-transcription → restart → resume |
+| Backup verification | 7 consecutive successes | Phase 2 hardening gate                            |
 
 ### 7.3 Storage Constraints
 
@@ -567,16 +567,16 @@ Result: User has visibility into system health
 
 ### 8.1 Data Invariants (Must Never Violate)
 
-| # | Invariant | Enforcement | Test Strategy |
-|---|-----------|-------------|---------------|
-| 1 | Export filename ULID == captures.id | Convention | Property test mapping |
-| 2 | One non-placeholder export per capture | Status machine | Attempt double export → noop |
-| 3 | (channel, channel_native_id) unique | UNIQUE INDEX | Duplicate insert → constraint error |
-| 4 | Voice hash mutates at most once | Business rule | Re-transcription attempt → reject |
-| 5 | Placeholder exports immutable | No mutation path | Update attempt → error |
-| 6 | Backup verification before pruning | Process order | Fault injection validation |
-| 7 | No orphan audit rows | FOREIGN KEY | Insert without capture → error |
-| 8 | Non-exported rows never trimmed | Retention filter | Snapshot comparison test |
+| #   | Invariant                              | Enforcement      | Test Strategy                       |
+| --- | -------------------------------------- | ---------------- | ----------------------------------- |
+| 1   | Export filename ULID == captures.id    | Convention       | Property test mapping               |
+| 2   | One non-placeholder export per capture | Status machine   | Attempt double export → noop        |
+| 3   | (channel, channel_native_id) unique    | UNIQUE INDEX     | Duplicate insert → constraint error |
+| 4   | Voice hash mutates at most once        | Business rule    | Re-transcription attempt → reject   |
+| 5   | Placeholder exports immutable          | No mutation path | Update attempt → error              |
+| 6   | Backup verification before pruning     | Process order    | Fault injection validation          |
+| 7   | No orphan audit rows                   | FOREIGN KEY      | Insert without capture → error      |
+| 8   | Non-exported rows never trimmed        | Retention filter | Snapshot comparison test            |
 
 ### 8.2 API Contracts
 
@@ -584,12 +584,12 @@ Result: User has visibility into system health
 
 ```typescript
 interface CaptureInsert {
-  id: string;              // ULID
-  source: 'voice' | 'email';
-  raw_content: string;
-  content_hash?: string;   // Optional until available
-  status: 'staged';        // Always starts staged
-  meta_json: Record<string, unknown>;
+  id: string // ULID
+  source: "voice" | "email"
+  raw_content: string
+  content_hash?: string // Optional until available
+  status: "staged" // Always starts staged
+  meta_json: Record<string, unknown>
 }
 // Returns: { success: boolean; id: string; }
 ```
@@ -598,7 +598,7 @@ interface CaptureInsert {
 
 ```typescript
 interface DuplicateCheck {
-  content_hash: string;
+  content_hash: string
 }
 // Returns: { is_duplicate: boolean; existing_id?: string; }
 ```
@@ -607,10 +607,10 @@ interface DuplicateCheck {
 
 ```typescript
 interface ExportAudit {
-  capture_id: string;
-  vault_path: string;
-  hash_at_export: string | null;
-  mode: 'initial' | 'duplicate_skip' | 'placeholder';
+  capture_id: string
+  vault_path: string
+  hash_at_export: string | null
+  mode: "initial" | "duplicate_skip" | "placeholder"
 }
 // Returns: { success: boolean; audit_id: string; }
 ```
@@ -679,12 +679,12 @@ interface ExportAudit {
 
 ### Trigger to Revisit TDD Scope
 
-| Condition | Action |
-|-----------|--------|
-| Introduce concurrency | Add race condition tests |
-| Add BLAKE3 dual-hash | Test hash migration path |
-| Database size > 500MB | Add performance regression tests |
-| False duplicate incident | Enhance hash collision testing |
+| Condition                | Action                           |
+| ------------------------ | -------------------------------- |
+| Introduce concurrency    | Add race condition tests         |
+| Add BLAKE3 dual-hash     | Test hash migration path         |
+| Database size > 500MB    | Add performance regression tests |
+| False duplicate incident | Enhance hash collision testing   |
 
 ---
 
@@ -796,28 +796,28 @@ interface ExportAudit {
 
 ### 12.1 High-Priority Risks
 
-| Risk | Impact | Probability | Mitigation | Status |
-|------|--------|-------------|------------|--------|
-| Data loss (crash during capture) | Critical | Medium | WAL mode + atomic insert | Required |
-| SQLite corruption | Critical | Low | Hourly backups + verification | Required |
-| Duplicate exports (dedup failure) | High anxiety | Low | SHA-256 hash + unique constraint | Required |
-| Backup verification drift | High | Medium | Consecutive failure escalation | Required |
-| Storage runaway growth | Medium | Low | 90-day retention + size monitoring | Required |
+| Risk                              | Impact       | Probability | Mitigation                         | Status   |
+| --------------------------------- | ------------ | ----------- | ---------------------------------- | -------- |
+| Data loss (crash during capture)  | Critical     | Medium      | WAL mode + atomic insert           | Required |
+| SQLite corruption                 | Critical     | Low         | Hourly backups + verification      | Required |
+| Duplicate exports (dedup failure) | High anxiety | Low         | SHA-256 hash + unique constraint   | Required |
+| Backup verification drift         | High         | Medium      | Consecutive failure escalation     | Required |
+| Storage runaway growth            | Medium       | Low         | 90-day retention + size monitoring | Required |
 
 ### 12.2 Medium-Priority Risks
 
-| Risk | Impact | Probability | Mitigation | Status |
-|------|--------|-------------|------------|--------|
-| Hash collision (SHA-256) | Low | Extremely low | Accept risk (2^256 collision space) | Accepted |
-| Performance degradation (> 10k captures) | Medium | Medium | Monitor p95, add indexes if needed | Monitor |
-| Backup storage exhaustion | Low | Low | Retention policy enforcement | Automated |
+| Risk                                     | Impact | Probability   | Mitigation                          | Status    |
+| ---------------------------------------- | ------ | ------------- | ----------------------------------- | --------- |
+| Hash collision (SHA-256)                 | Low    | Extremely low | Accept risk (2^256 collision space) | Accepted  |
+| Performance degradation (> 10k captures) | Medium | Medium        | Monitor p95, add indexes if needed  | Monitor   |
+| Backup storage exhaustion                | Low    | Low           | Retention policy enforcement        | Automated |
 
 ### 12.3 Deferred Risks (Future Phases)
 
-| Risk | Defer Reason | Revisit Trigger |
-|------|--------------|-----------------|
-| Multi-device sync conflicts | Single user assumption | Second device request |
-| Advanced query performance | No regression observed | p95 > 11s traced to query |
+| Risk                        | Defer Reason                | Revisit Trigger               |
+| --------------------------- | --------------------------- | ----------------------------- |
+| Multi-device sync conflicts | Single user assumption      | Second device request         |
+| Advanced query performance  | No regression observed      | p95 > 11s traced to query     |
 | BLAKE3 migration complexity | SHA-256 sufficient for MPPP | >200 daily captures sustained |
 
 ---
@@ -891,37 +891,37 @@ interface ExportAudit {
 
 ### Upstream (Dependencies)
 
-| Document | Relationship |
-|----------|--------------|
-| [Master PRD v2.3.0-MPPP](../../master/prd-master.md) | Parent specification, Section 4.2 |
-| [Roadmap v2.0.0-MPPP](../../master/roadmap.md) | Phase 1-2 delivery schedule |
-| [Schema & Indexes](./schema-indexes.md) | Canonical schema reference |
-| [TDD Applicability Guide](../../guides/guide-tdd-applicability.md) | Testing strategy framework |
+| Document                                                           | Relationship                      |
+| ------------------------------------------------------------------ | --------------------------------- |
+| [Master PRD v2.3.0-MPPP](../../master/prd-master.md)               | Parent specification, Section 4.2 |
+| [Roadmap v2.0.0-MPPP](../../master/roadmap.md)                     | Phase 1-2 delivery schedule       |
+| [Schema & Indexes](./schema-indexes.md)                            | Canonical schema reference        |
+| [TDD Applicability Guide](../../guides/guide-tdd-applicability.md) | Testing strategy framework        |
 
 ### Downstream (Consumers)
 
-| Document | Relationship |
-|----------|--------------|
+| Document                                                   | Relationship             |
+| ---------------------------------------------------------- | ------------------------ |
 | [Staging Ledger Architecture Spec](./spec-staging-arch.md) | Component design details |
-| [Staging Ledger Tech Spec](./spec-staging-tech.md) | Implementation details |
-| [Staging Ledger Test Spec](./spec-staging-test.md) | Test strategy and cases |
-| [Capture Feature PRD](../capture/prd-capture.md) | Voice + email ingestion |
-| [Obsidian Bridge PRD](../obsidian-bridge/prd-obsidian.md) | Vault export integration |
+| [Staging Ledger Tech Spec](./spec-staging-tech.md)         | Implementation details   |
+| [Staging Ledger Test Spec](./spec-staging-test.md)         | Test strategy and cases  |
+| [Capture Feature PRD](../capture/prd-capture.md)           | Voice + email ingestion  |
+| [Obsidian Bridge PRD](../obsidian-bridge/prd-obsidian.md)  | Vault export integration |
 
 ### Cross-Cutting
 
-| Document | Relationship |
-|----------|--------------|
-| [Error Recovery Guide](../../guides/guide-error-recovery.md) | Failure handling patterns |
-| [ADR-0001: Voice File Sovereignty](../../adr/0001-voice-file-sovereignty.md) | No file relocation principle |
-| [ADR-0002: Dual Hash Migration](../../adr/0002-dual-hash-migration.md) | SHA-256 → BLAKE3 path |
-| [ADR-0003: Four-Table Hard Cap](../../adr/0003-four-table-hard-cap.md) | Schema boundary enforcement |
-| [ADR-0004: Status-Driven State Machine](../../adr/0004-status-driven-state-machine.md) | Capture lifecycle management |
-| [ADR-0005: WAL Mode Normal Sync](../../adr/0005-wal-mode-normal-sync.md) | SQLite durability configuration |
-| [ADR-0006: Late Hash Binding Voice](../../adr/0006-late-hash-binding-voice.md) | Voice processing strategy |
-| [ADR-0007: 90-Day Retention Exported Only](../../adr/0007-90-day-retention-exported-only.md) | Data cleanup policy |
-| [ADR-0008: Sequential Processing MPPP](../../adr/0008-sequential-processing-mppp.md) | Processing concurrency model |
-| [TestKit Usage Guide](../../guides/guide-testkit-usage.md) | Test isolation patterns |
+| Document                                                                                     | Relationship                    |
+| -------------------------------------------------------------------------------------------- | ------------------------------- |
+| [Error Recovery Guide](../../guides/guide-error-recovery.md)                                 | Failure handling patterns       |
+| [ADR-0001: Voice File Sovereignty](../../adr/0001-voice-file-sovereignty.md)                 | No file relocation principle    |
+| [ADR-0002: Dual Hash Migration](../../adr/0002-dual-hash-migration.md)                       | SHA-256 → BLAKE3 path           |
+| [ADR-0003: Four-Table Hard Cap](../../adr/0003-four-table-hard-cap.md)                       | Schema boundary enforcement     |
+| [ADR-0004: Status-Driven State Machine](../../adr/0004-status-driven-state-machine.md)       | Capture lifecycle management    |
+| [ADR-0005: WAL Mode Normal Sync](../../adr/0005-wal-mode-normal-sync.md)                     | SQLite durability configuration |
+| [ADR-0006: Late Hash Binding Voice](../../adr/0006-late-hash-binding-voice.md)               | Voice processing strategy       |
+| [ADR-0007: 90-Day Retention Exported Only](../../adr/0007-90-day-retention-exported-only.md) | Data cleanup policy             |
+| [ADR-0008: Sequential Processing MPPP](../../adr/0008-sequential-processing-mppp.md)         | Processing concurrency model    |
+| [TestKit Usage Guide](../../guides/guide-testkit-usage.md)                                   | Test isolation patterns         |
 
 ---
 

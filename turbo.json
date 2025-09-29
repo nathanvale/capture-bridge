@@ -5,14 +5,34 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "dist-node/**", "dist-types/**", ".tsbuildinfo"],
       "cache": true,
-      "inputs": ["$TURBO_DEFAULT$", "!**/*.test.ts", "!**/*.spec.ts", "!tests/**"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.test.ts",
+        "!**/*.spec.ts",
+        "!**/*.integration.test.*",
+        "!**/*.e2e.test.*",
+        "!**/*.smoke.test.*",
+        "!tests/**",
+        "!coverage/**",
+        "!test-results/**"
+      ],
+      "outputLogs": "errors-only"
     },
     "test": {
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
       "cache": true,
-      "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts", "src/**/*.{ts,tsx,js,jsx}", "!**/*.md"],
-      "env": ["NODE_ENV", "VITEST_SILENT", "MEMORY_DEBUG", "CI"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "vitest.config.ts",
+        "vitest.projects.ts",
+        "src/**/*.{ts,tsx,js,jsx}",
+        "!**/*.md",
+        "!**/*.integration.test.*",
+        "!**/*.e2e.test.*",
+        "!**/*.smoke.test.*"
+      ],
+      "env": ["NODE_ENV", "VITEST_SILENT", "MEMORY_DEBUG", "CI", "VITEST_WORKER_ID"],
       "outputLogs": "new-only"
     },
     "test:nocache": {
@@ -25,8 +45,20 @@
     },
     "lint": {
       "dependsOn": ["//#format:root"],
-      "outputs": [".eslintcache"],
+      "outputs": [".eslintcache", "**/.eslintcache/**"],
       "cache": true,
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "eslint.config.mjs",
+        "**/.eslintrc*",
+        "**/eslint.config.*"
+      ],
+      "outputLogs": "errors-only"
+    },
+    "lint:fix": {
+      "dependsOn": ["//#format:root"],
+      "outputs": [".eslintcache"],
+      "cache": false,
       "inputs": ["$TURBO_DEFAULT$", "eslint.config.mjs"],
       "outputLogs": "errors-only"
     },
@@ -64,9 +96,15 @@
     },
     "typecheck": {
       "dependsOn": ["^build", "^typecheck"],
-      "outputs": [],
+      "outputs": [".tsbuildinfo", "**/.tsbuildinfo"],
       "cache": true,
-      "inputs": ["$TURBO_DEFAULT$", "src/**/*.{ts,tsx}"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "src/**/*.{ts,tsx}",
+        "tsconfig.json",
+        "tsconfig.*.json",
+        "**/tsconfig.json"
+      ],
       "outputLogs": "errors-only"
     },
     "clean": {
@@ -104,19 +142,132 @@
       "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts", "vitest.projects.ts", "**/*.integration.test.*"],
       "env": ["NODE_ENV", "TEST_MODE", "CI"],
       "outputLogs": "new-only"
+    },
+    "test:ci": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "cache": true,
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "vitest.config.ts",
+        "vitest.projects.ts",
+        "src/**/*.{ts,tsx,js,jsx}",
+        "!**/*.integration.test.*",
+        "!**/*.e2e.test.*"
+      ],
+      "env": ["NODE_ENV", "VITEST_SILENT", "MEMORY_DEBUG", "CI", "VITEST_WORKER_ID"],
+      "outputLogs": "new-only"
+    },
+    "test:coverage": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "cache": true,
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "vitest.config.ts",
+        "vitest.projects.ts",
+        "src/**/*.{ts,tsx,js,jsx}"
+      ],
+      "env": ["NODE_ENV", "VITEST_SILENT", "MEMORY_DEBUG", "CI", "COVERAGE"],
+      "outputLogs": "new-only"
+    },
+    "//#test:e2e:root": {
+      "dependsOn": ["^build"],
+      "outputs": ["test-results/**"],
+      "cache": false,
+      "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts", "**/*.e2e.test.*"],
+      "env": ["NODE_ENV", "TEST_MODE", "CI"],
+      "outputLogs": "new-only"
+    },
+    "//#test:smoke:root": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": false,
+      "inputs": ["$TURBO_DEFAULT$", "**/*.smoke.test.*"],
+      "env": ["NODE_ENV", "CI"],
+      "outputLogs": "new-only"
+    },
+    "//#test:quick:root": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": false,
+      "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts"],
+      "env": ["NODE_ENV", "CI"],
+      "outputLogs": "new-only"
+    },
+    "//#test:focused:root": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": false,
+      "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts"],
+      "env": ["NODE_ENV", "TURBO_SCM_BASE", "CI"],
+      "outputLogs": "new-only"
+    },
+    "//#test:debug:root": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": false,
+      "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts"],
+      "env": ["NODE_ENV", "CI"],
+      "outputLogs": "new-only"
+    },
+    "governance": {
+      "cache": true,
+      "outputs": ["governance-reports/**"],
+      "inputs": ["$TURBO_DEFAULT$", "packages/**/package.json"],
+      "env": ["NODE_ENV"],
+      "outputLogs": "errors-only"
+    },
+    "doctor": {
+      "dependsOn": ["validate:quick"],
+      "cache": false,
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$"],
+      "env": ["NODE_ENV", "CI"],
+      "outputLogs": "new-only"
+    },
+    "validate": {
+      "dependsOn": ["lint", "typecheck", "test", "test:integration", "//#format:check:root"],
+      "cache": false,
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$"],
+      "env": ["NODE_ENV", "CI"],
+      "outputLogs": "errors-only"
+    },
+    "validate:quick": {
+      "dependsOn": ["lint", "typecheck"],
+      "cache": false,
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$"],
+      "env": ["NODE_ENV", "CI"],
+      "outputLogs": "errors-only"
+    },
+    "prepublishOnly": {
+      "dependsOn": ["build"],
+      "cache": true,
+      "outputs": [],
+      "inputs": ["dist/**"],
+      "env": ["NODE_ENV"],
+      "outputLogs": "errors-only"
     }
   },
   "globalDependencies": [
     "tsconfig.json",
     "tooling/tsconfig/base.json",
     "tooling/tsconfig/library.json",
+    "tooling/build/dist/**",
+    "tooling/build/package.json",
     ".changeset/config.json",
     "eslint.config.mjs",
     "vitest.config.ts",
+    "vitest.projects.ts",
     ".prettierrc*",
     "prettier.config.*",
     "turbo.json*",
-    ".env*"
+    ".env*",
+    "pnpm-workspace.yaml",
+    "pnpm-lock.yaml",
+    "package.json"
   ],
   "globalEnv": [
     "NODE_ENV",
@@ -130,10 +281,15 @@
     "OPENAI_API_KEY",
     "DEBUG",
     "MEMORY_DEBUG",
+    "TEST_MODE",
+    "COVERAGE",
     "TURBO_TOKEN",
     "TURBO_TEAM",
     "TURBO_REMOTE_CACHE_SIGNATURE_KEY",
-    "TURBO_SCM_BASE"
+    "TURBO_SCM_BASE",
+    "TURBO_FORCE",
+    "PNPM_HOME",
+    "NODE_OPTIONS"
   ],
   "remoteCache": {
     "signature": true

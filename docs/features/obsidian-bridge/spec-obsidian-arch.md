@@ -91,9 +91,9 @@ The Obsidian Bridge sits between the **Staging Ledger** (SQLite durability layer
 
 ```typescript
 interface AtomicWriteInput {
-  capture_id: string;      // ULID from captures.id (validated upstream)
-  content: string;         // Formatted markdown with frontmatter
-  vault_path: string;      // Absolute path to Obsidian vault root
+  capture_id: string // ULID from captures.id (validated upstream)
+  content: string // Formatted markdown with frontmatter
+  vault_path: string // Absolute path to Obsidian vault root
 }
 ```
 
@@ -101,9 +101,9 @@ interface AtomicWriteInput {
 
 ```typescript
 interface AtomicWriteResult {
-  success: boolean;
-  export_path?: string;    // Relative path within vault (e.g., "inbox/01HZ.md")
-  error?: AtomicWriteError;
+  success: boolean
+  export_path?: string // Relative path within vault (e.g., "inbox/01HZ.md")
+  error?: AtomicWriteError
 }
 ```
 
@@ -315,12 +315,12 @@ WHERE status IN ('transcribed', 'failed_transcription')
 
 **Supported Filesystems:**
 
-| Filesystem | Atomic Rename | fsync Support | Status |
-|------------|---------------|---------------|--------|
-| **APFS** (macOS) | ✅ Yes | ✅ Yes | Primary target |
-| **ext4** (Linux) | ✅ Yes | ✅ Yes | Supported |
-| **btrfs** (Linux) | ✅ Yes | ✅ Yes | Supported |
-| **NTFS** (Windows) | ⚠️ Partial | ⚠️ Partial | Not supported (MPPP) |
+| Filesystem         | Atomic Rename   | fsync Support | Status                |
+| ------------------ | --------------- | ------------- | --------------------- |
+| **APFS** (macOS)   | ✅ Yes          | ✅ Yes        | Primary target        |
+| **ext4** (Linux)   | ✅ Yes          | ✅ Yes        | Supported             |
+| **btrfs** (Linux)  | ✅ Yes          | ✅ Yes        | Supported             |
+| **NTFS** (Windows) | ⚠️ Partial      | ⚠️ Partial    | Not supported (MPPP)  |
 | **Network mounts** | ❌ No guarantee | ❌ Unreliable | Error path (ENETDOWN) |
 
 ### 3.3 SQLite Audit Contract
@@ -344,22 +344,31 @@ CREATE TABLE exports_audit (
 
 ```typescript
 // Success case
-await db.run(`
+await db.run(
+  `
   INSERT INTO exports_audit (id, capture_id, vault_path, hash_at_export, mode)
   VALUES (?, ?, ?, ?, 'initial')
-`, [ulid(), capture_id, 'inbox/${capture_id}.md', content_hash]);
+`,
+  [ulid(), capture_id, "inbox/${capture_id}.md", content_hash]
+)
 
 // Duplicate skip case
-await db.run(`
+await db.run(
+  `
   INSERT INTO exports_audit (id, capture_id, vault_path, hash_at_export, mode)
   VALUES (?, ?, ?, ?, 'duplicate_skip')
-`, [ulid(), capture_id, 'inbox/${capture_id}.md', content_hash]);
+`,
+  [ulid(), capture_id, "inbox/${capture_id}.md", content_hash]
+)
 
 // Failure case (no audit record, use errors_log instead)
-await db.run(`
+await db.run(
+  `
   INSERT INTO errors_log (id, capture_id, stage, message)
   VALUES (?, ?, 'export', ?)
-`, [ulid(), capture_id, error.message]);
+`,
+  [ulid(), capture_id, error.message]
+)
 ```
 
 ---
@@ -370,28 +379,28 @@ await db.run(`
 
 **P0 Failures (Data Loss Risk):**
 
-| Failure | Trigger | Containment | Recovery |
-|---------|---------|-------------|----------|
-| **Partial Write** | Process crash mid-write | Temp file in `.trash/` discarded | Recovery per [Resilience Guide](../../guides/guide-resilience-patterns.md#atomic-writes) |
-| **fsync Skip** | Bug omits fsync call | Potential data loss on power failure | TDD Required: fsync call verification |
-| **ULID Collision** | Same ULID, different content | Halt export, log CRITICAL | Manual investigation required |
-| **Vault Corruption** | Concurrent writes, race conditions | Atomic rename prevents | No recovery needed (design prevents) |
+| Failure              | Trigger                            | Containment                          | Recovery                                                                                 |
+| -------------------- | ---------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------- |
+| **Partial Write**    | Process crash mid-write            | Temp file in `.trash/` discarded     | Recovery per [Resilience Guide](../../guides/guide-resilience-patterns.md#atomic-writes) |
+| **fsync Skip**       | Bug omits fsync call               | Potential data loss on power failure | TDD Required: fsync call verification                                                    |
+| **ULID Collision**   | Same ULID, different content       | Halt export, log CRITICAL            | Manual investigation required                                                            |
+| **Vault Corruption** | Concurrent writes, race conditions | Atomic rename prevents               | No recovery needed (design prevents)                                                     |
 
 **P1 Failures (Operational Degradation):**
 
-| Failure | Trigger | Containment | Recovery |
-|---------|---------|-------------|----------|
-| **ENOSPC** (Disk Full) | Vault disk full during write | Halt export worker | Alert via `doctor` command, user frees space |
-| **EACCES** (Permission) | Vault directory not writable | Retry per [File System Pattern](../../guides/guide-resilience-patterns.md#permission-errors) | Alert via `doctor` command |
-| **EROFS** (Read-Only) | Vault on read-only mount | Halt export worker | Alert via `doctor` command, remount read-write |
-| **ENETDOWN** (Network) | Network mount disconnected | Retry per [Network Pattern](../../guides/guide-resilience-patterns.md#network-mounts) | Auto-recover when restored |
+| Failure                 | Trigger                      | Containment                                                                                  | Recovery                                       |
+| ----------------------- | ---------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| **ENOSPC** (Disk Full)  | Vault disk full during write | Halt export worker                                                                           | Alert via `doctor` command, user frees space   |
+| **EACCES** (Permission) | Vault directory not writable | Retry per [File System Pattern](../../guides/guide-resilience-patterns.md#permission-errors) | Alert via `doctor` command                     |
+| **EROFS** (Read-Only)   | Vault on read-only mount     | Halt export worker                                                                           | Alert via `doctor` command, remount read-write |
+| **ENETDOWN** (Network)  | Network mount disconnected   | Retry per [Network Pattern](../../guides/guide-resilience-patterns.md#network-mounts)        | Auto-recover when restored                     |
 
 **P2 Failures (Logging Only):**
 
-| Failure | Trigger | Containment | Recovery |
-|---------|---------|-------------|----------|
-| **Duplicate Export** | Retry with same capture_id | Skip write per [Idempotency Pattern](../../guides/guide-resilience-patterns.md#idempotency) | No action needed |
-| **Temp File Orphaned** | Crash before cleanup | File remains in `.trash/` | `doctor --cleanup` removes |
+| Failure                | Trigger                    | Containment                                                                                 | Recovery                   |
+| ---------------------- | -------------------------- | ------------------------------------------------------------------------------------------- | -------------------------- |
+| **Duplicate Export**   | Retry with same capture_id | Skip write per [Idempotency Pattern](../../guides/guide-resilience-patterns.md#idempotency) | No action needed           |
+| **Temp File Orphaned** | Crash before cleanup       | File remains in `.trash/`                                                                   | `doctor --cleanup` removes |
 
 ### 4.2 Containment Strategies
 
@@ -410,19 +419,15 @@ await db.run(`
 
 ```typescript
 // Test: Crash during write → no partial file in inbox
-it('should not create partial files on crash', async () => {
-  const crashDuringWrite = vi.fn().mockRejectedValue(new Error('CRASH'));
+it("should not create partial files on crash", async () => {
+  const crashDuringWrite = vi.fn().mockRejectedValue(new Error("CRASH"))
 
-  const result = await atomicWriter.writeAtomic(
-    'ULID123',
-    'content',
-    '/vault'
-  );
+  const result = await atomicWriter.writeAtomic("ULID123", "content", "/vault")
 
-  expect(result.success).toBe(false);
-  expect(fs.existsSync('/vault/inbox/ULID123.md')).toBe(false); // ✅ No partial file
-  expect(fs.existsSync('/vault/.trash/ULID123.tmp')).toBe(false); // ✅ Temp cleaned
-});
+  expect(result.success).toBe(false)
+  expect(fs.existsSync("/vault/inbox/ULID123.md")).toBe(false) // ✅ No partial file
+  expect(fs.existsSync("/vault/.trash/ULID123.tmp")).toBe(false) // ✅ Temp cleaned
+})
 ```
 
 #### 4.2.2 Idempotency via Content Hash
@@ -440,23 +445,27 @@ it('should not create partial files on crash', async () => {
 **Collision Handling:**
 
 ```typescript
-enum CollisionResult { NO_COLLISION, DUPLICATE, CONFLICT }
+enum CollisionResult {
+  NO_COLLISION,
+  DUPLICATE,
+  CONFLICT,
+}
 
 async function checkCollision(
   export_path: string,
   content_hash: string
 ): Promise<CollisionResult> {
   if (!fs.existsSync(export_path)) {
-    return CollisionResult.NO_COLLISION;
+    return CollisionResult.NO_COLLISION
   }
 
-  const existing_content = await fs.readFile(export_path, 'utf-8');
-  const existing_hash = computeSHA256(existing_content);
+  const existing_content = await fs.readFile(export_path, "utf-8")
+  const existing_hash = computeSHA256(existing_content)
 
   if (existing_hash === content_hash) {
-    return CollisionResult.DUPLICATE;  // Safe to skip write
+    return CollisionResult.DUPLICATE // Safe to skip write
   } else {
-    return CollisionResult.CONFLICT;   // CRITICAL: same ULID, different content
+    return CollisionResult.CONFLICT // CRITICAL: same ULID, different content
   }
 }
 ```
@@ -480,38 +489,37 @@ async function writeAtomic(
   content: string,
   vault_path: string
 ): Promise<AtomicWriteResult> {
-  let temp_path: string | undefined;
+  let temp_path: string | undefined
 
   try {
     // Phase 1: Path resolution (cheap, no side effects)
-    temp_path = resolveTempPath(vault_path, capture_id);
-    const export_path = resolveExportPath(vault_path, capture_id);
+    temp_path = resolveTempPath(vault_path, capture_id)
+    const export_path = resolveExportPath(vault_path, capture_id)
 
     // Phase 2: Collision detection (read-only)
-    const collision = await checkCollision(export_path, content_hash);
+    const collision = await checkCollision(export_path, content_hash)
     if (collision === CollisionResult.CONFLICT) {
       // CRITICAL: Don't attempt write, log and fail
-      await logCriticalError('ULID collision', { capture_id, export_path });
-      return { success: false, error: { code: 'EEXIST', message: 'Collision' } };
+      await logCriticalError("ULID collision", { capture_id, export_path })
+      return { success: false, error: { code: "EEXIST", message: "Collision" } }
     }
     if (collision === CollisionResult.DUPLICATE) {
       // Idempotent: Skip write, record duplicate
-      await recordAuditDuplicate(capture_id, export_path);
-      return { success: true, export_path };
+      await recordAuditDuplicate(capture_id, export_path)
+      return { success: true, export_path }
     }
 
     // Phase 3: Atomic write (side effects contained)
-    await writeAtomicWithFsync(temp_path, export_path, content);
-    await recordAuditSuccess(capture_id, export_path);
+    await writeAtomicWithFsync(temp_path, export_path, content)
+    await recordAuditSuccess(capture_id, export_path)
 
-    return { success: true, export_path };
-
+    return { success: true, export_path }
   } catch (error) {
     // Error boundary: Cleanup and return structured error
     if (temp_path) {
-      await cleanupTempFile(temp_path); // Idempotent
+      await cleanupTempFile(temp_path) // Idempotent
     }
-    return handleWriteError(error, { capture_id, temp_path, export_path });
+    return handleWriteError(error, { capture_id, temp_path, export_path })
   }
 }
 ```
@@ -522,18 +530,20 @@ async function writeAtomic(
 
 ```typescript
 interface FaultInjectionHooks {
-  beforeWrite?: () => Promise<void>;      // Crash before temp write
-  afterWrite?: () => Promise<void>;       // Crash after write, before fsync
-  afterFsync?: () => Promise<void>;       // Crash after fsync, before rename
-  afterRename?: () => Promise<void>;      // Crash after rename, before audit
+  beforeWrite?: () => Promise<void> // Crash before temp write
+  afterWrite?: () => Promise<void> // Crash after write, before fsync
+  afterFsync?: () => Promise<void> // Crash after fsync, before rename
+  afterRename?: () => Promise<void> // Crash after rename, before audit
 }
 
 // Phase 2: Enable deterministic crash testing
 const atomicWriter = new ObsidianAtomicWriter(vault_path, {
   faultHooks: {
-    afterWrite: () => { throw new Error('SIMULATED_CRASH'); }
-  }
-});
+    afterWrite: () => {
+      throw new Error("SIMULATED_CRASH")
+    },
+  },
+})
 ```
 
 ---
@@ -546,15 +556,15 @@ const atomicWriter = new ObsidianAtomicWriter(vault_path, {
 
 **Breakdown:**
 
-| Operation | Target | Justification |
-|-----------|---------|---------------|
-| Path resolution | < 1ms | String concatenation only |
-| Collision detection | < 5ms | Single fs.existsSync + optional read |
-| Temp file write | < 10ms | Sequential write, no buffering |
-| **fsync call** | < 15ms | **Critical:** Flush OS cache to disk |
-| Atomic rename | < 5ms | POSIX syscall, atomic on same FS |
-| Audit log write | < 10ms | Single SQLite INSERT |
-| **Total** | **< 46ms** | 4ms buffer for variability |
+| Operation           | Target     | Justification                        |
+| ------------------- | ---------- | ------------------------------------ |
+| Path resolution     | < 1ms      | String concatenation only            |
+| Collision detection | < 5ms      | Single fs.existsSync + optional read |
+| Temp file write     | < 10ms     | Sequential write, no buffering       |
+| **fsync call**      | < 15ms     | **Critical:** Flush OS cache to disk |
+| Atomic rename       | < 5ms      | POSIX syscall, atomic on same FS     |
+| Audit log write     | < 10ms     | Single SQLite INSERT                 |
+| **Total**           | **< 46ms** | 4ms buffer for variability           |
 
 ### 5.2 Throughput Constraints
 
@@ -700,6 +710,7 @@ const atomicWriter = new ObsidianAtomicWriter(vault_path, {
 - **TDD Guide:** `../../guides/tdd-applicability.md` - Risk assessment framework
 
 **Related ADRs:**
+
 - [ADR 0009: Atomic Write via Temp-Then-Rename Pattern](../../adr/0009-atomic-write-temp-rename-pattern.md) - Architectural rationale for atomicity guarantees
 - [ADR 0010: ULID-Based Deterministic Filenames](../../adr/0010-ulid-deterministic-filenames.md) - Filename strategy and collision handling
 - [ADR 0011: Inbox-Only Export Pattern](../../adr/0011-inbox-only-export-pattern.md) - Export path architecture decision
@@ -739,6 +750,6 @@ const atomicWriter = new ObsidianAtomicWriter(vault_path, {
 
 ## Appendix: The Nerdy Joke
 
-The Obsidian Bridge is like a bouncer at an exclusive Markdown club: you get one chance to enter (atomic write), your ID is permanent (ULID filename), and if you try to sneak in twice with the same outfit (content hash), the bouncer remembers and waves you through without checking again. But if someone else shows up with *your* ID wearing different clothes? That's a **CRITICAL ERROR**—call security and lock the vault! 🚪🔒
+The Obsidian Bridge is like a bouncer at an exclusive Markdown club: you get one chance to enter (atomic write), your ID is permanent (ULID filename), and if you try to sneak in twice with the same outfit (content hash), the bouncer remembers and waves you through without checking again. But if someone else shows up with _your_ ID wearing different clothes? That's a **CRITICAL ERROR**—call security and lock the vault! 🚪🔒
 
 (Still smaller than your attention span window, which is reassuring.)

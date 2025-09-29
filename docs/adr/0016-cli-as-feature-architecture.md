@@ -17,6 +17,7 @@ Accepted
 During project organization, a key question arose about the architectural placement of the Command Line Interface (CLI): Should it be classified as foundation infrastructure or as a user-facing feature?
 
 This decision impacts:
+
 - **Directory structure**: `docs/cross-cutting/` vs `docs/features/cli/`
 - **Dependency flow**: What the CLI can depend on vs what depends on it
 - **Architectural layering**: CLI's position in the system hierarchy
@@ -24,12 +25,14 @@ This decision impacts:
 - **Development workflow**: Who owns CLI changes and how they're prioritized
 
 The CLI provides command-line access to core system capabilities including:
+
 - Manual capture operations (`capture voice`, `capture email`)
 - System health diagnostics (`doctor`)
 - Staging ledger inspection (`ledger list`, `ledger inspect`)
 - Batch operations (`inbox:process`, `hash:migrate`)
 
 Referenced in:
+
 - [CLI PRD](../features/cli/prd-cli.md) §6 Decisions (Locked)
 - [CLI Architecture Specification](../features/cli/spec-cli-arch.md) §1 Placement in System
 
@@ -66,28 +69,33 @@ Referenced in:
 ```
 
 ### Key Principle
+
 **CLI commands are thin orchestration wrappers.** All business logic lives in domain services that are testable without CLI involvement.
 
 ## Rationale
 
 ### 1. Dependency Direction
+
 - CLI **uses** foundation infrastructure (SQLite, file system, test frameworks)
 - CLI **does not provide** infrastructure for other components
 - Foundation components should never depend on CLI
 
 ### 2. User-Facing Nature
+
 - CLI is an interface, not infrastructure
 - Users interact directly with CLI commands
 - CLI output format and behavior are user experience concerns
 - Multiple interfaces could theoretically exist (CLI, GUI, API)
 
 ### 3. Testing and Development
+
 - Business logic is testable without spawning CLI processes
 - CLI tests focus on argument parsing, output formatting, error handling
 - Domain services have their own comprehensive test suites
 - Separation allows independent evolution of interface vs logic
 
 ### 4. Organizational Clarity
+
 - Feature teams can own CLI commands for their domain
 - Infrastructure changes don't require CLI coordination
 - CLI changes don't block infrastructure development
@@ -95,16 +103,19 @@ Referenced in:
 ## Alternatives Considered
 
 ### 1. CLI as Foundation Infrastructure
+
 - **Pros**: Central location, shared access patterns
 - **Cons**: Inverts dependency flow, makes business logic harder to test independently
 - **Rejected**: Violates separation of concerns
 
 ### 2. CLI as Cross-Cutting Concern
+
 - **Pros**: Spans multiple domains, could justify cross-cutting placement
 - **Cons**: CLI doesn't provide shared functionality to other components
 - **Rejected**: Cross-cutting should be for shared utilities, not interfaces
 
 ### 3. Multiple CLI Packages by Domain
+
 - **Pros**: Clear ownership boundaries, smaller packages
 - **Cons**: User confusion, complex argument parsing coordination, YAGNI
 - **Rejected**: Premature optimization for current team size
@@ -112,6 +123,7 @@ Referenced in:
 ## Consequences
 
 ### Positive
+
 - **Clear dependency flow**: CLI → Services → Foundation
 - **Testable business logic**: Services can be unit tested without CLI
 - **User experience focus**: CLI development prioritizes usability
@@ -119,11 +131,13 @@ Referenced in:
 - **Multiple interface support**: Future GUI or API doesn't affect business logic
 
 ### Negative
+
 - **Additional abstraction layer**: Commands must delegate to services
 - **More files**: Service interfaces required even for simple operations
 - **Coordination overhead**: Changes affecting both CLI and services require coordination
 
 ### Mitigation Strategies
+
 - Keep command handlers thin (< 50 lines each)
 - Use shared service interfaces to minimize CLI/service coupling
 - Document service contracts clearly for CLI developers
@@ -131,24 +145,32 @@ Referenced in:
 ## Implementation Guidelines
 
 ### Command Structure
+
 ```typescript
 // ✅ Good: Thin command handler
-export async function captureVoiceCommand(file: string, options: CaptureOptions) {
-  const service = new CaptureService();
-  const result = await service.captureVoice({ filePath: file, ...options });
-  return formatOutput(result, options.json);
+export async function captureVoiceCommand(
+  file: string,
+  options: CaptureOptions
+) {
+  const service = new CaptureService()
+  const result = await service.captureVoice({ filePath: file, ...options })
+  return formatOutput(result, options.json)
 }
 
 // ❌ Bad: Business logic in command
-export async function captureVoiceCommand(file: string, options: CaptureOptions) {
-  const hash = await computeHash(file);
-  const db = await openDatabase();
-  await db.query('INSERT INTO captures...', [hash, file]);
+export async function captureVoiceCommand(
+  file: string,
+  options: CaptureOptions
+) {
+  const hash = await computeHash(file)
+  const db = await openDatabase()
+  await db.query("INSERT INTO captures...", [hash, file])
   // ... more business logic
 }
 ```
 
 ### Directory Structure
+
 ```
 docs/features/cli/          # ✅ CLI lives here
   ├── prd-cli.md

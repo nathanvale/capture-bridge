@@ -91,24 +91,28 @@ Schedule Retry → Execute Operation
 Use the `ErrorClassifier` to determine if the error is retriable:
 
 ```typescript
-import { ErrorClassifier, ErrorType, OperationType } from '@adhd-brain/foundation';
+import {
+  ErrorClassifier,
+  ErrorType,
+  OperationType,
+} from "@adhd-brain/foundation"
 
-const errorClassifier = new ErrorClassifier();
+const errorClassifier = new ErrorClassifier()
 
 try {
   // Your operation that might fail
-  await pollGmailMessages();
+  await pollGmailMessages()
 } catch (error) {
   // Classify the error
   const classification = errorClassifier.classify(error, {
-    operation: 'email_poll',
+    operation: "email_poll",
     captureId: captureId,
     timestamp: new Date(),
-    metadata: { cursor: lastCursor }
-  });
+    metadata: { cursor: lastCursor },
+  })
 
-  console.log(`Error classified as: ${classification.errorType}`);
-  console.log(`Retriable: ${classification.retriable}`);
+  console.log(`Error classified as: ${classification.errorType}`)
+  console.log(`Retriable: ${classification.retriable}`)
 }
 ```
 
@@ -119,18 +123,18 @@ try {
 Verify the operation hasn't exceeded max retry attempts:
 
 ```typescript
-import { RETRY_MATRIX } from '@adhd-brain/core';
+import { RETRY_MATRIX } from "@adhd-brain/core"
 
-const policy = RETRY_MATRIX[classification.errorType];
+const policy = RETRY_MATRIX[classification.errorType]
 
 if (operation.attemptCount >= policy.maxAttempts) {
-  await moveToDLQ(operation, `Max attempts (${policy.maxAttempts}) exceeded`);
-  return;
+  await moveToDLQ(operation, `Max attempts (${policy.maxAttempts}) exceeded`)
+  return
 }
 
 if (!classification.retriable) {
-  await moveToDLQ(operation, 'Permanent error - not retriable');
-  return;
+  await moveToDLQ(operation, "Permanent error - not retriable")
+  return
 }
 ```
 
@@ -141,59 +145,59 @@ if (!classification.retriable) {
 ```typescript
 enum ErrorType {
   // Authentication errors (permanent)
-  AUTH_INVALID_GRANT = 'auth.invalid_grant',
-  AUTH_INVALID_CLIENT = 'auth.invalid_client',
+  AUTH_INVALID_GRANT = "auth.invalid_grant",
+  AUTH_INVALID_CLIENT = "auth.invalid_client",
 
   // API rate limiting (transient)
-  API_RATE_LIMITED = 'api.rate_limited',
-  API_QUOTA_EXCEEDED = 'api.quota_exceeded',
+  API_RATE_LIMITED = "api.rate_limited",
+  API_QUOTA_EXCEEDED = "api.quota_exceeded",
 
   // Network errors (transient)
-  NETWORK_TIMEOUT = 'network.timeout',
-  NETWORK_CONNECTION_REFUSED = 'network.connection_refused',
-  NETWORK_DNS_FAILURE = 'network.dns_failure',
+  NETWORK_TIMEOUT = "network.timeout",
+  NETWORK_CONNECTION_REFUSED = "network.connection_refused",
+  NETWORK_DNS_FAILURE = "network.dns_failure",
 
   // File system errors (mixed)
-  FILE_NOT_FOUND = 'file.not_found',               // Permanent
-  FILE_PERMISSION_DENIED = 'file.permission_denied', // Transient
-  FILE_DATALESS_ICLOUD = 'file.dataless_icloud',   // Transient (APFS)
+  FILE_NOT_FOUND = "file.not_found", // Permanent
+  FILE_PERMISSION_DENIED = "file.permission_denied", // Transient
+  FILE_DATALESS_ICLOUD = "file.dataless_icloud", // Transient (APFS)
 
   // Transcription errors (mixed)
-  TRANSCRIPTION_TIMEOUT = 'transcription.timeout', // Transient
-  TRANSCRIPTION_OOM = 'transcription.oom',         // Permanent
-  TRANSCRIPTION_CORRUPT_AUDIO = 'transcription.corrupt_audio', // Permanent
+  TRANSCRIPTION_TIMEOUT = "transcription.timeout", // Transient
+  TRANSCRIPTION_OOM = "transcription.oom", // Permanent
+  TRANSCRIPTION_CORRUPT_AUDIO = "transcription.corrupt_audio", // Permanent
 
   // Export errors (transient)
-  EXPORT_VAULT_UNREACHABLE = 'export.vault_unreachable',
-  EXPORT_DISK_FULL = 'export.disk_full',
+  EXPORT_VAULT_UNREACHABLE = "export.vault_unreachable",
+  EXPORT_DISK_FULL = "export.disk_full",
 
   // Cursor/sync errors (recoverable)
-  CURSOR_INVALID = 'cursor.invalid',
-  CURSOR_TOO_OLD = 'cursor.too_old',
+  CURSOR_INVALID = "cursor.invalid",
+  CURSOR_TOO_OLD = "cursor.too_old",
 
   // Unknown
-  UNKNOWN = 'unknown',
+  UNKNOWN = "unknown",
 }
 
 interface RetryPolicy {
-  errorType: ErrorType;
-  retriable: boolean;
-  maxAttempts: number;
-  baseDelayMs: number;
-  maxDelayMs: number;
-  backoffMultiplier: number;
-  jitterPercent: number;
-  circuitBreakerThreshold: number;
-  escalationAction: EscalationAction;
+  errorType: ErrorType
+  retriable: boolean
+  maxAttempts: number
+  baseDelayMs: number
+  maxDelayMs: number
+  backoffMultiplier: number
+  jitterPercent: number
+  circuitBreakerThreshold: number
+  escalationAction: EscalationAction
 }
 
 type EscalationAction =
-  | 'log_only'              // Log to errors_log, no user action
-  | 'export_placeholder'    // Export placeholder, mark permanent
-  | 're_bootstrap_cursor'   // Reset cursor, continue polling
-  | 'require_reauth'        // User must re-authenticate
-  | 'circuit_breaker'       // Open circuit breaker, pause operations
-  | 'alert_ops';            // Critical system error, notify ops
+  | "log_only" // Log to errors_log, no user action
+  | "export_placeholder" // Export placeholder, mark permanent
+  | "re_bootstrap_cursor" // Reset cursor, continue polling
+  | "require_reauth" // User must re-authenticate
+  | "circuit_breaker" // Open circuit breaker, pause operations
+  | "alert_ops" // Critical system error, notify ops
 
 const RETRY_MATRIX: Record<ErrorType, RetryPolicy> = {
   // === Permanent Errors (no retry) ===
@@ -206,7 +210,7 @@ const RETRY_MATRIX: Record<ErrorType, RetryPolicy> = {
     backoffMultiplier: 1,
     jitterPercent: 0,
     circuitBreakerThreshold: 3,
-    escalationAction: 'require_reauth',
+    escalationAction: "require_reauth",
   },
   [ErrorType.FILE_NOT_FOUND]: {
     errorType: ErrorType.FILE_NOT_FOUND,
@@ -217,7 +221,7 @@ const RETRY_MATRIX: Record<ErrorType, RetryPolicy> = {
     backoffMultiplier: 1,
     jitterPercent: 0,
     circuitBreakerThreshold: 0, // No circuit breaker for file errors
-    escalationAction: 'export_placeholder',
+    escalationAction: "export_placeholder",
   },
   [ErrorType.TRANSCRIPTION_CORRUPT_AUDIO]: {
     errorType: ErrorType.TRANSCRIPTION_CORRUPT_AUDIO,
@@ -228,7 +232,7 @@ const RETRY_MATRIX: Record<ErrorType, RetryPolicy> = {
     backoffMultiplier: 1,
     jitterPercent: 0,
     circuitBreakerThreshold: 0,
-    escalationAction: 'export_placeholder',
+    escalationAction: "export_placeholder",
   },
   [ErrorType.TRANSCRIPTION_OOM]: {
     errorType: ErrorType.TRANSCRIPTION_OOM,
@@ -239,7 +243,7 @@ const RETRY_MATRIX: Record<ErrorType, RetryPolicy> = {
     backoffMultiplier: 1,
     jitterPercent: 0,
     circuitBreakerThreshold: 0,
-    escalationAction: 'export_placeholder',
+    escalationAction: "export_placeholder",
   },
 
   // === Rate Limiting (aggressive backoff) ===
@@ -247,47 +251,47 @@ const RETRY_MATRIX: Record<ErrorType, RetryPolicy> = {
     errorType: ErrorType.API_RATE_LIMITED,
     retriable: true,
     maxAttempts: 5,
-    baseDelayMs: 30_000,      // 30 seconds
-    maxDelayMs: 1_800_000,    // 30 minutes
+    baseDelayMs: 30_000, // 30 seconds
+    maxDelayMs: 1_800_000, // 30 minutes
     backoffMultiplier: 2,
     jitterPercent: 30,
     circuitBreakerThreshold: 3,
-    escalationAction: 'circuit_breaker',
+    escalationAction: "circuit_breaker",
   },
   [ErrorType.API_QUOTA_EXCEEDED]: {
     errorType: ErrorType.API_QUOTA_EXCEEDED,
     retriable: true,
     maxAttempts: 3,
-    baseDelayMs: 3_600_000,   // 1 hour
-    maxDelayMs: 14_400_000,   // 4 hours
+    baseDelayMs: 3_600_000, // 1 hour
+    maxDelayMs: 14_400_000, // 4 hours
     backoffMultiplier: 2,
     jitterPercent: 20,
     circuitBreakerThreshold: 2,
-    escalationAction: 'circuit_breaker',
+    escalationAction: "circuit_breaker",
   },
 
   // === File System (APFS-specific) ===
   [ErrorType.FILE_DATALESS_ICLOUD]: {
     errorType: ErrorType.FILE_DATALESS_ICLOUD,
     retriable: true,
-    maxAttempts: 10,          // Give iCloud time to download
-    baseDelayMs: 5_000,       // 5 seconds
-    maxDelayMs: 300_000,      // 5 minutes
+    maxAttempts: 10, // Give iCloud time to download
+    baseDelayMs: 5_000, // 5 seconds
+    maxDelayMs: 300_000, // 5 minutes
     backoffMultiplier: 1.5,
     jitterPercent: 20,
     circuitBreakerThreshold: 0,
-    escalationAction: 'log_only',
+    escalationAction: "log_only",
   },
   [ErrorType.FILE_PERMISSION_DENIED]: {
     errorType: ErrorType.FILE_PERMISSION_DENIED,
     retriable: true,
     maxAttempts: 3,
-    baseDelayMs: 10_000,      // 10 seconds
-    maxDelayMs: 60_000,       // 1 minute
+    baseDelayMs: 10_000, // 10 seconds
+    maxDelayMs: 60_000, // 1 minute
     backoffMultiplier: 2,
     jitterPercent: 30,
     circuitBreakerThreshold: 0,
-    escalationAction: 'alert_ops',
+    escalationAction: "alert_ops",
   },
 
   // === Transcription (resource-constrained) ===
@@ -295,12 +299,12 @@ const RETRY_MATRIX: Record<ErrorType, RetryPolicy> = {
     errorType: ErrorType.TRANSCRIPTION_TIMEOUT,
     retriable: true,
     maxAttempts: 2,
-    baseDelayMs: 60_000,      // 1 minute
-    maxDelayMs: 300_000,      // 5 minutes
+    baseDelayMs: 60_000, // 1 minute
+    maxDelayMs: 300_000, // 5 minutes
     backoffMultiplier: 3,
     jitterPercent: 30,
     circuitBreakerThreshold: 0,
-    escalationAction: 'export_placeholder',
+    escalationAction: "export_placeholder",
   },
 
   // === Network (transient) ===
@@ -308,12 +312,12 @@ const RETRY_MATRIX: Record<ErrorType, RetryPolicy> = {
     errorType: ErrorType.NETWORK_TIMEOUT,
     retriable: true,
     maxAttempts: 3,
-    baseDelayMs: 5_000,       // 5 seconds
-    maxDelayMs: 60_000,       // 1 minute
+    baseDelayMs: 5_000, // 5 seconds
+    maxDelayMs: 60_000, // 1 minute
     backoffMultiplier: 2,
     jitterPercent: 30,
     circuitBreakerThreshold: 5,
-    escalationAction: 'circuit_breaker',
+    escalationAction: "circuit_breaker",
   },
 
   // === Cursor (auto-recovery) ===
@@ -321,12 +325,12 @@ const RETRY_MATRIX: Record<ErrorType, RetryPolicy> = {
     errorType: ErrorType.CURSOR_INVALID,
     retriable: true,
     maxAttempts: 1,
-    baseDelayMs: 0,           // Immediate
+    baseDelayMs: 0, // Immediate
     maxDelayMs: 0,
     backoffMultiplier: 1,
     jitterPercent: 0,
     circuitBreakerThreshold: 0,
-    escalationAction: 're_bootstrap_cursor',
+    escalationAction: "re_bootstrap_cursor",
   },
 
   // === Export errors ===
@@ -334,25 +338,25 @@ const RETRY_MATRIX: Record<ErrorType, RetryPolicy> = {
     errorType: ErrorType.EXPORT_VAULT_UNREACHABLE,
     retriable: true,
     maxAttempts: 5,
-    baseDelayMs: 10_000,      // 10 seconds
-    maxDelayMs: 300_000,      // 5 minutes
+    baseDelayMs: 10_000, // 10 seconds
+    maxDelayMs: 300_000, // 5 minutes
     backoffMultiplier: 2,
     jitterPercent: 30,
     circuitBreakerThreshold: 3,
-    escalationAction: 'alert_ops',
+    escalationAction: "alert_ops",
   },
   [ErrorType.EXPORT_DISK_FULL]: {
     errorType: ErrorType.EXPORT_DISK_FULL,
     retriable: true,
     maxAttempts: 3,
-    baseDelayMs: 60_000,      // 1 minute
-    maxDelayMs: 600_000,      // 10 minutes
+    baseDelayMs: 60_000, // 1 minute
+    maxDelayMs: 600_000, // 10 minutes
     backoffMultiplier: 3,
     jitterPercent: 20,
     circuitBreakerThreshold: 2,
-    escalationAction: 'alert_ops',
+    escalationAction: "alert_ops",
   },
-};
+}
 ```
 
 ### Backoff Calculation Implementation
@@ -360,20 +364,19 @@ const RETRY_MATRIX: Record<ErrorType, RetryPolicy> = {
 ```typescript
 function calculateBackoff(policy: RetryPolicy, attemptCount: number): number {
   // Exponential backoff: baseDelay * (multiplier ^ attemptCount)
-  const exponentialDelay = policy.baseDelayMs * Math.pow(
-    policy.backoffMultiplier,
-    attemptCount
-  );
+  const exponentialDelay =
+    policy.baseDelayMs * Math.pow(policy.backoffMultiplier, attemptCount)
 
   // Cap at max delay
-  const cappedDelay = Math.min(exponentialDelay, policy.maxDelayMs);
+  const cappedDelay = Math.min(exponentialDelay, policy.maxDelayMs)
 
   // Apply jitter: ±jitterPercent%
   // Formula: delay * (1 + random(−0.3, +0.3)) for 30% jitter
-  const jitterFactor = 1 + (Math.random() * 2 - 1) * (policy.jitterPercent / 100);
-  const finalDelay = cappedDelay * jitterFactor;
+  const jitterFactor =
+    1 + (Math.random() * 2 - 1) * (policy.jitterPercent / 100)
+  const finalDelay = cappedDelay * jitterFactor
 
-  return Math.max(0, Math.floor(finalDelay));
+  return Math.max(0, Math.floor(finalDelay))
 }
 
 // Example backoff progression for API_RATE_LIMITED:
@@ -388,26 +391,26 @@ function calculateBackoff(policy: RetryPolicy, attemptCount: number): number {
 
 ```typescript
 interface ErrorsLogEntry {
-  id: string;                      // ULID
-  capture_id: string | null;       // NULL for system-wide errors
-  operation: OperationType;
-  error_type: ErrorType;
-  error_message: string;
-  stack_trace?: string;
-  context_json?: Record<string, any>;
-  attempt_count: number;
-  escalation_action: EscalationAction;
-  dlq: boolean;                    // True if moved to Dead Letter Queue
-  created_at: Date;
+  id: string // ULID
+  capture_id: string | null // NULL for system-wide errors
+  operation: OperationType
+  error_type: ErrorType
+  error_message: string
+  stack_trace?: string
+  context_json?: Record<string, any>
+  attempt_count: number
+  escalation_action: EscalationAction
+  dlq: boolean // True if moved to Dead Letter Queue
+  created_at: Date
 }
 
 type OperationType =
-  | 'voice_poll'
-  | 'email_poll'
-  | 'transcribe'
-  | 'export'
-  | 'gmail_auth'
-  | 'cursor_bootstrap';
+  | "voice_poll"
+  | "email_poll"
+  | "transcribe"
+  | "export"
+  | "gmail_auth"
+  | "cursor_bootstrap"
 
 async function escalateToErrorsLog(
   operation: FailedOperation,
@@ -425,7 +428,7 @@ async function escalateToErrorsLog(
     escalation_action: policy.escalationAction,
     dlq: operation.attemptCount >= policy.maxAttempts,
     created_at: new Date(),
-  };
+  }
 
   await db.run(
     `INSERT INTO errors_log (
@@ -445,15 +448,15 @@ async function escalateToErrorsLog(
       errorEntry.dlq ? 1 : 0,
       errorEntry.created_at.toISOString(),
     ]
-  );
+  )
 
   // Emit metric
-  metrics.counter('error_escalation_total', {
+  metrics.counter("error_escalation_total", {
     operation: errorEntry.operation,
     error_type: errorEntry.error_type,
     escalation_action: errorEntry.escalation_action,
     dlq: errorEntry.dlq,
-  });
+  })
 }
 ```
 
@@ -461,12 +464,12 @@ async function escalateToErrorsLog(
 
 ```typescript
 interface PlaceholderExport {
-  captureId: string;
-  errorType: ErrorType;
-  reason: string;
-  attemptCount: number;
-  originalFilePath?: string;
-  exportedAt: Date;
+  captureId: string
+  errorType: ErrorType
+  reason: string
+  attemptCount: number
+  originalFilePath?: string
+  exportedAt: Date
 }
 
 async function exportPlaceholder(
@@ -474,10 +477,9 @@ async function exportPlaceholder(
   errorType: ErrorType,
   reason: string
 ): Promise<void> {
-  const capture = await db.get(
-    `SELECT * FROM captures WHERE id = ?`,
-    [captureId]
-  );
+  const capture = await db.get(`SELECT * FROM captures WHERE id = ?`, [
+    captureId,
+  ])
 
   const placeholder = `[CAPTURE_FAILED: ${errorType}]
 
@@ -494,7 +496,7 @@ Original content unavailable due to processing failure.
 This placeholder is PERMANENT and cannot be retried in MPPP.
 
 For manual recovery, see: docs/guides/guide-error-recovery.md
-`;
+`
 
   // 1. Update captures table (mark as placeholder)
   await db.run(
@@ -505,37 +507,37 @@ For manual recovery, see: docs/guides/guide-error-recovery.md
          updated_at = CURRENT_TIMESTAMP
      WHERE id = ?`,
     [placeholder, captureId]
-  );
+  )
 
   // 2. Export to vault
-  const vaultPath = path.join(VAULT_ROOT, 'inbox', `${captureId}.md`);
-  await atomicFileWriter.write(vaultPath, placeholder);
+  const vaultPath = path.join(VAULT_ROOT, "inbox", `${captureId}.md`)
+  await atomicFileWriter.write(vaultPath, placeholder)
 
   // 3. Record in exports_audit (hash_at_export = NULL for placeholder)
   await db.run(
     `INSERT INTO exports_audit (capture_id, vault_path, hash_at_export, mode, error_flag)
      VALUES (?, ?, NULL, 'placeholder', 1)`,
     [captureId, vaultPath]
-  );
+  )
 
   // 4. Escalate to errors_log
   await escalateToErrorsLog(
     {
       captureId,
-      operationType: 'export',
+      operationType: "export",
       errorType,
       errorMessage: reason,
       attemptCount: capture.meta_json.attempt_count || 0,
       context: { vault_path: vaultPath },
     },
     RETRY_MATRIX[errorType]
-  );
+  )
 
   // 5. Emit metrics
-  metrics.counter('placeholder_export_total', {
+  metrics.counter("placeholder_export_total", {
     error_type: errorType,
     source: capture.source,
-  });
+  })
 }
 ```
 
@@ -547,25 +549,34 @@ See [Metrics Contract Tech Spec](../cross-cutting/spec-metrics-contract-tech.md)
 
 ```typescript
 // Retry orchestration
-metrics.counter('retry_attempt_total', { operation, error_type, attempt_number });
-metrics.counter('retry_success_total', { operation, error_type });
-metrics.counter('retry_exhausted_total', { operation, error_type });
-metrics.duration('retry_backoff_duration_ms', backoffMs, { error_type });
+metrics.counter("retry_attempt_total", {
+  operation,
+  error_type,
+  attempt_number,
+})
+metrics.counter("retry_success_total", { operation, error_type })
+metrics.counter("retry_exhausted_total", { operation, error_type })
+metrics.duration("retry_backoff_duration_ms", backoffMs, { error_type })
 
 // Circuit breaker
-metrics.gauge('circuit_breaker_state', stateValue, { error_type }); // 0=closed, 1=open, 2=half-open
-metrics.counter('circuit_breaker_open_total', { error_type });
-metrics.counter('circuit_breaker_close_total', { error_type });
-metrics.duration('circuit_breaker_open_duration_ms', durationMs, { error_type });
+metrics.gauge("circuit_breaker_state", stateValue, { error_type }) // 0=closed, 1=open, 2=half-open
+metrics.counter("circuit_breaker_open_total", { error_type })
+metrics.counter("circuit_breaker_close_total", { error_type })
+metrics.duration("circuit_breaker_open_duration_ms", durationMs, { error_type })
 
 // Escalation
-metrics.counter('error_escalation_total', { operation, error_type, escalation_action, dlq });
-metrics.counter('dlq_entry_total', { operation, error_type });
-metrics.gauge('dlq_depth', dlqDepth);
+metrics.counter("error_escalation_total", {
+  operation,
+  error_type,
+  escalation_action,
+  dlq,
+})
+metrics.counter("dlq_entry_total", { operation, error_type })
+metrics.gauge("dlq_depth", dlqDepth)
 
 // Placeholder exports
-metrics.counter('placeholder_export_total', { error_type, source });
-metrics.gauge('placeholder_rate_percent', (placeholders / totalCaptures) * 100);
+metrics.counter("placeholder_export_total", { error_type, source })
+metrics.gauge("placeholder_rate_percent", (placeholders / totalCaptures) * 100)
 ```
 
 **Expected Outcome:** Operation is either retried or moved to DLQ based on policy.
@@ -575,23 +586,24 @@ metrics.gauge('placeholder_rate_percent', (placeholders / totalCaptures) * 100);
 Before scheduling a retry, verify the circuit breaker isn't open:
 
 ```typescript
-import { CircuitBreaker } from '@adhd-brain/core';
+import { CircuitBreaker } from "@adhd-brain/core"
 
-const circuitBreaker = new CircuitBreaker();
-const breakerState = circuitBreaker.getState(classification.errorType);
+const circuitBreaker = new CircuitBreaker()
+const breakerState = circuitBreaker.getState(classification.errorType)
 
-if (breakerState?.state === 'open') {
-  const cooldownRemaining = CIRCUIT_BREAKER_CONFIG.openDurationMs -
-    (Date.now() - (breakerState.openedAt?.getTime() || 0));
+if (breakerState?.state === "open") {
+  const cooldownRemaining =
+    CIRCUIT_BREAKER_CONFIG.openDurationMs -
+    (Date.now() - (breakerState.openedAt?.getTime() || 0))
 
   if (cooldownRemaining > 0) {
-    console.log(`Circuit breaker open - waiting ${cooldownRemaining}ms`);
-    await scheduleRetryAfter(operation, cooldownRemaining);
-    return;
+    console.log(`Circuit breaker open - waiting ${cooldownRemaining}ms`)
+    await scheduleRetryAfter(operation, cooldownRemaining)
+    return
   }
 
   // Transition to half-open for test attempt
-  breakerState.state = 'half-open';
+  breakerState.state = "half-open"
 }
 ```
 
@@ -603,14 +615,16 @@ Ensure the operation hasn't already been processed (critical for retry safety):
 
 ```typescript
 // Voice capture idempotency check
-async function checkVoiceIdempotency(audioFingerprint: string): Promise<boolean> {
+async function checkVoiceIdempotency(
+  audioFingerprint: string
+): Promise<boolean> {
   const existing = await db.query(
     `SELECT id FROM captures
      WHERE json_extract(meta_json, '$.audio_fp') = ?`,
     [audioFingerprint]
-  );
+  )
 
-  return existing.length > 0;
+  return existing.length > 0
 }
 
 // Email capture idempotency check
@@ -619,9 +633,9 @@ async function checkEmailIdempotency(messageId: string): Promise<boolean> {
     `SELECT id FROM captures
      WHERE json_extract(meta_json, '$.message_id') = ?`,
     [messageId]
-  );
+  )
 
-  return existing.length > 0;
+  return existing.length > 0
 }
 
 // Export idempotency check
@@ -629,9 +643,9 @@ async function checkExportIdempotency(captureId: string): Promise<boolean> {
   const existing = await db.query(
     `SELECT id FROM exports_audit WHERE capture_id = ?`,
     [captureId]
-  );
+  )
 
-  return existing.length > 0;
+  return existing.length > 0
 }
 ```
 
@@ -650,29 +664,29 @@ function calculateBackoff(
   attemptCount: number
 ): number {
   // Exponential backoff: baseDelay * (multiplier ^ attemptCount)
-  const exponentialDelay = baseDelayMs * Math.pow(multiplier, attemptCount);
+  const exponentialDelay = baseDelayMs * Math.pow(multiplier, attemptCount)
 
   // Cap at max delay
-  const cappedDelay = Math.min(exponentialDelay, maxDelayMs);
+  const cappedDelay = Math.min(exponentialDelay, maxDelayMs)
 
   // Apply jitter: ±jitterPercent%
-  const jitterFactor = 1 + (Math.random() * 2 - 1) * (jitterPercent / 100);
-  const finalDelay = cappedDelay * jitterFactor;
+  const jitterFactor = 1 + (Math.random() * 2 - 1) * (jitterPercent / 100)
+  const finalDelay = cappedDelay * jitterFactor
 
-  return Math.max(0, Math.floor(finalDelay));
+  return Math.max(0, Math.floor(finalDelay))
 }
 
 // Example usage
-const policy = RETRY_MATRIX['api.rate_limited'];
+const policy = RETRY_MATRIX["api.rate_limited"]
 const backoffMs = calculateBackoff(
   policy.baseDelayMs,
   policy.maxDelayMs,
   policy.backoffMultiplier,
   policy.jitterPercent,
   operation.attemptCount
-);
+)
 
-console.log(`Next retry in ${backoffMs}ms`);
+console.log(`Next retry in ${backoffMs}ms`)
 ```
 
 **Expected Outcome:** Retry delay increases exponentially with random jitter to prevent thundering herd.
@@ -684,27 +698,26 @@ Schedule and execute the retry operation:
 ```typescript
 async function executeRetry(operation: FailedOperation): Promise<void> {
   // Wait for backoff period
-  await sleep(backoffMs);
+  await sleep(backoffMs)
 
   // Increment attempt counter
-  operation.attemptCount++;
-  operation.lastAttemptAt = new Date();
+  operation.attemptCount++
+  operation.lastAttemptAt = new Date()
 
   try {
     // Re-execute the operation
-    await retryOperation(operation);
+    await retryOperation(operation)
 
     // Success! Reset error counters and close circuit breaker
-    await recordSuccess(operation.operationId);
-    circuitBreaker.recordSuccess(operation.errorType);
-
+    await recordSuccess(operation.operationId)
+    circuitBreaker.recordSuccess(operation.errorType)
   } catch (error) {
     // Failure - record and start retry flow again
-    circuitBreaker.recordFailure(operation.errorType);
-    await logError(operation, error);
+    circuitBreaker.recordFailure(operation.errorType)
+    await logError(operation, error)
 
     // Restart retry orchestration
-    await orchestrateRetry(operation);
+    await orchestrateRetry(operation)
   }
 }
 ```
@@ -722,35 +735,34 @@ Voice captures may fail due to iCloud placeholder files (dataless). Retry with l
 ```typescript
 async function pollVoiceMemosWithRetry(): Promise<void> {
   try {
-    const files = await listVoiceMemos();
+    const files = await listVoiceMemos()
 
     for (const file of files) {
       try {
-        const isDataless = await checkAPFSStatus(file.path);
+        const isDataless = await checkAPFSStatus(file.path)
 
         if (isDataless) {
           // Schedule retry after iCloud download completes
           await scheduleRetry({
             operationId: file.path,
-            operationType: 'voice_poll',
+            operationType: "voice_poll",
             errorType: ErrorType.FILE_DATALESS,
-            errorMessage: 'APFS dataless file - iCloud download pending',
+            errorMessage: "APFS dataless file - iCloud download pending",
             attemptCount: 1,
             firstFailureAt: new Date(),
             lastAttemptAt: new Date(),
-            context: { filePath: file.path }
-          });
-          continue;
+            context: { filePath: file.path },
+          })
+          continue
         }
 
-        await processVoiceMemo(file);
-
+        await processVoiceMemo(file)
       } catch (error) {
-        await handleVoiceError(file, error);
+        await handleVoiceError(file, error)
       }
     }
   } catch (error) {
-    await handlePollError(error);
+    await handlePollError(error)
   }
 }
 ```
@@ -761,36 +773,35 @@ Gmail API polling with circuit breaker protection:
 
 ```typescript
 async function pollGmailWithCircuitBreaker(): Promise<void> {
-  const circuitBreaker = new CircuitBreaker();
+  const circuitBreaker = new CircuitBreaker()
 
   if (circuitBreaker.isOpen(ErrorType.API_RATE_LIMITED)) {
-    console.log('Circuit breaker open for Gmail API - skipping poll');
-    return;
+    console.log("Circuit breaker open for Gmail API - skipping poll")
+    return
   }
 
   try {
-    const messages = await gmailClient.fetchMessages();
+    const messages = await gmailClient.fetchMessages()
 
     // Success - close circuit breaker if in half-open state
-    circuitBreaker.recordSuccess(ErrorType.API_RATE_LIMITED);
+    circuitBreaker.recordSuccess(ErrorType.API_RATE_LIMITED)
 
-    await processMessages(messages);
-
+    await processMessages(messages)
   } catch (error) {
     if (error.code === 429) {
       // Rate limited - record failure and open circuit breaker
-      circuitBreaker.recordFailure(ErrorType.API_RATE_LIMITED);
+      circuitBreaker.recordFailure(ErrorType.API_RATE_LIMITED)
 
       await scheduleRetry({
-        operationId: 'gmail_poll',
-        operationType: 'email_poll',
+        operationId: "gmail_poll",
+        operationType: "email_poll",
         errorType: ErrorType.API_RATE_LIMITED,
         errorMessage: error.message,
         attemptCount: 1,
         firstFailureAt: new Date(),
         lastAttemptAt: new Date(),
-        context: { cursor: lastCursor }
-      });
+        context: { cursor: lastCursor },
+      })
     }
   }
 }
@@ -803,32 +814,31 @@ Obsidian export with mandatory deduplication check:
 ```typescript
 async function exportToVaultWithRetry(captureId: string): Promise<void> {
   // CRITICAL: Always check idempotency before retry
-  const alreadyExported = await checkExportIdempotency(captureId);
+  const alreadyExported = await checkExportIdempotency(captureId)
 
   if (alreadyExported) {
-    console.log('Export already completed - skipping retry');
-    await recordSuccess(captureId);
-    return;
+    console.log("Export already completed - skipping retry")
+    await recordSuccess(captureId)
+    return
   }
 
   try {
-    const capture = await getCaptureById(captureId);
-    const vaultPath = generateVaultPath(captureId);
+    const capture = await getCaptureById(captureId)
+    const vaultPath = generateVaultPath(captureId)
 
-    await atomicFileWriter.write(vaultPath, capture.raw_content);
+    await atomicFileWriter.write(vaultPath, capture.raw_content)
 
     await insertExportAudit({
       captureId,
       vaultPath,
       hashAtExport: capture.content_hash,
-      mode: 'initial'
-    });
+      mode: "initial",
+    })
 
-    await updateCaptureStatus(captureId, { status: 'exported' });
-    await recordSuccess(captureId);
-
+    await updateCaptureStatus(captureId, { status: "exported" })
+    await recordSuccess(captureId)
   } catch (error) {
-    await handleExportError(captureId, error);
+    await handleExportError(captureId, error)
   }
 }
 ```
@@ -861,7 +871,7 @@ catch (error) {
 ```typescript
 // BAD - may create duplicates
 async function retryExport(captureId: string) {
-  await exportToVault(captureId); // No dedup check!
+  await exportToVault(captureId) // No dedup check!
 }
 ```
 
@@ -871,9 +881,9 @@ async function retryExport(captureId: string) {
 // GOOD - prevents duplicates
 async function retryExport(captureId: string) {
   if (await checkExportIdempotency(captureId)) {
-    return; // Already exported
+    return // Already exported
   }
-  await exportToVault(captureId);
+  await exportToVault(captureId)
 }
 ```
 
@@ -881,8 +891,8 @@ async function retryExport(captureId: string) {
 
 ```typescript
 // BAD - no exponential backoff or jitter
-await sleep(5000); // Always 5 seconds
-await retryOperation();
+await sleep(5000) // Always 5 seconds
+await retryOperation()
 ```
 
 **✅ Do: Use exponential backoff with jitter**
@@ -895,9 +905,9 @@ const backoff = calculateBackoff(
   policy.backoffMultiplier,
   policy.jitterPercent,
   attemptCount
-);
-await sleep(backoff);
-await retryOperation();
+)
+await sleep(backoff)
+await retryOperation()
 ```
 
 ## Troubleshooting
@@ -941,17 +951,17 @@ sqlite3 .adhd-brain.db "SELECT error_type, COUNT(*) FROM errors_log GROUP BY err
 ```typescript
 // Increase threshold from 3 to 5 failures
 const RETRY_MATRIX = {
-  'api.rate_limited': {
+  "api.rate_limited": {
     circuitBreakerThreshold: 5, // Was 3
     // ... other config
-  }
-};
+  },
+}
 
 // Reduce cooldown from 5min to 2min
 const CIRCUIT_BREAKER_CONFIG = {
   openDurationMs: 120000, // Was 300000 (5min)
   // ... other config
-};
+}
 ```
 
 ### Problem: Duplicate captures after retry
@@ -992,7 +1002,7 @@ sqlite3 .adhd-brain.db "SELECT sql FROM sqlite_master WHERE name = 'captures'"
 
 ```typescript
 // Test backoff progression
-const policy = RETRY_MATRIX['api.quota_exceeded'];
+const policy = RETRY_MATRIX["api.quota_exceeded"]
 for (let attempt = 0; attempt < 5; attempt++) {
   const backoff = calculateBackoff(
     policy.baseDelayMs,
@@ -1000,8 +1010,10 @@ for (let attempt = 0; attempt < 5; attempt++) {
     policy.backoffMultiplier,
     policy.jitterPercent,
     attempt
-  );
-  console.log(`Attempt ${attempt + 1}: ${backoff}ms (${Math.floor(backoff / 1000)}s)`);
+  )
+  console.log(
+    `Attempt ${attempt + 1}: ${backoff}ms (${Math.floor(backoff / 1000)}s)`
+  )
 }
 ```
 
@@ -1015,95 +1027,99 @@ Complete retry orchestration for voice memo capture:
 async function captureVoiceMemoWithRetry(filePath: string): Promise<void> {
   const operation: FailedOperation = {
     operationId: filePath,
-    operationType: 'voice_poll',
+    operationType: "voice_poll",
     errorType: ErrorType.UNKNOWN,
-    errorMessage: '',
+    errorMessage: "",
     attemptCount: 0,
     firstFailureAt: new Date(),
     lastAttemptAt: new Date(),
-    context: { filePath }
-  };
+    context: { filePath },
+  }
 
   while (operation.attemptCount < 3) {
     try {
       // Check APFS status
-      const isDataless = await checkAPFSStatus(filePath);
+      const isDataless = await checkAPFSStatus(filePath)
       if (isDataless) {
-        operation.errorType = ErrorType.FILE_DATALESS;
-        operation.attemptCount++;
+        operation.errorType = ErrorType.FILE_DATALESS
+        operation.attemptCount++
 
-        const policy = RETRY_MATRIX[ErrorType.FILE_DATALESS];
+        const policy = RETRY_MATRIX[ErrorType.FILE_DATALESS]
         const backoff = calculateBackoff(
           policy.baseDelayMs,
           policy.maxDelayMs,
           policy.backoffMultiplier,
           policy.jitterPercent,
           operation.attemptCount
-        );
+        )
 
-        console.log(`APFS dataless - retrying in ${backoff}ms (attempt ${operation.attemptCount})`);
-        await sleep(backoff);
-        continue;
+        console.log(
+          `APFS dataless - retrying in ${backoff}ms (attempt ${operation.attemptCount})`
+        )
+        await sleep(backoff)
+        continue
       }
 
       // Read audio file
-      const audioBuffer = await readFile(filePath);
-      const audioFingerprint = calculateAudioFingerprint(audioBuffer);
+      const audioBuffer = await readFile(filePath)
+      const audioFingerprint = calculateAudioFingerprint(audioBuffer)
 
       // Check idempotency
       if (await checkVoiceIdempotency(audioFingerprint)) {
-        console.log('Voice memo already captured - skipping');
-        return;
+        console.log("Voice memo already captured - skipping")
+        return
       }
 
       // Transcribe with Whisper
-      const transcription = await whisperTranscribe(audioBuffer);
+      const transcription = await whisperTranscribe(audioBuffer)
 
       // Insert to staging ledger
       await insertCapture({
-        source: 'voice',
+        source: "voice",
         raw_content: transcription,
         content_hash: calculateContentHash(transcription),
-        meta_json: { audio_fp: audioFingerprint, file_path: filePath }
-      });
+        meta_json: { audio_fp: audioFingerprint, file_path: filePath },
+      })
 
-      console.log('Voice memo captured successfully');
-      return;
-
+      console.log("Voice memo captured successfully")
+      return
     } catch (error) {
-      operation.attemptCount++;
-      operation.lastAttemptAt = new Date();
-      operation.errorMessage = error.message;
+      operation.attemptCount++
+      operation.lastAttemptAt = new Date()
+      operation.errorMessage = error.message
 
       const classification = errorClassifier.classify(error, {
-        operation: 'voice_poll',
+        operation: "voice_poll",
         timestamp: new Date(),
-        metadata: { filePath }
-      });
+        metadata: { filePath },
+      })
 
-      operation.errorType = classification.errorType;
+      operation.errorType = classification.errorType
 
       if (!classification.retriable) {
-        await moveToDLQ(operation, 'Permanent error');
-        throw error;
+        await moveToDLQ(operation, "Permanent error")
+        throw error
       }
 
-      if (operation.attemptCount >= RETRY_MATRIX[classification.errorType].maxAttempts) {
-        await moveToDLQ(operation, 'Max attempts exceeded');
-        throw error;
+      if (
+        operation.attemptCount >=
+        RETRY_MATRIX[classification.errorType].maxAttempts
+      ) {
+        await moveToDLQ(operation, "Max attempts exceeded")
+        throw error
       }
 
-      const policy = RETRY_MATRIX[classification.errorType];
+      const policy = RETRY_MATRIX[classification.errorType]
       const backoff = calculateBackoff(
         policy.baseDelayMs,
         policy.maxDelayMs,
         policy.backoffMultiplier,
         policy.jitterPercent,
         operation.attemptCount
-      );
+      )
 
-      console.log(`Retry in ${backoff}ms (attempt ${operation.attemptCount})`);
-      await sleep(backoff);
+      console.log(`Retry in ${backoff}ms (attempt ${operation.attemptCount})`)
+      await sleep(backoff)
     }
   }
 }
@@ -1115,71 +1131,73 @@ Handling transient OAuth2 token refresh failures:
 
 ```typescript
 async function refreshGmailTokenWithRetry(): Promise<string> {
-  const circuitBreaker = new CircuitBreaker();
-  let attemptCount = 0;
+  const circuitBreaker = new CircuitBreaker()
+  let attemptCount = 0
 
   while (attemptCount < 3) {
     try {
       // Check circuit breaker
       if (circuitBreaker.isOpen(ErrorType.AUTH_REFRESH_FAILED)) {
-        console.log('Circuit breaker open for auth refresh - waiting');
-        await sleep(60000); // 1 minute
-        continue;
+        console.log("Circuit breaker open for auth refresh - waiting")
+        await sleep(60000) // 1 minute
+        continue
       }
 
-      const refreshToken = await getStoredRefreshToken();
-      const newAccessToken = await oauth2Client.refreshAccessToken(refreshToken);
+      const refreshToken = await getStoredRefreshToken()
+      const newAccessToken = await oauth2Client.refreshAccessToken(refreshToken)
 
-      await storeAccessToken(newAccessToken);
+      await storeAccessToken(newAccessToken)
 
       // Success - close circuit breaker
-      circuitBreaker.recordSuccess(ErrorType.AUTH_REFRESH_FAILED);
+      circuitBreaker.recordSuccess(ErrorType.AUTH_REFRESH_FAILED)
 
-      return newAccessToken;
-
+      return newAccessToken
     } catch (error) {
-      attemptCount++;
+      attemptCount++
 
       const classification = errorClassifier.classify(error, {
-        operation: 'gmail_auth',
+        operation: "gmail_auth",
         timestamp: new Date(),
-        metadata: {}
-      });
+        metadata: {},
+      })
 
       if (classification.errorType === ErrorType.AUTH_INVALID_GRANT) {
         // Permanent error - token revoked, needs re-auth
-        await moveToDLQ({
-          operationId: 'gmail_auth',
-          operationType: 'gmail_auth',
-          errorType: ErrorType.AUTH_INVALID_GRANT,
-          errorMessage: 'Refresh token revoked - manual re-auth required',
-          attemptCount,
-          firstFailureAt: new Date(),
-          lastAttemptAt: new Date(),
-          context: {}
-        }, 'Token revoked');
+        await moveToDLQ(
+          {
+            operationId: "gmail_auth",
+            operationType: "gmail_auth",
+            errorType: ErrorType.AUTH_INVALID_GRANT,
+            errorMessage: "Refresh token revoked - manual re-auth required",
+            attemptCount,
+            firstFailureAt: new Date(),
+            lastAttemptAt: new Date(),
+            context: {},
+          },
+          "Token revoked"
+        )
 
-        throw new Error('Gmail re-authentication required');
+        throw new Error("Gmail re-authentication required")
       }
 
       // Transient error - record failure and retry
-      circuitBreaker.recordFailure(ErrorType.AUTH_REFRESH_FAILED);
+      circuitBreaker.recordFailure(ErrorType.AUTH_REFRESH_FAILED)
 
-      const policy = RETRY_MATRIX[ErrorType.AUTH_REFRESH_FAILED];
+      const policy = RETRY_MATRIX[ErrorType.AUTH_REFRESH_FAILED]
       const backoff = calculateBackoff(
         policy.baseDelayMs,
         policy.maxDelayMs,
         policy.backoffMultiplier,
         policy.jitterPercent,
         attemptCount
-      );
+      )
 
-      console.log(`Token refresh failed - retry in ${backoff}ms`);
-      await sleep(backoff);
+      console.log(`Token refresh failed - retry in ${backoff}ms`)
+      await sleep(backoff)
     }
   }
 
-  throw new Error('Token refresh failed after max attempts');
+  throw new Error("Token refresh failed after max attempts")
 }
 ```
 
@@ -1190,6 +1208,7 @@ async function refreshGmailTokenWithRetry(): Promise<string> {
 **TDD Decision:** **Required** for retry matrix, backoff policy, and error taxonomy
 
 **Rationale:**
+
 - Incorrect retry logic can cause duplicate captures or data loss
 - Backoff calculation errors lead to quota exhaustion or thundering herd
 - Error misclassification (transient as permanent) causes premature escalation to DLQ
@@ -1199,6 +1218,7 @@ async function refreshGmailTokenWithRetry(): Promise<string> {
 **Scope Under TDD:**
 
 **Unit Tests Required:**
+
 - Error classification logic (map error codes to ErrorType enum)
 - Backoff calculation (exponential + jitter formula)
 - Circuit breaker state transitions (closed → open → half-open → closed)
@@ -1206,6 +1226,7 @@ async function refreshGmailTokenWithRetry(): Promise<string> {
 - Idempotency token generation and validation
 
 **Integration Tests Required:**
+
 - Retry orchestration end-to-end (failure → classify → backoff → retry → success)
 - Circuit breaker integration with actual operations (open breaker blocks calls)
 - Idempotency checks against staging ledger (audio_fp, message_id, capture_id)
@@ -1213,23 +1234,27 @@ async function refreshGmailTokenWithRetry(): Promise<string> {
 - Transactional retry state updates (atomic status changes)
 
 **Contract Tests Required:**
+
 - RETRY_MATRIX structure validation (all ErrorTypes have policies)
 - Staging ledger deduplication contract (UNIQUE constraints enforced)
 - Metrics emission contract (retry metrics follow naming convention)
 - errors_log schema contract (required fields, foreign keys)
 
 **Out of Scope (YAGNI):**
+
 - Persistent retry queue (in-memory only in MPPP)
 - Distributed coordination (single-process assumption)
 - Priority retry queues (FIFO only in MPPP)
 - Manual retry triggers from DLQ (no UI in MPPP)
 
 **Testing Trigger to Revisit:**
+
 - DLQ entries > 10/week (indicates retry policy needs tuning)
 - Duplicate captures despite deduplication (idempotency check bug)
 - Circuit breaker never closes (state machine bug)
 
 For testing patterns and utilities, see:
+
 - [TDD Applicability Guide](./guide-tdd-applicability.md) - Risk-based testing framework
 - [Test Strategy Guide](./guide-test-strategy.md) - Testing approach
 - [Fault Injection Registry](./guide-fault-injection-registry.md) - Chaos testing
@@ -1269,6 +1294,7 @@ For testing patterns and utilities, see:
 - [Capture Debugging Guide](./guide-capture-debugging.md) - Debugging retry failures
 
 **ADRs (Architecture Decisions):**
+
 - [ADR-0008: Sequential Processing Model](../adr/0008-sequential-processing-mppp.md) - Retry concurrency constraints
 - [ADR-0014: Placeholder Export Immutability](../adr/0014-placeholder-export-immutability.md) - Error recovery boundaries
 

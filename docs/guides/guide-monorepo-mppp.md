@@ -29,6 +29,7 @@ Use this guide when:
 - Troubleshooting build or dependency issues
 
 **Links to Related Features:**
+
 - [Master PRD v2.3.0-MPPP](../master/prd-master.md)
 - [Capture Feature PRD](../features/capture/prd-capture.md)
 - [CLI Feature PRD](../features/cli/prd-cli.md)
@@ -36,17 +37,20 @@ Use this guide when:
 ## Prerequisites
 
 **Required Tools:**
+
 - Node.js 18+ (LTS recommended)
 - pnpm 8+ (`npm install -g pnpm`)
 - Git 2.30+
 - SQLite 3.35+ (usually included with macOS/Linux)
 
 **Required Knowledge:**
+
 - Basic understanding of TypeScript
 - Familiarity with monorepo concepts
 - Understanding of package.json and npm workspaces
 
 **Optional but Helpful:**
+
 - Experience with Turborepo
 - Familiarity with pnpm workspaces
 
@@ -61,6 +65,7 @@ Use this guide when:
 - **No circular dependencies** allowed between packages
 
 **Package Hierarchy:**
+
 ```text
 foundation (types, errors, constants)
     ↓
@@ -72,6 +77,7 @@ cli (commands)
 ```
 
 **Quick Commands:**
+
 ```bash
 pnpm install          # Install all dependencies
 pnpm build            # Build all packages
@@ -259,8 +265,8 @@ Import from other packages using workspace protocol:
 
 ```typescript
 // In packages/@adhd-brain/core/src/deduplication.ts
-import { CaptureItem, CaptureSource } from '@adhd-brain/foundation';
-import { DatabaseClient } from '@adhd-brain/storage';
+import { CaptureItem, CaptureSource } from "@adhd-brain/foundation"
+import { DatabaseClient } from "@adhd-brain/storage"
 
 export class DeduplicationService {
   constructor(private db: DatabaseClient) {}
@@ -279,20 +285,18 @@ Use external TestKit for test utilities:
 
 ```typescript
 // In any package test file
-import { describe, it, expect } from 'vitest';
-import { createTestFixture } from '@orchestr8/testkit';
+import { describe, it, expect } from "vitest"
+import { createTestFixture } from "@orchestr8/testkit"
 
-describe('MyFeature', () => {
-  it('should work correctly', () => {
+describe("MyFeature", () => {
+  it("should work correctly", () => {
     const fixture = createTestFixture({
-      captures: [
-        { id: '1', content: 'Test capture' }
-      ]
-    });
+      captures: [{ id: "1", content: "Test capture" }],
+    })
 
     // Test implementation
-  });
-});
+  })
+})
 ```
 
 **Best Practice:** Don't create internal test infrastructure - use @orchestr8/testkit to reduce cognitive load.
@@ -307,14 +311,14 @@ export const LIMITS = {
   MAX_CAPTURE_SIZE_MB: 50,
   MAX_VOICE_DURATION_MIN: 30,
   MAX_EMAIL_SIZE_KB: 500,
-  DUPLICATE_WINDOW_MS: 5 * 60 * 1000 // 5 minutes
-} as const;
+  DUPLICATE_WINDOW_MS: 5 * 60 * 1000, // 5 minutes
+} as const
 
 export const PATHS = {
-  DATABASE: '.adhd-brain.db',
-  METRICS: './.metrics',
-  LOGS: './.logs'
-} as const;
+  DATABASE: ".adhd-brain.db",
+  METRICS: "./.metrics",
+  LOGS: "./.logs",
+} as const
 ```
 
 **Best Practice:** Keep all shared constants in foundation to avoid duplication.
@@ -326,24 +330,27 @@ Define error types in foundation, throw in other packages:
 ```typescript
 // In packages/@adhd-brain/foundation/src/errors/capture.ts
 export class CaptureError extends Error {
-  constructor(message: string, public code: string) {
-    super(message);
-    this.name = 'CaptureError';
+  constructor(
+    message: string,
+    public code: string
+  ) {
+    super(message)
+    this.name = "CaptureError"
   }
 }
 
 export class ValidationError extends CaptureError {
   constructor(message: string) {
-    super(message, 'VALIDATION_ERROR');
+    super(message, "VALIDATION_ERROR")
   }
 }
 
 // In packages/@adhd-brain/core/src/validation.ts
-import { ValidationError } from '@adhd-brain/foundation';
+import { ValidationError } from "@adhd-brain/foundation"
 
 export function validateCapture(capture: CaptureInput): void {
-  if (!capture.content || capture.content.trim() === '') {
-    throw new ValidationError('Capture content cannot be empty');
+  if (!capture.content || capture.content.trim() === "") {
+    throw new ValidationError("Capture content cannot be empty")
   }
 }
 ```
@@ -353,26 +360,29 @@ export function validateCapture(capture: CaptureInput): void {
 ### Anti-Patterns to Avoid
 
 **❌ Don't: Create circular dependencies**
+
 ```typescript
 // BAD - circular dependency
 // In core/index.ts
-import { processCapture } from '@adhd-brain/capture';
+import { processCapture } from "@adhd-brain/capture"
 
 // In capture/index.ts
-import { validateCapture } from '@adhd-brain/core';
+import { validateCapture } from "@adhd-brain/core"
 ```
 
 **✅ Do: Keep dependencies unidirectional**
+
 ```typescript
 // GOOD - unidirectional dependency
 // In core/index.ts
-import { CaptureItem } from '@adhd-brain/foundation';
+import { CaptureItem } from "@adhd-brain/foundation"
 
 // In capture/index.ts
-import { validateCapture } from '@adhd-brain/core'; // OK - capture depends on core
+import { validateCapture } from "@adhd-brain/core" // OK - capture depends on core
 ```
 
 **❌ Don't: Exceed 4 packages in MPPP scope**
+
 ```text
 # BAD - too many packages for MPPP
 packages/@adhd-brain/
@@ -385,6 +395,7 @@ packages/@adhd-brain/
 ```
 
 **✅ Do: Keep to 4 packages maximum**
+
 ```text
 # GOOD - MPPP scope only
 packages/@adhd-brain/
@@ -395,6 +406,7 @@ packages/@adhd-brain/
 ```
 
 **❌ Don't: Create internal test infrastructure**
+
 ```typescript
 // BAD - building custom test framework
 // In packages/test-utils/
@@ -403,9 +415,10 @@ export function createMockCapture() { ... }
 ```
 
 **✅ Do: Use external TestKit**
+
 ```typescript
 // GOOD - using @orchestr8/testkit
-import { createTestFixture } from '@orchestr8/testkit';
+import { createTestFixture } from "@orchestr8/testkit"
 ```
 
 ## Troubleshooting
@@ -413,11 +426,13 @@ import { createTestFixture } from '@orchestr8/testkit';
 ### Problem: Package not found errors
 
 **Symptoms:**
+
 ```
 Error: Cannot find module '@adhd-brain/foundation'
 ```
 
 **Solutions:**
+
 ```bash
 # 1. Ensure all packages are built
 pnpm build
@@ -441,6 +456,7 @@ grep "workspace:" packages/@adhd-brain/*/package.json
 **Symptoms:** TypeScript errors about missing types from dependent packages
 
 **Solutions:**
+
 ```bash
 # 1. Build in dependency order
 pnpm build
@@ -461,11 +477,13 @@ pnpm build
 ### Problem: Circular dependency detected
 
 **Symptoms:**
+
 ```
 Error: Circular dependency detected: core -> capture -> core
 ```
 
 **Solutions:**
+
 ```bash
 # 1. Use madge to visualize dependencies
 npx madge --circular --extensions ts packages/
@@ -485,6 +503,7 @@ npx madge --image graph.png packages/
 **Symptoms:** Changes not reflected in dev mode
 
 **Solutions:**
+
 ```bash
 # 1. Ensure dev mode is running
 pnpm dev
@@ -507,6 +526,7 @@ cat turbo.json
 **Symptoms:** Tests fail with "Cannot find module" or type errors
 
 **Solutions:**
+
 ```bash
 # 1. Rebuild packages before testing
 pnpm build
@@ -628,68 +648,75 @@ Implement a feature spanning multiple packages:
 // 1. Define types in foundation
 // packages/@adhd-brain/foundation/src/types/capture.ts
 export interface CaptureItem {
-  id: string;
-  source: CaptureSource;
-  raw_content: string;
-  content_hash: string;
-  created_at: Date;
-  status: CaptureStatus;
-  meta_json: Record<string, unknown>;
+  id: string
+  source: CaptureSource
+  raw_content: string
+  content_hash: string
+  created_at: Date
+  status: CaptureStatus
+  meta_json: Record<string, unknown>
 }
 
-export type CaptureSource = 'voice' | 'email';
-export type CaptureStatus = 'staged' | 'transcribed' | 'exported';
+export type CaptureSource = "voice" | "email"
+export type CaptureStatus = "staged" | "transcribed" | "exported"
 
 // 2. Implement business logic in core
 // packages/@adhd-brain/core/src/deduplication.ts
-import { CaptureItem } from '@adhd-brain/foundation';
+import { CaptureItem } from "@adhd-brain/foundation"
 
 export class DeduplicationService {
   isDuplicate(newCapture: CaptureItem, existing: CaptureItem[]): boolean {
-    return existing.some(item =>
-      item.content_hash === newCapture.content_hash &&
-      this.isWithinTimeWindow(newCapture.created_at, item.created_at)
-    );
+    return existing.some(
+      (item) =>
+        item.content_hash === newCapture.content_hash &&
+        this.isWithinTimeWindow(newCapture.created_at, item.created_at)
+    )
   }
 
   private isWithinTimeWindow(date1: Date, date2: Date): boolean {
-    const FIVE_MINUTES = 5 * 60 * 1000;
-    return Math.abs(date1.getTime() - date2.getTime()) <= FIVE_MINUTES;
+    const FIVE_MINUTES = 5 * 60 * 1000
+    return Math.abs(date1.getTime() - date2.getTime()) <= FIVE_MINUTES
   }
 }
 
 // 3. Implement storage in storage package
 // packages/@adhd-brain/storage/src/repositories/capture.ts
-import { CaptureItem } from '@adhd-brain/foundation';
-import { DatabaseClient } from '../database';
+import { CaptureItem } from "@adhd-brain/foundation"
+import { DatabaseClient } from "../database"
 
 export class CaptureRepository {
   constructor(private db: DatabaseClient) {}
 
-  async insert(capture: Omit<CaptureItem, 'id'>): Promise<string> {
-    const id = this.db.generateId();
+  async insert(capture: Omit<CaptureItem, "id">): Promise<string> {
+    const id = this.db.generateId()
     await this.db.run(
       `INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [id, capture.source, capture.raw_content, capture.content_hash,
-       capture.status, JSON.stringify(capture.meta_json)]
-    );
-    return id;
+      [
+        id,
+        capture.source,
+        capture.raw_content,
+        capture.content_hash,
+        capture.status,
+        JSON.stringify(capture.meta_json),
+      ]
+    )
+    return id
   }
 
   async findByContentHash(hash: string): Promise<CaptureItem[]> {
     return this.db.query<CaptureItem>(
       `SELECT * FROM captures WHERE content_hash = ?`,
       [hash]
-    );
+    )
   }
 }
 
 // 4. Orchestrate in capture package
 // packages/@adhd-brain/capture/src/voice-processor.ts
-import { CaptureItem, CaptureSource } from '@adhd-brain/foundation';
-import { DeduplicationService } from '@adhd-brain/core';
-import { CaptureRepository } from '@adhd-brain/storage';
+import { CaptureItem, CaptureSource } from "@adhd-brain/foundation"
+import { DeduplicationService } from "@adhd-brain/core"
+import { CaptureRepository } from "@adhd-brain/storage"
 
 export class VoiceProcessor {
   constructor(
@@ -699,28 +726,30 @@ export class VoiceProcessor {
 
   async processVoiceMemo(audioPath: string): Promise<string | null> {
     // Transcribe audio
-    const transcription = await this.transcribeAudio(audioPath);
+    const transcription = await this.transcribeAudio(audioPath)
 
     // Create capture item
-    const capture: Omit<CaptureItem, 'id'> = {
-      source: 'voice' as CaptureSource,
+    const capture: Omit<CaptureItem, "id"> = {
+      source: "voice" as CaptureSource,
       raw_content: transcription,
       content_hash: this.calculateHash(transcription),
       created_at: new Date(),
-      status: 'transcribed',
-      meta_json: { audio_path: audioPath }
-    };
+      status: "transcribed",
+      meta_json: { audio_path: audioPath },
+    }
 
     // Check for duplicates
-    const existing = await this.captureRepo.findByContentHash(capture.content_hash);
+    const existing = await this.captureRepo.findByContentHash(
+      capture.content_hash
+    )
     if (this.dedup.isDuplicate(capture as CaptureItem, existing)) {
-      console.log('Duplicate capture detected - skipping');
-      return null;
+      console.log("Duplicate capture detected - skipping")
+      return null
     }
 
     // Insert new capture
-    const captureId = await this.captureRepo.insert(capture);
-    return captureId;
+    const captureId = await this.captureRepo.insert(capture)
+    return captureId
   }
 
   private async transcribeAudio(audioPath: string): Promise<string> {
@@ -734,16 +763,16 @@ export class VoiceProcessor {
 
 // 5. Expose via CLI
 // apps/cli/src/commands/capture-voice.ts
-import { VoiceProcessor } from '@adhd-brain/capture';
+import { VoiceProcessor } from "@adhd-brain/capture"
 
 export async function captureVoiceCommand(audioPath: string): Promise<void> {
-  const processor = new VoiceProcessor(dedup, captureRepo);
-  const captureId = await processor.processVoiceMemo(audioPath);
+  const processor = new VoiceProcessor(dedup, captureRepo)
+  const captureId = await processor.processVoiceMemo(audioPath)
 
   if (captureId) {
-    console.log(`Capture successful: ${captureId}`);
+    console.log(`Capture successful: ${captureId}`)
   } else {
-    console.log('Duplicate capture - skipped');
+    console.log("Duplicate capture - skipped")
   }
 }
 ```
@@ -751,16 +780,19 @@ export async function captureVoiceCommand(audioPath: string): Promise<void> {
 ## Related Documentation
 
 **PRDs (Product Requirements):**
+
 - [Master PRD v2.3.0-MPPP](../master/prd-master.md) - System-wide architecture and MPPP principles
 - [Monorepo Foundation PRD](../cross-cutting/prd-foundation-monorepo.md) - Monorepo requirements
 - [Capture Feature PRD](../features/capture/prd-capture.md) - Capture package structure
 - [CLI Feature PRD](../features/cli/prd-cli.md) - CLI application structure
 
 **Cross-Cutting Specifications:**
+
 - [Monorepo Technical Spec](../cross-cutting/spec-foundation-monorepo-tech.md) - Package architecture
 - [Monorepo MPPP Spec](../cross-cutting/spec-foundation-monorepo-mppp.md) - MPPP-specific patterns
 
 **Guides (How-To):**
+
 - [TDD Applicability Guide](./guide-tdd-applicability.md) - Testing strategy
 - [Test Strategy Guide](./guide-test-strategy.md) - Testing approach
 - [Phase 1 Testing Patterns](./guide-phase1-testing-patterns.md) - Monorepo testing patterns
@@ -768,6 +800,7 @@ export async function captureVoiceCommand(audioPath: string): Promise<void> {
 - [Polling Implementation Guide](./guide-polling-implementation.md) - Sequential processing patterns
 
 **External Resources:**
+
 - [pnpm Workspaces](https://pnpm.io/workspaces)
 - [Turborepo Documentation](https://turbo.build/repo/docs)
 - [TypeScript Project References](https://www.typescriptlang.org/docs/handbook/project-references.html)
@@ -775,18 +808,21 @@ export async function captureVoiceCommand(audioPath: string): Promise<void> {
 ## Maintenance Notes
 
 **When to Update:**
+
 - New package added to monorepo
 - Package dependencies change
 - Build infrastructure updated (Turbo, pnpm versions)
 - New development patterns established
 
 **Known Limitations:**
+
 - Maximum 4 packages in MPPP scope (intentional constraint)
 - No circular dependencies allowed (enforced by architecture)
 - Sequential processing only (no background services)
 - Local-first only (no cloud infrastructure)
 
 **Gaps:**
+
 - Web application infrastructure not included (Phase 5+)
 - Background services not supported (Phase 3+)
 - Plugin architecture deferred (Phase 4+)

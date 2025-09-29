@@ -20,12 +20,14 @@ The **Obsidian Bridge** is the **atomic write layer** between the Staging Ledger
 ### Core Insight
 
 Writing directly to an Obsidian vault risks:
+
 1. Partial writes during crashes
 2. Sync conflicts with Obsidian Sync/iCloud
 3. Duplicate files with slightly different names
 4. Lost metadata during manual filing
 
 The Obsidian Bridge solves this by providing:
+
 1. **Atomic writes** - Temp file → rename (no partial writes ever)
 2. **ULID filenames** - Deterministic, time-orderable, collision-resistant
 3. **Idempotent exports** - Same capture → same filename (retry safe)
@@ -63,12 +65,12 @@ Current approaches to writing Obsidian files fail in these ways:
 
 ### Failure Modes We're Preventing
 
-| Failure Mode | Without Atomic Bridge | With Obsidian Bridge |
-|--------------|----------------------|----------------------|
-| **Crash mid-write** | Partial markdown file in vault | Temp file discarded, vault unchanged |
-| **Duplicate exports** | Multiple files for same capture | ULID ensures same filename on retry |
-| **Sync conflicts** | Obsidian catches file mid-write | Atomic rename = file appears complete |
-| **Lost audit trail** | No record of export success | `exports_audit` table tracks every export |
+| Failure Mode          | Without Atomic Bridge           | With Obsidian Bridge                      |
+| --------------------- | ------------------------------- | ----------------------------------------- |
+| **Crash mid-write**   | Partial markdown file in vault  | Temp file discarded, vault unchanged      |
+| **Duplicate exports** | Multiple files for same capture | ULID ensures same filename on retry       |
+| **Sync conflicts**    | Obsidian catches file mid-write | Atomic rename = file appears complete     |
+| **Lost audit trail**  | No record of export success     | `exports_audit` table tracks every export |
 
 ---
 
@@ -154,12 +156,12 @@ Current approaches to writing Obsidian files fail in these ways:
 
 ❌ **Deferred Features with Triggers:**
 
-| Feature | Defer Reason | Trigger to Revisit |
-|---------|--------------|-------------------|
-| BLAKE3 for content hash | SHA-256 sufficient | Measured collision OR >1000 exports/day |
-| Vault write retry logic | Atomic rename = single-shot | >5% export failure rate |
-| Template-based filenames | ULID sufficient for Phase 1 | User requests custom naming in Phase 2 |
-| Daily note backlinks | Not in Phase 1 scope | Phase 3 inbox triage implementation |
+| Feature                  | Defer Reason                | Trigger to Revisit                      |
+| ------------------------ | --------------------------- | --------------------------------------- |
+| BLAKE3 for content hash  | SHA-256 sufficient          | Measured collision OR >1000 exports/day |
+| Vault write retry logic  | Atomic rename = single-shot | >5% export failure rate                 |
+| Template-based filenames | ULID sufficient for Phase 1 | User requests custom naming in Phase 2  |
+| Daily note backlinks     | Not in Phase 1 scope        | Phase 3 inbox triage implementation     |
 
 ---
 
@@ -171,9 +173,9 @@ Current approaches to writing Obsidian files fail in these ways:
 
 ```typescript
 export interface AtomicWriteResult {
-  success: boolean;
-  export_path?: string;
-  error?: string;
+  success: boolean
+  export_path?: string
+  error?: string
 }
 
 export interface AtomicWriter {
@@ -195,7 +197,7 @@ export interface AtomicWriter {
     capture_id: string,
     content: string,
     vault_path: string
-  ): Promise<AtomicWriteResult>;
+  ): Promise<AtomicWriteResult>
 }
 ```
 
@@ -210,6 +212,7 @@ export interface AtomicWriter {
 **Collision Handling:**
 
 If `fs.existsSync(export_path)`:
+
 1. Check if existing file matches content_hash
 2. If match → mark as `exported_duplicate`, return success
 3. If mismatch → CRITICAL ERROR, halt, log to errors_log
@@ -366,6 +369,7 @@ This PRD maps to Master PRD v2.3.0-MPPP §11.1:
 - Usage Guide: `../../guides/guide-obsidian-bridge-usage.md` - Developer quick-start for atomic writer integration
 
 **Related ADRs:**
+
 - [ADR 0009: Atomic Write via Temp-Then-Rename Pattern](../../adr/0009-atomic-write-temp-rename-pattern.md) - Rationale for temp-then-rename atomicity strategy
 - [ADR 0010: ULID-Based Deterministic Filenames](../../adr/0010-ulid-deterministic-filenames.md) - Decision to use ULID as exact filename
 - [ADR 0011: Inbox-Only Export Pattern](../../adr/0011-inbox-only-export-pattern.md) - Phase 1 decision to export to single inbox directory

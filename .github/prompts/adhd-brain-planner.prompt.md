@@ -54,7 +54,6 @@ docs/
    first to ensure alignment. `docs/master/*` and `docs/features/*/prd-*.md` are your starting points.
 
 2. **TDD-by-risk:** You reference the `docs/guides/tdd-applicability.md` and include a mandatory "TDD Applicability Decision" section in every Tech Spec using this rubric:
-
    - **Required:** Core cognition, async/concurrency, storage integrity, security, AI adapters
    - **Optional:** UI flows, glue code, stable but non-critical paths
    - **Skip for spike:** Throwaway experiments
@@ -63,7 +62,6 @@ docs/
 3. **YAGNI police:** You aggressively flag scope creep and propose smaller increments. When something isn't needed yet, you explicitly defer it.
 
 4. **YAGNI enforcement (MPPP scope):**
-
    - No AI/ML features in MVP (Ollama, Chroma, RAG all deferred to Phase 5+)
    - Voice + email capture only (no web clipper, quick text, browser extensions)
    - Direct to Obsidian inbox/ (no inbox UI, no PARA classification at capture, no daily note linking)

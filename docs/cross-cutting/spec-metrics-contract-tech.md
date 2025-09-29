@@ -13,6 +13,7 @@ prd_reference: docs/master/prd-master.md
 # Metrics/Telemetry Contract — Technical Specification
 
 Related Documents:
+
 - `../master/prd-master.md` (Master PRD v2.3.0-MPPP, Section 6.4 Telemetry)
 - `../features/capture/prd-capture.md` (Capture Feature PRD, Section 9 Telemetry)
 - `../features/staging-ledger/prd-staging.md` (Staging Ledger PRD, Section 7.5 Observability)
@@ -51,40 +52,40 @@ Define a **unified metrics and telemetry contract** for the ADHD Brain capture s
 ```typescript
 interface MetricsClient {
   // Emit a single metric event
-  emit(metric: MetricEvent): void;
+  emit(metric: MetricEvent): void
 
   // Emit a counter increment
-  counter(name: string, tags?: MetricTags): void;
+  counter(name: string, tags?: MetricTags): void
 
   // Emit a gauge value
-  gauge(name: string, value: number, tags?: MetricTags): void;
+  gauge(name: string, value: number, tags?: MetricTags): void
 
   // Emit a duration (milliseconds)
-  duration(name: string, durationMs: number, tags?: MetricTags): void;
+  duration(name: string, durationMs: number, tags?: MetricTags): void
 
   // Emit a histogram value
-  histogram(name: string, value: number, tags?: MetricTags): void;
+  histogram(name: string, value: number, tags?: MetricTags): void
 
   // Check if metrics are enabled
-  isEnabled(): boolean;
+  isEnabled(): boolean
 
   // Flush pending metrics to disk
-  flush(): Promise<void>;
+  flush(): Promise<void>
 }
 
 interface MetricEvent {
-  timestamp: string;        // ISO 8601 UTC (e.g. "2025-09-27T10:30:00.123Z")
-  metric: string;           // Metric name (namespace.component.action.unit)
-  value: number;            // Numeric value
-  tags?: MetricTags;        // Optional key-value tags
-  type: MetricType;         // counter | gauge | duration | histogram
+  timestamp: string // ISO 8601 UTC (e.g. "2025-09-27T10:30:00.123Z")
+  metric: string // Metric name (namespace.component.action.unit)
+  value: number // Numeric value
+  tags?: MetricTags // Optional key-value tags
+  type: MetricType // counter | gauge | duration | histogram
 }
 
 interface MetricTags {
-  [key: string]: string | number | boolean;
+  [key: string]: string | number | boolean
 }
 
-type MetricType = 'counter' | 'gauge' | 'duration' | 'histogram';
+type MetricType = "counter" | "gauge" | "duration" | "histogram"
 ```
 
 #### Configuration API
@@ -92,22 +93,22 @@ type MetricType = 'counter' | 'gauge' | 'duration' | 'histogram';
 ```typescript
 interface MetricsConfig {
   // Enable/disable metrics collection
-  enabled: boolean;
+  enabled: boolean
 
   // Base directory for NDJSON files
-  metricsDir: string;       // Default: "./.metrics"
+  metricsDir: string // Default: "./.metrics"
 
   // Rotation policy
-  rotation: 'daily' | 'hourly';  // Default: daily
+  rotation: "daily" | "hourly" // Default: daily
 
   // Retention policy (days)
-  retentionDays: number;    // Default: 30
+  retentionDays: number // Default: 30
 
   // Buffer size before flush
-  bufferSize: number;       // Default: 100
+  bufferSize: number // Default: 100
 
   // Flush interval (milliseconds)
-  flushIntervalMs: number;  // Default: 5000
+  flushIntervalMs: number // Default: 5000
 }
 ```
 
@@ -116,32 +117,40 @@ interface MetricsConfig {
 ```typescript
 interface MetricsQuery {
   // Query metrics by name pattern
-  query(pattern: string, timeRange?: TimeRange): Promise<MetricEvent[]>;
+  query(pattern: string, timeRange?: TimeRange): Promise<MetricEvent[]>
 
   // Aggregate metrics (count, sum, avg, p95)
   aggregate(
     pattern: string,
     aggregation: AggregationType,
     timeRange?: TimeRange
-  ): Promise<AggregateResult>;
+  ): Promise<AggregateResult>
 
   // Get latest metric value
-  latest(name: string, tags?: MetricTags): Promise<MetricEvent | null>;
+  latest(name: string, tags?: MetricTags): Promise<MetricEvent | null>
 }
 
 interface TimeRange {
-  start: Date;
-  end: Date;
+  start: Date
+  end: Date
 }
 
-type AggregationType = 'count' | 'sum' | 'avg' | 'min' | 'max' | 'p50' | 'p95' | 'p99';
+type AggregationType =
+  | "count"
+  | "sum"
+  | "avg"
+  | "min"
+  | "max"
+  | "p50"
+  | "p95"
+  | "p99"
 
 interface AggregateResult {
-  metric: string;
-  aggregation: AggregationType;
-  value: number;
-  count: number;
-  timeRange: TimeRange;
+  metric: string
+  aggregation: AggregationType
+  value: number
+  count: number
+  timeRange: TimeRange
 }
 ```
 
@@ -222,402 +231,402 @@ interface AggregateResult {
 
 ```typescript
 // Voice capture metrics
-'capture.voice.staging_ms' = {
-  type: 'duration',
-  description: 'Time to insert voice capture into staging ledger',
-  tags: { capture_id: string, source: 'voice' },
-  unit: 'milliseconds'
-};
+"capture.voice.staging_ms" = {
+  type: "duration",
+  description: "Time to insert voice capture into staging ledger",
+  tags: { capture_id: string, source: "voice" },
+  unit: "milliseconds",
+}
 
-'capture.voice.poll_duration_ms' = {
-  type: 'duration',
-  description: 'Voice polling cycle time (detect → stage)',
+"capture.voice.poll_duration_ms" = {
+  type: "duration",
+  description: "Voice polling cycle time (detect → stage)",
   tags: { files_found: number },
-  unit: 'milliseconds'
-};
+  unit: "milliseconds",
+}
 
-'capture.voice.download_duration_ms' = {
-  type: 'duration',
-  description: 'iCloud dataless file download duration',
+"capture.voice.download_duration_ms" = {
+  type: "duration",
+  description: "iCloud dataless file download duration",
   tags: { capture_id: string, file_size_bytes: number },
-  unit: 'milliseconds'
-};
+  unit: "milliseconds",
+}
 
 // Email capture metrics
-'capture.email.staging_ms' = {
-  type: 'duration',
-  description: 'Time to insert email capture into staging ledger',
-  tags: { capture_id: string, source: 'email', message_id: string },
-  unit: 'milliseconds'
-};
+"capture.email.staging_ms" = {
+  type: "duration",
+  description: "Time to insert email capture into staging ledger",
+  tags: { capture_id: string, source: "email", message_id: string },
+  unit: "milliseconds",
+}
 
-'capture.email.poll_duration_ms' = {
-  type: 'duration',
-  description: 'Email polling cycle time (API → stage)',
+"capture.email.poll_duration_ms" = {
+  type: "duration",
+  description: "Email polling cycle time (API → stage)",
   tags: { messages_found: number },
-  unit: 'milliseconds'
-};
+  unit: "milliseconds",
+}
 
 // Unified capture metrics
-'capture.time_to_export_ms' = {
-  type: 'duration',
-  description: 'End-to-end latency from capture to vault export',
-  tags: { capture_id: string, source: 'voice' | 'email' },
-  unit: 'milliseconds'
-};
+"capture.time_to_export_ms" = {
+  type: "duration",
+  description: "End-to-end latency from capture to vault export",
+  tags: { capture_id: string, source: "voice" | "email" },
+  unit: "milliseconds",
+}
 ```
 
 #### Transcription Metrics
 
 ```typescript
-'transcription.duration_ms' = {
-  type: 'duration',
-  description: 'Whisper processing time per audio file',
+"transcription.duration_ms" = {
+  type: "duration",
+  description: "Whisper processing time per audio file",
   tags: {
     capture_id: string,
-    model: 'medium',
+    model: "medium",
     audio_duration_s: number,
-    success: boolean
+    success: boolean,
   },
-  unit: 'milliseconds'
-};
+  unit: "milliseconds",
+}
 
-'transcription.queue_depth' = {
-  type: 'gauge',
-  description: 'Number of pending transcription jobs',
+"transcription.queue_depth" = {
+  type: "gauge",
+  description: "Number of pending transcription jobs",
   tags: {},
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'transcription.success_total' = {
-  type: 'counter',
-  description: 'Total successful transcriptions',
-  tags: { model: 'medium' },
-  unit: 'count'
-};
+"transcription.success_total" = {
+  type: "counter",
+  description: "Total successful transcriptions",
+  tags: { model: "medium" },
+  unit: "count",
+}
 
-'transcription.failure_total' = {
-  type: 'counter',
-  description: 'Total failed transcriptions',
-  tags: { error_type: string, model: 'medium' },
-  unit: 'count'
-};
+"transcription.failure_total" = {
+  type: "counter",
+  description: "Total failed transcriptions",
+  tags: { error_type: string, model: "medium" },
+  unit: "count",
+}
 
-'transcription.placeholder_export_ratio' = {
-  type: 'gauge',
-  description: 'Ratio of placeholder exports (daily aggregate)',
+"transcription.placeholder_export_ratio" = {
+  type: "gauge",
+  description: "Ratio of placeholder exports (daily aggregate)",
   tags: { date: string },
-  unit: 'ratio' // 0.0 to 1.0
-};
+  unit: "ratio", // 0.0 to 1.0
+}
 ```
 
 #### Deduplication Metrics
 
 ```typescript
-'dedup.hits_total' = {
-  type: 'counter',
-  description: 'Duplicate detection events',
+"dedup.hits_total" = {
+  type: "counter",
+  description: "Duplicate detection events",
   tags: {
-    source: 'voice' | 'email',
-    reason: 'content_hash' | 'message_id' | 'audio_fingerprint'
+    source: "voice" | "email",
+    reason: "content_hash" | "message_id" | "audio_fingerprint",
   },
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'dedup.check_duration_ms' = {
-  type: 'duration',
-  description: 'Hash lookup time in staging ledger',
-  tags: { source: 'voice' | 'email' },
-  unit: 'milliseconds'
-};
+"dedup.check_duration_ms" = {
+  type: "duration",
+  description: "Hash lookup time in staging ledger",
+  tags: { source: "voice" | "email" },
+  unit: "milliseconds",
+}
 ```
 
 #### Export Metrics
 
 ```typescript
-'export.write_ms' = {
-  type: 'duration',
-  description: 'Vault file write duration (atomic)',
+"export.write_ms" = {
+  type: "duration",
+  description: "Vault file write duration (atomic)",
   tags: {
     capture_id: string,
-    source: 'voice' | 'email',
-    vault_path: string
+    source: "voice" | "email",
+    vault_path: string,
   },
-  unit: 'milliseconds'
-};
+  unit: "milliseconds",
+}
 
-'export.failures_total' = {
-  type: 'counter',
-  description: 'Failed vault writes',
+"export.failures_total" = {
+  type: "counter",
+  description: "Failed vault writes",
   tags: {
-    source: 'voice' | 'email',
-    error_type: string
+    source: "voice" | "email",
+    error_type: string,
   },
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'export.success_total' = {
-  type: 'counter',
-  description: 'Successful vault writes',
-  tags: { source: 'voice' | 'email' },
-  unit: 'count'
-};
+"export.success_total" = {
+  type: "counter",
+  description: "Successful vault writes",
+  tags: { source: "voice" | "email" },
+  unit: "count",
+}
 ```
 
 #### Gmail OAuth2 Metrics
 
 ```typescript
-'gmail.auth.refresh_total' = {
-  type: 'counter',
-  description: 'Token refresh attempts',
-  tags: { status: 'success' | 'failure' },
-  unit: 'count'
-};
+"gmail.auth.refresh_total" = {
+  type: "counter",
+  description: "Token refresh attempts",
+  tags: { status: "success" | "failure" },
+  unit: "count",
+}
 
-'gmail.auth.bootstrap_total' = {
-  type: 'counter',
-  description: 'OAuth2 bootstrap attempts',
-  tags: { status: 'success' | 'failure' },
-  unit: 'count'
-};
+"gmail.auth.bootstrap_total" = {
+  type: "counter",
+  description: "OAuth2 bootstrap attempts",
+  tags: { status: "success" | "failure" },
+  unit: "count",
+}
 
-'gmail.token.expiry_ms' = {
-  type: 'gauge',
-  description: 'Time until token expiry',
+"gmail.token.expiry_ms" = {
+  type: "gauge",
+  description: "Time until token expiry",
   tags: {},
-  unit: 'milliseconds'
-};
+  unit: "milliseconds",
+}
 
-'gmail.poll.duration_ms' = {
-  type: 'duration',
-  description: 'Gmail API poll cycle time',
+"gmail.poll.duration_ms" = {
+  type: "duration",
+  description: "Gmail API poll cycle time",
   tags: { messages_found: number },
-  unit: 'milliseconds'
-};
+  unit: "milliseconds",
+}
 
-'gmail.messages.processed_total' = {
-  type: 'counter',
-  description: 'Messages fetched from Gmail API',
+"gmail.messages.processed_total" = {
+  type: "counter",
+  description: "Messages fetched from Gmail API",
   tags: {},
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'gmail.cursor.update_total' = {
-  type: 'counter',
-  description: 'History ID cursor updates',
-  tags: { status: 'success' | 'failure' },
-  unit: 'count'
-};
+"gmail.cursor.update_total" = {
+  type: "counter",
+  description: "History ID cursor updates",
+  tags: { status: "success" | "failure" },
+  unit: "count",
+}
 
-'gmail.dedup.hits_total' = {
-  type: 'counter',
-  description: 'Gmail-specific duplicate detection',
-  tags: { reason: 'message_id' | 'content_hash' },
-  unit: 'count'
-};
+"gmail.dedup.hits_total" = {
+  type: "counter",
+  description: "Gmail-specific duplicate detection",
+  tags: { reason: "message_id" | "content_hash" },
+  unit: "count",
+}
 
-'gmail.auth.error_total' = {
-  type: 'counter',
-  description: 'Gmail authentication errors',
+"gmail.auth.error_total" = {
+  type: "counter",
+  description: "Gmail authentication errors",
   tags: { type: string },
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'gmail.api.error_total' = {
-  type: 'counter',
-  description: 'Gmail API errors',
+"gmail.api.error_total" = {
+  type: "counter",
+  description: "Gmail API errors",
   tags: {
     method: string,
     status_code: number,
-    error_type: string
+    error_type: string,
   },
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'gmail.cursor.reset_total' = {
-  type: 'counter',
-  description: 'Cursor resets (recovery events)',
-  tags: { reason: 'invalid' | 'manual' },
-  unit: 'count'
-};
+"gmail.cursor.reset_total" = {
+  type: "counter",
+  description: "Cursor resets (recovery events)",
+  tags: { reason: "invalid" | "manual" },
+  unit: "count",
+}
 
-'gmail.consecutive_errors' = {
-  type: 'gauge',
-  description: 'Consecutive error count (circuit breaker)',
+"gmail.consecutive_errors" = {
+  type: "gauge",
+  description: "Consecutive error count (circuit breaker)",
   tags: {},
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'gmail.capture.latency_ms' = {
-  type: 'duration',
-  description: 'End-to-end Gmail capture latency',
+"gmail.capture.latency_ms" = {
+  type: "duration",
+  description: "End-to-end Gmail capture latency",
   tags: {
     message_id: string,
-    stage: 'poll' | 'fetch' | 'stage' | 'export'
+    stage: "poll" | "fetch" | "stage" | "export",
   },
-  unit: 'milliseconds'
-};
+  unit: "milliseconds",
+}
 
-'gmail.api.request_ms' = {
-  type: 'duration',
-  description: 'Gmail API request duration',
+"gmail.api.request_ms" = {
+  type: "duration",
+  description: "Gmail API request duration",
   tags: {
     method: string,
-    success: boolean
+    success: boolean,
   },
-  unit: 'milliseconds'
-};
+  unit: "milliseconds",
+}
 ```
 
 #### Error Recovery & Retry Metrics
 
 ```typescript
-'retry.attempt_total' = {
-  type: 'counter',
-  description: 'Retry attempts across all operations',
+"retry.attempt_total" = {
+  type: "counter",
+  description: "Retry attempts across all operations",
   tags: {
     operation_type: string,
     error_type: string,
     attempt_number: number,
-    success: boolean
+    success: boolean,
   },
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'retry.backoff_duration_ms' = {
-  type: 'duration',
-  description: 'Retry backoff delay',
+"retry.backoff_duration_ms" = {
+  type: "duration",
+  description: "Retry backoff delay",
   tags: {
     operation_type: string,
-    attempt_number: number
+    attempt_number: number,
   },
-  unit: 'milliseconds'
-};
+  unit: "milliseconds",
+}
 
-'retry.success_total' = {
-  type: 'counter',
-  description: 'Successful retries',
+"retry.success_total" = {
+  type: "counter",
+  description: "Successful retries",
   tags: {
     operation_type: string,
-    attempt_number: number
+    attempt_number: number,
   },
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'retry.dlq.moved_total' = {
-  type: 'counter',
-  description: 'Operations moved to dead letter queue',
+"retry.dlq.moved_total" = {
+  type: "counter",
+  description: "Operations moved to dead letter queue",
   tags: {
     operation_type: string,
-    reason: string
+    reason: string,
   },
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'retry.circuit_breaker.state' = {
-  type: 'gauge',
-  description: 'Circuit breaker state',
+"retry.circuit_breaker.state" = {
+  type: "gauge",
+  description: "Circuit breaker state",
   tags: {
     operation_type: string,
-    state: 'closed' | 'open' | 'half_open'
+    state: "closed" | "open" | "half_open",
   },
-  unit: 'enum'
-};
+  unit: "enum",
+}
 
-'retry.queue.depth' = {
-  type: 'gauge',
-  description: 'Retry queue depth',
+"retry.queue.depth" = {
+  type: "gauge",
+  description: "Retry queue depth",
   tags: { operation_type: string },
-  unit: 'count'
-};
+  unit: "count",
+}
 ```
 
 #### Backup Metrics
 
 ```typescript
-'backup.verification.result' = {
-  type: 'counter',
-  description: 'Backup verification outcome',
-  tags: { status: 'success' | 'failure' },
-  unit: 'count'
-};
+"backup.verification.result" = {
+  type: "counter",
+  description: "Backup verification outcome",
+  tags: { status: "success" | "failure" },
+  unit: "count",
+}
 
-'backup.duration_ms' = {
-  type: 'duration',
-  description: 'Backup creation time',
+"backup.duration_ms" = {
+  type: "duration",
+  description: "Backup creation time",
   tags: {},
-  unit: 'milliseconds'
-};
+  unit: "milliseconds",
+}
 
-'backup.size_bytes' = {
-  type: 'gauge',
-  description: 'Backup file size',
+"backup.size_bytes" = {
+  type: "gauge",
+  description: "Backup file size",
   tags: { timestamp: string },
-  unit: 'bytes'
-};
+  unit: "bytes",
+}
 
-'backup.consecutive_failures' = {
-  type: 'gauge',
-  description: 'Consecutive backup verification failures',
+"backup.consecutive_failures" = {
+  type: "gauge",
+  description: "Consecutive backup verification failures",
   tags: {},
-  unit: 'count'
-};
+  unit: "count",
+}
 ```
 
 #### Staging Ledger Metrics
 
 ```typescript
-'staging.insert_duration_ms' = {
-  type: 'duration',
-  description: 'Capture row insertion time',
+"staging.insert_duration_ms" = {
+  type: "duration",
+  description: "Capture row insertion time",
   tags: {
-    source: 'voice' | 'email',
-    capture_id: string
+    source: "voice" | "email",
+    capture_id: string,
   },
-  unit: 'milliseconds'
-};
+  unit: "milliseconds",
+}
 
-'staging.row_count' = {
-  type: 'gauge',
-  description: 'Total rows in captures table',
+"staging.row_count" = {
+  type: "gauge",
+  description: "Total rows in captures table",
   tags: { status: string },
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'staging.retention.cleanup_total' = {
-  type: 'counter',
-  description: 'Retention policy cleanup executions',
+"staging.retention.cleanup_total" = {
+  type: "counter",
+  description: "Retention policy cleanup executions",
   tags: { rows_deleted: number },
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'staging.foreign_key.violation_total' = {
-  type: 'counter',
-  description: 'Foreign key constraint violations',
+"staging.foreign_key.violation_total" = {
+  type: "counter",
+  description: "Foreign key constraint violations",
   tags: { table: string },
-  unit: 'count'
-};
+  unit: "count",
+}
 ```
 
 #### Health Check Metrics
 
 ```typescript
-'health.check.duration_ms' = {
-  type: 'duration',
-  description: 'Health check execution time',
+"health.check.duration_ms" = {
+  type: "duration",
+  description: "Health check execution time",
   tags: { component: string },
-  unit: 'milliseconds'
-};
+  unit: "milliseconds",
+}
 
-'health.check.result' = {
-  type: 'counter',
-  description: 'Health check outcome',
+"health.check.result" = {
+  type: "counter",
+  description: "Health check outcome",
   tags: {
     component: string,
-    status: 'ok' | 'warn' | 'error'
+    status: "ok" | "warn" | "error",
   },
-  unit: 'count'
-};
+  unit: "count",
+}
 ```
 
 ### 2.3 NDJSON File Format
@@ -625,7 +634,13 @@ interface AggregateResult {
 **Single Event Example:**
 
 ```json
-{"timestamp":"2025-09-27T10:30:15.123Z","metric":"capture.voice.staging_ms","value":87,"tags":{"capture_id":"01HQW3P7XKZM2YJVT8YFGQSZ4M","source":"voice"},"type":"duration"}
+{
+  "timestamp": "2025-09-27T10:30:15.123Z",
+  "metric": "capture.voice.staging_ms",
+  "value": 87,
+  "tags": { "capture_id": "01HQW3P7XKZM2YJVT8YFGQSZ4M", "source": "voice" },
+  "type": "duration"
+}
 ```
 
 **Multi-Event File Example:**
@@ -641,13 +656,13 @@ interface AggregateResult {
 
 **Field Requirements:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `timestamp` | string | Yes | ISO 8601 UTC timestamp |
-| `metric` | string | Yes | Fully-qualified metric name |
-| `value` | number | Yes | Numeric value |
-| `tags` | object | No | Key-value metadata |
-| `type` | string | Yes | Metric type (counter/gauge/duration/histogram) |
+| Field       | Type   | Required | Description                                    |
+| ----------- | ------ | -------- | ---------------------------------------------- |
+| `timestamp` | string | Yes      | ISO 8601 UTC timestamp                         |
+| `metric`    | string | Yes      | Fully-qualified metric name                    |
+| `value`     | number | Yes      | Numeric value                                  |
+| `tags`      | object | No       | Key-value metadata                             |
+| `type`      | string | Yes      | Metric type (counter/gauge/duration/histogram) |
 
 **Schema Evolution Rules:**
 
@@ -664,20 +679,20 @@ interface AggregateResult {
 ```typescript
 interface RotationPolicy {
   // Rotation trigger: Midnight UTC
-  rotationBoundary: 'midnight_utc';
+  rotationBoundary: "midnight_utc"
 
   // Rotation check interval
-  checkIntervalMs: 60000;  // 1 minute
+  checkIntervalMs: 60000 // 1 minute
 
   // Atomic rotation process
-  rotateFile(): Promise<RotationResult>;
+  rotateFile(): Promise<RotationResult>
 }
 
 interface RotationResult {
-  oldFile: string;          // Previous day's file
-  newFile: string;          // Current day's file
-  rotatedAt: Date;
-  oldFileSize: number;
+  oldFile: string // Previous day's file
+  newFile: string // Current day's file
+  rotatedAt: Date
+  oldFileSize: number
 }
 ```
 
@@ -686,49 +701,51 @@ interface RotationResult {
 ```typescript
 interface RetentionPolicy {
   // Days to retain (default: 30)
-  retentionDays: 30;
+  retentionDays: 30
 
   // Cleanup execution: Daily at 2 AM UTC
-  cleanupSchedule: 'daily_2am_utc';
+  cleanupSchedule: "daily_2am_utc"
 
   // Delete files older than retention
-  cleanup(): Promise<CleanupResult>;
+  cleanup(): Promise<CleanupResult>
 }
 
 interface CleanupResult {
-  deletedFiles: string[];
-  freedBytes: number;
-  oldestRetainedFile: string;
+  deletedFiles: string[]
+  freedBytes: number
+  oldestRetainedFile: string
 }
 ```
 
 **Cleanup Logic:**
 
 ```typescript
-async function cleanupOldMetrics(config: RetentionPolicy): Promise<CleanupResult> {
-  const now = new Date();
-  const cutoffDate = subDays(now, config.retentionDays);
+async function cleanupOldMetrics(
+  config: RetentionPolicy
+): Promise<CleanupResult> {
+  const now = new Date()
+  const cutoffDate = subDays(now, config.retentionDays)
 
-  const files = await fs.readdir(config.metricsDir);
-  const toDelete = files.filter(f => {
-    const match = f.match(/^(\d{4}-\d{2}-\d{2})\.ndjson$/);
-    if (!match) return false;
-    const fileDate = parseISO(match[1]);
-    return isBefore(fileDate, cutoffDate);
-  });
+  const files = await fs.readdir(config.metricsDir)
+  const toDelete = files.filter((f) => {
+    const match = f.match(/^(\d{4}-\d{2}-\d{2})\.ndjson$/)
+    if (!match) return false
+    const fileDate = parseISO(match[1])
+    return isBefore(fileDate, cutoffDate)
+  })
 
-  let freedBytes = 0;
+  let freedBytes = 0
   for (const file of toDelete) {
-    const stats = await fs.stat(path.join(config.metricsDir, file));
-    freedBytes += stats.size;
-    await fs.unlink(path.join(config.metricsDir, file));
+    const stats = await fs.stat(path.join(config.metricsDir, file))
+    freedBytes += stats.size
+    await fs.unlink(path.join(config.metricsDir, file))
   }
 
   return {
     deletedFiles: toDelete,
     freedBytes,
-    oldestRetainedFile: files.filter(f => !toDelete.includes(f)).sort()[0]
-  };
+    oldestRetainedFile: files.filter((f) => !toDelete.includes(f)).sort()[0],
+  }
 }
 ```
 
@@ -743,35 +760,35 @@ async function cleanupOldMetrics(config: RetentionPolicy): Promise<CleanupResult
 **Disk Space Monitoring:**
 
 ```typescript
-'metrics.file.size_bytes' = {
-  type: 'gauge',
-  description: 'Current day metrics file size',
+"metrics.file.size_bytes" = {
+  type: "gauge",
+  description: "Current day metrics file size",
   tags: { file: string },
-  unit: 'bytes'
-};
+  unit: "bytes",
+}
 
-'metrics.directory.size_bytes' = {
-  type: 'gauge',
-  description: 'Total metrics directory size',
+"metrics.directory.size_bytes" = {
+  type: "gauge",
+  description: "Total metrics directory size",
   tags: {},
-  unit: 'bytes'
-};
+  unit: "bytes",
+}
 
-'metrics.buffer.overflow_total' = {
-  type: 'counter',
-  description: 'Buffer overflow forced flushes',
+"metrics.buffer.overflow_total" = {
+  type: "counter",
+  description: "Buffer overflow forced flushes",
   tags: {},
-  unit: 'count'
-};
+  unit: "count",
+}
 ```
 
 **Trigger to Revisit Storage:**
 
-| Condition | Action |
-|-----------|--------|
-| Single file > 100MB | Enable hourly rotation |
-| Directory > 3GB | Reduce retention to 7 days |
-| Disk space < 5GB | Pause metrics collection, alert user |
+| Condition           | Action                               |
+| ------------------- | ------------------------------------ |
+| Single file > 100MB | Enable hourly rotation               |
+| Directory > 3GB     | Reduce retention to 7 days           |
+| Disk space < 5GB    | Pause metrics collection, alert user |
 
 ---
 
@@ -950,15 +967,15 @@ async function cleanupOldMetrics(config: RetentionPolicy): Promise<CleanupResult
 
 ### 4.3 Test Coverage Requirements
 
-| Component | Coverage Target | Priority |
-|-----------|-----------------|----------|
-| Metric name validation | 100% | P0 |
-| Schema validation | 100% | P0 |
-| NDJSON serialization | 100% | P0 |
-| Emission flow | 95% | P0 |
-| Rotation logic | 90% | P1 |
-| Retention cleanup | 90% | P1 |
-| Query API | 85% | P1 |
+| Component              | Coverage Target | Priority |
+| ---------------------- | --------------- | -------- |
+| Metric name validation | 100%            | P0       |
+| Schema validation      | 100%            | P0       |
+| NDJSON serialization   | 100%            | P0       |
+| Emission flow          | 95%             | P0       |
+| Rotation logic         | 90%             | P1       |
+| Retention cleanup      | 90%             | P1       |
+| Query API              | 85%             | P1       |
 
 ### 4.4 Test Fixtures (Canonical)
 
@@ -967,74 +984,74 @@ async function cleanupOldMetrics(config: RetentionPolicy): Promise<CleanupResult
 ```typescript
 // Fixture: Voice capture staging
 export const FIXTURE_VOICE_STAGING: MetricEvent = {
-  timestamp: '2025-09-27T10:00:00.000Z',
-  metric: 'capture.voice.staging_ms',
+  timestamp: "2025-09-27T10:00:00.000Z",
+  metric: "capture.voice.staging_ms",
   value: 87,
-  tags: { capture_id: '01TEST123', source: 'voice' },
-  type: 'duration'
-};
+  tags: { capture_id: "01TEST123", source: "voice" },
+  type: "duration",
+}
 
 // Fixture: Transcription success
 export const FIXTURE_TRANSCRIPTION_SUCCESS: MetricEvent = {
-  timestamp: '2025-09-27T10:00:05.000Z',
-  metric: 'transcription.duration_ms',
+  timestamp: "2025-09-27T10:00:05.000Z",
+  metric: "transcription.duration_ms",
   value: 8234,
   tags: {
-    capture_id: '01TEST123',
-    model: 'medium',
+    capture_id: "01TEST123",
+    model: "medium",
     audio_duration_s: 45,
-    success: true
+    success: true,
   },
-  type: 'duration'
-};
+  type: "duration",
+}
 
 // Fixture: Export write
 export const FIXTURE_EXPORT_WRITE: MetricEvent = {
-  timestamp: '2025-09-27T10:00:06.000Z',
-  metric: 'export.write_ms',
+  timestamp: "2025-09-27T10:00:06.000Z",
+  metric: "export.write_ms",
   value: 234,
   tags: {
-    capture_id: '01TEST123',
-    source: 'voice',
-    vault_path: 'inbox/01TEST123.md'
+    capture_id: "01TEST123",
+    source: "voice",
+    vault_path: "inbox/01TEST123.md",
   },
-  type: 'duration'
-};
+  type: "duration",
+}
 
 // Fixture: Duplicate hit
 export const FIXTURE_DEDUP_HIT: MetricEvent = {
-  timestamp: '2025-09-27T10:00:07.000Z',
-  metric: 'dedup.hits_total',
+  timestamp: "2025-09-27T10:00:07.000Z",
+  metric: "dedup.hits_total",
   value: 1,
   tags: {
-    source: 'email',
-    reason: 'message_id'
+    source: "email",
+    reason: "message_id",
   },
-  type: 'counter'
-};
+  type: "counter",
+}
 
 // Fixture: Backup verification success
 export const FIXTURE_BACKUP_VERIFICATION: MetricEvent = {
-  timestamp: '2025-09-27T11:00:00.000Z',
-  metric: 'backup.verification.result',
+  timestamp: "2025-09-27T11:00:00.000Z",
+  metric: "backup.verification.result",
   value: 1,
-  tags: { status: 'success' },
-  type: 'counter'
-};
+  tags: { status: "success" },
+  type: "counter",
+}
 
 // Fixture: Retry attempt
 export const FIXTURE_RETRY_ATTEMPT: MetricEvent = {
-  timestamp: '2025-09-27T10:00:08.000Z',
-  metric: 'retry.attempt_total',
+  timestamp: "2025-09-27T10:00:08.000Z",
+  metric: "retry.attempt_total",
   value: 1,
   tags: {
-    operation_type: 'transcription',
-    error_type: 'timeout',
+    operation_type: "transcription",
+    error_type: "timeout",
     attempt_number: 2,
-    success: true
+    success: true,
   },
-  type: 'counter'
-};
+  type: "counter",
+}
 ```
 
 **Test Helper Functions:**
@@ -1083,11 +1100,11 @@ export function clearTestMetrics(): void {
 
 **Trigger to Revisit:**
 
-| Condition | Action |
-|-----------|--------|
-| Metrics volume > 100k/day | Add performance regression tests |
+| Condition                    | Action                           |
+| ---------------------------- | -------------------------------- |
+| Metrics volume > 100k/day    | Add performance regression tests |
 | External dashboard requested | Add exporter compatibility tests |
-| Multi-process deployment | Add lock contention tests |
+| Multi-process deployment     | Add lock contention tests        |
 
 ---
 
@@ -1147,31 +1164,31 @@ export function clearTestMetrics(): void {
 
 ### 6.1 High-Priority Risks
 
-| Risk | Impact | Probability | Mitigation | Status |
-|------|--------|-------------|------------|--------|
-| Metric name churn | Test brittleness | Medium | Canonical fixtures, naming validation | Required |
-| Schema breaking changes | Tooling disruption | Low | Additive-only evolution, version checking | Required |
-| Disk exhaustion | Metrics loss | Low | Size monitoring, automatic cleanup | Required |
-| Buffer overflow | Memory growth | Medium | Flush limits, overflow detection | Required |
-| File corruption | Data loss | Low | Append-only writes, rotation validation | Required |
+| Risk                    | Impact             | Probability | Mitigation                                | Status   |
+| ----------------------- | ------------------ | ----------- | ----------------------------------------- | -------- |
+| Metric name churn       | Test brittleness   | Medium      | Canonical fixtures, naming validation     | Required |
+| Schema breaking changes | Tooling disruption | Low         | Additive-only evolution, version checking | Required |
+| Disk exhaustion         | Metrics loss       | Low         | Size monitoring, automatic cleanup        | Required |
+| Buffer overflow         | Memory growth      | Medium      | Flush limits, overflow detection          | Required |
+| File corruption         | Data loss          | Low         | Append-only writes, rotation validation   | Required |
 
 ### 6.2 Medium-Priority Risks
 
-| Risk | Impact | Probability | Mitigation | Status |
-|------|--------|-------------|------------|--------|
-| Emission performance | App slowdown | Low | Buffering, async flush | Monitor |
-| Rotation failures | Stale files | Low | Error logging, retry logic | Monitor |
-| Tag cardinality explosion | File size growth | Medium | Tag validation, cardinality limits | Monitor |
-| Time zone confusion | Query errors | Low | Always use UTC | Documented |
+| Risk                      | Impact           | Probability | Mitigation                         | Status     |
+| ------------------------- | ---------------- | ----------- | ---------------------------------- | ---------- |
+| Emission performance      | App slowdown     | Low         | Buffering, async flush             | Monitor    |
+| Rotation failures         | Stale files      | Low         | Error logging, retry logic         | Monitor    |
+| Tag cardinality explosion | File size growth | Medium      | Tag validation, cardinality limits | Monitor    |
+| Time zone confusion       | Query errors     | Low         | Always use UTC                     | Documented |
 
 ### 6.3 Deferred Risks
 
-| Risk | Defer Reason | Revisit Trigger |
-|------|--------------|-----------------|
-| Multi-process coordination | Single process assumption | Multi-worker deployment |
-| Network export | Local-only design | External dashboard request |
-| Schema versioning | No breaking changes yet | First breaking change needed |
-| Compression | Storage not constrained | Metrics directory > 1GB |
+| Risk                       | Defer Reason              | Revisit Trigger              |
+| -------------------------- | ------------------------- | ---------------------------- |
+| Multi-process coordination | Single process assumption | Multi-worker deployment      |
+| Network export             | Local-only design         | External dashboard request   |
+| Schema versioning          | No breaking changes yet   | First breaking change needed |
+| Compression                | Storage not constrained   | Metrics directory > 1GB      |
 
 ---
 
@@ -1200,61 +1217,61 @@ adhd capture start
 **Metrics about Metrics:**
 
 ```typescript
-'metrics.emission.rate_per_second' = {
-  type: 'gauge',
-  description: 'Metrics emitted per second',
+"metrics.emission.rate_per_second" = {
+  type: "gauge",
+  description: "Metrics emitted per second",
   tags: {},
-  unit: 'rate'
-};
+  unit: "rate",
+}
 
-'metrics.emission.total' = {
-  type: 'counter',
-  description: 'Total metrics emitted',
+"metrics.emission.total" = {
+  type: "counter",
+  description: "Total metrics emitted",
   tags: { metric_name: string },
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'metrics.flush.duration_ms' = {
-  type: 'duration',
-  description: 'Time to flush buffer to disk',
+"metrics.flush.duration_ms" = {
+  type: "duration",
+  description: "Time to flush buffer to disk",
   tags: { event_count: number },
-  unit: 'milliseconds'
-};
+  unit: "milliseconds",
+}
 
-'metrics.flush.total' = {
-  type: 'counter',
-  description: 'Total flush operations',
-  tags: { trigger: 'timer' | 'overflow' | 'shutdown' },
-  unit: 'count'
-};
+"metrics.flush.total" = {
+  type: "counter",
+  description: "Total flush operations",
+  tags: { trigger: "timer" | "overflow" | "shutdown" },
+  unit: "count",
+}
 
-'metrics.buffer.size' = {
-  type: 'gauge',
-  description: 'Current buffer size',
+"metrics.buffer.size" = {
+  type: "gauge",
+  description: "Current buffer size",
   tags: {},
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'metrics.rotation.total' = {
-  type: 'counter',
-  description: 'File rotation events',
+"metrics.rotation.total" = {
+  type: "counter",
+  description: "File rotation events",
   tags: { old_file: string, new_file: string },
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'metrics.retention.cleanup_total' = {
-  type: 'counter',
-  description: 'Retention cleanup executions',
+"metrics.retention.cleanup_total" = {
+  type: "counter",
+  description: "Retention cleanup executions",
   tags: { files_deleted: number },
-  unit: 'count'
-};
+  unit: "count",
+}
 
-'metrics.file.write_error_total' = {
-  type: 'counter',
-  description: 'File write failures',
+"metrics.file.write_error_total" = {
+  type: "counter",
+  description: "File write failures",
   tags: { error_type: string },
-  unit: 'count'
-};
+  unit: "count",
+}
 ```
 
 ### 7.3 Health Check Integration
@@ -1294,13 +1311,13 @@ Recent Metrics (Last 1 Hour):
 
 **Monitoring Thresholds:**
 
-| Metric | Threshold | Action |
-|--------|-----------|--------|
-| Emission rate | > 1000/sec sustained | Warn: High cardinality risk |
-| Flush duration | > 500ms | Warn: Disk I/O bottleneck |
-| File size | > 100MB/day | Enable hourly rotation |
-| Directory size | > 3GB | Reduce retention to 7 days |
-| Buffer overflow | > 10/day | Increase flush frequency |
+| Metric          | Threshold            | Action                      |
+| --------------- | -------------------- | --------------------------- |
+| Emission rate   | > 1000/sec sustained | Warn: High cardinality risk |
+| Flush duration  | > 500ms              | Warn: Disk I/O bottleneck   |
+| File size       | > 100MB/day          | Enable hourly rotation      |
+| Directory size  | > 3GB                | Reduce retention to 7 days  |
+| Buffer overflow | > 10/day             | Increase flush frequency    |
 
 ---
 
@@ -1335,7 +1352,13 @@ Recent Metrics (Last 1 Hour):
 **File Format Version:**
 
 ```json
-{"version":"1.0.0","timestamp":"2025-09-27T00:00:00.000Z","metric":"metrics.schema.version","value":1,"type":"gauge"}
+{
+  "version": "1.0.0",
+  "timestamp": "2025-09-27T00:00:00.000Z",
+  "metric": "metrics.schema.version",
+  "value": 1,
+  "type": "gauge"
+}
 ```
 
 **First Line Convention:**
@@ -1346,13 +1369,13 @@ Recent Metrics (Last 1 Hour):
 
 **Compatibility Matrix:**
 
-| Reader Version | Writer Version | Compatibility |
-|----------------|----------------|---------------|
-| 1.x | 1.x | Full |
-| 1.x | 2.x | Read (ignore new fields) |
-| 2.x | 1.x | Full (backward compatible) |
-| 2.x | 3.x | Read (ignore new fields) |
-| 1.x | 3.x | Unsupported (warn, skip) |
+| Reader Version | Writer Version | Compatibility              |
+| -------------- | -------------- | -------------------------- |
+| 1.x            | 1.x            | Full                       |
+| 1.x            | 2.x            | Read (ignore new fields)   |
+| 2.x            | 1.x            | Full (backward compatible) |
+| 2.x            | 3.x            | Read (ignore new fields)   |
+| 1.x            | 3.x            | Unsupported (warn, skip)   |
 
 ### 8.3 Test Fixture Evolution
 
@@ -1384,20 +1407,23 @@ export const LEGACY_FIXTURES = {
 **Backward Compatibility Tests:**
 
 ```typescript
-describe('Metrics Schema Compatibility', () => {
-  it('reads v1.0.0 fixtures with v2.0.0 parser', async () => {
-    const events = await parseNDJSON(FIXTURES_V1.VOICE_STAGING);
-    expect(events).toHaveLength(1);
-    expect(events[0].metric).toBe('capture.voice.staging_ms');
+describe("Metrics Schema Compatibility", () => {
+  it("reads v1.0.0 fixtures with v2.0.0 parser", async () => {
+    const events = await parseNDJSON(FIXTURES_V1.VOICE_STAGING)
+    expect(events).toHaveLength(1)
+    expect(events[0].metric).toBe("capture.voice.staging_ms")
     // New fields optional, defaults used
-  });
+  })
 
-  it('v1.0.0 parser ignores v2.0.0 new fields', async () => {
-    const events = await parseNDJSONWithParser('v1.0.0', FIXTURES_V2.VOICE_STAGING);
-    expect(events).toHaveLength(1);
+  it("v1.0.0 parser ignores v2.0.0 new fields", async () => {
+    const events = await parseNDJSONWithParser(
+      "v1.0.0",
+      FIXTURES_V2.VOICE_STAGING
+    )
+    expect(events).toHaveLength(1)
     // Unknown fields silently ignored
-  });
-});
+  })
+})
 ```
 
 ---
@@ -1481,13 +1507,13 @@ describe('Metrics Schema Compatibility', () => {
 
 ### 10.3 Future Enhancements (YAGNI)
 
-| Feature | Defer Reason | Revisit Trigger |
-|---------|--------------|-----------------|
-| Prometheus exporter | No external monitoring yet | Dashboard request |
-| Real-time streaming | Not needed for local-only | Multi-process deployment |
-| Distributed tracing | Single process assumption | Microservices architecture |
-| Metric sampling | Volume not constrained | > 100k events/day |
-| Schema registry | No breaking changes yet | First major version bump |
+| Feature             | Defer Reason               | Revisit Trigger            |
+| ------------------- | -------------------------- | -------------------------- |
+| Prometheus exporter | No external monitoring yet | Dashboard request          |
+| Real-time streaming | Not needed for local-only  | Multi-process deployment   |
+| Distributed tracing | Single process assumption  | Microservices architecture |
+| Metric sampling     | Volume not constrained     | > 100k events/day          |
+| Schema registry     | No breaking changes yet    | First major version bump   |
 
 ---
 
@@ -1495,27 +1521,27 @@ describe('Metrics Schema Compatibility', () => {
 
 ### 11.1 Upstream (Dependencies)
 
-| Document | Relationship |
-|----------|--------------|
-| [Master PRD v2.3.0-MPPP](../master/prd-master.md) | Section 6.4 Telemetry & Observability |
-| [Capture Feature PRD](../features/capture/prd-capture.md) | Section 9 Telemetry requirements |
-| [Staging Ledger PRD](../features/staging-ledger/prd-staging.md) | Section 7.5 Observability |
+| Document                                                        | Relationship                          |
+| --------------------------------------------------------------- | ------------------------------------- |
+| [Master PRD v2.3.0-MPPP](../master/prd-master.md)               | Section 6.4 Telemetry & Observability |
+| [Capture Feature PRD](../features/capture/prd-capture.md)       | Section 9 Telemetry requirements      |
+| [Staging Ledger PRD](../features/staging-ledger/prd-staging.md) | Section 7.5 Observability             |
 
 ### 11.2 Downstream (Consumers)
 
-| Document | Relationship |
-|----------|--------------|
-| [Gmail OAuth2 Tech Spec](../features/capture/spec-capture-tech.md#gmail-oauth2) | Gmail-specific metrics |
-| [Whisper Runtime Tech Spec](../features/capture/spec-capture-tech.md#whisper-transcription) | Transcription metrics |
-| [Error Recovery Guide](../guides/guide-error-recovery.md) | Retry and DLQ metrics |
-| [CLI Doctor Implementation Guide](../guides/guide-cli-doctor-implementation.md) | Health check integration |
+| Document                                                                                    | Relationship             |
+| ------------------------------------------------------------------------------------------- | ------------------------ |
+| [Gmail OAuth2 Tech Spec](../features/capture/spec-capture-tech.md#gmail-oauth2)             | Gmail-specific metrics   |
+| [Whisper Runtime Tech Spec](../features/capture/spec-capture-tech.md#whisper-transcription) | Transcription metrics    |
+| [Error Recovery Guide](../guides/guide-error-recovery.md)                                   | Retry and DLQ metrics    |
+| [CLI Doctor Implementation Guide](../guides/guide-cli-doctor-implementation.md)             | Health check integration |
 
 ### 11.3 Cross-Cutting
 
-| Document | Relationship |
-|----------|--------------|
+| Document                                                  | Relationship               |
+| --------------------------------------------------------- | -------------------------- |
 | [TDD Applicability Guide](../guides/tdd-applicability.md) | Testing strategy framework |
-| [TestKit Usage Guide](../guides/guide-testkit-usage.md) | Test fixture patterns |
+| [TestKit Usage Guide](../guides/guide-testkit-usage.md)   | Test fixture patterns      |
 
 ---
 

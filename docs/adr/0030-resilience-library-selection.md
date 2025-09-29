@@ -24,6 +24,7 @@ The @orchestr8/resilience package has incompatible workspace dependencies and la
 - **Database Operations**: Transaction retry and timeout handling
 
 Current technical constraints:
+
 - Phase 1 MPPP scope requires simple, reliable solutions
 - Strong TypeScript support mandatory
 - ADHD-friendly error reporting and progress feedback
@@ -31,6 +32,7 @@ Current technical constraints:
 - Active maintenance and community trust essential
 
 The existing @orchestr8/resilience implementation provides basic patterns but:
+
 - Has stale dependencies causing workspace conflicts
 - Lacks comprehensive TypeScript definitions
 - Has minimal community adoption (unknown download counts)
@@ -67,11 +69,13 @@ Replace @orchestr8/resilience with a curated stack of production-ready, speciali
 ### Implementation Architecture
 
 **Package Distribution Strategy:**
+
 - Embed resilience patterns within existing 4-package monorepo structure
 - No new @adhd-brain/resilience package (maintains Phase 1 constraints)
 - Co-locate resilience logic with the features that use it
 
 **Library Responsibilities:**
+
 - **p-retry**: Exponential backoff with jitter, permanent error classification
 - **opossum**: Circuit breaker state machine with fallback strategies
 - **bottleneck**: Gmail API rate limiting with Redis clustering support
@@ -81,21 +85,25 @@ Replace @orchestr8/resilience with a curated stack of production-ready, speciali
 ## Alternatives Considered
 
 ### 1. Stick with @orchestr8/resilience
+
 - **Pros**: No migration required, existing patterns work
 - **Cons**: Dependency conflicts blocking development, lacks TypeScript support, stale maintenance
 - **Impact**: Cannot proceed with Phase 1 due to workspace conflicts
 
 ### 2. Single Comprehensive Library (cockatiel)
+
 - **Pros**: Unified API, comprehensive policies, TypeScript native
 - **Cons**: Last major update over 1 year ago, larger bundle size (~100KB), maintenance concerns
 - **Impact**: Risk of library abandonment, excess features for MPPP scope
 
 ### 3. Build Custom Resilience Patterns
+
 - **Pros**: Perfect fit for ADHD Brain requirements, full control
 - **Cons**: High development overhead, testing burden, maintenance complexity
 - **Impact**: Violates Phase 1 time constraints, reinvents proven patterns
 
 ### 4. Minimal Retry-Only Solution
+
 - **Pros**: Extremely lightweight, simple to implement
 - **Cons**: Insufficient for production Gmail API integration, no circuit breaker protection
 - **Impact**: Inadequate for external service resilience requirements
@@ -124,23 +132,27 @@ Replace @orchestr8/resilience with a curated stack of production-ready, speciali
 ### Quality Assurance
 
 **P0 Tests Required:**
+
 - Retry logic with various failure scenarios (transient vs permanent)
 - Circuit breaker state transitions (closed → open → half-open → closed)
 - Rate limiter bucket management and 429 response handling
 - Sequential processing constraints for MPPP/APFS operations
 
 **P1 Tests:**
+
 - Service-specific presets (Gmail, APFS, Whisper configurations)
 - Error classification accuracy (retryable vs permanent)
 - Timeout calculations and AbortController integration
 - Memory cleanup in long-running retry operations
 
 **P2 Tests:**
+
 - Performance overhead measurements for each pattern
 - Bundle size impact analysis
 - Cross-library integration edge cases
 
 **Monitoring Required:**
+
 - Circuit breaker state changes and recovery metrics
 - Rate limit compliance (zero 429 errors target)
 - Retry attempt distributions and success rates
@@ -151,17 +163,20 @@ Replace @orchestr8/resilience with a curated stack of production-ready, speciali
 ### Migration Strategy
 
 **Phase 1 (Week 1): Foundation**
+
 - Install new dependencies and create core abstractions
 - Implement unified wrapper for combined patterns
 - Write comprehensive test suite covering all failure scenarios
 
 **Phase 2 (Week 2): Service Integration**
+
 - Migrate Gmail API resilience (rate limiting + retry + circuit breaker)
 - Migrate iCloud APFS download resilience (sequential + retry)
 - Migrate Whisper transcription resilience (memory-safe + cost control)
 - Update vault operations and database transaction handling
 
 **Phase 3 (Week 3): Cleanup**
+
 - Remove @orchestr8/resilience dependency
 - Update all import statements across packages
 - Performance benchmarking and optimization
@@ -170,6 +185,7 @@ Replace @orchestr8/resilience with a curated stack of production-ready, speciali
 ### Service-Specific Configurations
 
 **Gmail API Preset:**
+
 ```typescript
 {
   retry: { retries: 5, factor: 2, minTimeout: 1000, maxTimeout: 16000 },
@@ -179,6 +195,7 @@ Replace @orchestr8/resilience with a curated stack of production-ready, speciali
 ```
 
 **APFS Dataless Preset:**
+
 ```typescript
 {
   retry: { retries: 10, factor: 1.5, minTimeout: 100, maxTimeout: 5000 },
@@ -188,6 +205,7 @@ Replace @orchestr8/resilience with a curated stack of production-ready, speciali
 ```
 
 **Whisper API Preset:**
+
 ```typescript
 {
   retry: { retries: 3, factor: 2, minTimeout: 2000, maxTimeout: 30000 },

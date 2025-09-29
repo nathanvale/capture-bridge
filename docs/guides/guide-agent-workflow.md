@@ -10,16 +10,16 @@ This guide explains how to use the ADHD Brain agent system to go from planning d
 
 ## Key Files
 
-| File | Purpose | Modified By |
-|------|---------|-------------|
-| `docs/master/prd-master.md` | Master product requirements | adhd-brain-planner + roadmap-orchestrator |
-| `docs/master/roadmap.md` | Capability breakdown by phase/slice | roadmap-orchestrator |
-| `docs/features/*/prd-*.md` | Feature-specific requirements | adhd-brain-planner + roadmap-orchestrator |
-| `docs/features/*/spec-*.md` | Technical specifications | adhd-brain-planner + spec-librarian |
-| `docs/backlog/virtual-task-manifest.json` | Decomposed task list (68 tasks) | task-decomposition-architect |
-| `docs/backlog/task-state.json` | Execution progress tracking | task-implementer + implementation-orchestrator |
-| `docs/adr/*.md` | Architectural decisions | adr-curator |
-| `docs/guides/*.md` | Implementation patterns | adhd-brain-planner + spec-librarian |
+| File                                      | Purpose                             | Modified By                                    |
+| ----------------------------------------- | ----------------------------------- | ---------------------------------------------- |
+| `docs/master/prd-master.md`               | Master product requirements         | adhd-brain-planner + roadmap-orchestrator      |
+| `docs/master/roadmap.md`                  | Capability breakdown by phase/slice | roadmap-orchestrator                           |
+| `docs/features/*/prd-*.md`                | Feature-specific requirements       | adhd-brain-planner + roadmap-orchestrator      |
+| `docs/features/*/spec-*.md`               | Technical specifications            | adhd-brain-planner + spec-librarian            |
+| `docs/backlog/virtual-task-manifest.json` | Decomposed task list (68 tasks)     | task-decomposition-architect                   |
+| `docs/backlog/task-state.json`            | Execution progress tracking         | task-implementer + implementation-orchestrator |
+| `docs/adr/*.md`                           | Architectural decisions             | adr-curator                                    |
+| `docs/guides/*.md`                        | Implementation patterns             | adhd-brain-planner + spec-librarian            |
 
 ## The Agent Pipeline
 
@@ -57,11 +57,13 @@ This guide explains how to use the ADHD Brain agent system to go from planning d
 **When to use:** Starting any new feature, evaluating technical decisions, or updating existing plans
 
 **PRIMARY AGENT:**
+
 ```
 Use adhd-brain-planner to research and create [PRD/spec/evaluation] for [feature]
 ```
 
 **What it does:**
+
 - Loads full project context (reads all PRDs, specs, ADRs, guides)
 - Researches current best practices using web search + MCP tools (if available)
 - **NEW**: Spawns parallel research agents for comprehensive coverage
@@ -74,6 +76,7 @@ Use adhd-brain-planner to research and create [PRD/spec/evaluation] for [feature
 - Documents security, performance, and migration considerations
 
 **Example invocations:**
+
 ```
 # Creating new specs with research
 Use adhd-brain-planner to research Gmail API limits and create polling spec
@@ -91,6 +94,7 @@ Use adhd-brain-planner to find Gmail API gotchas across Stack Overflow and GitHu
 ```
 
 **Output includes:**
+
 - Clear acceptance criteria with risk levels (Low/Medium/High)
 - TDD applicability decision with justification
 - YAGNI deferrals explicitly documented
@@ -103,11 +107,13 @@ Use adhd-brain-planner to find Gmail API gotchas across Stack Overflow and GitHu
 **When to use:** When making significant architectural or technical decisions
 
 **Command:**
+
 ```
 Use adr-curator to document [specific decision]
 ```
 
 **What it does:**
+
 - Creates new ADR files with proper numbering (0022, 0023, etc.)
 - Links ADRs to relevant PRDs and specs
 - Updates ADR index at `docs/adr/_index.md`
@@ -115,6 +121,7 @@ Use adr-curator to document [specific decision]
 - Ensures decision traceability
 
 **Example invocations:**
+
 ```
 Use adr-curator to document the APFS handling strategy
 Use adr-curator to review recent specs for undocumented decisions
@@ -125,11 +132,13 @@ Use adr-curator to review recent specs for undocumented decisions
 **When to use:** After updating PRDs, ADRs, or specs
 
 **Command:**
+
 ```
 Use roadmap-orchestrator to sync all documentation and update the roadmap
 ```
 
 **What it does:**
+
 - Reads all PRDs, specs, ADRs, guides
 - Extracts acceptance criteria
 - Organizes into capabilities by phase/slice
@@ -138,11 +147,13 @@ Use roadmap-orchestrator to sync all documentation and update the roadmap
 - Reports readiness for task decomposition
 
 **Expected output:**
+
 - Updated `docs/master/roadmap.md` with all capabilities
 - Drift report (should be 0% if clean)
 - Status: `READY_FOR_DECOMPOSITION` or `BLOCKED` with GAPs
 
 **Example invocation:**
+
 ```
 Create a new roadmap from scratch using roadmap-orchestrator
 ```
@@ -152,17 +163,20 @@ Create a new roadmap from scratch using roadmap-orchestrator
 **When to use:** If roadmap-orchestrator reports issues
 
 **Command:**
+
 ```
 Use spec-librarian to fix [specific issue from report]
 ```
 
 **What it does:**
+
 - Validates spec structure and completeness
 - Fixes cross-references between docs
 - Expands stub guides
 - Ensures all high-risk capabilities have guide coverage
 
 **Example issues it fixes:**
+
 - Missing guide content
 - Broken links between specs
 - Incomplete capability documentation
@@ -172,11 +186,13 @@ Use spec-librarian to fix [specific issue from report]
 **When to use:** After roadmap is clean and validated
 
 **Command:**
+
 ```
 Use task-decomposition-architect to generate VTM from the roadmap
 ```
 
 **What it does:**
+
 - Reads `docs/master/roadmap.md`
 - Breaks down each capability into 2-5 atomic tasks
 - Numbers acceptance criteria (e.g., `MONOREPO_STRUCTURE-AC01`)
@@ -185,12 +201,14 @@ Use task-decomposition-architect to generate VTM from the roadmap
 - Generates `docs/backlog/virtual-task-manifest.json`
 
 **Expected output:**
+
 - `docs/backlog/virtual-task-manifest.json` (68 tasks)
 - 100% AC coverage validation
 - Zero circular dependencies
 - All tasks have related_specs/adrs/guides
 
 **What you get:**
+
 ```json
 {
   "tasks": [
@@ -219,11 +237,13 @@ You have two options for implementing tasks:
 **Use:** `implementation-orchestrator`
 
 **Command:**
+
 ```
 Launch implementation-orchestrator to start Phase 1 Slice 1.1
 ```
 
 **What it does:**
+
 1. Reads VTM and task-state.json
 2. Finds next eligible task (dependencies satisfied, pending status)
 3. Reads ALL context (specs/ADRs/guides) for that task
@@ -234,6 +254,7 @@ Launch implementation-orchestrator to start Phase 1 Slice 1.1
 8. Moves to next task automatically
 
 **Workflow:**
+
 ```
 Orchestrator picks: MONOREPO_STRUCTURE--T01
   ↓
@@ -251,6 +272,7 @@ Repeat
 ```
 
 **Progress tracking:**
+
 ```json
 // docs/backlog/task-state.json (auto-updated)
 {
@@ -272,12 +294,14 @@ Repeat
 ```
 
 **When to use:**
+
 - Starting a new phase/slice
 - Want automatic sequencing by dependencies
 - Trust the system to work through tasks
 - Want progress reports every N tasks
 
 **Guardrails:**
+
 - WIP limit: Max 3 tasks in-progress (blocks if exceeded)
 - Dependency enforcement: Won't start task until deps completed
 - Context validation: Blocks if specs/ADRs/guides missing
@@ -290,11 +314,13 @@ Repeat
 **Use:** `task-implementer`
 
 **Command:**
+
 ```
 Implement task MONOREPO_STRUCTURE--T01 using task-implementer
 ```
 
 **What it does:**
+
 1. Reads task from VTM
 2. Reads ALL context (specs/ADRs/guides) - MANDATORY
 3. Checks dependencies are satisfied
@@ -306,6 +332,7 @@ Implement task MONOREPO_STRUCTURE--T01 using task-implementer
 **Step-by-step workflow:**
 
 **1. Agent reads context:**
+
 ```
 Reading task: MONOREPO_STRUCTURE--T01
 Reading specs:
@@ -324,6 +351,7 @@ Status: Ready to implement
 ```
 
 **2. Agent plans tests (TDD):**
+
 ```
 Test plan for MONOREPO_STRUCTURE-AC01:
   - packages/foundation/tests/monorepo-structure.spec.ts
@@ -336,6 +364,7 @@ Test plan for MONOREPO_STRUCTURE-AC02:
 ```
 
 **3. Agent implements incrementally:**
+
 ```
 Creating failing test for AC01... ✓
 Implementing pnpm-workspace.yaml... ✓
@@ -353,6 +382,7 @@ Marking task completed in task-state.json ✓
 ```
 
 **4. Task completion:**
+
 ```json
 // task-state.json updated
 {
@@ -373,12 +403,14 @@ Marking task completed in task-state.json ✓
 ```
 
 **When to use:**
+
 - Want to pick specific tasks out of order
 - Need to review/understand before implementing
 - Debugging or rework scenarios
 - Learning the codebase incrementally
 
 **Blocking conditions:**
+
 - ❌ Missing specs/ADRs/guides → Refuses to start
 - ❌ Dependencies not completed → Refuses to start
 - ❌ Context not fully read → Refuses to implement
@@ -391,11 +423,13 @@ Marking task completed in task-state.json ✓
 ### View Current State
 
 **Check VTM:**
+
 ```bash
 cat docs/backlog/virtual-task-manifest.json | jq '.metadata'
 ```
 
 Output:
+
 ```json
 {
   "total_capabilities": 27,
@@ -405,11 +439,13 @@ Output:
 ```
 
 **Check Progress:**
+
 ```bash
 cat docs/backlog/task-state.json | jq '.tasks | length'
 ```
 
 **Check Completed:**
+
 ```bash
 cat docs/backlog/task-state.json | jq '[.tasks[] | select(.status=="completed")] | length'
 ```
@@ -553,6 +589,7 @@ Quarterly scope/YAGNI review?
 ### DO:
 
 ✅ **Always sync roadmap before decomposition**
+
 ```
 roadmap-orchestrator → task-decomposition-architect
 ```
@@ -562,6 +599,7 @@ roadmap-orchestrator → task-decomposition-architect
 ✅ **Use task-state.json as source of truth** for progress
 
 ✅ **Commit after each completed task**
+
 ```bash
 git add .
 git commit -m "feat: complete MONOREPO_STRUCTURE--T01
@@ -599,6 +637,7 @@ Satisfies:
 **Problem:** Related spec/ADR/guide file missing
 
 **Solution:**
+
 ```bash
 # 1. Check which files are missing
 cat docs/backlog/virtual-task-manifest.json | jq '.tasks[] | select(.task_id=="TASK_ID") | {specs: .related_specs, adrs: .related_adrs, guides: .related_guides}'
@@ -611,6 +650,7 @@ cat docs/backlog/virtual-task-manifest.json | jq '.tasks[] | select(.task_id=="T
 **Problem:** Task depends on another task that's not completed
 
 **Solution:**
+
 ```bash
 # 1. Check dependency
 cat docs/backlog/virtual-task-manifest.json | jq '.tasks[] | select(.task_id=="TASK_ID") | .depends_on_tasks'
@@ -623,6 +663,7 @@ cat docs/backlog/virtual-task-manifest.json | jq '.tasks[] | select(.task_id=="T
 **Problem:** VTM regenerated, task-state.json references old version
 
 **Solution:**
+
 ```bash
 # Option A: Archive old state, start fresh
 mv docs/backlog/task-state.json docs/backlog/task-state-2025-09-28-backup.json
@@ -636,6 +677,7 @@ jq '.manifest_hash = "NEW_HASH"' task-state.json > tmp && mv tmp task-state.json
 **Problem:** >3 tasks in-progress simultaneously
 
 **Solution:**
+
 ```bash
 # Review in-progress tasks
 cat docs/backlog/task-state.json | jq '.tasks[] | select(.status=="in-progress")'
@@ -647,18 +689,18 @@ cat docs/backlog/task-state.json | jq '.tasks[] | select(.status=="in-progress")
 
 ## Summary: Quick Command Reference
 
-| Goal | Command |
-|------|---------|
-| Research & plan ANY feature | `Use adhd-brain-planner to research and create [spec/PRD]` |
-| Review existing specs | `Use adhd-brain-planner to review [spec] against best practices` |
-| Document decisions | `Use adr-curator to document [decision]` |
-| Sync docs → roadmap | `Use roadmap-orchestrator to sync and validate` |
-| Fix doc issues | `Use spec-librarian to fix [issue]` |
-| Generate tasks | `Use task-decomposition-architect to generate VTM` |
-| Auto-pilot implementation | `Launch implementation-orchestrator` |
-| Implement specific task | `Implement task TASK_ID using task-implementer` |
-| Check progress | `cat docs/backlog/task-state.json \| jq '.tasks \| map(select(.status=="completed")) \| length'` |
-| Resume work | `Resume implementation-orchestrator` or `Continue task TASK_ID` |
+| Goal                        | Command                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------ |
+| Research & plan ANY feature | `Use adhd-brain-planner to research and create [spec/PRD]`                                       |
+| Review existing specs       | `Use adhd-brain-planner to review [spec] against best practices`                                 |
+| Document decisions          | `Use adr-curator to document [decision]`                                                         |
+| Sync docs → roadmap         | `Use roadmap-orchestrator to sync and validate`                                                  |
+| Fix doc issues              | `Use spec-librarian to fix [issue]`                                                              |
+| Generate tasks              | `Use task-decomposition-architect to generate VTM`                                               |
+| Auto-pilot implementation   | `Launch implementation-orchestrator`                                                             |
+| Implement specific task     | `Implement task TASK_ID using task-implementer`                                                  |
+| Check progress              | `cat docs/backlog/task-state.json \| jq '.tasks \| map(select(.status=="completed")) \| length'` |
+| Resume work                 | `Resume implementation-orchestrator` or `Continue task TASK_ID`                                  |
 
 ---
 
@@ -669,11 +711,13 @@ cat docs/backlog/task-state.json | jq '.tasks[] | select(.status=="in-progress")
 **When to use:** When adding external APIs, critical operations, or error-prone features
 
 **Command:**
+
 ```
 Use resilience-strategist to review [feature] resilience patterns
 ```
 
 **What it does:**
+
 - Validates P0/P1 risks have proper resilience coverage
 - Reviews retry, circuit breaker, and timeout configurations
 - Ensures error classification covers all failure modes
@@ -681,12 +725,14 @@ Use resilience-strategist to review [feature] resilience patterns
 - Checks compliance with resilience usage guide
 
 **Expected output:**
+
 - Resilience coverage audit report
 - Specific pattern recommendations (circuit breakers, backoff strategies)
 - Error classification rules for domain
 - Integration code examples
 
 **Example invocation:**
+
 ```
 Use resilience-strategist to design Gmail API retry patterns
 Use resilience-strategist to audit voice capture error handling
@@ -697,11 +743,13 @@ Use resilience-strategist to audit voice capture error handling
 **When to use:** Every quarter or when scope creep is suspected
 
 **Command:**
+
 ```
 Use risk-yagni-enforcer to audit current specs and PRDs
 ```
 
 **What it does:**
+
 - Reviews all specs for proper risk classification (High/Medium/Low)
 - Identifies YAGNI violations and premature features
 - Ensures scope alignment with roadmap phases
@@ -709,12 +757,14 @@ Use risk-yagni-enforcer to audit current specs and PRDs
 - Verifies all specs have "Out-of-scope (YAGNI)" sections
 
 **Expected output:**
+
 - Risk classification audit report
 - List of features to defer to future phases
 - Recommendations for scope reduction
 - Hidden risks that need addressing
 
 **Example invocation:**
+
 ```
 Use risk-yagni-enforcer to review Phase 2 specs for scope creep
 ```

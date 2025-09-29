@@ -96,15 +96,15 @@ ls -lht ~/Documents/ObsidianVault/inbox/ | head -20
 
 **Common Failure Modes & Quick Fixes:**
 
-| Symptom | Most Likely Cause | Quick Fix |
-|---------|-------------------|----------|
-| Voice memos not captured | iCloud dataless files | Run `adhd capture voice --force-download` |
-| Email not polling | OAuth2 token expired | Run `adhd capture email --reauth` |
-| Transcription timeouts | Large audio files (>10min) | Check Whisper model size, reduce to `small` |
-| Duplicate detection failing | Content hash mismatch | Verify text normalization consistency |
-| Export failures | Vault path permissions | Check `OBSIDIAN_VAULT` env var and permissions |
-| High latency | Queue backlog growth | Check `transcription_queue_depth` metric |
-| Crash recovery stalled | Staging ledger corruption | Run `adhd capture doctor --repair` |
+| Symptom                     | Most Likely Cause          | Quick Fix                                      |
+| --------------------------- | -------------------------- | ---------------------------------------------- |
+| Voice memos not captured    | iCloud dataless files      | Run `adhd capture voice --force-download`      |
+| Email not polling           | OAuth2 token expired       | Run `adhd capture email --reauth`              |
+| Transcription timeouts      | Large audio files (>10min) | Check Whisper model size, reduce to `small`    |
+| Duplicate detection failing | Content hash mismatch      | Verify text normalization consistency          |
+| Export failures             | Vault path permissions     | Check `OBSIDIAN_VAULT` env var and permissions |
+| High latency                | Queue backlog growth       | Check `transcription_queue_depth` metric       |
+| Crash recovery stalled      | Staging ledger corruption  | Run `adhd capture doctor --repair`             |
 
 ## Debugging Workflow
 
@@ -1177,8 +1177,8 @@ cat .metrics/$(date +%Y-%m-%d).ndjson | jq 'select(.metric == "capture.time_to_e
 
 ```json
 [
-  {"source": "voice", "p95": 8200},
-  {"source": "email", "p95": 2100}
+  { "source": "voice", "p95": 8200 },
+  { "source": "email", "p95": 2100 }
 ]
 ```
 
@@ -1423,31 +1423,31 @@ gnuplot -e "set datafile separator ','; plot 'latency.csv' with lines"
 
 ### Error Type Taxonomy
 
-| Error Type | Retriable | Common Causes | Fix Strategy |
-|------------|-----------|---------------|-------------|
-| `network.timeout` | Yes | Network latency, server overload | Retry with backoff |
-| `network.connection_refused` | Yes | Service down, firewall | Check service status |
-| `api.rate_limited` | Yes | Quota exceeded | Wait for reset, reduce rate |
-| `api.quota_exceeded` | Yes | Daily limit hit | Wait for reset, request increase |
-| `api.auth_invalid` | No | Token expired | Re-authenticate |
-| `operation.timeout` | Yes | Long processing time | Increase timeout, optimize |
-| `operation.oom` | No | Insufficient memory | Free memory, use smaller model |
-| `operation.crash` | No | Unexpected error | Review logs, report bug |
-| `validation.corrupt_input` | No | Malformed data | Quarantine, skip |
-| `filesystem.permission_denied` | No | Access denied | Fix permissions |
-| `filesystem.disk_full` | No | Out of space | Free disk space |
+| Error Type                     | Retriable | Common Causes                    | Fix Strategy                     |
+| ------------------------------ | --------- | -------------------------------- | -------------------------------- |
+| `network.timeout`              | Yes       | Network latency, server overload | Retry with backoff               |
+| `network.connection_refused`   | Yes       | Service down, firewall           | Check service status             |
+| `api.rate_limited`             | Yes       | Quota exceeded                   | Wait for reset, reduce rate      |
+| `api.quota_exceeded`           | Yes       | Daily limit hit                  | Wait for reset, request increase |
+| `api.auth_invalid`             | No        | Token expired                    | Re-authenticate                  |
+| `operation.timeout`            | Yes       | Long processing time             | Increase timeout, optimize       |
+| `operation.oom`                | No        | Insufficient memory              | Free memory, use smaller model   |
+| `operation.crash`              | No        | Unexpected error                 | Review logs, report bug          |
+| `validation.corrupt_input`     | No        | Malformed data                   | Quarantine, skip                 |
+| `filesystem.permission_denied` | No        | Access denied                    | Fix permissions                  |
+| `filesystem.disk_full`         | No        | Out of space                     | Free disk space                  |
 
 ### Exit Codes
 
-| Exit Code | Meaning | Action |
-|-----------|---------|--------|
-| 0 | Success | None |
-| 1 | General error | Check logs |
-| 2 | Configuration error | Verify environment variables |
-| 3 | Database error | Run `adhd capture doctor --repair` |
-| 4 | API error | Check API credentials |
-| 5 | File system error | Check permissions |
-| 137 | Killed (OOM) | Free memory, reduce load |
+| Exit Code | Meaning             | Action                             |
+| --------- | ------------------- | ---------------------------------- |
+| 0         | Success             | None                               |
+| 1         | General error       | Check logs                         |
+| 2         | Configuration error | Verify environment variables       |
+| 3         | Database error      | Run `adhd capture doctor --repair` |
+| 4         | API error           | Check API credentials              |
+| 5         | File system error   | Check permissions                  |
+| 137       | Killed (OOM)        | Free memory, reduce load           |
 
 ---
 

@@ -171,6 +171,7 @@ graph TD
 ### Legend
 
 **Document Types:**
+
 - 🔵 **Master Documents** (Blue) - Master PRD & Roadmap (source of truth)
 - 🟢 **Feature PRDs** (Green) - Feature requirements and scope
 - 🟠 **ARCH Specs** (Orange) - Architecture and component design
@@ -183,10 +184,12 @@ graph TD
 - ⚫ **Deferred** (Gray, Dashed) - Phase 3+ or Phase 5+ features
 
 **Relationship Types:**
+
 - **Solid Lines** (→) - Direct dependency/derivation
 - **Dotted Lines** (-.→) - Support/influence relationship
 
 **Phase Assignments:**
+
 - **Phase 1-2 (MPPP):** Capture, CLI, Staging Ledger, Obsidian Bridge, Foundation Monorepo
 - **Phase 3+ (Deferred):** PARA classification, daily note linking
 - **Phase 5+ (Deferred):** Intelligence (AI/ML), Inbox UI
@@ -198,36 +201,42 @@ graph TD
 ### Phase 1-2 Active Features
 
 #### Capture Feature (100% Complete)
+
 ```
 prd-capture.md (v3.1.0) ✅ Living
   └─ spec-capture-arch.md (v0.1.0) ✅ Living
       └─ spec-capture-tech.md (v0.1.0) ✅ Living
           └─ spec-capture-test.md (v0.1.0) ✅ Living
 ```
+
 **ADR Links:** ADR-0001 (Voice File Sovereignty)
 **Guide Links:** guide-polling-implementation.md, guide-whisper-transcription.md, guide-gmail-oauth2-setup.md, guide-capture-debugging.md, guide-voice-capture-debugging.md, guide-tdd-applicability.md, guide-testkit-usage.md, guide-error-recovery.md
 
 ---
 
 #### CLI Feature (100% Complete)
+
 ```
 prd-cli.md (v1.0.0) ✅ Draft
   └─ spec-cli-arch.md (v1.0.0) ✅ Draft
       └─ spec-cli-tech.md (v1.0.0) ✅ Draft
           └─ spec-cli-test.md (v1.0.0) ✅ Draft
 ```
+
 **ADR Links:** None
 **Guide Links:** guide-cli-doctor-implementation.md, guide-health-command.md, guide-cli-extensibility-deferred.md, guide-tdd-applicability.md, guide-testkit-usage.md
 
 ---
 
 #### Staging Ledger Feature (100% Complete)
+
 ```
 prd-staging.md (v1.0.0-MPPP) ✅ Final
   └─ spec-staging-arch.md (v0.1.0) ✅ Final
       └─ spec-staging-tech.md (v0.1.0) ✅ Final
           └─ spec-staging-test.md (v0.1.0) ✅ Final
 ```
+
 **ADR Links:** ADR-0001 (Voice File Sovereignty), ADR-0002 (Dual Hash Migration - Deferred)
 **Guide Links:** guide-error-recovery.md, guide-crash-matrix-test-plan.md, guide-tdd-applicability.md, guide-testkit-usage.md
 **Additional Docs:** schema-indexes.md (database schema reference)
@@ -235,24 +244,28 @@ prd-staging.md (v1.0.0-MPPP) ✅ Final
 ---
 
 #### Obsidian Bridge Feature (100% Complete)
+
 ```
 prd-obsidian.md (v1.0.0-MPPP) ✅ Draft
   └─ spec-obsidian-arch.md (v1.0.0) ✅ Draft
       └─ spec-obsidian-tech.md (v1.0.0) ✅ Draft
           └─ spec-obsidian-test.md (v1.0.0) ✅ Draft
 ```
+
 **ADR Links:** None
 **Guide Links:** guide-tdd-applicability.md, guide-testkit-usage.md
 
 ---
 
 #### Foundation Monorepo (50% Complete) ⚠️
+
 ```
 prd-foundation-monorepo.md (v1.0.0-MPPP) ✅ Draft
   └─ spec-foundation-monorepo-arch.md ❌ MISSING
       └─ spec-foundation-monorepo-tech.md (v1.0.0) ✅ Draft
           └─ spec-foundation-monorepo-test.md ❌ MISSING
 ```
+
 **ADR Links:** None
 **Guide Links:** guide-monorepo-mppp.md, guide-tdd-applicability.md
 **Status:** ARCH and TEST specs recommended before Phase 1 implementation
@@ -262,18 +275,22 @@ prd-foundation-monorepo.md (v1.0.0-MPPP) ✅ Draft
 ### Cross-Cutting Infrastructure
 
 #### Direct Export (TECH-Only Pattern)
+
 ```
 spec-direct-export-tech.md (v1.0.0) ✅ Review
 ```
+
 **Purpose:** Direct synchronous export patterns (no outbox queue)
 **Status:** Complete (cross-cutting infrastructure, no PRD/ARCH/TEST required)
 
 ---
 
 #### Metrics Contract (TECH-Only Pattern)
+
 ```
 spec-metrics-contract-tech.md (v1.0.0) ✅ Draft
 ```
+
 **Purpose:** Local NDJSON metrics collection contracts
 **Status:** Complete (cross-cutting infrastructure, no PRD/ARCH/TEST required)
 
@@ -282,20 +299,24 @@ spec-metrics-contract-tech.md (v1.0.0) ✅ Draft
 ### Deferred Features (Phase 3+ / Phase 5+)
 
 #### Intelligence Feature (DEFERRED Phase 5+)
+
 ```
 prd-intelligence.md (skeletal) ⚫ Deferred
   └─ spec-intelligence-arch.md (skeletal) ⚫ Deferred
       └─ spec-intelligence-tech.md (skeletal) ⚫ Deferred
           └─ spec-intelligence-test.md (skeletal) ⚫ Deferred
 ```
+
 **Trigger:** Semantic search usage > 10 queries/day for 7 consecutive days OR keyword search fail rate > 20% week-over-week
 
 ---
 
 #### Inbox Feature (DEFERRED Phase 5+)
+
 ```
 inbox/ (.gitkeep only) ⚫ Deferred
 ```
+
 **Trigger:** > 1000 captures AND batch triage friction reported
 
 ---
@@ -303,9 +324,11 @@ inbox/ (.gitkeep only) ⚫ Deferred
 ## ADR Impact Map
 
 ### ADR-0001: Voice File Sovereignty (Accepted)
+
 **Decision:** Never move, copy, or rename Apple Voice Memo files. Reference in-place only.
 
 **Affects:**
+
 - ✅ Capture PRD (Section 5.1: Voice Capture)
 - ✅ Capture ARCH (Voice memo referencing)
 - ✅ Capture TECH (Section 7: Voice Memo Referencing)
@@ -318,9 +341,11 @@ inbox/ (.gitkeep only) ⚫ Deferred
 ---
 
 ### ADR-0002: Dual Hash Migration (Proposed - Deferred Phase 2+)
+
 **Decision:** Phased migration from SHA-256 to BLAKE3 for content hashing.
 
 **Affects:**
+
 - ⚫ Staging Ledger (future migration strategy)
 - ⚫ Capture (hash computation)
 
@@ -333,18 +358,22 @@ inbox/ (.gitkeep only) ⚫ Deferred
 ### Cross-Feature Guides (Support Multiple Features)
 
 **guide-tdd-applicability.md**
+
 - Supports: All TECH specs (Capture, CLI, Staging, Obsidian, Foundation)
 - Purpose: TDD decision framework and risk classification
 
 **guide-testkit-usage.md**
+
 - Supports: All TEST specs (Capture, CLI, Staging, Obsidian)
 - Purpose: Test isolation patterns and TestKit API usage
 
 **guide-error-recovery.md**
+
 - Supports: Capture TECH, Staging Ledger TECH
 - Purpose: Error handling patterns and retry policies
 
 **guide-phase1-testing-patterns.md**
+
 - Supports: All TEST specs
 - Purpose: Phase 1-specific testing patterns (sequential processing, no concurrency)
 
@@ -353,20 +382,24 @@ inbox/ (.gitkeep only) ⚫ Deferred
 ### Feature-Specific Guides
 
 **Capture Feature Guides:**
+
 - guide-polling-implementation.md (voice + email polling workers)
 - guide-whisper-transcription.md (local Whisper medium model integration)
 - guide-gmail-oauth2-setup.md (Gmail API authentication)
 - guide-capture-debugging.md (debugging capture workflows)
 
 **CLI Feature Guides:**
+
 - guide-cli-doctor-implementation.md (health check implementation)
 - guide-health-command.md (health check patterns)
 - guide-cli-extensibility-deferred.md (CLI plugin deferral catalog)
 
 **Foundation Guides:**
+
 - guide-monorepo-mppp.md (monorepo structure and patterns)
 
 **Testing Guides:**
+
 - guide-crash-matrix-test-plan.md (fault injection testing)
 
 ---
@@ -374,32 +407,39 @@ inbox/ (.gitkeep only) ⚫ Deferred
 ## Quick Navigation by Phase
 
 ### Phase 1: Core Ingestion (Weeks 1-4)
+
 **Priority:** P0 - Critical Path
 
 **Foundation (Week 1-2):**
+
 1. Foundation Monorepo PRD → TECH
 2. Direct Export TECH
 3. Metrics Contract TECH
 
 **Capture Paths (Week 2-3):**
+
 1. Capture PRD → ARCH → TECH → TEST
 2. Staging Ledger PRD → ARCH → TECH → TEST
 
 **Integration (Week 3-4):**
+
 1. Obsidian Bridge PRD → ARCH → TECH → TEST
 2. CLI PRD → ARCH → TECH → TEST
 
 ---
 
 ### Phase 2: Hardening (Weeks 5-6)
+
 **Priority:** P1 - Production Readiness
 
 **Error Handling:**
+
 - Capture error recovery (guide-error-recovery.md)
 - Staging Ledger backup verification
 - Crash matrix testing (guide-crash-matrix-test-plan.md)
 
 **Operations:**
+
 - CLI health command (guide-cli-doctor-implementation.md)
 - Metrics collection validation
 - Storage cleanup policies
@@ -407,6 +447,7 @@ inbox/ (.gitkeep only) ⚫ Deferred
 ---
 
 ### Phase 3+ / Phase 5+: Deferred Features
+
 **Status:** Not in MPPP Scope
 
 - PARA classification (trigger: manual organization > 10 min/day for 2 weeks)
@@ -432,18 +473,21 @@ inbox/ (.gitkeep only) ⚫ Deferred
 ### Active Development (Phase 1-4)
 
 #### Capture (Phase 1-3)
+
 - **[prd-capture.md](../features/capture/prd-capture.md)** - Voice/text/email capture requirements
 - **[spec-capture-arch.md](../features/capture/spec-capture-arch.md)** - Architecture and data flow
 - **[spec-capture-tech.md](../features/capture/spec-capture-tech.md)** - Technical implementation
 - **[spec-capture-test.md](../features/capture/spec-capture-test.md)** - Test specification
 
 #### CLI (Phase 1-4)
+
 - **[prd-cli.md](../features/cli/prd-cli.md)** - CLI feature requirements
 - **[spec-cli-arch.md](../features/cli/spec-cli-arch.md)** - CLI architecture and component design
 - **[spec-cli-tech.md](../features/cli/spec-cli-tech.md)** - Command specifications and implementation
 - **[spec-cli-test.md](../features/cli/spec-cli-test.md)** - CLI testing contracts
 
 #### Staging Ledger (Phase 1-2)
+
 - **[prd-staging.md](../features/staging-ledger/prd-staging.md)** - SQLite staging requirements
 - **[spec-staging-arch.md](../features/staging-ledger/spec-staging-arch.md)** - Ledger architecture
 - **[spec-staging-tech.md](../features/staging-ledger/spec-staging-tech.md)** - Database schema and operations
@@ -451,6 +495,7 @@ inbox/ (.gitkeep only) ⚫ Deferred
 - **[schema-indexes.md](../features/staging-ledger/schema-indexes.md)** - Database schema and index definitions
 
 #### Obsidian Bridge (Phase 4)
+
 - **[prd-obsidian.md](../features/obsidian-bridge/prd-obsidian.md)** - Vault integration requirements
 - **[spec-obsidian-arch.md](../features/obsidian-bridge/spec-obsidian-arch.md)** - Bridge architecture
 - **[spec-obsidian-tech.md](../features/obsidian-bridge/spec-obsidian-tech.md)** - Atomic write implementation
@@ -460,9 +505,11 @@ inbox/ (.gitkeep only) ⚫ Deferred
 ### Deferred Features (Phase 5+)
 
 #### Intelligence (AI/ML)
+
 **Status:** DEFERRED Phase 5+ - Not needed for MVP (placeholder in `/docs/features/intelligence/.gitkeep`)
 
 #### Inbox
+
 **Status:** DEFERRED Phase 5+ - Manual triage not needed for MVP (placeholder in `/docs/features/inbox/.gitkeep`)
 
 ---
@@ -472,10 +519,12 @@ inbox/ (.gitkeep only) ⚫ Deferred
 Infrastructure components and shared technical specifications.
 
 ### Monorepo & Build System
+
 - **[prd-foundation-monorepo.md](../cross-cutting/prd-foundation-monorepo.md)** - Monorepo MVP strategy and requirements
 - **[spec-foundation-monorepo-tech.md](../cross-cutting/spec-foundation-monorepo-tech.md)** - Turborepo + pnpm workspaces implementation
 
 ### Shared Technical Contracts
+
 - **[spec-direct-export-tech.md](../cross-cutting/spec-direct-export-tech.md)** - Direct export patterns for package APIs
 - **[spec-metrics-contract-tech.md](../cross-cutting/spec-metrics-contract-tech.md)** - Metrics collection and reporting contracts
 
@@ -486,11 +535,13 @@ Infrastructure components and shared technical specifications.
 See [ADR Index](../adr/_index.md)
 
 **Strategic Decisions (Master Planning)**:
+
 - **[ADR-0003: Four-Table Hard Cap](../adr/0003-four-table-hard-cap.md)** - Core durability architecture
 - **[ADR-0008: Sequential Processing MPPP](../adr/0008-sequential-processing-mppp.md)** - No concurrency in MPPP
 - **[ADR-0011: Inbox-Only Export Pattern](../adr/0011-inbox-only-export-pattern.md)** - No classification in MPPP
 
 **Foundation Decisions**:
+
 - **[ADR-0001: Voice File Sovereignty](../adr/0001-voice-file-sovereignty.md)** - Never move/copy Apple Voice Memos
 - **[ADR-0002: Dual Hash Migration](../adr/0002-dual-hash-migration.md)** - SHA-256 → BLAKE3 phased migration (deferred)
 
@@ -501,6 +552,7 @@ See [ADR Index](../adr/_index.md)
 Practical how-to documentation and best practices.
 
 ### Testing & Quality
+
 - **[guide-tdd-applicability.md](../guides/guide-tdd-applicability.md)** - When and how to apply TDD
 - **[guide-test-strategy.md](../guides/guide-test-strategy.md)** - Test strategy and patterns
 - **[guide-testkit-usage.md](../guides/guide-testkit-usage.md)** - TestKit patterns and examples
@@ -509,6 +561,7 @@ Practical how-to documentation and best practices.
 - **[guide-fault-injection-registry.md](../guides/guide-fault-injection-registry.md)** - Authoritative fault injection hook catalog
 
 ### Capture Implementation
+
 - **[guide-polling-implementation.md](../guides/guide-polling-implementation.md)** - Voice memo and email polling workers
 - **[guide-gmail-oauth2-setup.md](../guides/guide-gmail-oauth2-setup.md)** - Gmail authentication and polling cursor
 - **[guide-whisper-transcription.md](../guides/guide-whisper-transcription.md)** - Local audio transcription implementation
@@ -516,23 +569,28 @@ Practical how-to documentation and best practices.
 - **[guide-voice-capture-debugging.md](../guides/guide-voice-capture-debugging.md)** - Voice memo specific troubleshooting (APFS dataless files, iCloud sync, voice memo metadata, iOS sync detection)
 
 ### CLI Implementation
+
 - **[guide-cli-doctor-implementation.md](../guides/guide-cli-doctor-implementation.md)** - Doctor command implementation guide
 - **[guide-cli-extensibility-deferred.md](../guides/guide-cli-extensibility-deferred.md)** - Deferred CLI features catalog
 - **[guide-health-command.md](../guides/guide-health-command.md)** - Health check command usage
 
 ### Monorepo & Architecture
+
 - **[guide-monorepo-mppp.md](../guides/guide-monorepo-mppp.md)** - Monorepo Package Publishing Protocol
 - **[guide-error-recovery.md](../guides/guide-error-recovery.md)** - Error recovery patterns
 - **[guide-resilience-patterns.md](../guides/guide-resilience-patterns.md)** - Resilience patterns and strategies for external services
 
 ### Obsidian Bridge Implementation
+
 - **[guide-obsidian-bridge-usage.md](../guides/guide-obsidian-bridge-usage.md)** - Atomic writer quick-start and integration guide
 
 ### Operations & Reliability
+
 - **[guide-backup-verification.md](../guides/guide-backup-verification.md)** - Automated backup verification and escalation
 - **[guide-backup-restore-drill.md](../guides/guide-backup-restore-drill.md)** - Backup restore procedures and runbook
 
 ### Process & Workflow
+
 - **[guide-agent-usage.md](../guides/guide-agent-usage.md)** - Using AI agents for documentation tasks
 - **[guide-acceptance-criteria-task-extraction.md](../guides/guide-acceptance-criteria-task-extraction.md)** - Extracting tasks from acceptance criteria
 
@@ -604,27 +662,32 @@ Features explicitly deferred to Phase 3+ or Phase 5+ with trigger conditions doc
 ### By Phase
 
 **Phase 1 (Weeks 1-2): Foundation + Voice Capture**
+
 - Monorepo specs (cross-cutting)
 - Staging ledger specs (features/staging-ledger)
 - Capture specs (features/capture)
 - CLI basics (features/cli)
 
 **Phase 2 (Weeks 3-4): Voice Memos Integration**
+
 - Capture polling workers (features/capture)
 - Voice memo processing
 - Test infrastructure (cross-cutting)
 
 **Phase 3 (Weeks 5-6): Email Capture**
+
 - Email capture (features/capture)
 - Email parsing
 - Batch operations (CLI)
 
 **Phase 4 (Weeks 7-8): Obsidian Integration**
+
 - Obsidian bridge (features/obsidian-bridge)
 - Vault connector
 - Conflict resolution
 
 **Phase 5+ (Future): Deferred Features**
+
 - Intelligence/AI (features/intelligence) - Deferred
 - Inbox UI (features/inbox) - Deferred
 - Web clipper - Not started
@@ -633,21 +696,25 @@ Features explicitly deferred to Phase 3+ or Phase 5+ with trigger conditions doc
 ### By Role
 
 **Product Owner:**
+
 - Start with Master PRD
 - Review feature PRDs for scope
 - Check roadmap for timeline
 
 **Architect:**
+
 - Review cross-cutting specs
 - Check ADRs for decisions
 - Review feature architecture specs
 
 **Developer:**
+
 - Review technical specs for implementation
 - Check test specs for TDD requirements
 - Use guides for best practices
 
 **QA/Tester:**
+
 - Review test specifications
 - Check TDD applicability guide
 - Review test coordinator spec
@@ -668,6 +735,7 @@ Features explicitly deferred to Phase 3+ or Phase 5+ with trigger conditions doc
 ## Contributing
 
 **Before Creating New Documentation:**
+
 1. Check if topic fits existing spec (prefer editing over creating)
 2. Use appropriate template from `/docs/templates/`
 3. Follow naming conventions:
@@ -679,6 +747,7 @@ Features explicitly deferred to Phase 3+ or Phase 5+ with trigger conditions doc
 5. Update this index
 
 **Documentation Review Process:**
+
 - Cross-cutting changes: Requires all feature owners' review
 - Feature-specific changes: Requires architect review
 - ADRs: Requires team consensus
@@ -691,6 +760,7 @@ Features explicitly deferred to Phase 3+ or Phase 5+ with trigger conditions doc
 **Total Documentation Files:** 95 markdown files
 
 **Phase 1-2 Coverage:**
+
 - **Active Features:** 5 (Capture, CLI, Staging Ledger, Obsidian Bridge, Foundation Monorepo)
 - **4-Document Chain Compliance:** 90% (4 of 5 complete)
 - **Cross-Cutting Specs:** 3 (Foundation, Direct Export, Metrics)
@@ -698,16 +768,19 @@ Features explicitly deferred to Phase 3+ or Phase 5+ with trigger conditions doc
 **Deferred Features:** 2 (Intelligence Phase 5+, Inbox Phase 5+)
 
 **Supporting Documentation:**
+
 - **Guides:** 17 cross-cutting guides
 - **ADRs:** 2 architecture decisions (1 accepted, 1 proposed)
 - **Templates:** 6 document templates
 - **Agents:** 13 AI agent specifications
 
 **Audit Trail:**
+
 - **Active Audits:** 8 current audit reports
 - **Archived Audits:** 11 historical reports
 
 **Quality Metrics:**
+
 - **Version Alignment:** 100% (all PRDs reference Master PRD v2.3.0-MPPP)
 - **Front Matter Compliance:** 100%
 - **TDD Applicability Sections:** 100% of TECH specs

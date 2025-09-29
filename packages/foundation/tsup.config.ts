@@ -1,10 +1,3 @@
-import { defineConfig } from 'tsup'
+import { createDefinedTsupConfig } from '@adhd-brain/build-config'
 
-export default defineConfig({
-  entry: ['src/index.ts'],
-  format: ['esm'],
-  dts: true,
-  clean: true,
-  sourcemap: true,
-  treeshake: true,
-})
+export default createDefinedTsupConfig('src/index.ts')

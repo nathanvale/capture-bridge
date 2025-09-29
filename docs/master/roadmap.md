@@ -17,6 +17,7 @@ This roadmap represents the **definitive capability breakdown** for the ADHD Bra
 ### Implementation Progress
 
 **Phase 1, Slice 1.1** (Week 1): Foundation & Monorepo Setup
+
 - ✅ MONOREPO_STRUCTURE: Complete (2025-09-28)
 - ⏳ SQLITE_SCHEMA: Not started
 - ⏳ CONTENT_HASH_IMPLEMENTATION: Not started
@@ -25,6 +26,7 @@ This roadmap represents the **definitive capability breakdown** for the ADHD Bra
 - ⏳ METRICS_INFRASTRUCTURE: Not started
 
 **Build Metrics**:
+
 - ✅ Build time: ~4.5s (target < 30s)
 - ✅ Test time: ~171ms (target < 30s)
 - ✅ Zero circular dependencies verified
@@ -32,6 +34,7 @@ This roadmap represents the **definitive capability breakdown** for the ADHD Bra
 ### Scope Boundaries (MPPP)
 
 **Building Now:**
+
 - ✅ Voice capture (poll → transcribe → export)
 - ✅ Email capture (poll → normalize → export)
 - ✅ SQLite staging ledger (4 tables: captures, exports_audit, errors_log, sync_state)
@@ -42,6 +45,7 @@ This roadmap represents the **definitive capability breakdown** for the ADHD Bra
 - ✅ Local metrics (NDJSON, opt-in)
 
 **Explicitly Deferred:**
+
 - ❌ PARA classification (Phase 3+)
 - ❌ Daily note linking (Phase 3+)
 - ❌ Inbox triage UI (Phase 5+)
@@ -60,6 +64,7 @@ The roadmap is organized into **2 phases** with **capabilities grouped into time
 - **Phase 2: Operational Hardening** (Weeks 5-6) — Production readiness
 
 Each capability includes:
+
 - **ID**: UPPER_SNAKE_CASE identifier
 - **Title**: Human-readable name
 - **Category**: foundation | capture | process | output
@@ -88,6 +93,7 @@ Each capability includes:
 **Capabilities**:
 
 #### MONOREPO_STRUCTURE ✅
+
 - **Title**: Monorepo Package Structure & Build Pipeline
 - **Category**: foundation
 - **Risk**: Medium
@@ -114,6 +120,7 @@ Each capability includes:
   - packages/foundation/tests/monorepo-structure.spec.ts
 
 #### SQLITE_SCHEMA
+
 - **Title**: SQLite Staging Ledger Schema & Indexes
 - **Category**: foundation
 - **Risk**: High
@@ -145,6 +152,7 @@ Each capability includes:
   - packages/storage/tests/index-performance.spec.ts
 
 #### CONTENT_HASH_IMPLEMENTATION
+
 - **Title**: Content Hash Normalization & Computation (SHA-256)
 - **Category**: foundation
 - **Risk**: High
@@ -172,6 +180,7 @@ Each capability includes:
   - packages/foundation/tests/hash-determinism.spec.ts
 
 #### ATOMIC_FILE_WRITER
+
 - **Title**: Atomic File Writer (Temp-Then-Rename Pattern)
 - **Category**: output
 - **Risk**: High
@@ -202,6 +211,7 @@ Each capability includes:
   - packages/obsidian-bridge/tests/crash-recovery.spec.ts
 
 #### TESTKIT_INTEGRATION
+
 - **Title**: TestKit Integration & Test Infrastructure
 - **Category**: foundation
 - **Risk**: Medium
@@ -228,6 +238,7 @@ Each capability includes:
   - All test files across all packages
 
 #### METRICS_INFRASTRUCTURE
+
 - **Title**: Local Metrics Collection (NDJSON)
 - **Category**: foundation
 - **Risk**: Low
@@ -255,6 +266,7 @@ Each capability includes:
   - packages/metrics/tests/log-rotation.spec.ts
 
 **Slice 1.1 Exit Criteria**:
+
 - [ ] All 6 capabilities complete (1/6: MONOREPO_STRUCTURE ✅)
 - [x] Monorepo builds in < 30s (✅ ~4.5s)
 - [x] All tests pass in < 30s (✅ ~171ms)
@@ -270,6 +282,7 @@ Each capability includes:
 **Capabilities**:
 
 #### VOICE_POLLING_ICLOUD
+
 - **Title**: Voice Memo Polling (iCloud + APFS Dataless Detection)
 - **Category**: capture
 - **Risk**: High
@@ -302,6 +315,7 @@ Each capability includes:
   - packages/capture/tests/apfs-dataless-detection.spec.ts
 
 #### WHISPER_TRANSCRIPTION
+
 - **Title**: Whisper Transcription (Medium Model, Local)
 - **Category**: process
 - **Risk**: High
@@ -334,6 +348,7 @@ Each capability includes:
   - packages/capture/tests/transcription-failure.spec.ts
 
 #### DEDUPLICATION_LOGIC
+
 - **Title**: Duplicate Detection & Suppression
 - **Category**: process
 - **Risk**: High
@@ -362,6 +377,7 @@ Each capability includes:
   - packages/staging-ledger/tests/hash-collision-handling.spec.ts
 
 #### DIRECT_EXPORT_VOICE
+
 - **Title**: Voice Direct Export to Vault (Synchronous)
 - **Category**: output
 - **Risk**: High
@@ -390,6 +406,7 @@ Each capability includes:
   - packages/obsidian-bridge/tests/voice-export-e2e.spec.ts
 
 #### PLACEHOLDER_EXPORT
+
 - **Title**: Placeholder Export (Transcription Failure Fallback)
 - **Category**: output
 - **Risk**: Medium
@@ -416,12 +433,13 @@ Each capability includes:
   - packages/capture/tests/placeholder-export.spec.ts
 
 #### CAPTURE_STATE_MACHINE
+
 - **Title**: Capture Status State Machine
 - **Category**: process
 - **Risk**: High
 - **TDD**: Required
 - **Dependencies**: [SQLITE_SCHEMA]
-- **Description**: Enforce legal state transitions for capture lifecycle. Immutable terminal states (exported*). Prevent invalid transitions. Support crash recovery replay.
+- **Description**: Enforce legal state transitions for capture lifecycle. Immutable terminal states (exported\*). Prevent invalid transitions. Support crash recovery replay.
 - **Acceptance Criteria**:
   - [ ] States: staged → transcribed → exported
   - [ ] States: staged → failed_transcription → exported_placeholder
@@ -442,6 +460,7 @@ Each capability includes:
   - packages/staging-ledger/tests/invalid-transitions.spec.ts
 
 **Slice 1.2 Exit Criteria**:
+
 - [ ] All 6 capabilities complete
 - [ ] Voice capture end-to-end working (poll → transcribe → export)
 - [ ] Transcription failure → placeholder export working
@@ -458,6 +477,7 @@ Each capability includes:
 **Capabilities**:
 
 #### GMAIL_OAUTH2_SETUP
+
 - **Title**: Gmail API OAuth2 Authentication
 - **Category**: capture
 - **Risk**: Medium
@@ -482,6 +502,7 @@ Each capability includes:
   - packages/capture/tests/gmail-oauth2.spec.ts (MSW mocks)
 
 #### EMAIL_POLLING_GMAIL
+
 - **Title**: Email Polling (Gmail API)
 - **Category**: capture
 - **Risk**: Medium
@@ -510,6 +531,7 @@ Each capability includes:
   - packages/capture/tests/email-polling.spec.ts (MSW mocks)
 
 #### EMAIL_NORMALIZATION
+
 - **Title**: Email Body Normalization & Hash Computation
 - **Category**: process
 - **Risk**: Medium
@@ -532,6 +554,7 @@ Each capability includes:
   - packages/capture/tests/email-normalization.spec.ts
 
 #### DIRECT_EXPORT_EMAIL
+
 - **Title**: Email Direct Export to Vault (Synchronous)
 - **Category**: output
 - **Risk**: High
@@ -560,6 +583,7 @@ Each capability includes:
   - packages/obsidian-bridge/tests/email-export-e2e.spec.ts
 
 **Slice 1.3 Exit Criteria**:
+
 - [ ] All 4 capabilities complete
 - [ ] Email capture end-to-end working (poll → normalize → export)
 - [ ] Message-ID deduplication working
@@ -575,6 +599,7 @@ Each capability includes:
 **Capabilities**:
 
 #### CLI_FOUNDATION
+
 - **Title**: CLI Argument Parsing & Command Registry
 - **Category**: foundation
 - **Risk**: Low
@@ -606,6 +631,7 @@ Each capability includes:
   - packages/cli/tests/command-registry.spec.ts
 
 #### CLI_CAPTURE_COMMANDS
+
 - **Title**: CLI Capture Commands (voice, email manual triggers)
 - **Category**: capture
 - **Risk**: Low
@@ -629,6 +655,7 @@ Each capability includes:
   - packages/cli/tests/capture-voice-command.spec.ts
 
 #### CLI_LEDGER_COMMANDS
+
 - **Title**: CLI Ledger Inspection Commands (list, inspect)
 - **Category**: capture
 - **Risk**: Low
@@ -652,6 +679,7 @@ Each capability includes:
   - packages/cli/tests/ledger-list-command.spec.ts
 
 #### DOCTOR_HEALTH_CHECKS
+
 - **Title**: Health Command (capture doctor)
 - **Category**: foundation
 - **Risk**: Medium
@@ -685,6 +713,7 @@ Each capability includes:
   - packages/cli/tests/doctor-failure-scenarios.spec.ts
 
 **Slice 1.4 Exit Criteria**:
+
 - [ ] All 4 capabilities complete
 - [ ] CLI commands functional (capture, ledger, doctor)
 - [ ] Doctor command detects common issues
@@ -698,6 +727,7 @@ Each capability includes:
 **Gate to Phase 2:**
 
 ### Core Functionality
+
 - [ ] Voice capture operational (poll → transcribe → export)
 - [ ] Email capture operational (poll → extract → export)
 - [ ] Deduplication working (hash + message_id/audio_fp)
@@ -707,6 +737,7 @@ Each capability includes:
 - [ ] Infrastructure health command functional
 
 ### Test Infrastructure
+
 - [ ] TestKit integrated across all packages
 - [ ] In-memory database tests passing
 - [ ] MSW mocks with auto-cleanup working
@@ -714,6 +745,7 @@ Each capability includes:
 - [ ] Zero test conflicts with parallel execution
 
 ### Quality Gates
+
 - [ ] All tests pass in parallel (using TestKit isolation)
 - [ ] Zero data loss in 50 real captures (25 voice + 25 email)
 - [ ] CI/CD green for 5 consecutive runs
@@ -721,6 +753,7 @@ Each capability includes:
 - [ ] No circular dependencies
 
 ### Walking Skeleton Validation
+
 - [ ] End-to-end: Record voice memo → poll → transcribe → export to vault
 - [ ] End-to-end: Forward email → poll → normalize → export to vault
 - [ ] Crash recovery: Kill process mid-transcription → restart → resume
@@ -743,6 +776,7 @@ Each capability includes:
 **Capabilities**:
 
 #### CRASH_RECOVERY_MECHANISM
+
 - **Title**: Startup Reconciliation & Resume Processing
 - **Category**: process
 - **Risk**: High
@@ -750,7 +784,7 @@ Each capability includes:
 - **Dependencies**: [CAPTURE_STATE_MACHINE, SQLITE_SCHEMA]
 - **Description**: On startup, scan for non-terminal captures and resume processing. Timeout recovery for stuck states. Quarantine for missing voice files. No user intervention required.
 - **Acceptance Criteria**:
-  - [ ] Startup query: SELECT * FROM captures WHERE status IN ('staged', 'transcribed', 'failed_transcription')
+  - [ ] Startup query: SELECT \* FROM captures WHERE status IN ('staged', 'transcribed', 'failed_transcription')
   - [ ] Resume processing for all non-terminal captures
   - [ ] Timeout detection: captures stuck in same state > 10 minutes
   - [ ] Quarantine flag for missing voice files (file not found)
@@ -770,6 +804,7 @@ Each capability includes:
   - packages/staging-ledger/tests/timeout-recovery.spec.ts
 
 #### ERROR_LOGGING_STRUCTURED
+
 - **Title**: Structured Error Logging & Diagnostics
 - **Category**: foundation
 - **Risk**: Medium
@@ -782,7 +817,7 @@ Each capability includes:
   - [ ] Stages: poll, transcribe, export, backup, integrity
   - [ ] Link to capture via foreign key (optional)
   - [ ] Doctor command shows error summary (last 24 hours)
-  - [ ] Group by stage: SELECT stage, COUNT(*) FROM errors_log WHERE created_at > datetime('now', '-1 day') GROUP BY stage
+  - [ ] Group by stage: SELECT stage, COUNT(\*) FROM errors_log WHERE created_at > datetime('now', '-1 day') GROUP BY stage
   - [ ] Optional trim after 90 days (Phase 3+)
 - **Related Specs**:
   - docs/features/staging-ledger/spec-staging-tech.md
@@ -794,6 +829,7 @@ Each capability includes:
   - packages/staging-ledger/tests/error-logging.spec.ts
 
 #### TRANSCRIPTION_RETRY_LOGIC
+
 - **Title**: Transcription Single Retry on Failure
 - **Category**: process
 - **Risk**: Medium
@@ -818,6 +854,7 @@ Each capability includes:
   - packages/capture/tests/transcription-retry.spec.ts
 
 #### VAULT_WRITE_ERROR_HANDLING
+
 - **Title**: Vault Write Error Handling (EACCES, ENOSPC, etc.)
 - **Category**: output
 - **Risk**: High
@@ -844,6 +881,7 @@ Each capability includes:
   - packages/obsidian-bridge/tests/vault-write-errors.spec.ts
 
 #### FAULT_INJECTION_FRAMEWORK
+
 - **Title**: Fault Injection Hook Registry for Testing
 - **Category**: foundation
 - **Risk**: Medium
@@ -869,6 +907,7 @@ Each capability includes:
   - packages/staging-ledger/tests/fault-injection-crash-matrix.spec.ts
 
 **Slice 2.1 Exit Criteria**:
+
 - [ ] All 5 capabilities complete
 - [ ] Crash recovery working (restart → resume)
 - [ ] Error logging structured and queryable
@@ -885,6 +924,7 @@ Each capability includes:
 **Capabilities**:
 
 #### HOURLY_BACKUP_AUTOMATION
+
 - **Title**: Hourly SQLite Backup Automation
 - **Category**: foundation
 - **Risk**: High
@@ -910,6 +950,7 @@ Each capability includes:
   - packages/staging-ledger/tests/hourly-backup.spec.ts
 
 #### BACKUP_VERIFICATION_PROTOCOL
+
 - **Title**: Backup Integrity Check & Hash Compare
 - **Category**: foundation
 - **Risk**: High
@@ -936,6 +977,7 @@ Each capability includes:
   - packages/staging-ledger/tests/backup-escalation-policy.spec.ts
 
 #### RETENTION_POLICY_90DAY
+
 - **Title**: 90-Day Retention Policy (Exported Captures Only)
 - **Category**: foundation
 - **Risk**: Medium
@@ -960,6 +1002,7 @@ Each capability includes:
   - packages/staging-ledger/tests/retention-pause-on-backup-failure.spec.ts
 
 #### STORAGE_SIZE_MONITORING
+
 - **Title**: Storage Size Monitoring & Alerts
 - **Category**: foundation
 - **Risk**: Low
@@ -967,7 +1010,7 @@ Each capability includes:
 - **Dependencies**: [SQLITE_SCHEMA, METRICS_INFRASTRUCTURE]
 - **Description**: Monitor SQLite database size. Warn at 100MB, hard limit 500MB. Surface in doctor command. Metrics for observability.
 - **Acceptance Criteria**:
-  - [ ] Query database size: SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()
+  - [ ] Query database size: SELECT page_count \* page_size FROM pragma_page_count(), pragma_page_size()
   - [ ] Warn threshold: 100MB
   - [ ] Hard limit: 500MB (halt ingestion)
   - [ ] Doctor command displays: database size, warn/critical status
@@ -983,6 +1026,7 @@ Each capability includes:
   - packages/staging-ledger/tests/storage-monitoring.spec.ts
 
 **Slice 2.2 Exit Criteria**:
+
 - [ ] All 4 capabilities complete
 - [ ] Hourly backups automated and verified
 - [ ] Backup verification escalation policy working
@@ -997,6 +1041,7 @@ Each capability includes:
 **Gate to v1.0 Launch:**
 
 ### Reliability & Operations
+
 - [ ] Both capture channels stable (voice + email)
 - [ ] Error recovery working (Whisper failure → placeholder)
 - [ ] Backup verification passing (7 consecutive)
@@ -1007,6 +1052,7 @@ Each capability includes:
 - [ ] Consecutive successful backup verifications ≥ 7
 
 ### Test Coverage
+
 - [ ] Fault injection: All 5 crash points recover correctly
 - [ ] Error logging: All failures captured with context
 - [ ] Crash recovery: staged → resume without user intervention
@@ -1014,12 +1060,14 @@ Each capability includes:
 - [ ] Retention policy: exported rows trimmed, non-exported preserved
 
 ### Operational Readiness
+
 - [ ] Health command reports accurate status
 - [ ] Metrics collection working (local NDJSON)
 - [ ] Backup retention policy enforced (24 hourly + 7 daily)
 - [ ] Doctor command detects 95%+ of common issues
 
 ### Production Validation
+
 - [ ] 14 days personal usage (dogfooding)
 - [ ] 50+ deduplicated captures validated
 - [ ] Zero vault corruption events
@@ -1033,34 +1081,42 @@ Each capability includes:
 **Not Building in Phase 1-2:**
 
 ### PARA Classification (Phase 3+)
+
 - **Trigger**: Manual organization takes > 10 min/day for 2 weeks
 - **Requires**: Intelligence layer, classification service, PARA filing logic
 
 ### Daily Note Linking (Phase 3+)
+
 - **Trigger**: User explicitly requests feature
 - **Requires**: Daily note detection, backlink insertion, template system
 
 ### Inbox Triage UI (Phase 5+)
+
 - **Trigger**: Inbox backlog > 300 items persistent
 - **Requires**: Batch review interface, keyboard shortcuts, quick actions
 
 ### Quick Text Capture (Phase 5+)
+
 - **Trigger**: Manual note creation > 10/day for 7 days
 - **Requires**: Hotkey binding, text input dialog, burst capture UX
 
 ### Web Clipper (Phase 5+)
+
 - **Trigger**: User explicitly requests feature
 - **Requires**: Browser extension, readability parsing, attachment handling
 
 ### Attachment Download/Storage (Phase 3+)
+
 - **Trigger**: User requests attachment preservation
 - **Requires**: Email attachment download, file storage, vault linking
 
 ### Advanced Metrics Dashboard (Phase 5+)
+
 - **Trigger**: Phase 3+ observability needs
 - **Requires**: Metrics aggregation, dashboard UI, trend analysis
 
 ### RAG/Embeddings (Phase 5+)
+
 - **Trigger**: Semantic search usage > 10 queries/day for 7 consecutive days OR keyword search fail rate > 20% week-over-week
 - **Requires**: Ollama integration, Chroma vector store, embedding pipeline
 
@@ -1071,22 +1127,26 @@ Each capability includes:
 **Total Capabilities**: 29
 
 **By Phase**:
+
 - Phase 1: 20 capabilities (69.0%)
 - Phase 2: 9 capabilities (31.0%)
 - Phase 3+: Deferred (out of scope)
 
 **By Category**:
+
 - Foundation: 10 capabilities (34.5%)
 - Capture: 7 capabilities (24.1%)
 - Process: 6 capabilities (20.7%)
 - Output: 6 capabilities (20.7%)
 
 **By Risk Level**:
+
 - High: 15 capabilities (51.7%)
 - Medium: 10 capabilities (34.5%)
 - Low: 4 capabilities (13.8%)
 
 **By TDD Requirement**:
+
 - Required: 20 capabilities (69.0%)
 - Recommended: 5 capabilities (17.2%)
 - Optional: 4 capabilities (13.8%)
@@ -1098,20 +1158,24 @@ Each capability includes:
 ### Critical Path Dependencies
 
 **Foundation Layer** (must complete first):
+
 1. MONOREPO_STRUCTURE
 2. SQLITE_SCHEMA
 3. CONTENT_HASH_IMPLEMENTATION
 4. ATOMIC_FILE_WRITER
 
 **Capture Layer** (depends on foundation):
+
 1. VOICE_POLLING_ICLOUD → WHISPER_TRANSCRIPTION → DIRECT_EXPORT_VOICE
 2. EMAIL_POLLING_GMAIL → EMAIL_NORMALIZATION → DIRECT_EXPORT_EMAIL
 
 **Process Layer** (orthogonal to capture):
+
 1. DEDUPLICATION_LOGIC (shared by both channels)
 2. CAPTURE_STATE_MACHINE (shared by both channels)
 
 **Output Layer** (depends on foundation + capture):
+
 1. DIRECT_EXPORT_VOICE (voice-specific)
 2. DIRECT_EXPORT_EMAIL (email-specific)
 3. PLACEHOLDER_EXPORT (voice failure path)
@@ -1119,6 +1183,7 @@ Each capability includes:
 ### Resource Constraints
 
 **MPPP Hard Constraints**:
+
 - Maximum 4 packages (foundation, storage, capture, cli)
 - Maximum 4 tables (captures, exports_audit, errors_log, sync_state)
 - Build time < 30s
@@ -1127,6 +1192,7 @@ Each capability includes:
 - Sequential processing only (no parallelism)
 
 **Performance Constraints**:
+
 - Capture → staging < 100ms (p95)
 - Duplicate check < 10ms (p95)
 - Export write < 50ms (p95)
@@ -1134,6 +1200,7 @@ Each capability includes:
 - CLI cold start < 150ms (p95)
 
 **Quality Constraints**:
+
 - Zero circular dependencies
 - 100% test coverage for High-risk capabilities
 - Zero flaky tests (5 consecutive clean runs)
@@ -1146,27 +1213,32 @@ Each capability includes:
 ### High-Risk Capabilities → ADRs
 
 **VOICE_POLLING_ICLOUD**:
+
 - ADR-0001: Voice File Sovereignty
 - ADR-0006: Late Hash Binding for Voice
 - ADR-0008: Sequential Processing MPPP
 
 **SQLITE_SCHEMA**:
+
 - ADR-0003: Four-Table Hard Cap
 - ADR-0004: Status-Driven State Machine
 - ADR-0005: WAL Mode Normal Sync
 - ADR-0010: ULID-Based Deterministic Filenames
 
 **CONTENT_HASH_IMPLEMENTATION**:
+
 - ADR-0002: Dual Hash Migration (superseded, SHA-256 only)
 - ADR-0006: Late Hash Binding for Voice
 
 **ATOMIC_FILE_WRITER**:
+
 - ADR-0009: Atomic Write via Temp-Then-Rename Pattern
 - ADR-0010: ULID-Based Deterministic Filenames
 - ADR-0011: Inbox-Only Export Pattern
 - ADR-0020: Foundation Direct Export Pattern
 
 **WHISPER_TRANSCRIPTION**:
+
 - ADR-0006: Late Hash Binding for Voice
 - ADR-0008: Sequential Processing MPPP
 - ADR-0014: Placeholder Export Immutability
@@ -1174,74 +1246,87 @@ Each capability includes:
 ### High-Risk/TDD Required → Guides
 
 **VOICE_POLLING_ICLOUD**:
+
 - guide-polling-implementation.md
 - guide-capture-debugging.md
 - guide-tdd-applicability.md
 
 **WHISPER_TRANSCRIPTION**:
+
 - guide-whisper-transcription.md
 - guide-error-recovery.md
 
 **DEDUPLICATION_LOGIC**:
+
 - guide-tdd-applicability.md
 
 **ATOMIC_FILE_WRITER**:
+
 - guide-obsidian-bridge-usage.md
 
 **CRASH_RECOVERY_MECHANISM**:
+
 - guide-error-recovery.md
 - guide-crash-matrix-test-plan.md
 
 **FAULT_INJECTION_FRAMEWORK**:
+
 - guide-fault-injection-registry.md
 - guide-crash-matrix-test-plan.md
 
 **HOURLY_BACKUP_AUTOMATION**:
+
 - guide-backup-verification.md
 - guide-backup-restore-drill.md
 
 **BACKUP_VERIFICATION_PROTOCOL**:
+
 - guide-backup-verification.md
 - guide-backup-restore-drill.md
 
 **DOCTOR_HEALTH_CHECKS**:
+
 - guide-health-command.md
 - guide-cli-doctor-implementation.md
 
 **TESTKIT_INTEGRATION**:
+
 - guide-testkit-usage.md
 - guide-testkit-standardization.md
 - guide-phase1-testing-patterns.md
 
 **CLI_FOUNDATION**:
+
 - guide-health-command.md
 - guide-cli-doctor-implementation.md
 
 **GMAIL_OAUTH2_SETUP**:
+
 - guide-gmail-oauth2-setup.md
 - guide-polling-implementation.md
 
 **MONOREPO_STRUCTURE**:
+
 - guide-monorepo-mppp.md
 
 ---
 
 ## Glossary
 
-| Term | Definition |
-|------|------------|
-| **MPPP** | Minimum Publishable Product Pair (Phase 1 scope: voice + email capture) |
-| **ULID** | Universally Unique Lexicographically Sortable Identifier (time-ordered, collision-resistant) |
-| **WAL Mode** | Write-Ahead Logging (SQLite journal mode for crash safety + concurrency) |
-| **Content Hash** | SHA-256 hash of normalized content (for deduplication) |
-| **Audio Fingerprint** | SHA-256 hash of first 4MB of audio file (early voice dedup) |
-| **Channel Native ID** | Source-specific unique identifier (file path for voice, message_id for email) |
-| **Status State Machine** | Capture lifecycle: staged → transcribed → exported (immutable terminal states) |
-| **Placeholder Export** | Markdown file exported when transcription fails (`[TRANSCRIPTION_FAILED]`) |
-| **Direct Export** | Synchronous export to vault (no outbox queue in MPPP) |
-| **Atomic Write** | Temp-then-rename pattern (zero partial writes guarantee) |
-| **Fault Injection** | Deterministic crash simulation for testing recovery paths |
-| **TDD** | Test-Driven Development (required for high-risk capabilities) |
+| Term                     | Definition                                                                                   |
+| ------------------------ | -------------------------------------------------------------------------------------------- |
+| **MPPP**                 | Minimum Publishable Product Pair (Phase 1 scope: voice + email capture)                      |
+| **ULID**                 | Universally Unique Lexicographically Sortable Identifier (time-ordered, collision-resistant) |
+| **WAL Mode**             | Write-Ahead Logging (SQLite journal mode for crash safety + concurrency)                     |
+| **Content Hash**         | SHA-256 hash of normalized content (for deduplication)                                       |
+| **Audio Fingerprint**    | SHA-256 hash of first 4MB of audio file (early voice dedup)                                  |
+| **Channel Native ID**    | Source-specific unique identifier (file path for voice, message_id for email)                |
+| **Status State Machine** | Capture lifecycle: staged → transcribed → exported (immutable terminal states)               |
+| **Placeholder Export**   | Markdown file exported when transcription fails (`[TRANSCRIPTION_FAILED]`)                   |
+| **Direct Export**        | Synchronous export to vault (no outbox queue in MPPP)                                        |
+| **Atomic Write**         | Temp-then-rename pattern (zero partial writes guarantee)                                     |
+| **Fault Injection**      | Deterministic crash simulation for testing recovery paths                                    |
+| **TDD**                  | Test-Driven Development (required for high-risk capabilities)                                |
 
 ---
 

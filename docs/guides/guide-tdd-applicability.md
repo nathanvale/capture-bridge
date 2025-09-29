@@ -19,11 +19,12 @@ This guide defines **when Test-Driven Development (TDD) is required, optional, o
 
 This guide supports the **MPPP scope** (voice + email capture with direct-to-inbox export) and aligns with [Master PRD v2.3.0-MPPP](../master/prd-master.md) and [Roadmap v2.0.0-MPPP](../master/roadmap.md).
 
-*Nerdy aside: Think of TDD like coffee—absolutely required for mornings with production code, optional for lazy Sunday UI tweaks, and skipped entirely when you're just taste-testing a new bean.*
+_Nerdy aside: Think of TDD like coffee—absolutely required for mornings with production code, optional for lazy Sunday UI tweaks, and skipped entirely when you're just taste-testing a new bean._
 
 ## When to Use This Guide
 
 Use this guide when:
+
 - Writing technical specifications and making TDD applicability decisions
 - Planning feature development and test strategy
 - Reviewing PRs to assess test coverage appropriateness
@@ -35,11 +36,13 @@ This guide applies to all features and cross-cutting infrastructure across the A
 ## Prerequisites
 
 **Required Knowledge:**
+
 - Understanding of unit, integration, and contract testing concepts
 - Familiarity with the ADHD Brain architecture ([Master PRD](../master/prd-master.md))
 - Basic risk assessment skills
 
 **Required Reading:**
+
 - [TestKit Usage Guide](./guide-testkit-usage.md) - for implementation patterns
 - [TestKit Technical Specification](../cross-cutting/../guides/guide-testkit-usage.md) - for tooling details
 
@@ -58,6 +61,7 @@ Is this code handling data persistence, security, or critical business logic?
 ```
 
 **Key Rules:**
+
 - 🧠 Core cognition, 🔁 concurrency, 💾 storage, 🔐 security → **TDD Required**
 - 🖥️ UI flows, 🧩 thin adapters → **TDD Optional**
 - 🧪 Spikes, 🗒️ one-off scripts, 🛠️ throwaway experiments → **Skip TDD**
@@ -69,6 +73,7 @@ Is this code handling data persistence, security, or critical business logic?
 **Definition:** Failures could cause data loss, security breach, financial impact, or compliance failure.
 
 **Characteristics:**
+
 - Data corruption or loss possible
 - Security/privacy boundaries
 - Financial calculations or transactions
@@ -76,6 +81,7 @@ Is this code handling data persistence, security, or critical business logic?
 - Core business logic that cannot fail
 
 **Examples:**
+
 - Database migrations
 - Authentication/authorization
 - Data deduplication
@@ -86,12 +92,14 @@ Is this code handling data persistence, security, or critical business logic?
 **Definition:** Failures cause performance degradation, user frustration, or require recovery procedures.
 
 **Characteristics:**
+
 - Performance-critical paths
 - Complex algorithmic logic
 - External service integrations
 - User-facing workflows with state
 
 **Examples:**
+
 - Search ranking algorithms
 - API response transformations
 - Caching strategies
@@ -102,12 +110,14 @@ Is this code handling data persistence, security, or critical business logic?
 **Definition:** Failures cause visual glitches, non-critical UX issues, or are easily reversible.
 
 **Characteristics:**
+
 - UI polish and animations
 - Convenience features
 - Display formatting
 - Non-critical preferences
 
 **Examples:**
+
 - Theme switching
 - Tooltip positioning
 - Loading spinners
@@ -156,6 +166,7 @@ Is this code handling data persistence, security, or critical business logic?
 ### Step 3: Define Test Scope
 
 Using the [Test Strategy Matrix](#test-strategy-matrix), determine:
+
 1. What unit tests are needed (pure logic, transforms, parsers)
 2. What integration tests are needed (DB, API, file system boundaries)
 3. What contract tests are needed (mocked external dependencies)
@@ -167,6 +178,7 @@ Add the required TDD Applicability section to your technical specification:
 
 ```markdown
 ### TDD Applicability Decision
+
 - Risk class: {High/Med/Low}
 - Decision: {Required | Optional | Skip}
 - Why: {tie to risk}
@@ -188,45 +200,52 @@ Add the required TDD Applicability section to your technical specification:
 ## Module Guidance (Project-Specific)
 
 ### Capture Ingestion
+
 - **TDD Required:** parsers, dedupe, timestamp/locale handling
 - **Optional:** UI toasts, optimistic state
 
 ### Reminders & Scheduling
+
 - **TDD Required:** recurrence, time zone math, missed-trigger recovery
 - **Optional:** notification chrome
 
 ### Search (keyword)
+
 - **TDD Required:** indexing, BM25 fallbacks, result ranking
 - **Optional:** UI search box
 
 ### RAG (future phase-in)
+
 - **TDD Required:** EmbeddingProvider, VectorIndex, retrieval scoring
 - **Optional:** prompt text tuning
 
 ### Privacy & Export/Import
+
 - **TDD Required:** redaction, checksums, backward import compatibility
 
 ## Test Strategy Matrix
 
-| Layer                 | Goal                                  | TDD Policy       | Tooling                     |
-|-----------------------|---------------------------------------|------------------|-----------------------------|
-| Unit (pure logic)     | Deterministic transforms/parse/rules  | Required         | Vitest                      |
-| Integration (RR7+DB)  | Loader/action + SQLite contract       | Required for core| Vitest + MemoryRouter + DB  |
-| Contract (adapters)   | Mock-first AI/DB boundaries           | Required         | Vitest + mocks              |
-| E2E-lite (smoke)      | Happy-path vertical slice             | Optional early   | Playwright (later)          |
-| Visual/UI             | Render correctness, flows             | Optional         | RTL for critical screens    |
+| Layer                | Goal                                 | TDD Policy        | Tooling                    |
+| -------------------- | ------------------------------------ | ----------------- | -------------------------- |
+| Unit (pure logic)    | Deterministic transforms/parse/rules | Required          | Vitest                     |
+| Integration (RR7+DB) | Loader/action + SQLite contract      | Required for core | Vitest + MemoryRouter + DB |
+| Contract (adapters)  | Mock-first AI/DB boundaries          | Required          | Vitest + mocks             |
+| E2E-lite (smoke)     | Happy-path vertical slice            | Optional early    | Playwright (later)         |
+| Visual/UI            | Render correctness, flows            | Optional          | RTL for critical screens   |
 
 ## Common Patterns
 
 ### Pattern 1: High-Risk Storage Code
 
 **Always use TDD for:**
+
 - Database schema migrations
 - Transaction logic
 - Backup/restore operations
 - Data deduplication
 
 **Example approach:**
+
 1. Write failing test for migration
 2. Implement migration
 3. Verify data integrity
@@ -235,11 +254,13 @@ Add the required TDD Applicability section to your technical specification:
 ### Pattern 2: Medium-Risk Integration Code
 
 **Strongly recommend TDD for:**
+
 - External API calls with retry logic
 - Caching strategies
 - Complex data transformations
 
 **Example approach:**
+
 1. Mock external dependency
 2. Write contract test
 3. Implement with error handling
@@ -248,11 +269,13 @@ Add the required TDD Applicability section to your technical specification:
 ### Pattern 3: Low-Risk UI Code
 
 **Optional TDD for:**
+
 - Stable UI flows with complex state
 - Form validation logic
 - Display calculations
 
 **Skip TDD for:**
+
 - Visual polish and animations
 - Prototype UIs
 - One-off experiments
@@ -260,6 +283,7 @@ Add the required TDD Applicability section to your technical specification:
 ### Anti-Patterns to Avoid
 
 **Common Mistakes:**
+
 1. **Testing everything:** Wastes time, creates maintenance burden
 2. **Testing nothing:** Accumulates risk, slows development
 3. **Testing implementation:** Tests break with every refactor
@@ -267,6 +291,7 @@ Add the required TDD Applicability section to your technical specification:
 5. **Skipping TDD for "simple" storage code:** Data integrity is never simple
 
 **Red Flags:**
+
 - Test suite takes > 5 minutes locally
 - Tests require specific execution order
 - Tests pass locally but fail in CI
@@ -278,6 +303,7 @@ Add the required TDD Applicability section to your technical specification:
 ### Problem: Team disagrees on risk classification
 
 **Solution:**
+
 1. Default to higher risk classification
 2. Consult architecture team for tie-breaking
 3. Document decision rationale in spec
@@ -286,6 +312,7 @@ Add the required TDD Applicability section to your technical specification:
 ### Problem: Need to skip TDD for high-risk code due to constraints
 
 **Solution:**
+
 1. Document specific constraints (timeline, technical blocker)
 2. Propose mitigation strategy (extra QA, monitoring)
 3. Get architecture team approval
@@ -295,6 +322,7 @@ Add the required TDD Applicability section to your technical specification:
 ### Problem: Production incident requires immediate fix
 
 **Solution:**
+
 1. Fix-first approach acceptable
 2. Add tests immediately after stabilization
 3. Document in incident report
@@ -303,6 +331,7 @@ Add the required TDD Applicability section to your technical specification:
 ### Problem: Existing code has no tests, frequent bugs
 
 **Solution:**
+
 - Prioritize based on defect density, change frequency, and risk level
 - Focus on code that breaks often or changes frequently
 - Add tests when modifying existing code
@@ -315,16 +344,19 @@ Add the required TDD Applicability section to your technical specification:
 **Risk:** HIGH (data loss if audio parsing fails)
 
 **TDD Required:**
+
 - Audio parser
 - Timestamp extraction
 - Deduplication logic
 - Storage operations
 
 **TDD Optional:**
+
 - Playback UI controls
 - Waveform display
 
 **TDD Skip:**
+
 - Waveform visualization prototype
 - UI animations
 
@@ -336,15 +368,18 @@ See [Voice Capture Technical Spec](../features/capture/spec-capture-voice-tech.m
 **Risk:** HIGH (data integrity critical)
 
 **TDD Required:**
+
 - Transaction logic
 - Migration scripts
 - Backup/restore operations
 - Content hash deduplication
 
 **TDD Optional:**
+
 - Admin UI for viewing logs
 
 **TDD Skip:**
+
 - Performance monitoring dashboard prototype
 
 **Implementation:**
@@ -355,15 +390,18 @@ See [Staging Ledger Technical Spec](../features/staging-ledger/spec-staging-tech
 **Risk:** MEDIUM (degraded UX but no data loss)
 
 **TDD Required:**
+
 - Search indexing logic
 - Result ranking algorithm
 - Query parsing
 
 **TDD Optional:**
+
 - Search box autocomplete
 - Result highlighting
 
 **TDD Skip:**
+
 - Search animation effects
 
 **Implementation:**
@@ -402,17 +440,21 @@ A: Unit for pure logic, integration for boundaries (DB, API, file system). When 
 ## Related Documentation
 
 ### Foundation
+
 - [Master PRD v2.3.0-MPPP](../master/prd-master.md) - Overall project vision and scope
 - [Roadmap v2.0.0-MPPP](../master/roadmap.md) - Development phases and priorities
 
 ### Testing Infrastructure
+
 - [TestKit Technical Specification](../cross-cutting/../guides/guide-testkit-usage.md) - Testing tools and utilities
 - [TestKit Usage Guide](./guide-testkit-usage.md) - Practical testing patterns
 - [Test Strategy Guide](./test-strategy.md) - Overall testing approach
 - [Phase 1 Testing Patterns](./phase1-testing-patterns.md) - MPPP-specific patterns
 
 ### Feature Specifications
+
 All technical specifications reference this guide for TDD decisions:
+
 - [Voice Capture Technical Spec](../features/capture/spec-capture-voice-tech.md)
 - [Staging Ledger Technical Spec](../features/staging-ledger/spec-staging-tech.md)
 - [Obsidian Bridge Technical Spec](../features/obsidian-bridge/spec-obsidian-tech.md)
@@ -423,6 +465,7 @@ All technical specifications reference this guide for TDD decisions:
 ### When to Update This Guide
 
 **Review Triggers:**
+
 - Quarterly assessment of risk classifications
 - Post-incident reviews that reveal testing gaps
 - Introduction of new technology layers (e.g., RAG implementation)
@@ -430,6 +473,7 @@ All technical specifications reference this guide for TDD decisions:
 - Test suite execution exceeding 5 minutes
 
 **Change Process:**
+
 1. Propose changes via PR with clear rationale
 2. Architecture team review required
 3. Document impact on existing specs
@@ -437,14 +481,16 @@ All technical specifications reference this guide for TDD decisions:
 5. Communicate changes in team sync
 
 ### Version History
+
 - v1.1.0 (2025-09-28): Standardized to guide template format
 - v1.0.0 (2025-09-26): Initial specification with risk-based framework
 
 ### Known Limitations
+
 - E2E testing guidance is minimal (deferred to later phase)
 - Performance testing strategy not yet defined
 - Visual regression testing approach TBD
 
 ---
 
-*Remember: TDD is a tool, not a religion. Apply it where it delivers value, skip it where it doesn't. The goal is confidence in critical paths, not ceremonial testing of every getter/setter.*
+_Remember: TDD is a tool, not a religion. Apply it where it delivers value, skip it where it doesn't. The goal is confidence in critical paths, not ceremonial testing of every getter/setter._

@@ -26,13 +26,13 @@ The ADHD Brain capture system requires a monorepo foundation that supports:
 
 ### Success Metrics
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Build time | < 30s | `time pnpm build` |
-| Test suite | < 30s | `vitest run` duration |
-| Setup time | < 5 min | Fresh clone → `pnpm install && pnpm build` |
-| CLI startup | < 1s | `time adhd --version` |
-| Circular deps | 0 | `pnpm list --depth=Infinity` validation |
+| Metric        | Target  | Measurement                                |
+| ------------- | ------- | ------------------------------------------ |
+| Build time    | < 30s   | `time pnpm build`                          |
+| Test suite    | < 30s   | `vitest run` duration                      |
+| Setup time    | < 5 min | Fresh clone → `pnpm install && pnpm build` |
+| CLI startup   | < 1s    | `time adhd --version`                      |
+| Circular deps | 0       | `pnpm list --depth=Infinity` validation    |
 
 ### One Number Success Metric
 
@@ -224,7 +224,13 @@ pnpm doctor
 - No remote Turbo cache for MPPP (privacy-first)
 - SQLite local-only (no cloud sync)
 - No telemetry or external services
-- Git ignored: `node_modules`, `dist`, `.turbo`, coverage
+- Comprehensive .gitignore: dependencies, builds, caches, environment files, security artifacts
+
+**⚠️ CRITICAL GAP IDENTIFIED:** Current .gitignore (5 lines) vs @orchestr8 Gold Standard (160+ lines)
+
+- Missing: Build artifacts (.turbo/, .tsbuildinfo), testing (coverage/, .vitest/), environment security (.env patterns), IDE configs, caches, SQLite artifacts, security files
+- **Risk:** Accidental commits of sensitive data, build artifacts, and environment files
+- **Action Required:** Adopt @orchestr8 .gitignore patterns as HIGH PRIORITY (see alignment plan update)
 
 ### Reliability
 
@@ -247,12 +253,12 @@ pnpm doctor
 
 **Build Performance:**
 
-| Operation | Target | Strategy |
-|-----------|--------|----------|
-| Full build | < 30s | Turbo parallel tasks + TSUP |
-| Incremental | < 5s | Turbo cache + watch mode |
-| Test suite | < 30s | Vitest parallel + in-memory DB |
-| Typecheck | < 10s | TSC with incremental builds |
+| Operation   | Target | Strategy                       |
+| ----------- | ------ | ------------------------------ |
+| Full build  | < 30s  | Turbo parallel tasks + TSUP    |
+| Incremental | < 5s   | Turbo cache + watch mode       |
+| Test suite  | < 30s  | Vitest parallel + in-memory DB |
+| Typecheck   | < 10s  | TSC with incremental builds    |
 
 **Development Performance:**
 
@@ -280,13 +286,13 @@ pnpm doctor
 
 ### Risk Assessment
 
-| Component | Risk Class | TDD Required? | Rationale |
-|-----------|-----------|---------------|-----------|
-| Package boundaries | **HIGH** | ✅ YES | Circular deps cascade to all features |
-| Dependency graph | **HIGH** | ✅ YES | Foundation errors block everything |
-| Test isolation | **HIGH** | ✅ YES | Flaky tests destroy productivity |
-| Build pipeline | **MEDIUM** | ⚠️ RECOMMENDED | Turbo misconfig causes subtle issues |
-| ESLint rules | **LOW** | ❌ NO | Visual verification sufficient |
+| Component          | Risk Class | TDD Required?  | Rationale                             |
+| ------------------ | ---------- | -------------- | ------------------------------------- |
+| Package boundaries | **HIGH**   | ✅ YES         | Circular deps cascade to all features |
+| Dependency graph   | **HIGH**   | ✅ YES         | Foundation errors block everything    |
+| Test isolation     | **HIGH**   | ✅ YES         | Flaky tests destroy productivity      |
+| Build pipeline     | **MEDIUM** | ⚠️ RECOMMENDED | Turbo misconfig causes subtle issues  |
+| ESLint rules       | **LOW**    | ❌ NO          | Visual verification sufficient        |
 
 ### TDD Required Components
 
@@ -430,12 +436,12 @@ pnpm doctor
   ```typescript
   // tsup.config.ts
   export default defineConfig({
-    entry: ['src/index.ts'],
-    format: ['esm', 'cjs'],
+    entry: ["src/index.ts"],
+    format: ["esm", "cjs"],
     dts: true,
     splitting: false,
     sourcemap: true,
-    clean: true
+    clean: true,
   })
   ```
 - **Consequences:** Fast builds, dual format support, tree-shakeable
@@ -452,16 +458,16 @@ pnpm doctor
     createBaseVitestConfig({
       test: {
         projects: getVitestProjects(),
-        environment: 'node',
+        environment: "node",
         coverage: {
           thresholds: {
             statements: 80,
             branches: 80,
             functions: 80,
-            lines: 80
-          }
-        }
-      }
+            lines: 80,
+          },
+        },
+      },
     })
   )
   ```
@@ -480,9 +486,9 @@ pnpm doctor
     {
       plugins: { turbo },
       rules: {
-        'turbo/no-undeclared-env-vars': 'off'
-      }
-    }
+        "turbo/no-undeclared-env-vars": "off",
+      },
+    },
   ]
   ```
 - **Consequences:** Single config file, easier to reason about
@@ -524,7 +530,7 @@ All architectural decisions locked for MPPP implementation. No open questions.
 
 ### Root package.json Scripts
 
-**From `/Users/nathanvale/code/bun-changesets-template/package.json`:**
+**Updated for ADHD Brain with .gitignore sync:**
 
 ```json
 {
@@ -539,7 +545,10 @@ All architectural decisions locked for MPPP implementation. No open questions.
     "typecheck": "turbo run typecheck --output-logs=errors-only",
     "format": "prettier --write --cache --cache-location .prettierrcache .",
     "format:check": "prettier --check --cache --cache-location .prettierrcache .",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "doctor": "node scripts/doctor.js",
+    "sync:gitignore": "node scripts/sync-gitignore.js",
+    "setup": "pnpm install && pnpm sync:gitignore && pnpm build && pnpm test"
   },
   "packageManager": "pnpm@9.15.4",
   "engines": {
@@ -548,6 +557,12 @@ All architectural decisions locked for MPPP implementation. No open questions.
   }
 }
 ```
+
+**New Scripts Added:**
+
+- `doctor`: Health check with .gitignore validation
+- `sync:gitignore`: Sync .gitignore with @orchestr8 gold standard
+- `setup`: Complete setup for new clones (replaces manual steps)
 
 ### Turbo Task Pipeline
 
@@ -561,13 +576,22 @@ All architectural decisions locked for MPPP implementation. No open questions.
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "dist-node/**", "dist-types/**", ".tsbuildinfo"],
       "cache": true,
-      "inputs": ["$TURBO_DEFAULT$", "!**/*.test.ts", "!**/*.spec.ts", "!tests/**"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.test.ts",
+        "!**/*.spec.ts",
+        "!tests/**"
+      ]
     },
     "test": {
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
       "cache": true,
-      "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts", "src/**/*.{ts,tsx,js,jsx}"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "vitest.config.ts",
+        "src/**/*.{ts,tsx,js,jsx}"
+      ],
       "env": ["NODE_ENV", "VITEST_SILENT", "CI"],
       "outputLogs": "new-only"
     },
@@ -673,19 +697,13 @@ packages:
       "@adhd-brain/core": ["./packages/core/src/index.ts"],
       "@adhd-brain/storage": ["./packages/storage/src/index.ts"],
       "@adhd-brain/capture": ["./packages/capture/src/index.ts"],
-      "@orchestr8/testkit": ["./node_modules/@orchestr8/testkit/dist/index.d.ts"]
+      "@orchestr8/testkit": [
+        "./node_modules/@orchestr8/testkit/dist/index.d.ts"
+      ]
     }
   },
-  "include": [
-    "packages/*/src/**/*",
-    "apps/*/src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "coverage",
-    ".turbo"
-  ]
+  "include": ["packages/*/src/**/*", "apps/*/src/**/*"],
+  "exclude": ["node_modules", "dist", "coverage", ".turbo"]
 }
 ```
 
@@ -694,19 +712,19 @@ packages:
 **From `/Users/nathanvale/code/bun-changesets-template/eslint.config.mjs`:**
 
 ```javascript
-import js from '@eslint/js'
-import typescript from 'typescript-eslint'
-import turbo from 'eslint-plugin-turbo'
+import js from "@eslint/js"
+import typescript from "typescript-eslint"
+import turbo from "eslint-plugin-turbo"
 
 export default [
   {
     ignores: [
-      '**/dist/**',
-      '**/build/**',
-      '**/.turbo/**',
-      '**/coverage/**',
-      '**/node_modules/**'
-    ]
+      "**/dist/**",
+      "**/build/**",
+      "**/.turbo/**",
+      "**/coverage/**",
+      "**/node_modules/**",
+    ],
   },
 
   js.configs.recommended,
@@ -715,25 +733,25 @@ export default [
   {
     plugins: { turbo },
     rules: {
-      'turbo/no-undeclared-env-vars': 'off'
-    }
+      "turbo/no-undeclared-env-vars": "off",
+    },
   },
 
   {
     rules: {
-      '@typescript-eslint/no-unused-vars': [
-        'warn',
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
         {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_'
-        }
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+        },
       ],
-      '@typescript-eslint/no-explicit-any': 'warn',
-      'no-console': 'off',
-      'prefer-const': 'warn',
-      'no-var': 'error'
-    }
-  }
+      "@typescript-eslint/no-explicit-any": "warn",
+      "no-console": "off",
+      "prefer-const": "warn",
+      "no-var": "error",
+    },
+  },
 ]
 ```
 
@@ -761,31 +779,497 @@ export default [
 **From `/Users/nathanvale/code/bun-changesets-template/vitest.config.ts`:**
 
 ```typescript
-import { defineConfig } from 'vitest/config'
-import { createBaseVitestConfig } from '@orchestr8/testkit/vitest-config'
+import { defineConfig } from "vitest/config"
+import { createBaseVitestConfig } from "@orchestr8/testkit/vitest-config"
 
 export default defineConfig(
   createBaseVitestConfig({
     test: {
-      name: 'adhd-brain',
-      environment: 'node',
+      name: "adhd-brain",
+      environment: "node",
       globals: true,
       coverage: {
-        enabled: process.env.CI === 'true',
-        provider: 'v8',
-        reporter: ['text', 'html', 'json'],
-        reportsDirectory: './coverage',
+        enabled: process.env.CI === "true",
+        provider: "v8",
+        reporter: ["text", "html", "json"],
+        reportsDirectory: "./coverage",
         thresholds: {
           statements: 80,
           branches: 80,
           functions: 80,
-          lines: 80
-        }
-      }
-    }
+          lines: 80,
+        },
+      },
+    },
   })
 )
 ```
+
+### .gitignore Sync Script Implementation
+
+**`scripts/sync-gitignore.js`:**
+
+```javascript
+#!/usr/bin/env node
+/**
+ * Sync .gitignore with @orchestr8 gold standard patterns
+ * Preserves ADHD Brain specific patterns (.vault-id)
+ */
+
+import { readFileSync, writeFileSync } from "fs"
+import { fileURLToPath } from "url"
+import { dirname, join } from "path"
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const rootDir = dirname(__dirname)
+
+// @orchestr8 gold standard .gitignore content (fetch from GitHub or local copy)
+const ORCHESTR8_GITIGNORE_URL =
+  "https://raw.githubusercontent.com/nathanvale/orchestr8/main/.gitignore"
+
+// ADHD Brain specific patterns to preserve
+const ADHD_BRAIN_SPECIFIC = ["# ADHD Brain Specific", ".vault-id", ""].join(
+  "\n"
+)
+
+async function syncGitignore() {
+  console.log("🔄 Syncing .gitignore with @orchestr8 gold standard...")
+
+  try {
+    // Fetch @orchestr8 .gitignore
+    const response = await fetch(ORCHESTR8_GITIGNORE_URL)
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch @orchestr8 .gitignore: ${response.statusText}`
+      )
+    }
+
+    const orchestr8Content = await response.text()
+
+    // Combine ADHD Brain specific + @orchestr8 patterns
+    const combinedContent = [ADHD_BRAIN_SPECIFIC, orchestr8Content].join("\n")
+
+    // Write to .gitignore
+    const gitignorePath = join(rootDir, ".gitignore")
+    writeFileSync(gitignorePath, combinedContent, "utf8")
+
+    console.log("✅ .gitignore updated successfully!")
+    console.log("📊 Patterns: ADHD Brain (2) + @orchestr8 (160+)")
+    console.log(
+      "🔒 Security: Environment files, SQLite, cache patterns now protected"
+    )
+  } catch (error) {
+    console.error("❌ Failed to sync .gitignore:", error.message)
+    process.exit(1)
+  }
+}
+
+syncGitignore()
+```
+
+**`scripts/doctor.js` - Enhanced with .gitignore Validation:**
+
+```javascript
+#!/usr/bin/env node
+/**
+ * ADHD Brain Doctor - Health check with .gitignore validation
+ */
+
+import { readFileSync, existsSync } from "fs"
+import { execSync } from "child_process"
+import { join, dirname } from "path"
+import { fileURLToPath } from "url"
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const rootDir = dirname(__dirname)
+
+// Critical .gitignore patterns that MUST be present
+const CRITICAL_PATTERNS = [
+  // Security
+  ".env",
+  "*.pem",
+  "*.key",
+  "private/",
+
+  // SQLite (critical for ADHD Brain)
+  "*.sqlite",
+  "*.sqlite-wal",
+  "*.sqlite-shm",
+  "*.db",
+  "*.db-wal",
+  "*.db-shm",
+
+  // Build artifacts
+  ".turbo/",
+  "*.tsbuildinfo",
+
+  // Performance caches
+  ".eslintcache",
+  ".prettiercache",
+  ".cache/",
+
+  // Claude Code
+  ".claude/settings.local.json",
+  "PROJECT_INDEX.json",
+]
+
+let hasErrors = false
+
+function checkSection(title, checks) {
+  console.log(`\n${checks.every((c) => c.passed) ? "✅" : "⚠️ "} ${title}`)
+
+  checks.forEach((check) => {
+    const icon = check.passed ? "✓" : "❌"
+    console.log(`  ${icon} ${check.message}`)
+    if (!check.passed) hasErrors = true
+  })
+}
+
+function checkGitignore() {
+  const gitignorePath = join(rootDir, ".gitignore")
+
+  if (!existsSync(gitignorePath)) {
+    return [
+      {
+        passed: false,
+        message: ".gitignore file missing",
+      },
+    ]
+  }
+
+  const content = readFileSync(gitignorePath, "utf8")
+  const lines = content.split("\n").map((line) => line.trim())
+
+  const checks = []
+  const missingPatterns = []
+  const presentPatterns = []
+
+  CRITICAL_PATTERNS.forEach((pattern) => {
+    const isPresent = lines.some(
+      (line) =>
+        line === pattern ||
+        line.includes(pattern.replace("*", "")) ||
+        (pattern.includes("*") &&
+          lines.some((l) => new RegExp(pattern.replace("*", ".*")).test(l)))
+    )
+
+    if (isPresent) {
+      presentPatterns.push(pattern)
+    } else {
+      missingPatterns.push(pattern)
+    }
+  })
+
+  // Overall completeness check
+  const totalLines = lines.filter(
+    (line) => line && !line.startsWith("#")
+  ).length
+  const orchestr8Expected = 160
+  const completeness = Math.round((totalLines / orchestr8Expected) * 100)
+
+  checks.push({
+    passed: completeness >= 90,
+    message: `.gitignore completeness: ${completeness}% (${totalLines}/${orchestr8Expected}+ patterns)`,
+  })
+
+  if (missingPatterns.length > 0) {
+    checks.push({
+      passed: false,
+      message: `Missing ${missingPatterns.length} critical patterns: ${missingPatterns.slice(0, 3).join(", ")}${missingPatterns.length > 3 ? "..." : ""}`,
+    })
+  }
+
+  if (presentPatterns.length > 0) {
+    checks.push({
+      passed: true,
+      message: `${presentPatterns.length} critical patterns present`,
+    })
+  }
+
+  return checks
+}
+
+async function runDoctor() {
+  console.log("🩺 ADHD Brain Doctor - System Health Check\n")
+
+  // Environment checks
+  checkSection("Environment", [
+    {
+      passed: process.version.match(/v(\d+)/)[1] >= 20,
+      message: `Node ${process.version}`,
+    },
+    // Add other environment checks...
+  ])
+
+  // Git Configuration & Security
+  checkSection("Git Configuration & Security", checkGitignore())
+
+  // ... other existing checks ...
+
+  console.log("\n" + "=".repeat(50))
+
+  if (hasErrors) {
+    console.log("❌ Critical issues found! Address immediately for security.")
+    console.log(
+      '\n🔧 Quick fix: Run "pnpm sync:gitignore" to adopt @orchestr8 patterns'
+    )
+    process.exit(1)
+  } else {
+    console.log("✅ All checks passed! System healthy. 🎉")
+  }
+}
+
+runDoctor()
+```
+
+## 11) .gitignore Synchronization (HIGH PRIORITY)
+
+### Critical Gap Analysis
+
+**Current ADHD Brain .gitignore (5 lines):**
+
+```
+.vault-id
+node_modules
+dist
+coverage
+```
+
+**@orchestr8 Gold Standard (160+ lines with comprehensive coverage):**
+
+### Missing Critical Categories
+
+#### 1. Build Artifacts & Performance
+
+```gitignore
+# Missing from ADHD Brain
+.turbo/                    # Turbo cache (critical for monorepo)
+*.tsbuildinfo             # TypeScript incremental builds
+.next/                    # Next.js builds (future-proofing)
+.nuxt/                    # Nuxt builds
+out/                      # Additional build outputs
+dist-node/                # Node-specific builds
+dist-types/               # Type-only builds
+dist-ssr/                 # SSR builds
+```
+
+#### 2. Testing & Coverage
+
+```gitignore
+# Missing from ADHD Brain
+.vitest/                  # Vitest cache
+test-results/             # Test outputs
+playwright-report/        # E2E test reports
+playwright/.cache/        # Playwright cache
+.nyc_output/              # NYC coverage
+*.lcov                    # Coverage files
+junit.xml                 # Test result XML
+```
+
+#### 3. Environment & Security (CRITICAL)
+
+```gitignore
+# Missing from ADHD Brain - SECURITY RISK
+.env                      # Environment files
+.env*.local               # Local environment overrides
+.env.development          # Development env
+.env.production           # Production env
+.env.test                 # Test env
+!.env.example             # Keep example (important pattern)
+
+# Security files
+*.pem                     # SSL certificates
+*.key                     # Private keys
+*.crt                     # Certificates
+*.p12                     # PKCS#12 files
+private/                  # Private directory
+```
+
+#### 4. IDE & Development Tools
+
+```gitignore
+# Missing from ADHD Brain
+.vscode/*                 # VSCode settings
+!.vscode/extensions.json  # Keep extensions list
+!.vscode/settings.json    # Keep workspace settings
+!.vscode/tasks.json       # Keep tasks
+!.vscode/launch.json      # Keep debug config
+.idea/                    # JetBrains IDEs
+*.swp                     # Vim swap files
+*.swo                     # Vim swap files
+*~                        # Backup files
+.fleet/                   # Fleet IDE
+.history/                 # File history
+```
+
+#### 5. Cache & Performance Files
+
+```gitignore
+# Missing from ADHD Brain - PERFORMANCE IMPACT
+.cache/                   # Generic cache
+.parcel-cache/            # Parcel bundler
+.eslintcache              # ESLint cache (important for speed)
+.stylelintcache           # Stylelint cache
+.prettiercache            # Prettier cache (important for speed)
+.grunt/                   # Grunt cache
+.agent-os/cache/          # Agent OS cache
+```
+
+#### 6. Claude Code & Agent Integration
+
+```gitignore
+# Missing from ADHD Brain - CLAUDE CODE SPECIFIC
+.claude/settings.local.json  # Local Claude settings
+PROJECT_INDEX.json           # Claude project index
+
+# Agent OS
+.agentos/                    # Agent OS files
+.agent-os/**                 # Agent OS directory
+```
+
+#### 7. System Files (Cross-Platform)
+
+```gitignore
+# Missing from ADHD Brain
+.DS_Store                 # macOS Finder
+.DS_Store?                # macOS variations
+._*                       # macOS resource forks
+.Spotlight-V100           # macOS Spotlight
+.Trashes                  # macOS Trash
+ehthumbs.db               # Windows thumbnails
+Thumbs.db                 # Windows thumbnails
+desktop.ini               # Windows desktop config
+```
+
+#### 8. Database & SQLite (CRITICAL FOR ADHD BRAIN)
+
+```gitignore
+# Missing from ADHD Brain - DATABASE CRITICAL
+*.sqlite                  # SQLite databases
+*.sqlite-wal              # SQLite WAL files
+*.sqlite-shm              # SQLite shared memory
+*.db                      # Generic database files
+*.db-wal                  # Database WAL files
+*.db-shm                  # Database shared memory
+
+# Special SQLite test patterns
+file:*?mode=memory&cache=shared
+packages/testkit/file:*?mode=memory&cache=shared
+```
+
+#### 9. Temporary & Debug Files
+
+```gitignore
+# Missing from ADHD Brain
+tmp/                      # Temporary directory
+temp/                     # Temporary directory
+test-temp/                # Test temporary
+.tmp/                     # Hidden temporary
+*.tmp                     # Temporary files
+*.bak                     # Backup files
+*.backup                  # Backup files
+
+# Debug files
+*.map                     # Source maps
+.sourceMap                # Source map directory
+
+# Performance data
+.ci-performance-data.json
+.cache-performance.json
+```
+
+#### 10. Package & Archive Files
+
+```gitignore
+# Missing from ADHD Brain
+*.tgz                     # Compressed tarballs
+*.tar.gz                  # Compressed tarballs
+*.zip                     # Zip archives
+*.7z                      # 7-Zip archives
+*.rar                     # RAR archives
+```
+
+### .gitignore Synchronization Plan
+
+#### Phase 1: Immediate Security & Critical Files (HIGH PRIORITY)
+
+```bash
+# 1. Environment & Security (IMMEDIATE)
+echo ".env" >> .gitignore
+echo ".env*.local" >> .gitignore
+echo ".env.development" >> .gitignore
+echo ".env.production" >> .gitignore
+echo ".env.test" >> .gitignore
+echo "!.env.example" >> .gitignore
+echo "*.pem" >> .gitignore
+echo "*.key" >> .gitignore
+echo "private/" >> .gitignore
+
+# 2. Database Files (IMMEDIATE - ADHD Brain uses SQLite)
+echo "*.sqlite" >> .gitignore
+echo "*.sqlite-wal" >> .gitignore
+echo "*.sqlite-shm" >> .gitignore
+echo "*.db" >> .gitignore
+echo "*.db-wal" >> .gitignore
+echo "*.db-shm" >> .gitignore
+
+# 3. Build Artifacts (IMMEDIATE)
+echo ".turbo/" >> .gitignore
+echo "*.tsbuildinfo" >> .gitignore
+```
+
+#### Phase 2: Development Experience & Performance
+
+```bash
+# 4. Cache Files (PERFORMANCE)
+echo ".cache/" >> .gitignore
+echo ".eslintcache" >> .gitignore
+echo ".prettiercache" >> .gitignore
+
+# 5. Testing
+echo ".vitest/" >> .gitignore
+echo "test-results/" >> .gitignore
+echo "playwright-report/" >> .gitignore
+
+# 6. Claude Code Integration
+echo ".claude/settings.local.json" >> .gitignore
+echo "PROJECT_INDEX.json" >> .gitignore
+```
+
+#### Phase 3: Complete @orchestr8 Adoption
+
+Replace entire .gitignore with @orchestr8 version, preserving ADHD Brain specifics:
+
+```gitignore
+# ADHD Brain Specific (preserve)
+.vault-id
+
+# [Full @orchestr8 .gitignore content follows]
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+# ... [complete @orchestr8 patterns]
+```
+
+### Implementation Recommendation
+
+**IMMEDIATE ACTION:** Replace current .gitignore with complete @orchestr8 version + .vault-id
+
+**Rationale:**
+
+- Current 5-line .gitignore has CRITICAL security gaps
+- Missing database file patterns = accidental SQLite commits
+- Missing environment patterns = potential secret leaks
+- Missing build artifacts = repository bloat
+- Missing cache patterns = slower development experience
+
+**Risk if Delayed:**
+
+- ❌ Accidental commit of SQLite databases with sensitive capture data
+- ❌ Environment file leaks (API keys, OAuth tokens)
+- ❌ Build artifact bloat slowing git operations
+- ❌ Cache pollution affecting team development
 
 ## 11) Doctor Command Specification
 
@@ -815,12 +1299,18 @@ pnpm doctor
    - vitest.config.ts valid
    - turbo.json valid
 
-4. **Test Infrastructure:**
+4. **Git Configuration & Security:**
+   - .gitignore completeness (vs @orchestr8 gold standard)
+   - Critical patterns present: SQLite files, environment files, build artifacts
+   - No sensitive files accidentally tracked
+   - Cache patterns configured for performance
+
+5. **Test Infrastructure:**
    - @orchestr8/testkit available
    - In-memory SQLite working
    - MSW imports resolve
 
-5. **Build Outputs:**
+6. **Build Outputs:**
    - `dist/` folders present for built packages
    - Type definitions generated
    - No stale outputs
@@ -844,6 +1334,16 @@ pnpm doctor
   ✓ vitest.config.ts valid
   ✓ turbo.json valid
 
+⚠️  Git Configuration & Security
+  ❌ .gitignore incomplete (5/160+ patterns from gold standard)
+  ❌ Missing SQLite patterns (*.sqlite, *.db, WAL files)
+  ❌ Missing environment security (.env*, *.key, *.pem)
+  ❌ Missing build artifacts (.turbo/, *.tsbuildinfo)
+  ❌ Missing cache patterns (.eslintcache, .prettiercache)
+  ❌ Missing Claude Code patterns (.claude/, PROJECT_INDEX.json)
+
+  🔧 Action Required: Run 'pnpm sync:gitignore' to adopt @orchestr8 patterns
+
 ✅ Test Infrastructure
   ✓ @orchestr8/testkit available
   ✓ In-memory SQLite working
@@ -853,7 +1353,7 @@ pnpm doctor
   ✓ All packages built
   ✓ Type definitions present
 
-All checks passed! 🎉
+❌ Critical issues found! Address .gitignore gaps immediately for security.
 ```
 
 ## 12) Related Specifications
@@ -927,23 +1427,32 @@ All checks passed! 🎉
 
 ### Trigger Conditions
 
-| Feature | Trigger to Revisit |
-|---------|-------------------|
-| Changesets | Multi-contributor workflow emerges |
-| Docker | Cross-platform distribution needed |
-| Storybook | UI component library needed (Phase 5+) |
-| Advanced CI/CD | Team >1 person, PR workflow needed |
-| Nx Migration | Turbo performance insufficient (unlikely) |
+| Feature        | Trigger to Revisit                        |
+| -------------- | ----------------------------------------- |
+| Changesets     | Multi-contributor workflow emerges        |
+| Docker         | Cross-platform distribution needed        |
+| Storybook      | UI component library needed (Phase 5+)    |
+| Advanced CI/CD | Team >1 person, PR workflow needed        |
+| Nx Migration   | Turbo performance insufficient (unlikely) |
 
 ## 14) Success Criteria Checklist
 
 ### Phase 1 Success (End Week 1)
 
+**PRIORITY 1 (Security & Foundation):**
+
+- [ ] .gitignore synchronized with @orchestr8 gold standard (160+ patterns)
+- [ ] Critical patterns protected: SQLite files, environment files, build artifacts
+- [ ] `pnpm sync:gitignore` script working
+- [ ] `pnpm doctor` detecting .gitignore gaps
+
+**PRIORITY 2 (Monorepo Structure):**
+
 - [ ] Monorepo structure created (pnpm + Turbo)
 - [ ] 4 packages scaffolded (foundation, core, storage, capture)
 - [ ] Build pipeline working (`pnpm build < 30s`)
 - [ ] Test infrastructure working (Vitest + @orchestr8/testkit)
-- [ ] Doctor command operational
+- [ ] Doctor command operational with all checks
 - [ ] TypeScript strict mode enabled
 - [ ] ESLint + Prettier configured
 - [ ] Setup time < 5 minutes
@@ -978,9 +1487,16 @@ This monorepo is like an ADHD brain's perfect filing cabinet - only 4 drawers (p
 
 **Next Steps:**
 
-1. **Week 1:** Scaffold monorepo structure following gold standard patterns
-2. **Week 1:** Integrate @orchestr8/testkit for all packages
-3. **Week 1:** Implement doctor command for health validation
-4. **Week 2:** Begin storage package implementation (depends on foundation)
+**IMMEDIATE (Priority 1 - Security):**
 
-**Remember:** This is the ROOT dependency. No other feature can start until monorepo foundation is solid. Build it right, build it once. 🎯
+1. **Today:** Sync .gitignore with @orchestr8 patterns (`pnpm sync:gitignore`)
+2. **Today:** Implement doctor command with .gitignore validation
+3. **Today:** Validate no sensitive files are currently tracked
+
+**Week 1 (Priority 2 - Foundation):** 4. **Week 1:** Scaffold monorepo structure following gold standard patterns 5. **Week 1:** Integrate @orchestr8/testkit for all packages 6. **Week 1:** Complete doctor command for all health validation 7. **Week 2:** Begin storage package implementation (depends on foundation)
+
+**Remember:**
+
+- ⚠️ **SECURITY FIRST:** .gitignore gaps = potential data leaks. Fix immediately.
+- 🏗️ **ROOT DEPENDENCY:** No other feature can start until monorepo foundation is solid.
+- 🎯 **Build it right, build it once:** The foundation determines everything that follows.

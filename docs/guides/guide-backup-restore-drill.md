@@ -29,11 +29,13 @@ Use this runbook when:
 - **Recovery from backup verification failures** (3+ consecutive failures)
 
 **Do NOT use this runbook for:**
+
 - Normal database migrations (use `adhd migrate` instead)
 - Schema updates (handled by migration system)
 - Performance tuning (no restore required)
 
 **Related Documentation:**
+
 - [Backup Verification Guide](./guide-backup-verification.md) - Pre-restore integrity validation
 - [Master PRD Section 6.2.1](../master/prd-master.md) - Backup & Verification Policy
 - [Health Command Guide](./guide-health-command.md) - Post-restore validation
@@ -42,18 +44,21 @@ Use this runbook when:
 ## Prerequisites
 
 **Critical Requirements:**
+
 - ✅ Backup file available and verified (run `adhd backup verify --file <backup>` first)
 - ✅ Terminal access with `adhd` CLI available
 - ✅ All capture workers stopped (prevents concurrent writes during restore)
 - ✅ Sufficient disk space (2x database size for safety net backup)
 
 **Recommended:**
+
 - Familiarity with SQLite database operations
 - Understanding of staging ledger schema (4 tables: captures, exports_audit, errors_log, sync_state)
 - Access to Obsidian vault for export validation
 - Backup of current database (automatic safety net in this runbook)
 
 **Time Estimates:**
+
 - Small database (<10MB): 2-3 minutes
 - Medium database (10-100MB): 5-10 minutes
 - Large database (100MB+): 10-20 minutes
@@ -90,12 +95,12 @@ adhd capture status
 
 ### Recovery Time Objectives (RTO/RPO)
 
-| Metric | Target | Description |
-|--------|--------|-------------|
-| **RTO** (Recovery Time Objective) | < 5 minutes | Time from detection to full operational restore |
-| **RPO** (Recovery Point Objective) | < 24 hours | Maximum data loss (last successful hourly backup) |
-| **Validation Time** | < 2 minutes | Post-restore health check duration |
-| **Rollback Time** | < 1 minute | Time to revert to pre-restore state if validation fails |
+| Metric                             | Target      | Description                                             |
+| ---------------------------------- | ----------- | ------------------------------------------------------- |
+| **RTO** (Recovery Time Objective)  | < 5 minutes | Time from detection to full operational restore         |
+| **RPO** (Recovery Point Objective) | < 24 hours  | Maximum data loss (last successful hourly backup)       |
+| **Validation Time**                | < 2 minutes | Post-restore health check duration                      |
+| **Rollback Time**                  | < 1 minute  | Time to revert to pre-restore state if validation fails |
 
 ## Step-by-Step Instructions
 
@@ -137,6 +142,7 @@ ps aux | grep adhd | grep capture
 ```
 
 **Troubleshooting:**
+
 - If workers don't stop gracefully, force kill: `pkill -9 -f "adhd capture"`
 - Check for orphaned processes: `pgrep -f "adhd capture"`
 
@@ -162,6 +168,7 @@ adhd backup verify --file ~/.obsidian-vault/.adhd-brain/.backups/ledger-20250928
 ```
 
 **Critical Decision Point:**
+
 - ✅ **SUCCESS** → Proceed to Step 3
 - ❌ **FAILURE** → **STOP** - Do not restore corrupt backup. Try previous backup:
 
@@ -264,6 +271,7 @@ EOF
 ```
 
 **Critical Decision Point:**
+
 - ✅ **HEALTHY** → Proceed to Step 6
 - ❌ **UNHEALTHY** → **ROLLBACK** - Go to "Rollback Procedure" section
 
@@ -335,6 +343,7 @@ ls -lt ~/obsidian-vault/inbox/ | head -5
 After restore completes, verify all items pass:
 
 ### Database Health
+
 - [ ] Health check passes: `adhd doctor --component=database` returns `HEALTHY`
 - [ ] Capture count matches expected: `sqlite3 ~/.adhd-brain.db "SELECT COUNT(*) FROM captures;"`
 - [ ] Export audit count matches captures: `sqlite3 ~/.adhd-brain.db "SELECT COUNT(*) FROM exports_audit;"`
@@ -342,18 +351,21 @@ After restore completes, verify all items pass:
 - [ ] Foreign keys valid: `sqlite3 ~/.adhd-brain.db "PRAGMA foreign_key_check;"` returns empty
 
 ### Worker Health
+
 - [ ] Voice capture running: `adhd capture status | grep "Voice Capture: RUNNING"`
 - [ ] Email capture running: `adhd capture status | grep "Email Capture: RUNNING"`
 - [ ] Last poll timestamp recent (< 5 minutes ago)
 - [ ] No error logs in last 5 minutes: `tail -n 50 /var/log/adhd-capture.log | grep ERROR`
 
 ### Vault Health
+
 - [ ] Obsidian vault path accessible: `ls ~/obsidian-vault/inbox/`
 - [ ] Recent exports visible: `ls -lt ~/obsidian-vault/inbox/ | head -10`
 - [ ] Export file count reasonable (matches audit count ±10)
 - [ ] No `.tmp-*` files present: `ls ~/obsidian-vault/inbox/.tmp-* 2>/dev/null` returns empty
 
 ### Operational Health
+
 - [ ] Test capture succeeds: `echo "test" | adhd capture text --test`
 - [ ] Last export timestamp reasonable: `adhd export status`
 - [ ] Metrics emitting: `tail ~/.adhd-brain/.metrics/$(date +%Y-%m-%d).ndjson`
@@ -536,6 +548,7 @@ rm "${RESTORE_TEST_DB}"
 **Symptom:** `adhd doctor --component=database` reports errors post-restore
 
 **Possible Causes:**
+
 - Backup was corrupt (verification skipped or failed)
 - Database file permissions incorrect
 - SQLite version mismatch (backup created with newer SQLite)
@@ -568,6 +581,7 @@ sqlite3 ~/.adhd-brain.db "PRAGMA integrity_check;"
 **Symptom:** Restored capture count significantly different from expected
 
 **Possible Causes:**
+
 - Backup older than expected (RPO mismatch)
 - Backup from wrong database (test vs. production)
 - Data loss between backup and failure
@@ -598,6 +612,7 @@ sqlite3 ~/.adhd-brain.db "SELECT MAX(created_at) FROM captures;"
 **Symptom:** `adhd capture start` fails or workers crash immediately
 
 **Possible Causes:**
+
 - Database schema migration needed (restored older version)
 - Corrupted sync_state table (poll cursors invalid)
 - File permissions prevent worker access
@@ -628,6 +643,7 @@ tail -f /var/log/adhd-capture.log
 **Symptom:** Vault file count differs from exports_audit row count
 
 **Possible Causes:**
+
 - Manual vault file deletion (orphaned audit rows)
 - Failed export cleanup (temp files not removed)
 - Vault path changed after backup (exports to wrong location)
@@ -718,16 +734,19 @@ $ rm "${RESTORE_TEST}"
 ## Related Documentation
 
 ### Core References
+
 - [Backup Verification Guide](./guide-backup-verification.md) - Pre-restore integrity checks (REQUIRED reading)
 - [Master PRD v2.3.0-MPPP Section 6.2.1](../master/prd-master.md) - Backup & Verification Policy
 - [Staging Ledger PRD](../features/staging-ledger/prd-staging.md) - Database schema and durability requirements
 
 ### Related Guides
+
 - [Health Command Guide](./guide-health-command.md) - Post-restore validation via `adhd doctor`
 - [Error Recovery Guide](./guide-error-recovery.md) - Error classification and recovery patterns
 - [Capture Debugging Guide](./guide-capture-debugging.md) - Worker troubleshooting
 
 ### Technical Specs
+
 - [Staging Ledger Tech Spec](../features/staging-ledger/spec-staging-tech.md) - Backup/restore API implementation
 - [CLI Doctor Tech Spec](../features/cli/spec-cli-tech.md#doctor-command) - Health check implementation
 

@@ -25,7 +25,7 @@ The ADHD Brain testing strategy follows three core principles:
 2. **Test isolation** - Every test runs independently without shared state or resources
 3. **Deterministic behavior** - Tests produce consistent results using controlled time, randomness, and dependencies
 
-*Just like your ADHD brain benefits from clear structure, our test suite benefits from predictable patterns.*
+_Just like your ADHD brain benefits from clear structure, our test suite benefits from predictable patterns._
 
 ## Quick Reference
 
@@ -40,30 +40,35 @@ The ADHD Brain testing strategy follows three core principles:
 ## When to Use Which Guide
 
 ### Writing Phase 1 Feature Tests
-’ Start with **[Phase 1 Testing Patterns](./guide-phase1-testing-patterns.md)**
+
+ï¿½ Start with **[Phase 1 Testing Patterns](./guide-phase1-testing-patterns.md)**
 
 ### Deciding Test Coverage Level
-’ Start with **[TDD Applicability Guide](./guide-tdd-applicability.md)**
+
+ï¿½ Start with **[TDD Applicability Guide](./guide-tdd-applicability.md)**
 
 ### Understanding TestKit APIs
-’ Start with **[TestKit Usage Guide](./guide-testkit-usage.md)**
+
+ï¿½ Start with **[TestKit Usage Guide](./guide-testkit-usage.md)**
 
 ### Planning Technical Specifications
-’ Reference all three guides in your TDD Applicability Decision section
+
+ï¿½ Reference all three guides in your TDD Applicability Decision section
 
 ## Test Strategy Matrix
 
-| Layer                 | Goal                                  | TDD Policy       | Tooling                     | Guide Reference |
-|-----------------------|---------------------------------------|------------------|-----------------------------|-----------------|
-| Unit (pure logic)     | Deterministic transforms/parse/rules  | Required         | Vitest                      | Phase 1 Patterns |
-| Integration (RR7+DB)  | Loader/action + SQLite contract       | Required for core| Vitest + MemoryRouter + DB  | Phase 1 Patterns |
-| Contract (adapters)   | Mock-first AI/DB boundaries           | Required         | Vitest + mocks              | TDD Applicability |
-| E2E-lite (smoke)      | Happy-path vertical slice             | Optional early   | Playwright (later)          | TDD Applicability |
-| Visual/UI             | Render correctness, flows             | Optional         | RTL for critical screens    | TDD Applicability |
+| Layer                | Goal                                 | TDD Policy        | Tooling                    | Guide Reference   |
+| -------------------- | ------------------------------------ | ----------------- | -------------------------- | ----------------- |
+| Unit (pure logic)    | Deterministic transforms/parse/rules | Required          | Vitest                     | Phase 1 Patterns  |
+| Integration (RR7+DB) | Loader/action + SQLite contract      | Required for core | Vitest + MemoryRouter + DB | Phase 1 Patterns  |
+| Contract (adapters)  | Mock-first AI/DB boundaries          | Required          | Vitest + mocks             | TDD Applicability |
+| E2E-lite (smoke)     | Happy-path vertical slice            | Optional early    | Playwright (later)         | TDD Applicability |
+| Visual/UI            | Render correctness, flows            | Optional          | RTL for critical screens   | TDD Applicability |
 
 ## Phase 1 (MPPP) Scope
 
 **In scope for Phase 1 testing:**
+
 - Unit tests with in-memory SQLite (`:memory:`)
 - Light integration tests with MSW API mocks
 - No port binding (no running servers in tests)
@@ -71,6 +76,7 @@ The ADHD Brain testing strategy follows three core principles:
 - TestKit utilities provide sufficient isolation
 
 **Out of scope (Phase 2-3):**
+
 - Integration tests binding to ports (requires test coordinator)
 - File-based database performance tests (requires test coordinator)
 - Resource leak detection for long-running workers
@@ -79,21 +85,25 @@ The ADHD Brain testing strategy follows three core principles:
 ## Related Documentation
 
 **Testing Infrastructure:**
+
 - [Phase 1 Testing Patterns Guide](./guide-phase1-testing-patterns.md) - REQUIRED reading for all Phase 1 development
 - [TDD Applicability Guide](./guide-tdd-applicability.md) - Risk-based TDD decision framework
 - [TestKit Usage Guide](./guide-testkit-usage.md) - Complete TestKit API reference
 
 **Project Context:**
+
 - [Master PRD v2.3.0-MPPP](../master/prd-master.md) - Phase 1 scope and success criteria
 - [Roadmap v2.0.0-MPPP](../master/roadmap.md) - Phase 1 delivery slices
 
 **Feature-Specific Test Specs:**
+
 - [Capture Test Spec](../features/capture/spec-capture-test.md)
 - [Staging Ledger Test Spec](../features/staging-ledger/spec-staging-test.md)
 - [CLI Test Spec](../features/cli/spec-cli-test.md)
 - [Obsidian Bridge Test Spec](../features/obsidian-bridge/spec-obsidian-test.md)
 
 **How-To Guides:**
+
 - [Polling Implementation Guide](./guide-polling-implementation.md)
 - [Error Recovery Guide](./guide-error-recovery.md)
 - [Capture Debugging Guide](./guide-capture-debugging.md)
@@ -103,6 +113,7 @@ The ADHD Brain testing strategy follows three core principles:
 ### When to Update This Guide
 
 This redirect guide should be updated when:
+
 - New testing guides are added to the documentation set
 - Testing strategy fundamentally changes (e.g., Phase 2 introduces test coordinator)
 - The relationship between guides changes
@@ -119,8 +130,8 @@ This guide intentionally serves as a signpost rather than comprehensive document
 
 **Summary: Where to Find Testing Guidance**
 
-- **How to test Phase 1 features?** ’ [Phase 1 Testing Patterns Guide](./guide-phase1-testing-patterns.md)
-- **When to apply TDD?** ’ [TDD Applicability Guide](./guide-tdd-applicability.md)
-- **What TestKit APIs exist?** ’ [TestKit Usage Guide](./guide-testkit-usage.md)
+- **How to test Phase 1 features?** ï¿½ [Phase 1 Testing Patterns Guide](./guide-phase1-testing-patterns.md)
+- **When to apply TDD?** ï¿½ [TDD Applicability Guide](./guide-tdd-applicability.md)
+- **What TestKit APIs exist?** ï¿½ [TestKit Usage Guide](./guide-testkit-usage.md)
 
 This guide serves as your testing documentation hub. Start with the comprehensive guide that best matches your current need.

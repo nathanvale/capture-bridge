@@ -44,6 +44,7 @@ The CLI is a **user-facing feature** that sits at the top of the system architec
 **Key Principle:** CLI commands are thin orchestration wrappers. All business logic lives in domain services (testable without CLI).
 
 **Composition with Core Flow:**
+
 ```
 User Input (CLI)
   → Command Handler
@@ -62,18 +63,21 @@ User Input (CLI)
 ### Upstream Dependencies (What CLI Uses)
 
 **Domain Services:**
+
 - `@adhd-brain/capture-service` - Voice/text/email capture
 - `@adhd-brain/storage` - SQLite ledger access
 - `@adhd-brain/vault-connector` - Obsidian file operations
 - `@adhd-brain/core` - Shared types and errors
 
 **External Libraries:**
+
 - `commander` (v12+) - CLI framework
 - `zod` (v3+) - Schema validation
 - `chalk` (v5+) - Terminal colors
 - `ora` (v8+) - Spinners
 
 **System Dependencies:**
+
 - Node.js 20+
 - SQLite 3.35+
 - File system (read/write)
@@ -81,11 +85,13 @@ User Input (CLI)
 ### Downstream Consumers (What Uses CLI)
 
 **Direct Users:**
+
 - Developers (testing, debugging)
 - Power users (batch operations)
 - Shell scripts (automation via --json)
 
 **Indirect Users:**
+
 - CI/CD pipelines (using exit codes)
 - Future GUI (may wrap CLI commands)
 - Documentation (examples use CLI)
@@ -93,12 +99,14 @@ User Input (CLI)
 ### External Contracts
 
 **Stable Contracts (Cannot Change):**
+
 - Command names (`capture:voice` not `voice:capture`)
 - Exit codes (0=success, 1=error, 2=invalid input, etc.)
 - JSON output schemas (backward compatible only)
 - Error code registry (CLI_INPUT_INVALID, etc.)
 
 **Evolving Contracts (Can Add):**
+
 - New commands (backward compatible)
 - New flags (optional, default=old behavior)
 - New JSON fields (additive only)
@@ -108,30 +116,35 @@ User Input (CLI)
 ## 3) Failure Modes
 
 ### Command Parsing Failures
+
 **Symptom:** Invalid arguments or flags
 **Containment:** Zod validation catches before service layer
 **Recovery:** Structured error with hint, exit code 2
 **Impact:** User sees clear error message, no side effects
 
 ### Service Layer Failures
+
 **Symptom:** SQLite locked, file not found, vault not writable
 **Containment:** Service layer throws typed errors
 **Recovery:** CLI catches, formats for human/JSON, exits with appropriate code
 **Impact:** User sees actionable error, can retry after fix
 
 ### Unexpected Failures
+
 **Symptom:** Unhandled promise rejection, uncaught exception
 **Containment:** Global error handler at CLI entry point
 **Recovery:** Log error, print generic message, exit 1
 **Impact:** User sees error, but no data corruption (SQLite transactions)
 
 ### Partial Batch Failures
+
 **Symptom:** Processing 10 files, 3 fail
 **Containment:** Collect errors, continue processing
 **Recovery:** Report summary with successes + failures
 **Impact:** User sees which files failed, can retry individually
 
 ### Performance Degradation
+
 **Symptom:** Startup > 200ms, queries > 1s
 **Containment:** Monitor with performance tests
 **Recovery:** Profile bottlenecks, optimize hot paths
@@ -142,20 +155,24 @@ User Input (CLI)
 ## 4) Evolution & Future Considerations
 
 ### Phase 1-2 (Current)
+
 - Minimal command set (capture, doctor, ledger)
 - Manual operations only
 - Single-shot execution (no daemon)
 
 ### Phase 3-4 (Next 3 months)
+
 - Email capture commands
 - Batch operations (inbox:process)
 - Hash migration (hash:migrate)
 - Metrics export (metrics:dump)
 
 ### Phase 5+ (Future)
+
 **Trigger: User feedback + actual usage patterns**
 
 **Possible Extensions:**
+
 - Interactive mode (REPL)
   - Trigger: Users request "don't exit after command"
 - Shell completion (bash/zsh/fish)
@@ -168,12 +185,14 @@ User Input (CLI)
   - Trigger: Users prefer visual interface over commands
 
 **What Stays Simple:**
+
 - Error handling (always structured codes)
 - JSON output (always backward compatible)
 - Single-shot commands (no hidden state)
 - Local-only (no network calls)
 
 **What Gets Revisited:**
+
 - Command organization (if > 20 commands)
 - Configuration file format (if complexity grows)
 - Performance targets (if user base > 1000)
@@ -184,26 +203,31 @@ User Input (CLI)
 ## 5) Design Decisions & Rationale
 
 ### Decision: Thin Command Handlers
+
 **Rationale:** Keep CLI logic simple, testable. Push complexity into services.
 **Trade-off:** More files/classes, but better separation of concerns.
 **Example:** `capture-voice.ts` is 50 lines of arg parsing, service call, output formatting.
 
 ### Decision: Structured Error Codes
+
 **Rationale:** Shell scripts need reliable exit codes for flow control.
 **Trade-off:** Maintain error registry, but worth it for automation.
 **Example:** `CLI_DB_UNAVAILABLE` always exits with code 10.
 
 ### Decision: JSON Output Mode
+
 **Rationale:** Enable automation without parsing human-readable tables.
 **Trade-off:** Maintain schema compatibility, but unlocks scripting.
 **Example:** `adhd capture voice --json | jq .id`
 
 ### Decision: No Daemon/Watch Mode (MVP)
+
 **Rationale:** YAGNI - polling workers handle continuous monitoring.
 **Trade-off:** Manual `capture voice` command, but simpler.
 **Revisit:** If users report "too tedious to run manually".
 
 ### Decision: Commander.js (Not Custom Parser)
+
 **Rationale:** Industry standard, well-tested, TypeScript support.
 **Trade-off:** Dependency, but saves 1000+ lines of code.
 **Alternative rejected:** Custom parser (reinventing wheel).
@@ -256,23 +280,27 @@ User Input (CLI)
 ## 7) Testing Strategy
 
 ### Unit Tests (Fast, No I/O)
+
 - Argument parsing logic
 - Validation schemas (Zod)
 - Error formatting
 - Output formatting (human/JSON)
 
 ### Integration Tests (With Real Services)
+
 - Full command execution
 - SQLite operations
 - File system operations
 - Error scenarios
 
 ### Contract Tests (Stability)
+
 - JSON output schemas
 - Exit code consistency
 - Help text snapshots
 
 **Test Isolation:**
+
 - Use TestKit's in-memory SQLite
 - Mock file system via `memfs`
 - Capture stdout/stderr for assertions
@@ -282,16 +310,19 @@ User Input (CLI)
 ## 8) Performance Considerations
 
 ### Startup Time Optimization
+
 - Lazy-load heavy dependencies (ora, chalk)
 - Avoid top-level await
 - Minimize module imports
 
 ### Command Execution Optimization
+
 - Use SQLite prepared statements
 - Stream large query results
 - Avoid loading all captures into memory
 
 ### JSON Output Optimization
+
 - Stream JSON for large result sets
 - Use JSON.stringify (native, fast)
 - Avoid pretty-printing unless --verbose

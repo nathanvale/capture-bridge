@@ -11,6 +11,7 @@
 This document provides automated scripts to fix all identified documentation issues. All fixes are safe, non-destructive link corrections that restore cross-reference integrity.
 
 **Issues Addressed:**
+
 - 4 broken reference paths
 - 1 orphaned document integration
 - Master index updates
@@ -87,6 +88,7 @@ fi
 ### Execution Instructions
 
 1. **Save the script:**
+
    ```bash
    # Save to repo root
    cat > fix-documentation-links.sh << 'EOF'
@@ -96,16 +98,18 @@ fi
    ```
 
 2. **Execute from repo root:**
+
    ```bash
    cd /Users/nathanvale/code/adhd-brain
    ./fix-documentation-links.sh
    ```
 
 3. **Verify results:**
+
    ```bash
    # Should return empty (no broken links)
    grep -r "spec-.*-tech\.md" docs/ | grep -E "(gmail-oauth2|whisper-runtime|cli-doctor)"
-   
+
    # Should return corrected references
    grep -r "spec-capture-tech\.md#" docs/
    grep -r "features/cli/spec-cli-" docs/
@@ -132,7 +136,7 @@ if ! grep -q "guide-voice-capture-debugging" docs/features/capture/spec-capture-
     echo "- [Voice Capture Debugging Guide](../../guides/guide-voice-capture-debugging.md)" >> docs/features/capture/spec-capture-tech.md
 fi
 
-# 2. Add reference in capture test spec (debugging section)  
+# 2. Add reference in capture test spec (debugging section)
 if ! grep -q "guide-voice-capture-debugging" docs/features/capture/spec-capture-test.md; then
     echo "- [Voice Capture Debugging Guide](../../guides/guide-voice-capture-debugging.md)" >> docs/features/capture/spec-capture-test.md
 fi
@@ -293,12 +297,14 @@ Execute these commands in order for full documentation cleanup:
 ## Safety Notes
 
 **All scripts are safe and non-destructive:**
+
 - Only modify link paths and references
 - No content deletion or structural changes
 - Backup available via Git version control
 - Reversible via `git checkout` if needed
 
 **Testing recommended:**
+
 - Run scripts on a Git branch first
 - Verify results before merging
 - Use verification commands to confirm fixes

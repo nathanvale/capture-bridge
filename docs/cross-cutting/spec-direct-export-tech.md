@@ -78,31 +78,31 @@ export interface DirectExporter {
    * - Audit record logged for all attempts
    * - < 50ms p95 latency for 1KB files
    */
-  exportToVault(capture: CaptureRecord): Promise<ExportResult>;
+  exportToVault(capture: CaptureRecord): Promise<ExportResult>
 }
 
 export interface CaptureRecord {
-  id: string;              // ULID from captures.id
-  source: 'voice' | 'email';
-  raw_content: string;     // Transcribed text or email body
-  content_hash: string;    // SHA-256 hex
-  meta_json: Record<string, unknown>;
-  created_at: string;      // ISO8601 timestamp
+  id: string // ULID from captures.id
+  source: "voice" | "email"
+  raw_content: string // Transcribed text or email body
+  content_hash: string // SHA-256 hex
+  meta_json: Record<string, unknown>
+  created_at: string // ISO8601 timestamp
 }
 
 export interface ExportResult {
-  success: boolean;
-  export_path?: string;    // Relative to vault root (e.g., "inbox/01HZ.md")
-  mode?: 'initial' | 'duplicate_skip';
-  error?: ExportError;
+  success: boolean
+  export_path?: string // Relative to vault root (e.g., "inbox/01HZ.md")
+  mode?: "initial" | "duplicate_skip"
+  error?: ExportError
 }
 
 export interface ExportError {
-  code: 'EACCES' | 'ENOSPC' | 'EEXIST' | 'EROFS' | 'ENETDOWN' | 'EUNKNOWN';
-  message: string;
-  temp_path?: string;
-  export_path?: string;
-  recoverable: boolean;    // true = retry eligible, false = halt worker
+  code: "EACCES" | "ENOSPC" | "EEXIST" | "EROFS" | "ENETDOWN" | "EUNKNOWN"
+  message: string
+  temp_path?: string
+  export_path?: string
+  recoverable: boolean // true = retry eligible, false = halt worker
 }
 ```
 
@@ -176,18 +176,18 @@ Example: `01HZVM8YWRQT5J3M3K7YPTX9RZ.md`
 function resolveTempPath(vault_path: string, capture_id: string): string {
   // Validate ULID format (prevents path traversal)
   if (!/^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$/.test(capture_id)) {
-    throw new Error('Invalid ULID format');
+    throw new Error("Invalid ULID format")
   }
 
-  return path.join(vault_path, '.trash', `${capture_id}.tmp`);
+  return path.join(vault_path, ".trash", `${capture_id}.tmp`)
 }
 
 function resolveExportPath(vault_path: string, capture_id: string): string {
   if (!/^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$/.test(capture_id)) {
-    throw new Error('Invalid ULID format');
+    throw new Error("Invalid ULID format")
   }
 
-  return path.join(vault_path, 'inbox', `${capture_id}.md`);
+  return path.join(vault_path, "inbox", `${capture_id}.md`)
 }
 ```
 
@@ -210,6 +210,7 @@ content_hash: a1b2c3d4e5f6...
 ---
 
 **Metadata:**
+
 - Source: voice | email
 - Captured: 2025-09-27 10:30 AM
 - Export: 2025-09-27 10:30 AM
@@ -217,12 +218,12 @@ content_hash: a1b2c3d4e5f6...
 
 **Frontmatter Contract:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | ULID | Yes | Immutable capture ID (matches filename) |
-| `source` | Enum | Yes | `voice` or `email` |
-| `captured_at` | ISO8601 | Yes | Original capture timestamp |
-| `content_hash` | SHA-256 | Yes | Content hash for deduplication |
+| Field          | Type    | Required | Description                             |
+| -------------- | ------- | -------- | --------------------------------------- |
+| `id`           | ULID    | Yes      | Immutable capture ID (matches filename) |
+| `source`       | Enum    | Yes      | `voice` or `email`                      |
+| `captured_at`  | ISO8601 | Yes      | Original capture timestamp              |
+| `content_hash` | SHA-256 | Yes      | Content hash for deduplication          |
 
 ### 2.4 SQLite Audit Trail
 
@@ -341,31 +342,30 @@ async function atomicWriteWithFsync(
   export_path: string,
   content: string
 ): Promise<void> {
-  let fd: number | undefined;
+  let fd: number | undefined
 
   try {
     // 1. Write content to temp file
-    fd = await fs.open(temp_path, 'w');
-    await fs.write(fd, content, 0, 'utf-8');
+    fd = await fs.open(temp_path, "w")
+    await fs.write(fd, content, 0, "utf-8")
 
     // 2. **CRITICAL**: fsync before rename
     //    Ensures content is on disk BEFORE file becomes visible
-    await fs.fsync(fd);
+    await fs.fsync(fd)
 
     // 3. Close file descriptor
-    await fs.close(fd);
-    fd = undefined;
+    await fs.close(fd)
+    fd = undefined
 
     // 4. Atomic rename (safe because content is on disk)
-    await fs.rename(temp_path, export_path);
-
+    await fs.rename(temp_path, export_path)
   } catch (error) {
     // Cleanup temp file on any error
     if (fd !== undefined) {
-      await fs.close(fd).catch(() => {});
+      await fs.close(fd).catch(() => {})
     }
-    await cleanupTempFile(temp_path);
-    throw error;
+    await cleanupTempFile(temp_path)
+    throw error
   }
 }
 ```
@@ -395,6 +395,7 @@ This code handles critical durability guarantees for user data export to Obsidia
 5. **⚠️ Cascading Failures:** Sequential processing = blocking failures (single failure halts all exports)
 
 **Related High-Risk Components:**
+
 - [Staging Ledger Tech Spec](../../features/staging-ledger/spec-staging-tech.md) - upstream data source with audit trail
 - [Obsidian Bridge Tech Spec](../../features/obsidian-bridge/spec-obsidian-tech.md) - atomic write implementation
 
@@ -403,6 +404,7 @@ This code handles critical durability guarantees for user data export to Obsidia
 **TDD REQUIRED** (Test-Driven Development, red-green-refactor cycle)
 
 **Rationale:**
+
 - Failures cause **permanent data loss** (High Risk criteria met)
 - Atomic guarantees are **non-negotiable** for Obsidian Sync compatibility
 - fsync/rename ordering bugs are **silent until crash** (requires proactive testing)
@@ -595,12 +597,12 @@ WHERE status = 'transcribed'  -- Only export after transcription
 
 **Supported Filesystems:**
 
-| Filesystem | Atomic Rename | fsync Support | Status |
-|------------|---------------|---------------|--------|
-| **APFS** (macOS) | ✅ Yes | ✅ Yes | Primary target (MPPP) |
-| **ext4** (Linux) | ✅ Yes | ✅ Yes | Supported (Phase 2+) |
-| **btrfs** (Linux) | ✅ Yes | ✅ Yes | Supported (Phase 2+) |
-| **NTFS** (Windows) | ⚠️ Partial | ⚠️ Partial | Not supported (MPPP) |
+| Filesystem         | Atomic Rename   | fsync Support | Status                |
+| ------------------ | --------------- | ------------- | --------------------- |
+| **APFS** (macOS)   | ✅ Yes          | ✅ Yes        | Primary target (MPPP) |
+| **ext4** (Linux)   | ✅ Yes          | ✅ Yes        | Supported (Phase 2+)  |
+| **btrfs** (Linux)  | ✅ Yes          | ✅ Yes        | Supported (Phase 2+)  |
+| **NTFS** (Windows) | ⚠️ Partial      | ⚠️ Partial    | Not supported (MPPP)  |
 | **Network mounts** | ❌ No guarantee | ❌ Unreliable | Error path (ENETDOWN) |
 
 ### 5.3 External Dependencies
@@ -624,40 +626,40 @@ WHERE status = 'transcribed'  -- Only export after transcription
 
 ```typescript
 enum CollisionResult {
-  NO_COLLISION,        // File doesn't exist, safe to write
-  DUPLICATE,           // File exists with identical content_hash
-  CONFLICT             // File exists with DIFFERENT content_hash (CRITICAL ERROR)
+  NO_COLLISION, // File doesn't exist, safe to write
+  DUPLICATE, // File exists with identical content_hash
+  CONFLICT, // File exists with DIFFERENT content_hash (CRITICAL ERROR)
 }
 
 async function checkCollision(
   export_path: string,
   content_hash: string
 ): Promise<CollisionResult> {
-  const exists = await fs.exists(export_path);
+  const exists = await fs.exists(export_path)
 
   if (!exists) {
-    return CollisionResult.NO_COLLISION;
+    return CollisionResult.NO_COLLISION
   }
 
   // File exists, check if content matches
-  const existing_content = await fs.readFile(export_path, 'utf-8');
-  const existing_hash = computeSHA256(existing_content);
+  const existing_content = await fs.readFile(export_path, "utf-8")
+  const existing_hash = computeSHA256(existing_content)
 
   if (existing_hash === content_hash) {
-    return CollisionResult.DUPLICATE;
+    return CollisionResult.DUPLICATE
   } else {
-    return CollisionResult.CONFLICT;
+    return CollisionResult.CONFLICT
   }
 }
 ```
 
 **Collision Handling Policy:**
 
-| Collision Type | Action | Rationale |
-|----------------|--------|-----------|
-| **NO_COLLISION** | Proceed with atomic write | Normal case, file doesn't exist |
-| **DUPLICATE** | Skip write, log audit as `duplicate_skip` | Idempotent retry, same content already exported |
-| **CONFLICT** | **HALT**, log CRITICAL error | ULID collision with different content = data integrity violation |
+| Collision Type   | Action                                    | Rationale                                                        |
+| ---------------- | ----------------------------------------- | ---------------------------------------------------------------- |
+| **NO_COLLISION** | Proceed with atomic write                 | Normal case, file doesn't exist                                  |
+| **DUPLICATE**    | Skip write, log audit as `duplicate_skip` | Idempotent retry, same content already exported                  |
+| **CONFLICT**     | **HALT**, log CRITICAL error              | ULID collision with different content = data integrity violation |
 
 **Conflict Resolution:**
 
@@ -673,14 +675,14 @@ async function checkCollision(
 
 **Error Taxonomy:**
 
-| Error Code | Category | Recoverable | Action |
-|------------|----------|-------------|--------|
-| **EACCES** | Permission denied | Yes | Retry with backoff (Phase 2), alert via doctor |
-| **ENOSPC** | Disk full | No | **HALT** worker, alert immediately |
-| **EEXIST** | ULID collision | Conditional | Check hash, HALT if CONFLICT |
-| **EROFS** | Read-only FS | No | **HALT** worker, alert immediately |
-| **ENETDOWN** | Network mount | Yes | Retry with backoff (Phase 2) |
-| **EUNKNOWN** | Unknown error | No | Log and fail |
+| Error Code   | Category          | Recoverable | Action                                         |
+| ------------ | ----------------- | ----------- | ---------------------------------------------- |
+| **EACCES**   | Permission denied | Yes         | Retry with backoff (Phase 2), alert via doctor |
+| **ENOSPC**   | Disk full         | No          | **HALT** worker, alert immediately             |
+| **EEXIST**   | ULID collision    | Conditional | Check hash, HALT if CONFLICT                   |
+| **EROFS**    | Read-only FS      | No          | **HALT** worker, alert immediately             |
+| **ENETDOWN** | Network mount     | Yes         | Retry with backoff (Phase 2)                   |
+| **EUNKNOWN** | Unknown error     | No          | Log and fail                                   |
 
 **Error Handling Flow:**
 
@@ -689,87 +691,90 @@ async function handleExportError(
   error: NodeJS.ErrnoException,
   context: ExportContext
 ): Promise<ExportResult> {
-  const error_code = error.code || 'EUNKNOWN';
+  const error_code = error.code || "EUNKNOWN"
 
   // Log to errors_log table
-  await db.run(`
+  await db.run(
+    `
     INSERT INTO errors_log (id, capture_id, stage, message)
     VALUES (?, ?, 'export', ?)
-  `, [ulid(), context.capture_id, error.message]);
+  `,
+    [ulid(), context.capture_id, error.message]
+  )
 
   switch (error_code) {
-    case 'EACCES':
+    case "EACCES":
       return {
         success: false,
         error: {
-          code: 'EACCES',
-          message: 'Permission denied writing to vault',
-          recoverable: true
-        }
-      };
+          code: "EACCES",
+          message: "Permission denied writing to vault",
+          recoverable: true,
+        },
+      }
 
-    case 'ENOSPC':
-      await haltExportWorker('Disk full');
+    case "ENOSPC":
+      await haltExportWorker("Disk full")
       return {
         success: false,
         error: {
-          code: 'ENOSPC',
-          message: 'No space available in vault',
-          recoverable: false
-        }
-      };
+          code: "ENOSPC",
+          message: "No space available in vault",
+          recoverable: false,
+        },
+      }
 
-    case 'EEXIST':
+    case "EEXIST":
       const collision = await checkCollision(
         context.export_path,
         context.content_hash
-      );
+      )
       if (collision === CollisionResult.DUPLICATE) {
         // Idempotent: treat as success
-        await recordAuditDuplicate(context.capture_id, context.export_path);
-        return { success: true, mode: 'duplicate_skip' };
+        await recordAuditDuplicate(context.capture_id, context.export_path)
+        return { success: true, mode: "duplicate_skip" }
       } else {
-        await logCriticalError('ULID collision with different content', context);
+        await logCriticalError("ULID collision with different content", context)
         return {
           success: false,
           error: {
-            code: 'EEXIST',
-            message: 'ULID collision detected',
-            recoverable: false
-          }
-        };
+            code: "EEXIST",
+            message: "ULID collision detected",
+            recoverable: false,
+          },
+        }
       }
 
-    case 'EROFS':
-      await haltExportWorker('Vault is read-only');
+    case "EROFS":
+      await haltExportWorker("Vault is read-only")
       return {
         success: false,
         error: {
-          code: 'EROFS',
-          message: 'Vault is read-only',
-          recoverable: false
-        }
-      };
+          code: "EROFS",
+          message: "Vault is read-only",
+          recoverable: false,
+        },
+      }
 
-    case 'ENETDOWN':
+    case "ENETDOWN":
       return {
         success: false,
         error: {
-          code: 'ENETDOWN',
-          message: 'Network mount disconnected',
-          recoverable: true
-        }
-      };
+          code: "ENETDOWN",
+          message: "Network mount disconnected",
+          recoverable: true,
+        },
+      }
 
     default:
       return {
         success: false,
         error: {
-          code: 'EUNKNOWN',
+          code: "EUNKNOWN",
           message: error.message,
-          recoverable: false
-        }
-      };
+          recoverable: false,
+        },
+      }
   }
 }
 ```
@@ -821,12 +826,12 @@ exportToVault(capture) can be called N times safely
 
 **Retry Scenarios:**
 
-| Scenario | Behavior | Audit Record |
-|----------|----------|--------------|
-| First export succeeds | File written, audit created | `mode='initial'` |
-| Retry with same content | File exists, skip write | `mode='duplicate_skip'` |
-| Crash mid-write, then retry | Temp file cleaned, retry succeeds | `mode='initial'` (only 1 record) |
-| Collision conflict (different content) | **HALT**, manual investigation | No audit record (error log only) |
+| Scenario                               | Behavior                          | Audit Record                     |
+| -------------------------------------- | --------------------------------- | -------------------------------- |
+| First export succeeds                  | File written, audit created       | `mode='initial'`                 |
+| Retry with same content                | File exists, skip write           | `mode='duplicate_skip'`          |
+| Crash mid-write, then retry            | Temp file cleaned, retry succeeds | `mode='initial'` (only 1 record) |
+| Collision conflict (different content) | **HALT**, manual investigation    | No audit record (error log only) |
 
 ---
 
@@ -840,15 +845,15 @@ Target: **< 50ms p95** for 1KB markdown file
 
 **Breakdown:**
 
-| Operation | Target | Justification |
-|-----------|---------|---------------|
-| Path resolution | < 1ms | String concatenation only |
-| Collision detection | < 5ms | Single fs.existsSync + optional read |
-| Temp file write | < 10ms | Sequential write, no buffering |
-| **fsync call** | < 15ms | **Critical:** Flush OS cache to disk |
-| Atomic rename | < 5ms | POSIX syscall, atomic on same FS |
-| Audit log write | < 10ms | Single SQLite INSERT |
-| **Total** | **< 46ms** | 4ms buffer for variability |
+| Operation           | Target     | Justification                        |
+| ------------------- | ---------- | ------------------------------------ |
+| Path resolution     | < 1ms      | String concatenation only            |
+| Collision detection | < 5ms      | Single fs.existsSync + optional read |
+| Temp file write     | < 10ms     | Sequential write, no buffering       |
+| **fsync call**      | < 15ms     | **Critical:** Flush OS cache to disk |
+| Atomic rename       | < 5ms      | POSIX syscall, atomic on same FS     |
+| Audit log write     | < 10ms     | Single SQLite INSERT                 |
+| **Total**           | **< 46ms** | 4ms buffer for variability           |
 
 **Throughput Constraints:**
 
@@ -1034,12 +1039,12 @@ adhd doctor
 
 ```typescript
 async function ensureDirectories(vault_path: string): Promise<void> {
-  const trash_dir = path.join(vault_path, '.trash');
-  const inbox_dir = path.join(vault_path, 'inbox');
+  const trash_dir = path.join(vault_path, ".trash")
+  const inbox_dir = path.join(vault_path, "inbox")
 
   // Idempotent: mkdir -p behavior (no error if exists)
-  await fs.mkdir(trash_dir, { recursive: true });
-  await fs.mkdir(inbox_dir, { recursive: true });
+  await fs.mkdir(trash_dir, { recursive: true })
+  await fs.mkdir(inbox_dir, { recursive: true })
 }
 ```
 
@@ -1048,11 +1053,11 @@ async function ensureDirectories(vault_path: string): Promise<void> {
 ```typescript
 async function cleanupTempFile(temp_path: string): Promise<void> {
   try {
-    await fs.unlink(temp_path);
+    await fs.unlink(temp_path)
   } catch (error) {
     // Idempotent: ignore ENOENT (file already removed)
-    if (error.code !== 'ENOENT') {
-      throw error;
+    if (error.code !== "ENOENT") {
+      throw error
     }
   }
 }
@@ -1061,13 +1066,10 @@ async function cleanupTempFile(temp_path: string): Promise<void> {
 ### 10.3 Content Hash Computation
 
 ```typescript
-import crypto from 'crypto';
+import crypto from "crypto"
 
 function computeSHA256(content: string): string {
-  return crypto
-    .createHash('sha256')
-    .update(content, 'utf-8')
-    .digest('hex');
+  return crypto.createHash("sha256").update(content, "utf-8").digest("hex")
 }
 ```
 
@@ -1078,17 +1080,17 @@ function computeSHA256(content: string): string {
 ```typescript
 function validateCaptureId(capture_id: string): boolean {
   // ULID format: 26 characters, alphanumeric
-  const ulid_regex = /^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$/;
-  return ulid_regex.test(capture_id);
+  const ulid_regex = /^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$/
+  return ulid_regex.test(capture_id)
 }
 
 function resolveTempPath(vault_path: string, capture_id: string): string {
   if (!validateCaptureId(capture_id)) {
-    throw new Error('Invalid capture_id format');
+    throw new Error("Invalid capture_id format")
   }
 
   // Safe to concatenate (no path traversal possible with validated ULID)
-  return path.join(vault_path, '.trash', `${capture_id}.tmp`);
+  return path.join(vault_path, ".trash", `${capture_id}.tmp`)
 }
 ```
 

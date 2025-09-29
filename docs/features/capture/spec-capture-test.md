@@ -10,6 +10,7 @@ roadmap_version: 3.0.0
 ---
 
 ⚠️ **MPPP Scope Warning:** This test spec includes extensive Phase 2+ test patterns:
+
 - **Sections 8.1-8.3 (Retry Coordinator, Metrics, Error Recovery):** Deferred to Phase 2 (error recovery hardening)
 - **Section 8.4 (Direct Export Contract):** Active for MPPP Phase 1
 - **Outbox pattern tests:** Deferred to Phase 5+ per [Master PRD v2.3.0-MPPP](../../master/prd-master.md)
@@ -23,12 +24,15 @@ Related Guides: [Voice Capture Debugging Guide](../../guides/guide-voice-capture
 # Capture — Test Specification
 
 ## 1) Objectives
+
 - Prove durability, idempotency, atomicity
 
 ## 2) Traceability
+
 - Map each test objective to PRD requirement or Tech Spec guarantee
 
 ## 3) Coverage Strategy
+
 - Unit (pure logic)
 - Integration (pipeline)
 - Contract (file ops / adapters)
@@ -37,6 +41,7 @@ Related Guides: [Voice Capture Debugging Guide](../../guides/guide-voice-capture
 ## 4) Critical Tests (TDD Required)
 
 **Phase 1 (MPPP):**
+
 - Deterministic hashing (SHA-256)
 - Duplicate rejection (content_hash + channel native ID)
 - Direct export idempotency (synchronous export)
@@ -48,6 +53,7 @@ Related Guides: [Voice Capture Debugging Guide](../../guides/guide-voice-capture
 - iOS sync detection
 
 **Phase 2+ (Deferred):**
+
 - ⏳ Retry coordinator integration contracts (Section 8.1)
 - ⏳ Metrics emission contracts (Section 8.2 - basic metrics only in Phase 1)
 - ⏳ Error recovery flow contracts (Section 8.3 - DLQ, circuit breaker)
@@ -60,329 +66,333 @@ Related Guides: [Voice Capture Debugging Guide](../../guides/guide-voice-capture
 #### Unit Tests
 
 ```typescript
-describe('APFS Dataless Detection', () => {
-  it('detects .icloud placeholder files', async () => {
+describe("APFS Dataless Detection", () => {
+  it("detects .icloud placeholder files", async () => {
     // Create mock .icloud file
-    const mockPath = '/path/to/Recording.m4a';
-    const icloudPath = '/path/to/.Recording.m4a.icloud';
+    const mockPath = "/path/to/Recording.m4a"
+    const icloudPath = "/path/to/.Recording.m4a.icloud"
 
     mockFs.existsSync.mockImplementation((path) => {
-      if (path === mockPath) return false;
-      if (path === icloudPath) return true;
-      return false;
-    });
+      if (path === mockPath) return false
+      if (path === icloudPath) return true
+      return false
+    })
 
-    const status = await detectAPFSStatus(mockPath);
+    const status = await detectAPFSStatus(mockPath)
 
-    expect(status.exists).toBe(true);
-    expect(status.isDataless).toBe(true);
-    expect(status.isDownloading).toBe(false);
-  });
+    expect(status.exists).toBe(true)
+    expect(status.isDataless).toBe(true)
+    expect(status.isDownloading).toBe(false)
+  })
 
-  it('detects files with size < 1KB as dataless', async () => {
-    const mockPath = '/path/to/Recording.m4a';
+  it("detects files with size < 1KB as dataless", async () => {
+    const mockPath = "/path/to/Recording.m4a"
 
     mockFs.statSync.mockReturnValue({
       size: 512, // Less than 1KB
       birthtime: new Date(),
-      mtime: new Date()
-    });
+      mtime: new Date(),
+    })
 
-    const status = await detectAPFSStatus(mockPath);
+    const status = await detectAPFSStatus(mockPath)
 
-    expect(status.isDataless).toBe(true);
-  });
+    expect(status.isDataless).toBe(true)
+  })
 
-  it('checks extended attributes for download state', async () => {
-    const mockPath = '/path/to/Recording.m4a';
+  it("checks extended attributes for download state", async () => {
+    const mockPath = "/path/to/Recording.m4a"
 
     mockXattr.get.mockReturnValue({
-      'com.apple.metadata:com_apple_clouddocs_downloading': Buffer.from('1')
-    });
+      "com.apple.metadata:com_apple_clouddocs_downloading": Buffer.from("1"),
+    })
 
-    const status = await detectAPFSStatus(mockPath);
+    const status = await detectAPFSStatus(mockPath)
 
-    expect(status.isDownloading).toBe(true);
-  });
-});
+    expect(status.isDownloading).toBe(true)
+  })
+})
 ```
 
 #### Integration Tests
 
 ```typescript
-describe('APFS Download Handling', () => {
-  let icloudctl: MockICloudController;
-  let downloader: VoiceFileDownloader;
+describe("APFS Download Handling", () => {
+  let icloudctl: MockICloudController
+  let downloader: VoiceFileDownloader
 
   beforeEach(() => {
-    icloudctl = new MockICloudController();
-    downloader = new VoiceFileDownloader(icloudctl);
-  });
+    icloudctl = new MockICloudController()
+    downloader = new VoiceFileDownloader(icloudctl)
+  })
 
-  it('triggers sequential download for dataless files', async () => {
+  it("triggers sequential download for dataless files", async () => {
     const files = [
-      '/path/to/file1.m4a',
-      '/path/to/file2.m4a',
-      '/path/to/file3.m4a'
-    ];
+      "/path/to/file1.m4a",
+      "/path/to/file2.m4a",
+      "/path/to/file3.m4a",
+    ]
 
     // Mock all files as dataless
-    files.forEach(file => {
+    files.forEach((file) => {
       icloudctl.mockFileStatus(file, {
         isUbiquitousItem: true,
-        isDownloaded: false
-      });
-    });
+        isDownloaded: false,
+      })
+    })
 
     const results = await Promise.all(
-      files.map(file => downloader.downloadIfNeeded(file))
-    );
+      files.map((file) => downloader.downloadIfNeeded(file))
+    )
 
     // Verify sequential processing (semaphore = 1)
-    const downloadCalls = icloudctl.getDownloadCalls();
-    expect(downloadCalls.length).toBe(3);
+    const downloadCalls = icloudctl.getDownloadCalls()
+    expect(downloadCalls.length).toBe(3)
 
     // Check timing to ensure sequential
     for (let i = 1; i < downloadCalls.length; i++) {
       expect(downloadCalls[i].startTime).toBeGreaterThanOrEqual(
-        downloadCalls[i-1].endTime
-      );
+        downloadCalls[i - 1].endTime
+      )
     }
-  });
+  })
 
-  it('handles download timeout with retry', async () => {
-    const filePath = '/path/to/timeout.m4a';
+  it("handles download timeout with retry", async () => {
+    const filePath = "/path/to/timeout.m4a"
 
     // Mock timeout on first attempt
-    let attempts = 0;
+    let attempts = 0
     icloudctl.startDownload.mockImplementation(async () => {
-      attempts++;
+      attempts++
       if (attempts === 1) {
-        await sleep(61000); // Exceed 60s timeout
-        throw new Error('Download timeout');
+        await sleep(61000) // Exceed 60s timeout
+        throw new Error("Download timeout")
       }
       // Success on retry
-    });
+    })
 
     const result = await handleDatalessFile(
       filePath,
       DatalessHandlingStrategy.FORCE_DOWNLOAD
-    );
+    )
 
-    expect(result.ready).toBe(false);
-    expect(result.error).toContain('timeout');
-    expect(result.retryAfter).toBeDefined();
-  });
+    expect(result.ready).toBe(false)
+    expect(result.error).toContain("timeout")
+    expect(result.retryAfter).toBeDefined()
+  })
 
-  it('applies exponential backoff during download polling', async () => {
-    const filePath = '/path/to/slow-download.m4a';
-    const pollDelays: number[] = [];
+  it("applies exponential backoff during download polling", async () => {
+    const filePath = "/path/to/slow-download.m4a"
+    const pollDelays: number[] = []
 
     // Mock gradual download progress
-    let progress = 0;
+    let progress = 0
     icloudctl.checkFileStatus.mockImplementation(async () => {
-      const delay = Date.now() - lastPoll;
-      if (lastPoll) pollDelays.push(delay);
-      lastPoll = Date.now();
+      const delay = Date.now() - lastPoll
+      if (lastPoll) pollDelays.push(delay)
+      lastPoll = Date.now()
 
-      progress += 20;
+      progress += 20
       return {
         isDownloaded: progress >= 100,
-        percentDownloaded: progress
-      };
-    });
+        percentDownloaded: progress,
+      }
+    })
 
-    await handleDatalessFile(filePath);
+    await handleDatalessFile(filePath)
 
     // Verify exponential backoff: 1s, 1.5s, 2.25s, 3.375s...
-    expect(pollDelays[0]).toBeCloseTo(1000, -2);
-    expect(pollDelays[1]).toBeCloseTo(1500, -2);
-    expect(pollDelays[2]).toBeCloseTo(2250, -2);
-  });
-});
+    expect(pollDelays[0]).toBeCloseTo(1000, -2)
+    expect(pollDelays[1]).toBeCloseTo(1500, -2)
+    expect(pollDelays[2]).toBeCloseTo(2250, -2)
+  })
+})
 ```
 
 #### Error Recovery Tests
 
 ```typescript
-describe('APFS Error Recovery', () => {
-  it('recovers from network offline during download', async () => {
-    const filePath = '/path/to/offline.m4a';
+describe("APFS Error Recovery", () => {
+  it("recovers from network offline during download", async () => {
+    const filePath = "/path/to/offline.m4a"
 
     // Mock network offline error
     icloudctl.startDownload.mockRejectedValue(
-      new Error('Network offline: NSURLErrorDomain -1009')
-    );
+      new Error("Network offline: NSURLErrorDomain -1009")
+    )
 
-    const result = await handleDatalessFile(filePath);
+    const result = await handleDatalessFile(filePath)
 
-    expect(result.ready).toBe(false);
-    expect(result.error).toContain('Network offline');
-    expect(result.retryAfter).toBeDefined();
+    expect(result.ready).toBe(false)
+    expect(result.error).toContain("Network offline")
+    expect(result.retryAfter).toBeDefined()
 
     // Should retry on next poll cycle (60s later)
-    const retryDelay = result.retryAfter.getTime() - Date.now();
-    expect(retryDelay).toBeCloseTo(60000, -3);
-  });
+    const retryDelay = result.retryAfter.getTime() - Date.now()
+    expect(retryDelay).toBeCloseTo(60000, -3)
+  })
 
-  it('handles iCloud quota exceeded error', async () => {
-    const filePath = '/path/to/quota-exceeded.m4a';
+  it("handles iCloud quota exceeded error", async () => {
+    const filePath = "/path/to/quota-exceeded.m4a"
 
     icloudctl.startDownload.mockRejectedValue(
-      new Error('iCloud storage full: NSUbiquitousErrorDomain 507')
-    );
+      new Error("iCloud storage full: NSUbiquitousErrorDomain 507")
+    )
 
-    const result = await handleDatalessFile(filePath);
+    const result = await handleDatalessFile(filePath)
 
-    expect(result.ready).toBe(false);
-    expect(result.error).toContain('storage full');
+    expect(result.ready).toBe(false)
+    expect(result.error).toContain("storage full")
 
     // Should not retry automatically
-    expect(result.retryAfter).toBeUndefined();
+    expect(result.retryAfter).toBeUndefined()
 
     // Should export placeholder
-    const placeholder = await getExportedPlaceholder(filePath);
-    expect(placeholder).toContain('iCloud storage full');
-  });
+    const placeholder = await getExportedPlaceholder(filePath)
+    expect(placeholder).toContain("iCloud storage full")
+  })
 
-  it('quarantines file on SHA-256 mismatch after download', async () => {
-    const filePath = '/path/to/corrupted.m4a';
-    const expectedFingerprint = 'abc123...';
+  it("quarantines file on SHA-256 mismatch after download", async () => {
+    const filePath = "/path/to/corrupted.m4a"
+    const expectedFingerprint = "abc123..."
 
     // Mock successful download
-    icloudctl.startDownload.mockResolvedValue();
+    icloudctl.startDownload.mockResolvedValue()
 
     // Mock fingerprint mismatch
-    mockSha256.mockReturnValue('xyz789...');
+    mockSha256.mockReturnValue("xyz789...")
 
-    const capture = await stageVoiceCapture(filePath, expectedFingerprint);
+    const capture = await stageVoiceCapture(filePath, expectedFingerprint)
 
-    expect(capture.metadata.integrity.quarantine).toBe(true);
-    expect(capture.metadata.integrity.quarantine_reason).toBe('fingerprint_mismatch');
+    expect(capture.metadata.integrity.quarantine).toBe(true)
+    expect(capture.metadata.integrity.quarantine_reason).toBe(
+      "fingerprint_mismatch"
+    )
 
     // Should log to errors_log
     const error = await db.get(
-      'SELECT * FROM errors_log WHERE capture_id = ?',
+      "SELECT * FROM errors_log WHERE capture_id = ?",
       [capture.id]
-    );
-    expect(error.error_type).toBe('integrity.fingerprint_mismatch');
-  });
-});
+    )
+    expect(error.error_type).toBe("integrity.fingerprint_mismatch")
+  })
+})
 ```
 
 #### Edge Case Tests
 
 ```typescript
-describe('APFS Edge Cases', () => {
-  it('handles race condition: file becomes dataless during processing', async () => {
-    const filePath = '/path/to/race-condition.m4a';
+describe("APFS Edge Cases", () => {
+  it("handles race condition: file becomes dataless during processing", async () => {
+    const filePath = "/path/to/race-condition.m4a"
 
-    let callCount = 0;
+    let callCount = 0
     icloudctl.checkFileStatus.mockImplementation(async () => {
-      callCount++;
+      callCount++
       // First call: file is downloaded
       if (callCount === 1) {
-        return { isDownloaded: true, isUbiquitousItem: true };
+        return { isDownloaded: true, isUbiquitousItem: true }
       }
       // Second call: file evicted (became dataless)
-      return { isDownloaded: false, isUbiquitousItem: true };
-    });
+      return { isDownloaded: false, isUbiquitousItem: true }
+    })
 
-    const result = await processVoiceMemo(filePath);
+    const result = await processVoiceMemo(filePath)
 
-    expect(result.status).toBe('retry_needed');
-    expect(result.reason).toContain('became dataless');
-  });
+    expect(result.status).toBe("retry_needed")
+    expect(result.reason).toContain("became dataless")
+  })
 
-  it('handles concurrent download requests for same file', async () => {
-    const filePath = '/path/to/concurrent.m4a';
+  it("handles concurrent download requests for same file", async () => {
+    const filePath = "/path/to/concurrent.m4a"
 
     // Start two downloads simultaneously
-    const download1 = downloader.downloadIfNeeded(filePath);
-    const download2 = downloader.downloadIfNeeded(filePath);
+    const download1 = downloader.downloadIfNeeded(filePath)
+    const download2 = downloader.downloadIfNeeded(filePath)
 
-    const [result1, result2] = await Promise.all([download1, download2]);
+    const [result1, result2] = await Promise.all([download1, download2])
 
     // Only one actual download should occur
-    expect(icloudctl.startDownload).toHaveBeenCalledTimes(1);
+    expect(icloudctl.startDownload).toHaveBeenCalledTimes(1)
 
     // Both should get success result
-    expect(result1.success).toBe(true);
-    expect(result2.success).toBe(true);
-  });
+    expect(result1.success).toBe(true)
+    expect(result2.success).toBe(true)
+  })
 
-  it('handles file deletion during download', async () => {
-    const filePath = '/path/to/deleted.m4a';
+  it("handles file deletion during download", async () => {
+    const filePath = "/path/to/deleted.m4a"
 
     // Start download
-    const downloadPromise = handleDatalessFile(filePath);
+    const downloadPromise = handleDatalessFile(filePath)
 
     // Simulate file deletion mid-download
     setTimeout(() => {
-      mockFs.unlinkSync(filePath);
-    }, 100);
+      mockFs.unlinkSync(filePath)
+    }, 100)
 
-    const result = await downloadPromise;
+    const result = await downloadPromise
 
-    expect(result.ready).toBe(false);
-    expect(result.error).toContain('File not found');
+    expect(result.ready).toBe(false)
+    expect(result.error).toContain("File not found")
 
     // Should mark as permanent error
-    const capture = await getCaptureByPath(filePath);
-    expect(capture.status).toBe('error');
-    expect(capture.metadata.error.permanent).toBe(true);
-  });
-});
+    const capture = await getCaptureByPath(filePath)
+    expect(capture.status).toBe("error")
+    expect(capture.metadata.error.permanent).toBe(true)
+  })
+})
 ```
 
 #### Performance Tests
 
 ```typescript
-describe('APFS Performance', () => {
-  it('processes large voice memo library efficiently', async () => {
+describe("APFS Performance", () => {
+  it("processes large voice memo library efficiently", async () => {
     // Create 1000 mock voice memos
-    const files = Array.from({ length: 1000 }, (_, i) =>
-      `/path/to/Recording-${i}.m4a`
-    );
+    const files = Array.from(
+      { length: 1000 },
+      (_, i) => `/path/to/Recording-${i}.m4a`
+    )
 
     // 10% are dataless
-    files.slice(0, 100).forEach(file => {
-      icloudctl.mockFileStatus(file, { isDownloaded: false });
-    });
+    files.slice(0, 100).forEach((file) => {
+      icloudctl.mockFileStatus(file, { isDownloaded: false })
+    })
 
-    const startTime = Date.now();
-    const results = await scanner.scanIncrementally(files);
-    const duration = Date.now() - startTime;
+    const startTime = Date.now()
+    const results = await scanner.scanIncrementally(files)
+    const duration = Date.now() - startTime
 
-    expect(results.filesScanned).toBe(1000);
-    expect(results.errors.length).toBe(0);
+    expect(results.filesScanned).toBe(1000)
+    expect(results.errors.length).toBe(0)
 
     // Should complete within reasonable time (< 30s for 1000 files)
-    expect(duration).toBeLessThan(30000);
+    expect(duration).toBeLessThan(30000)
 
     // Should batch process to avoid memory overload
-    const memoryUsage = process.memoryUsage().rss / 1e6;
-    expect(memoryUsage).toBeLessThan(500); // Less than 500MB
-  });
+    const memoryUsage = process.memoryUsage().rss / 1e6
+    expect(memoryUsage).toBeLessThan(500) // Less than 500MB
+  })
 
-  it('uses LRU cache to avoid redundant fingerprinting', async () => {
-    const filePath = '/path/to/cached.m4a';
+  it("uses LRU cache to avoid redundant fingerprinting", async () => {
+    const filePath = "/path/to/cached.m4a"
 
     // Process same file multiple times
     for (let i = 0; i < 10; i++) {
-      await scanner.processFile(filePath);
+      await scanner.processFile(filePath)
     }
 
     // Fingerprint should only be computed once
-    expect(mockSha256).toHaveBeenCalledTimes(1);
+    expect(mockSha256).toHaveBeenCalledTimes(1)
 
     // Subsequent calls should hit cache
-    expect(scanner.cacheHits).toBe(9);
-  });
-});
+    expect(scanner.cacheHits).toBe(9)
+  })
+})
 ```
 
 ## 5) Tooling
+
 - **Vitest**: Test runner and assertion library
 - **MSW (Mock Service Worker)**: HTTP mocking for Gmail API, Whisper API
 - **TestKit**: Standardized test utilities (database, filesystem, fixtures)
@@ -393,21 +403,26 @@ All tests MUST use TestKit patterns per [TestKit Standardization Guide](../../gu
 ## 6) TestKit Helpers
 
 **Required TestKit Modules:**
+
 ```typescript
 // Database testing
-import { createMemoryUrl, applyTestPragmas } from '@adhd-brain/testkit/sqlite'
+import { createMemoryUrl, applyTestPragmas } from "@adhd-brain/testkit/sqlite"
 
 // File system testing
-import { createTempDirectory, assertFileExists, createFaultInjector } from '@adhd-brain/testkit/fs'
+import {
+  createTempDirectory,
+  assertFileExists,
+  createFaultInjector,
+} from "@adhd-brain/testkit/fs"
 
 // HTTP mocking
-import { setupMSW, http, HttpResponse } from '@adhd-brain/testkit/msw'
+import { setupMSW, http, HttpResponse } from "@adhd-brain/testkit/msw"
 
 // Fixtures
-import { loadFixture } from '@adhd-brain/testkit/fixtures'
+import { loadFixture } from "@adhd-brain/testkit/fixtures"
 
 // Test helpers
-import { setupStagingLedger, seedCaptures } from '@adhd-brain/testkit/helpers'
+import { setupStagingLedger, seedCaptures } from "@adhd-brain/testkit/helpers"
 ```
 
 **Custom Assertions:**
@@ -417,6 +432,7 @@ TestKit provides domain-specific matchers for common patterns. See [TestKit Usag
 If a testing pattern is reusable across packages, add it to TestKit (not as a custom mock). See Section 8.6 for extension guidelines using MSW handlers.
 
 ## 7) Non-Goals
+
 - Visual polish snapshotting (optional)
 
 ---
@@ -432,6 +448,7 @@ If a testing pattern is reusable across packages, add it to TestKit (not as a cu
 **Objective:** Verify that the capture pipeline correctly integrates with the retry coordinator for transient failure recovery.
 
 **Contract Definition:**
+
 - Retry coordinator is called on all transient failures (per Error Recovery Guide)
 - Error classification matches Error Taxonomy (api.rate_limited, operation.timeout, etc.)
 - Retry schedule follows exponential backoff policy from RETRY_MATRIX
@@ -441,13 +458,14 @@ If a testing pattern is reusable across packages, add it to TestKit (not as a cu
 **Test Cases:**
 
 #### Test: Voice Poll Transient Failure Triggers Retry
+
 ```typescript
-describe('Voice Poll Retry Integration', () => {
-  it('schedules retry on transient iCloud download failure', async () => {
+describe("Voice Poll Retry Integration", () => {
+  it("schedules retry on transient iCloud download failure", async () => {
     // Arrange
-    const audioPath = '/icloud/voice-memo-test.m4a'
+    const audioPath = "/icloud/voice-memo-test.m4a"
     const retryCoordinatorSpy = mockRetryCoordinator()
-    mockICloudDownload(audioPath).toFailOnce('network_timeout')
+    mockICloudDownload(audioPath).toFailOnce("network_timeout")
 
     // Act
     await pollVoiceFiles()
@@ -455,20 +473,20 @@ describe('Voice Poll Retry Integration', () => {
     // Assert
     expect(retryCoordinatorSpy.scheduleRetry).toHaveBeenCalledWith(
       expect.objectContaining({
-        operationType: 'voice_poll',
-        errorType: 'network.timeout',
+        operationType: "voice_poll",
+        errorType: "network.timeout",
         attemptCount: 1,
-        retriable: true
+        retriable: true,
       })
     )
     expect(retryCoordinatorSpy.moveToDLQ).not.toHaveBeenCalled()
   })
 
-  it('moves to DLQ after max retry attempts (5)', async () => {
+  it("moves to DLQ after max retry attempts (5)", async () => {
     // Arrange
-    const audioPath = '/icloud/voice-memo-test.m4a'
+    const audioPath = "/icloud/voice-memo-test.m4a"
     const retryCoordinatorSpy = mockRetryCoordinator()
-    mockICloudDownload(audioPath).toFailAlways('network_timeout')
+    mockICloudDownload(audioPath).toFailAlways("network_timeout")
 
     // Act
     await pollVoiceFiles() // Attempt 1
@@ -478,20 +496,21 @@ describe('Voice Poll Retry Integration', () => {
     expect(retryCoordinatorSpy.scheduleRetry).toHaveBeenCalledTimes(5)
     expect(retryCoordinatorSpy.moveToDLQ).toHaveBeenCalledWith(
       expect.objectContaining({
-        operationType: 'voice_poll',
+        operationType: "voice_poll",
         attemptCount: 5,
-        errorType: 'network.timeout'
+        errorType: "network.timeout",
       }),
-      'Max retry attempts exceeded'
+      "Max retry attempts exceeded"
     )
   })
 })
 ```
 
 #### Test: Email Poll API Rate Limiting Retry
+
 ```typescript
-describe('Email Poll Retry Integration', () => {
-  it('schedules retry with correct backoff on Gmail rate limit', async () => {
+describe("Email Poll Retry Integration", () => {
+  it("schedules retry with correct backoff on Gmail rate limit", async () => {
     // Arrange
     const retryCoordinatorSpy = mockRetryCoordinator()
     mockGmailAPI().toReturn429RateLimit()
@@ -502,24 +521,24 @@ describe('Email Poll Retry Integration', () => {
     // Assert
     expect(retryCoordinatorSpy.scheduleRetry).toHaveBeenCalledWith(
       expect.objectContaining({
-        operationType: 'email_poll',
-        errorType: 'api.rate_limited',
-        attemptCount: 1
+        operationType: "email_poll",
+        errorType: "api.rate_limited",
+        attemptCount: 1,
       })
     )
 
     // Verify exponential backoff schedule (30s, 60s, 120s, 240s, 480s)
-    const backoffSchedule = retryCoordinatorSpy.getBackoffSchedule('email_poll')
+    const backoffSchedule = retryCoordinatorSpy.getBackoffSchedule("email_poll")
     expect(backoffSchedule[0]).toBeWithinRange(21000, 39000) // 30s ± 30% jitter
     expect(backoffSchedule[1]).toBeWithinRange(42000, 78000) // 60s ± 30% jitter
-    expect(backoffSchedule[4]).toBeLessThanOrEqual(900000)   // Capped at 15min
+    expect(backoffSchedule[4]).toBeLessThanOrEqual(900000) // Capped at 15min
   })
 
-  it('skips retry when circuit breaker is open', async () => {
+  it("skips retry when circuit breaker is open", async () => {
     // Arrange
     const retryCoordinatorSpy = mockRetryCoordinator()
     const circuitBreaker = mockCircuitBreaker()
-    circuitBreaker.forceOpen('api.quota_exceeded')
+    circuitBreaker.forceOpen("api.quota_exceeded")
     mockGmailAPI().toReturn429RateLimit()
 
     // Act
@@ -527,19 +546,20 @@ describe('Email Poll Retry Integration', () => {
 
     // Assert
     expect(retryCoordinatorSpy.scheduleRetry).not.toHaveBeenCalled()
-    expect(circuitBreaker.isOpen('api.quota_exceeded')).toBe(true)
+    expect(circuitBreaker.isOpen("api.quota_exceeded")).toBe(true)
     // Should log warning but not schedule retry
   })
 })
 ```
 
 #### Test: Transcription Timeout Retry
+
 ```typescript
-describe('Transcription Retry Integration', () => {
-  it('schedules retry on Whisper timeout', async () => {
+describe("Transcription Retry Integration", () => {
+  it("schedules retry on Whisper timeout", async () => {
     // Arrange
-    const captureId = '01TEST123'
-    const audioPath = '/audio/test.m4a'
+    const captureId = "01TEST123"
+    const audioPath = "/audio/test.m4a"
     const retryCoordinatorSpy = mockRetryCoordinator()
     mockWhisperTranscribe(audioPath).toTimeout(5000) // 5s timeout
 
@@ -550,18 +570,18 @@ describe('Transcription Retry Integration', () => {
     expect(retryCoordinatorSpy.scheduleRetry).toHaveBeenCalledWith(
       expect.objectContaining({
         operationId: captureId,
-        operationType: 'transcription',
-        errorType: 'operation.timeout',
+        operationType: "transcription",
+        errorType: "operation.timeout",
         attemptCount: 1,
-        context: { audioPath }
+        context: { audioPath },
       })
     )
   })
 
-  it('moves to DLQ on permanent OOM error', async () => {
+  it("moves to DLQ on permanent OOM error", async () => {
     // Arrange
-    const captureId = '01TEST123'
-    const audioPath = '/audio/large-file.m4a'
+    const captureId = "01TEST123"
+    const audioPath = "/audio/large-file.m4a"
     const retryCoordinatorSpy = mockRetryCoordinator()
     mockWhisperTranscribe(audioPath).toThrowOOM()
 
@@ -573,30 +593,31 @@ describe('Transcription Retry Integration', () => {
     expect(retryCoordinatorSpy.moveToDLQ).toHaveBeenCalledWith(
       expect.objectContaining({
         operationId: captureId,
-        operationType: 'transcription',
-        errorType: 'operation.oom',
-        attemptCount: 1
+        operationType: "transcription",
+        errorType: "operation.oom",
+        attemptCount: 1,
       }),
-      'OOM - system resource constraint'
+      "OOM - system resource constraint"
     )
   })
 })
 ```
 
 #### Test: Idempotency on Retry
+
 ```typescript
-describe('Retry Idempotency', () => {
-  it('skips retry if capture already exists (voice dedup)', async () => {
+describe("Retry Idempotency", () => {
+  it("skips retry if capture already exists (voice dedup)", async () => {
     // Arrange
-    const audioPath = '/icloud/voice-memo.m4a'
-    const audioFingerprint = 'fp_abc123'
+    const audioPath = "/icloud/voice-memo.m4a"
+    const audioFingerprint = "fp_abc123"
     const retryCoordinatorSpy = mockRetryCoordinator()
 
     // Pre-populate staging ledger
     await stagingLedger.insert({
-      captureId: '01EXISTING',
-      source: 'voice',
-      metaJson: { audio_fp: audioFingerprint }
+      captureId: "01EXISTING",
+      source: "voice",
+      metaJson: { audio_fp: audioFingerprint },
     })
 
     // Act
@@ -608,16 +629,16 @@ describe('Retry Idempotency', () => {
     // Should skip processing (idempotent)
   })
 
-  it('skips retry if email already captured (message ID dedup)', async () => {
+  it("skips retry if email already captured (message ID dedup)", async () => {
     // Arrange
-    const messageId = 'gmail_msg_123'
+    const messageId = "gmail_msg_123"
     const retryCoordinatorSpy = mockRetryCoordinator()
 
     // Pre-populate staging ledger
     await stagingLedger.insert({
-      captureId: '01EXISTING',
-      source: 'email',
-      channelNativeId: messageId
+      captureId: "01EXISTING",
+      source: "email",
+      channelNativeId: messageId,
     })
 
     // Act
@@ -631,35 +652,36 @@ describe('Retry Idempotency', () => {
 ```
 
 #### Test: Error Classification Correctness
+
 ```typescript
-describe('Error Classification for Retry', () => {
-  it('classifies errors using Error Taxonomy', async () => {
+describe("Error Classification for Retry", () => {
+  it("classifies errors using Error Taxonomy", async () => {
     const testCases = [
       {
-        error: new Error('ERR_NETWORK_TIMEOUT'),
-        expectedType: 'network.timeout',
-        retriable: true
+        error: new Error("ERR_NETWORK_TIMEOUT"),
+        expectedType: "network.timeout",
+        retriable: true,
       },
       {
-        error: new Error('GMAIL_QUOTA_EXCEEDED'),
-        expectedType: 'api.quota_exceeded',
-        retriable: true
+        error: new Error("GMAIL_QUOTA_EXCEEDED"),
+        expectedType: "api.quota_exceeded",
+        retriable: true,
       },
       {
-        error: new Error('WHISPER_CORRUPT_AUDIO'),
-        expectedType: 'validation.corrupt_input',
-        retriable: false
+        error: new Error("WHISPER_CORRUPT_AUDIO"),
+        expectedType: "validation.corrupt_input",
+        retriable: false,
       },
       {
-        error: new Error('FILESYSTEM_PERMISSION_DENIED'),
-        expectedType: 'filesystem.permission_denied',
-        retriable: false
-      }
+        error: new Error("FILESYSTEM_PERMISSION_DENIED"),
+        expectedType: "filesystem.permission_denied",
+        retriable: false,
+      },
     ]
 
     for (const { error, expectedType, retriable } of testCases) {
       const classification = errorClassifier.classify(error, {
-        operation: 'test_operation'
+        operation: "test_operation",
       })
 
       expect(classification.errorType).toBe(expectedType)
@@ -678,6 +700,7 @@ describe('Error Classification for Retry', () => {
 **Objective:** Verify that all capture events emit metrics conforming to the metrics contract (NDJSON format, canonical naming).
 
 **Contract Definition:**
+
 - All capture lifecycle events emit metrics (poll, stage, transcribe, export)
 - Metric names follow canonical naming convention: `domain.component.action.unit`
 - NDJSON format compliance (single-line JSON, required fields)
@@ -687,210 +710,214 @@ describe('Error Classification for Retry', () => {
 **Test Cases:**
 
 #### Test: Voice Capture Metrics Emission
+
 ```typescript
-describe('Voice Capture Metrics', () => {
+describe("Voice Capture Metrics", () => {
   beforeEach(() => {
-    process.env.CAPTURE_METRICS = '1'
+    process.env.CAPTURE_METRICS = "1"
     clearTestMetrics()
   })
 
-  it('emits capture.voice.staging_ms on successful staging', async () => {
+  it("emits capture.voice.staging_ms on successful staging", async () => {
     // Arrange
-    const audioPath = '/icloud/voice-memo.m4a'
-    const captureId = '01TEST123'
+    const audioPath = "/icloud/voice-memo.m4a"
+    const captureId = "01TEST123"
 
     // Act
     await pollVoiceFiles()
 
     // Assert
-    const metric = await queryMetrics('capture.voice.staging_ms')
+    const metric = await queryMetrics("capture.voice.staging_ms")
     expect(metric).toMatchObject({
-      metric: 'capture.voice.staging_ms',
-      type: 'duration',
+      metric: "capture.voice.staging_ms",
+      type: "duration",
       value: expect.any(Number),
       tags: {
         capture_id: captureId,
-        source: 'voice'
-      }
+        source: "voice",
+      },
     })
     expect(metric.value).toBeGreaterThan(0)
     expect(metric.value).toBeLessThan(1000) // < 1s for staging
   })
 
-  it('emits capture.voice.poll_duration_ms per poll cycle', async () => {
+  it("emits capture.voice.poll_duration_ms per poll cycle", async () => {
     // Arrange
-    mockICloudFiles(['/icloud/memo1.m4a', '/icloud/memo2.m4a'])
+    mockICloudFiles(["/icloud/memo1.m4a", "/icloud/memo2.m4a"])
 
     // Act
     await pollVoiceFiles()
 
     // Assert
-    const metric = await queryMetrics('capture.voice.poll_duration_ms')
+    const metric = await queryMetrics("capture.voice.poll_duration_ms")
     expect(metric).toMatchObject({
-      metric: 'capture.voice.poll_duration_ms',
-      type: 'duration',
-      tags: { files_found: 2 }
+      metric: "capture.voice.poll_duration_ms",
+      type: "duration",
+      tags: { files_found: 2 },
     })
   })
 
-  it('emits capture.voice.download_duration_ms for dataless file download', async () => {
+  it("emits capture.voice.download_duration_ms for dataless file download", async () => {
     // Arrange
-    const audioPath = '/icloud/dataless-memo.m4a'
+    const audioPath = "/icloud/dataless-memo.m4a"
     mockICloudFile(audioPath).asDataless(1024 * 1024) // 1MB
 
     // Act
     await pollVoiceFiles()
 
     // Assert
-    const metric = await queryMetrics('capture.voice.download_duration_ms')
+    const metric = await queryMetrics("capture.voice.download_duration_ms")
     expect(metric).toMatchObject({
-      metric: 'capture.voice.download_duration_ms',
-      type: 'duration',
+      metric: "capture.voice.download_duration_ms",
+      type: "duration",
       tags: {
         capture_id: expect.any(String),
-        file_size_bytes: 1048576
-      }
+        file_size_bytes: 1048576,
+      },
     })
   })
 })
 ```
 
 #### Test: Email Capture Metrics Emission
+
 ```typescript
-describe('Email Capture Metrics', () => {
+describe("Email Capture Metrics", () => {
   beforeEach(() => {
-    process.env.CAPTURE_METRICS = '1'
+    process.env.CAPTURE_METRICS = "1"
     clearTestMetrics()
   })
 
-  it('emits capture.email.staging_ms on email staging', async () => {
+  it("emits capture.email.staging_ms on email staging", async () => {
     // Arrange
-    const messageId = 'gmail_msg_123'
-    mockGmailAPI().toReturnMessages([{ id: messageId, snippet: 'Test' }])
+    const messageId = "gmail_msg_123"
+    mockGmailAPI().toReturnMessages([{ id: messageId, snippet: "Test" }])
 
     // Act
     await pollGmailMessages()
 
     // Assert
-    const metric = await queryMetrics('capture.email.staging_ms')
+    const metric = await queryMetrics("capture.email.staging_ms")
     expect(metric).toMatchObject({
-      metric: 'capture.email.staging_ms',
-      type: 'duration',
+      metric: "capture.email.staging_ms",
+      type: "duration",
       tags: {
         capture_id: expect.any(String),
-        source: 'email',
-        message_id: messageId
-      }
+        source: "email",
+        message_id: messageId,
+      },
     })
   })
 
-  it('emits capture.email.poll_duration_ms per Gmail poll', async () => {
+  it("emits capture.email.poll_duration_ms per Gmail poll", async () => {
     // Arrange
-    mockGmailAPI().toReturnMessages([{ id: 'msg1' }, { id: 'msg2' }])
+    mockGmailAPI().toReturnMessages([{ id: "msg1" }, { id: "msg2" }])
 
     // Act
     await pollGmailMessages()
 
     // Assert
-    const metric = await queryMetrics('capture.email.poll_duration_ms')
+    const metric = await queryMetrics("capture.email.poll_duration_ms")
     expect(metric).toMatchObject({
-      metric: 'capture.email.poll_duration_ms',
-      type: 'duration',
-      tags: { messages_found: 2 }
+      metric: "capture.email.poll_duration_ms",
+      type: "duration",
+      tags: { messages_found: 2 },
     })
   })
 })
 ```
 
 #### Test: Transcription Metrics Emission
+
 ```typescript
-describe('Transcription Metrics', () => {
+describe("Transcription Metrics", () => {
   beforeEach(() => {
-    process.env.CAPTURE_METRICS = '1'
+    process.env.CAPTURE_METRICS = "1"
     clearTestMetrics()
   })
 
-  it('emits transcription.duration_ms on success', async () => {
+  it("emits transcription.duration_ms on success", async () => {
     // Arrange
-    const captureId = '01TEST123'
-    const audioPath = '/audio/test.m4a'
-    mockWhisperTranscribe(audioPath).toReturn('Transcription text', 8234)
+    const captureId = "01TEST123"
+    const audioPath = "/audio/test.m4a"
+    mockWhisperTranscribe(audioPath).toReturn("Transcription text", 8234)
 
     // Act
     await transcribeVoiceMemo(captureId, audioPath)
 
     // Assert
-    const metric = await queryMetrics('transcription.duration_ms')
+    const metric = await queryMetrics("transcription.duration_ms")
     expect(metric).toMatchObject({
-      metric: 'transcription.duration_ms',
-      type: 'duration',
+      metric: "transcription.duration_ms",
+      type: "duration",
       value: 8234,
       tags: {
         capture_id: captureId,
-        model: 'medium',
+        model: "medium",
         audio_duration_s: expect.any(Number),
-        success: true
-      }
+        success: true,
+      },
     })
   })
 
-  it('emits transcription.failure_total on failure', async () => {
+  it("emits transcription.failure_total on failure", async () => {
     // Arrange
-    const captureId = '01TEST123'
-    const audioPath = '/audio/corrupt.m4a'
-    mockWhisperTranscribe(audioPath).toFail('validation.corrupt_input')
+    const captureId = "01TEST123"
+    const audioPath = "/audio/corrupt.m4a"
+    mockWhisperTranscribe(audioPath).toFail("validation.corrupt_input")
 
     // Act
     await transcribeVoiceMemo(captureId, audioPath)
 
     // Assert
-    const metric = await queryMetrics('transcription.failure_total')
+    const metric = await queryMetrics("transcription.failure_total")
     expect(metric).toMatchObject({
-      metric: 'transcription.failure_total',
-      type: 'counter',
+      metric: "transcription.failure_total",
+      type: "counter",
       value: 1,
       tags: {
-        error_type: 'validation.corrupt_input',
-        model: 'medium'
-      }
+        error_type: "validation.corrupt_input",
+        model: "medium",
+      },
     })
   })
 })
 ```
 
 #### Test: Export Metrics Emission
+
 ```typescript
-describe('Export Metrics', () => {
+describe("Export Metrics", () => {
   beforeEach(() => {
-    process.env.CAPTURE_METRICS = '1'
+    process.env.CAPTURE_METRICS = "1"
     clearTestMetrics()
   })
 
-  it('emits export.write_ms on vault file write', async () => {
+  it("emits export.write_ms on vault file write", async () => {
     // Arrange
-    const captureId = '01TEST123'
-    const vaultPath = 'inbox/01TEST123.md'
+    const captureId = "01TEST123"
+    const vaultPath = "inbox/01TEST123.md"
 
     // Act
     await exportToVault(captureId)
 
     // Assert
-    const metric = await queryMetrics('export.write_ms')
+    const metric = await queryMetrics("export.write_ms")
     expect(metric).toMatchObject({
-      metric: 'export.write_ms',
-      type: 'duration',
+      metric: "export.write_ms",
+      type: "duration",
       tags: {
         capture_id: captureId,
-        source: 'voice',
-        vault_path: vaultPath
-      }
+        source: "voice",
+        vault_path: vaultPath,
+      },
     })
     expect(metric.value).toBeLessThan(500) // < 500ms p95 SLA
   })
 
-  it('emits capture.time_to_export_ms for end-to-end latency', async () => {
+  it("emits capture.time_to_export_ms for end-to-end latency", async () => {
     // Arrange
-    const audioPath = '/icloud/memo.m4a'
+    const audioPath = "/icloud/memo.m4a"
 
     // Act
     const startTime = Date.now()
@@ -898,14 +925,14 @@ describe('Export Metrics', () => {
     const endTime = Date.now()
 
     // Assert
-    const metric = await queryMetrics('capture.time_to_export_ms')
+    const metric = await queryMetrics("capture.time_to_export_ms")
     expect(metric).toMatchObject({
-      metric: 'capture.time_to_export_ms',
-      type: 'duration',
+      metric: "capture.time_to_export_ms",
+      type: "duration",
       tags: {
         capture_id: expect.any(String),
-        source: 'voice'
-      }
+        source: "voice",
+      },
     })
     expect(metric.value).toBeCloseTo(endTime - startTime, -2) // ±100ms
   })
@@ -913,46 +940,47 @@ describe('Export Metrics', () => {
 ```
 
 #### Test: Deduplication Metrics Emission
+
 ```typescript
-describe('Deduplication Metrics', () => {
+describe("Deduplication Metrics", () => {
   beforeEach(() => {
-    process.env.CAPTURE_METRICS = '1'
+    process.env.CAPTURE_METRICS = "1"
     clearTestMetrics()
   })
 
-  it('emits dedup.hits_total on duplicate detection', async () => {
+  it("emits dedup.hits_total on duplicate detection", async () => {
     // Arrange
-    const audioPath = '/icloud/duplicate.m4a'
-    const audioFingerprint = 'fp_duplicate'
+    const audioPath = "/icloud/duplicate.m4a"
+    const audioFingerprint = "fp_duplicate"
     await stagingLedger.insert({
-      captureId: '01EXISTING',
-      source: 'voice',
-      metaJson: { audio_fp: audioFingerprint }
+      captureId: "01EXISTING",
+      source: "voice",
+      metaJson: { audio_fp: audioFingerprint },
     })
 
     // Act
     await pollVoiceFiles() // Attempt duplicate capture
 
     // Assert
-    const metric = await queryMetrics('dedup.hits_total')
+    const metric = await queryMetrics("dedup.hits_total")
     expect(metric).toMatchObject({
-      metric: 'dedup.hits_total',
-      type: 'counter',
+      metric: "dedup.hits_total",
+      type: "counter",
       value: 1,
       tags: {
-        source: 'voice',
-        reason: 'audio_fingerprint'
-      }
+        source: "voice",
+        reason: "audio_fingerprint",
+      },
     })
   })
 
-  it('emits dedup.hits_total for email message ID dedup', async () => {
+  it("emits dedup.hits_total for email message ID dedup", async () => {
     // Arrange
-    const messageId = 'gmail_duplicate'
+    const messageId = "gmail_duplicate"
     await stagingLedger.insert({
-      captureId: '01EXISTING',
-      source: 'email',
-      channelNativeId: messageId
+      captureId: "01EXISTING",
+      source: "email",
+      channelNativeId: messageId,
     })
     mockGmailAPI().toReturnMessages([{ id: messageId }])
 
@@ -960,92 +988,98 @@ describe('Deduplication Metrics', () => {
     await pollGmailMessages()
 
     // Assert
-    const metric = await queryMetrics('dedup.hits_total')
+    const metric = await queryMetrics("dedup.hits_total")
     expect(metric).toMatchObject({
-      metric: 'dedup.hits_total',
-      type: 'counter',
+      metric: "dedup.hits_total",
+      type: "counter",
       tags: {
-        source: 'email',
-        reason: 'message_id'
-      }
+        source: "email",
+        reason: "message_id",
+      },
     })
   })
 })
 ```
 
 #### Test: NDJSON Format Compliance
+
 ```typescript
-describe('Metrics NDJSON Format', () => {
+describe("Metrics NDJSON Format", () => {
   beforeEach(() => {
-    process.env.CAPTURE_METRICS = '1'
+    process.env.CAPTURE_METRICS = "1"
   })
 
-  it('emits valid NDJSON (single-line JSON)', async () => {
+  it("emits valid NDJSON (single-line JSON)", async () => {
     // Act
     await pollVoiceFiles()
 
     // Assert
-    const metricsFile = await readMetricsFile('2025-09-28.ndjson')
-    const lines = metricsFile.split('\n').filter(Boolean)
+    const metricsFile = await readMetricsFile("2025-09-28.ndjson")
+    const lines = metricsFile.split("\n").filter(Boolean)
 
     for (const line of lines) {
       // Must be valid JSON
       const event = JSON.parse(line)
 
       // Must have required fields
-      expect(event).toHaveProperty('timestamp')
-      expect(event).toHaveProperty('metric')
-      expect(event).toHaveProperty('value')
-      expect(event).toHaveProperty('type')
+      expect(event).toHaveProperty("timestamp")
+      expect(event).toHaveProperty("metric")
+      expect(event).toHaveProperty("value")
+      expect(event).toHaveProperty("type")
 
       // Timestamp must be ISO 8601 UTC
-      expect(event.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
+      expect(event.timestamp).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+      )
 
       // Type must be valid
-      expect(['counter', 'gauge', 'duration', 'histogram']).toContain(event.type)
+      expect(["counter", "gauge", "duration", "histogram"]).toContain(
+        event.type
+      )
     }
   })
 
-  it('does not emit metrics when CAPTURE_METRICS=0', async () => {
+  it("does not emit metrics when CAPTURE_METRICS=0", async () => {
     // Arrange
-    process.env.CAPTURE_METRICS = '0'
+    process.env.CAPTURE_METRICS = "0"
 
     // Act
     await pollVoiceFiles()
 
     // Assert
-    const metrics = await queryMetrics('*')
+    const metrics = await queryMetrics("*")
     expect(metrics).toHaveLength(0)
   })
 })
 ```
 
 #### Test: Canonical Metric Naming Convention
+
 ```typescript
-describe('Metric Naming Convention', () => {
-  it('all emitted metrics follow domain.component.action.unit pattern', async () => {
+describe("Metric Naming Convention", () => {
+  it("all emitted metrics follow domain.component.action.unit pattern", async () => {
     // Act
     await runFullCapturePipeline()
 
     // Assert
-    const metrics = await queryMetrics('*')
-    const metricNames = metrics.map(m => m.metric)
+    const metrics = await queryMetrics("*")
+    const metricNames = metrics.map((m) => m.metric)
 
     for (const name of metricNames) {
       // Must have 3-4 parts separated by dots
-      const parts = name.split('.')
+      const parts = name.split(".")
       expect(parts.length).toBeGreaterThanOrEqual(3)
 
       // Must be lowercase with underscores (no camelCase)
       expect(name).toMatch(/^[a-z][a-z0-9_.]*$/)
 
       // Duration metrics must end in _ms
-      if (name.includes('duration') || name.includes('latency')) {
+      if (name.includes("duration") || name.includes("latency")) {
         expect(name).toMatch(/_ms$/)
       }
 
       // Counter metrics should end in _total
-      if (name.includes('failure') || name.includes('success')) {
+      if (name.includes("failure") || name.includes("success")) {
         expect(name).toMatch(/_total$/)
       }
     }
@@ -1062,6 +1096,7 @@ describe('Metric Naming Convention', () => {
 **Objective:** Verify end-to-end error recovery flows including DLQ escalation, placeholder exports, and audit trail logging.
 
 **Contract Definition:**
+
 - Placeholder export triggered on DLQ for transcription failures
 - Audit trail logged to `errors_log` table on all error paths
 - Idempotency maintained through staging ledger checks
@@ -1070,13 +1105,14 @@ describe('Metric Naming Convention', () => {
 **Test Cases:**
 
 #### Test: DLQ Placeholder Export
+
 ```typescript
-describe('DLQ Placeholder Export', () => {
-  it('exports placeholder on transcription DLQ', async () => {
+describe("DLQ Placeholder Export", () => {
+  it("exports placeholder on transcription DLQ", async () => {
     // Arrange
-    const captureId = '01TEST123'
-    const audioPath = '/audio/unrecoverable.m4a'
-    mockWhisperTranscribe(audioPath).toFailAlways('validation.corrupt_input')
+    const captureId = "01TEST123"
+    const audioPath = "/audio/unrecoverable.m4a"
+    mockWhisperTranscribe(audioPath).toFailAlways("validation.corrupt_input")
 
     // Act
     await transcribeVoiceMemo(captureId, audioPath)
@@ -1087,12 +1123,12 @@ describe('DLQ Placeholder Export', () => {
       [captureId]
     )
     expect(dlqEntry).toHaveLength(1)
-    expect(dlqEntry[0].error_type).toBe('validation.corrupt_input')
+    expect(dlqEntry[0].error_type).toBe("validation.corrupt_input")
 
     // Assert: Placeholder exported
     const vaultFile = await readVaultFile(`inbox/${captureId}.md`)
-    expect(vaultFile).toContain('# Placeholder Export (Transcription Failed)')
-    expect(vaultFile).toContain('Error: validation.corrupt_input')
+    expect(vaultFile).toContain("# Placeholder Export (Transcription Failed)")
+    expect(vaultFile).toContain("Error: validation.corrupt_input")
     expect(vaultFile).toContain(`Audio: ${audioPath}`)
 
     // Assert: Audit trail logged
@@ -1101,13 +1137,13 @@ describe('DLQ Placeholder Export', () => {
       [captureId]
     )
     expect(auditEntry).toHaveLength(1)
-    expect(auditEntry[0].export_type).toBe('placeholder')
+    expect(auditEntry[0].export_type).toBe("placeholder")
   })
 
-  it('does not export placeholder for non-transcription DLQ', async () => {
+  it("does not export placeholder for non-transcription DLQ", async () => {
     // Arrange
-    const messageId = 'gmail_unrecoverable'
-    mockGmailAPI().toFailAlways('auth.invalid_grant')
+    const messageId = "gmail_unrecoverable"
+    mockGmailAPI().toFailAlways("auth.invalid_grant")
 
     // Act
     await pollGmailMessages()
@@ -1119,28 +1155,29 @@ describe('DLQ Placeholder Export', () => {
     expect(dlqEntry.length).toBeGreaterThan(0)
 
     // Assert: No placeholder export (only for transcription failures)
-    const vaultFiles = await listVaultFiles('inbox')
+    const vaultFiles = await listVaultFiles("inbox")
     expect(vaultFiles).toHaveLength(0)
   })
 })
 ```
 
 #### Test: Audit Trail Logging
+
 ```typescript
-describe('Error Audit Trail', () => {
-  it('logs all retry attempts to errors_log table', async () => {
+describe("Error Audit Trail", () => {
+  it("logs all retry attempts to errors_log table", async () => {
     // Arrange
-    const captureId = '01TEST123'
-    const audioPath = '/audio/transient-failure.m4a'
+    const captureId = "01TEST123"
+    const audioPath = "/audio/transient-failure.m4a"
     let attemptCount = 0
     mockWhisperTranscribe(audioPath).toFailTimes(3, () => {
       attemptCount++
-      return 'network.timeout'
+      return "network.timeout"
     })
 
     // Act
     await transcribeVoiceMemo(captureId, audioPath) // Attempt 1
-    await retryCoordinator.executeRetries()          // Attempts 2-3
+    await retryCoordinator.executeRetries() // Attempts 2-3
     await transcribeVoiceMemo(captureId, audioPath) // Success on attempt 4
 
     // Assert
@@ -1153,17 +1190,19 @@ describe('Error Audit Trail', () => {
     expect(auditTrail[0].attempt_number).toBe(1)
     expect(auditTrail[1].attempt_number).toBe(2)
     expect(auditTrail[2].attempt_number).toBe(3)
-    expect(auditTrail.every(e => e.error_type === 'network.timeout')).toBe(true)
-    expect(auditTrail.every(e => e.dlq === 0)).toBe(true) // Not in DLQ yet
+    expect(auditTrail.every((e) => e.error_type === "network.timeout")).toBe(
+      true
+    )
+    expect(auditTrail.every((e) => e.dlq === 0)).toBe(true) // Not in DLQ yet
   })
 
-  it('marks errors_log entry as DLQ on final failure', async () => {
+  it("marks errors_log entry as DLQ on final failure", async () => {
     // Arrange
-    const captureId = '01TEST123'
-    mockWhisperTranscribe('/audio/test.m4a').toFailAlways('network.timeout')
+    const captureId = "01TEST123"
+    mockWhisperTranscribe("/audio/test.m4a").toFailAlways("network.timeout")
 
     // Act
-    await transcribeVoiceMemo(captureId, '/audio/test.m4a')
+    await transcribeVoiceMemo(captureId, "/audio/test.m4a")
     await retryCoordinator.executeRetries() // Exhaust all retries
 
     // Assert
@@ -1174,23 +1213,24 @@ describe('Error Audit Trail', () => {
 
     expect(dlqEntry).toHaveLength(1)
     expect(dlqEntry[0].attempt_number).toBe(5) // Max attempts
-    expect(dlqEntry[0].dlq_reason).toBe('Max retry attempts exceeded')
+    expect(dlqEntry[0].dlq_reason).toBe("Max retry attempts exceeded")
     expect(dlqEntry[0].dlq_at).toBeTruthy()
   })
 })
 ```
 
 #### Test: Idempotency Across Error Recovery
+
 ```typescript
-describe('Idempotency in Error Recovery', () => {
-  it('prevents duplicate exports after retry success', async () => {
+describe("Idempotency in Error Recovery", () => {
+  it("prevents duplicate exports after retry success", async () => {
     // Arrange
-    const captureId = '01TEST123'
-    mockWhisperTranscribe('/audio/test.m4a').toFailOnce('network.timeout')
+    const captureId = "01TEST123"
+    mockWhisperTranscribe("/audio/test.m4a").toFailOnce("network.timeout")
 
     // Act
-    await transcribeVoiceMemo(captureId, '/audio/test.m4a') // Fails
-    await retryCoordinator.executeRetries()                  // Succeeds
+    await transcribeVoiceMemo(captureId, "/audio/test.m4a") // Fails
+    await retryCoordinator.executeRetries() // Succeeds
 
     // Assert: Single export audit entry
     const auditEntries = await db.query(
@@ -1200,7 +1240,7 @@ describe('Idempotency in Error Recovery', () => {
     expect(auditEntries).toHaveLength(1)
 
     // Assert: Single vault file
-    const vaultFiles = await listVaultFiles('inbox', captureId)
+    const vaultFiles = await listVaultFiles("inbox", captureId)
     expect(vaultFiles).toHaveLength(1)
 
     // Act: Retry again (idempotent)
@@ -1225,6 +1265,7 @@ describe('Idempotency in Error Recovery', () => {
 **Objective:** Verify atomic file write pattern (temp → fsync → rename) and collision detection for direct synchronous exports.
 
 **Contract Definition:**
+
 - Atomic file write using temp file + fsync + rename
 - Collision detection distinguishes DUPLICATE (same hash) vs CONFLICT (different hash)
 - Export latency p95 < 50ms (per SLA)
@@ -1233,13 +1274,14 @@ describe('Idempotency in Error Recovery', () => {
 **Test Cases:**
 
 #### Test: Atomic File Write Pattern
+
 ```typescript
-describe('Atomic Export Pattern', () => {
-  it('writes to temp file before final rename', async () => {
+describe("Atomic Export Pattern", () => {
+  it("writes to temp file before final rename", async () => {
     // Arrange
-    const captureId = '01TEST123'
-    const vaultPath = 'inbox/01TEST123.md'
-    const tempPath = 'inbox/.tmp-01TEST123.md'
+    const captureId = "01TEST123"
+    const vaultPath = "inbox/01TEST123.md"
+    const tempPath = "inbox/.tmp-01TEST123.md"
     const fsOperationsSpy = spyOnFileSystem()
 
     // Act
@@ -1247,30 +1289,30 @@ describe('Atomic Export Pattern', () => {
 
     // Assert: Write order is temp → fsync → rename
     expect(fsOperationsSpy.calls).toEqual([
-      { op: 'writeFile', path: tempPath },
-      { op: 'fsync', path: tempPath },
-      { op: 'rename', from: tempPath, to: vaultPath }
+      { op: "writeFile", path: tempPath },
+      { op: "fsync", path: tempPath },
+      { op: "rename", from: tempPath, to: vaultPath },
     ])
   })
 
-  it('recovers from crash before rename', async () => {
+  it("recovers from crash before rename", async () => {
     // Arrange
-    const captureId = '01TEST123'
-    const tempPath = 'inbox/.tmp-01TEST123.md'
-    await writeFile(tempPath, 'temp content') // Simulate interrupted export
+    const captureId = "01TEST123"
+    const tempPath = "inbox/.tmp-01TEST123.md"
+    await writeFile(tempPath, "temp content") // Simulate interrupted export
 
     // Act
     await exportToVault(captureId) // Retry export
 
     // Assert: Temp file cleaned up, final file written
     expect(await fileExists(tempPath)).toBe(false)
-    expect(await fileExists('inbox/01TEST123.md')).toBe(true)
+    expect(await fileExists("inbox/01TEST123.md")).toBe(true)
   })
 
-  it('fsyncs before rename to ensure durability', async () => {
+  it("fsyncs before rename to ensure durability", async () => {
     // Arrange
-    const captureId = '01TEST123'
-    const fsyncSpy = spyOn(fs, 'fsync')
+    const captureId = "01TEST123"
+    const fsyncSpy = spyOn(fs, "fsync")
 
     // Act
     await exportToVault(captureId)
@@ -1282,12 +1324,13 @@ describe('Atomic Export Pattern', () => {
 ```
 
 #### Test: Collision Detection (DUPLICATE vs CONFLICT)
+
 ```typescript
-describe('Export Collision Detection', () => {
-  it('detects DUPLICATE (same content hash)', async () => {
+describe("Export Collision Detection", () => {
+  it("detects DUPLICATE (same content hash)", async () => {
     // Arrange
-    const captureId = '01TEST123'
-    const contentHash = 'sha256_abc123'
+    const captureId = "01TEST123"
+    const contentHash = "sha256_abc123"
 
     // Pre-export with same content hash
     await exportToVault(captureId)
@@ -1296,8 +1339,8 @@ describe('Export Collision Detection', () => {
     const result = await exportToVault(captureId)
 
     // Assert
-    expect(result.status).toBe('DUPLICATE')
-    expect(result.existingPath).toBe('inbox/01TEST123.md')
+    expect(result.status).toBe("DUPLICATE")
+    expect(result.existingPath).toBe("inbox/01TEST123.md")
 
     // Assert: Audit log records duplicate
     const auditEntry = await db.query(
@@ -1307,20 +1350,20 @@ describe('Export Collision Detection', () => {
     expect(auditEntry).toHaveLength(1)
   })
 
-  it('detects CONFLICT (different content hash)', async () => {
+  it("detects CONFLICT (different content hash)", async () => {
     // Arrange
-    const captureId = '01TEST123'
-    await exportToVault(captureId, 'Original content')
+    const captureId = "01TEST123"
+    await exportToVault(captureId, "Original content")
 
     // Act: Export with different content
-    const result = await exportToVault(captureId, 'Modified content')
+    const result = await exportToVault(captureId, "Modified content")
 
     // Assert
-    expect(result.status).toBe('CONFLICT')
+    expect(result.status).toBe("CONFLICT")
     expect(result.conflictPath).toMatch(/inbox\/01TEST123-\d+\.md/)
 
     // Assert: Both files exist
-    expect(await fileExists('inbox/01TEST123.md')).toBe(true)
+    expect(await fileExists("inbox/01TEST123.md")).toBe(true)
     expect(await fileExists(result.conflictPath)).toBe(true)
 
     // Assert: Audit log records conflict
@@ -1331,13 +1374,13 @@ describe('Export Collision Detection', () => {
     expect(auditEntry).toHaveLength(1)
   })
 
-  it('uses ULID timestamp for conflict suffix', async () => {
+  it("uses ULID timestamp for conflict suffix", async () => {
     // Arrange
-    const captureId = '01TEST123'
-    await exportToVault(captureId, 'Content v1')
+    const captureId = "01TEST123"
+    await exportToVault(captureId, "Content v1")
 
     // Act
-    const result = await exportToVault(captureId, 'Content v2')
+    const result = await exportToVault(captureId, "Content v2")
 
     // Assert: Conflict file has ULID suffix
     expect(result.conflictPath).toMatch(/inbox\/01TEST123-01[A-Z0-9]{24}\.md/)
@@ -1346,9 +1389,10 @@ describe('Export Collision Detection', () => {
 ```
 
 #### Test: Export Latency SLA
+
 ```typescript
-describe('Export Performance', () => {
-  it('meets p95 latency SLA (< 50ms)', async () => {
+describe("Export Performance", () => {
+  it("meets p95 latency SLA (< 50ms)", async () => {
     // Arrange
     const captureIds = Array.from({ length: 100 }, (_, i) => `01TEST${i}`)
     const latencies: number[] = []
@@ -1365,8 +1409,11 @@ describe('Export Performance', () => {
     expect(p95).toBeLessThan(50)
 
     // Assert: Metric emitted
-    const metrics = await queryMetrics('export.write_ms')
-    const metricP95 = calculatePercentile(metrics.map(m => m.value), 95)
+    const metrics = await queryMetrics("export.write_ms")
+    const metricP95 = calculatePercentile(
+      metrics.map((m) => m.value),
+      95
+    )
     expect(metricP95).toBeLessThan(50)
   })
 })
@@ -1380,7 +1427,10 @@ describe('Export Performance', () => {
 
 ```typescript
 // Retry coordinator mocking
-import { mockRetryCoordinator, mockCircuitBreaker } from '@adhd-brain/testkit/retry'
+import {
+  mockRetryCoordinator,
+  mockCircuitBreaker,
+} from "@adhd-brain/testkit/retry"
 
 // Metrics test helpers
 import {
@@ -1388,21 +1438,21 @@ import {
   assertMetricEmitted,
   assertMetricCount,
   clearTestMetrics,
-  readMetricsFile
-} from '@adhd-brain/testkit/metrics'
+  readMetricsFile,
+} from "@adhd-brain/testkit/metrics"
 
 // Error classifier mocking
-import { mockErrorClassifier } from '@adhd-brain/testkit/errors'
+import { mockErrorClassifier } from "@adhd-brain/testkit/errors"
 
 // File system test helpers (atomic writes)
 import {
   spyOnFileSystem,
   mockFsOperations,
-  assertAtomicWrite
-} from '@adhd-brain/testkit/fs'
+  assertAtomicWrite,
+} from "@adhd-brain/testkit/fs"
 
 // Database test helpers (audit trail)
-import { testDb, assertAuditTrail } from '@adhd-brain/testkit/db'
+import { testDb, assertAuditTrail } from "@adhd-brain/testkit/db"
 ```
 
 **Custom assertions to add:**
@@ -1412,43 +1462,49 @@ import { testDb, assertAuditTrail } from '@adhd-brain/testkit/db'
 expect.extend({
   toHaveScheduledRetry(received, expected) {
     const calls = received.scheduleRetry.mock.calls
-    const match = calls.find(call =>
-      call[0].errorType === expected.errorType &&
-      call[0].attemptCount === expected.attemptCount
+    const match = calls.find(
+      (call) =>
+        call[0].errorType === expected.errorType &&
+        call[0].attemptCount === expected.attemptCount
     )
     return {
       pass: !!match,
-      message: () => `Expected retry to be scheduled for ${expected.errorType}`
+      message: () => `Expected retry to be scheduled for ${expected.errorType}`,
     }
-  }
+  },
 })
 
 // Assert metric was emitted with correct format
 expect.extend({
   toMatchMetricContract(received) {
-    const requiredFields = ['timestamp', 'metric', 'value', 'type']
-    const missingFields = requiredFields.filter(f => !(f in received))
+    const requiredFields = ["timestamp", "metric", "value", "type"]
+    const missingFields = requiredFields.filter((f) => !(f in received))
 
     return {
       pass: missingFields.length === 0,
-      message: () => `Metric missing required fields: ${missingFields.join(', ')}`
+      message: () =>
+        `Metric missing required fields: ${missingFields.join(", ")}`,
     }
-  }
+  },
 })
 
 // Assert atomic write pattern
 expect.extend({
   toHaveUsedAtomicWrite(received, finalPath) {
     const ops = received.fileSystemCalls
-    const hasTempWrite = ops.some(op => op.type === 'writeFile' && op.path.includes('.tmp'))
-    const hasFsync = ops.some(op => op.type === 'fsync')
-    const hasRename = ops.some(op => op.type === 'rename' && op.to === finalPath)
+    const hasTempWrite = ops.some(
+      (op) => op.type === "writeFile" && op.path.includes(".tmp")
+    )
+    const hasFsync = ops.some((op) => op.type === "fsync")
+    const hasRename = ops.some(
+      (op) => op.type === "rename" && op.to === finalPath
+    )
 
     return {
       pass: hasTempWrite && hasFsync && hasRename,
-      message: () => 'Expected atomic write pattern (temp → fsync → rename)'
+      message: () => "Expected atomic write pattern (temp → fsync → rename)",
     }
-  }
+  },
 })
 ```
 
@@ -1459,6 +1515,7 @@ expect.extend({
 **Objective:** Verify that voice file sovereignty requirements from ADR-0001 are strictly enforced to prevent data corruption and sync conflicts.
 
 **Contract Definition:**
+
 - Voice memos never copied, moved, or renamed from Apple's managed location
 - SHA-256 fingerprints used for integrity verification and deduplication
 - iCloud download state properly handled (dataless files, pending downloads)
@@ -1468,49 +1525,59 @@ expect.extend({
 ### 8.5.1 iCloud Managed Location Validation
 
 ```typescript
-describe('Voice File Sovereignty (P0)', () => {
-  test('validates file is in iCloud managed location', async () => {
-    const validPath = '~/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings/test.m4a'
-    const invalidPath = '~/Downloads/test.m4a'
+describe("Voice File Sovereignty (P0)", () => {
+  test("validates file is in iCloud managed location", async () => {
+    const validPath =
+      "~/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings/test.m4a"
+    const invalidPath = "~/Downloads/test.m4a"
 
     // Valid path should be accepted
     const validResult = await captureWorker.validateFileSovereignty(validPath)
     expect(validResult.valid).toBe(true)
 
     // Invalid path should be rejected
-    const invalidResult = await captureWorker.validateFileSovereignty(invalidPath)
+    const invalidResult =
+      await captureWorker.validateFileSovereignty(invalidPath)
     expect(invalidResult.valid).toBe(false)
-    expect(invalidResult.error).toContain('File must be in iCloud managed location')
+    expect(invalidResult.error).toContain(
+      "File must be in iCloud managed location"
+    )
   })
 
-  test('rejects copied/moved voice files', async () => {
+  test("rejects copied/moved voice files", async () => {
     const originalPath = await createTestVoiceMemo() // Creates in proper location
-    const copiedPath = '~/Desktop/copied-memo.m4a'
+    const copiedPath = "~/Desktop/copied-memo.m4a"
 
     // Copy file to different location
     await fs.copyFile(originalPath, copiedPath)
 
     // Original should pass
-    const originalResult = await captureWorker.validateFileSovereignty(originalPath)
+    const originalResult =
+      await captureWorker.validateFileSovereignty(originalPath)
     expect(originalResult.valid).toBe(true)
 
     // Copy should fail
     const copiedResult = await captureWorker.validateFileSovereignty(copiedPath)
     expect(copiedResult.valid).toBe(false)
-    expect(copiedResult.error).toContain('File appears to be copied from iCloud location')
+    expect(copiedResult.error).toContain(
+      "File appears to be copied from iCloud location"
+    )
   })
 
-  test('preserves original file path in staging ledger', async () => {
+  test("preserves original file path in staging ledger", async () => {
     const db = new Database(createMemoryUrl())
     const stagingLedger = new StagingLedger(db)
 
-    const voiceMemoPath = '~/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings/20250928-100000.m4a'
+    const voiceMemoPath =
+      "~/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings/20250928-100000.m4a"
 
     // Capture voice memo
     const captureId = await captureWorker.captureVoice(voiceMemoPath)
 
     // Verify file_path in database points to iCloud location (not copied)
-    const capture = db.prepare('SELECT * FROM captures WHERE id = ?').get(captureId)
+    const capture = db
+      .prepare("SELECT * FROM captures WHERE id = ?")
+      .get(captureId)
     expect(capture.file_path).toBe(voiceMemoPath)
 
     // Verify no local copy exists
@@ -1518,41 +1585,44 @@ describe('Voice File Sovereignty (P0)', () => {
     expect(fs.existsSync(localCopyPath)).toBe(false)
   })
 
-  test('validates file ownership before processing', async () => {
+  test("validates file ownership before processing", async () => {
     const voiceMemoPath = await createTestVoiceMemo()
 
     // Valid: user owns file
-    const ownershipCheck = await captureWorker.validateFileOwnership(voiceMemoPath)
+    const ownershipCheck =
+      await captureWorker.validateFileOwnership(voiceMemoPath)
     expect(ownershipCheck.valid).toBe(true)
 
     // Invalid: file locked by another process
     const lockedFile = await createLockedFile()
     const lockedCheck = await captureWorker.validateFileOwnership(lockedFile)
     expect(lockedCheck.valid).toBe(false)
-    expect(lockedCheck.error).toContain('File is locked by another process')
+    expect(lockedCheck.error).toContain("File is locked by another process")
   })
 
-  test('handles iCloud pending download status', async () => {
+  test("handles iCloud pending download status", async () => {
     const faultInjector = createFaultInjector()
 
     // Simulate cloud-only file (not yet downloaded)
-    faultInjector.injectICloudStatus('pending-download', {
-      path: '/icloud/test.m4a',
+    faultInjector.injectICloudStatus("pending-download", {
+      path: "/icloud/test.m4a",
       size: 0, // Cloud placeholder
-      attributes: { isCloudPlaceholder: true }
+      attributes: { isCloudPlaceholder: true },
     })
 
     // Attempt to capture
-    const result = await captureWorker.captureVoice('/icloud/test.m4a')
+    const result = await captureWorker.captureVoice("/icloud/test.m4a")
 
     // Should handle gracefully
     expect(result.success).toBe(false)
-    expect(result.error.code).toBe('FILE_PENDING_DOWNLOAD')
+    expect(result.error.code).toBe("FILE_PENDING_DOWNLOAD")
     expect(result.error.retriable).toBe(true)
 
     // Verify user-friendly message
-    expect(result.error.message).toContain('File is being downloaded from iCloud')
-    expect(result.error.message).toContain('Please try again in a moment')
+    expect(result.error.message).toContain(
+      "File is being downloaded from iCloud"
+    )
+    expect(result.error.message).toContain("Please try again in a moment")
   })
 })
 ```
@@ -1562,6 +1632,7 @@ describe('Voice File Sovereignty (P0)', () => {
 **Objective:** Verify comprehensive audio file validation to prevent processing corrupted, unsupported, or malformed voice memos.
 
 **Contract Definition:**
+
 - Only M4A format with AAC codec supported
 - Audio duration bounds enforced (1 second minimum, 10 minutes maximum for MPPP)
 - File integrity validation (header, stream, truncation detection)
@@ -1569,36 +1640,36 @@ describe('Voice File Sovereignty (P0)', () => {
 - Graceful handling of corrupted audio with user feedback
 
 ```typescript
-describe('Audio File Format Validation (P0)', () => {
-  test('validates M4A format and AAC codec', async () => {
+describe("Audio File Format Validation (P0)", () => {
+  test("validates M4A format and AAC codec", async () => {
     // Valid M4A file
-    const validM4A = await loadFixture('audio/valid-voice-memo.m4a')
+    const validM4A = await loadFixture("audio/valid-voice-memo.m4a")
     const validResult = await audioValidator.validate(validM4A)
     expect(validResult.valid).toBe(true)
-    expect(validResult.format).toBe('m4a')
-    expect(validResult.codec).toBe('aac')
+    expect(validResult.format).toBe("m4a")
+    expect(validResult.codec).toBe("aac")
 
     // Invalid: MP3 file
-    const invalidMP3 = await loadFixture('audio/invalid-mp3.mp3')
+    const invalidMP3 = await loadFixture("audio/invalid-mp3.mp3")
     const mp3Result = await audioValidator.validate(invalidMP3)
     expect(mp3Result.valid).toBe(false)
-    expect(mp3Result.error).toContain('Only M4A format supported')
+    expect(mp3Result.error).toContain("Only M4A format supported")
 
     // Invalid: Corrupted M4A header
-    const corruptedM4A = await loadFixture('audio/corrupted-header.m4a')
+    const corruptedM4A = await loadFixture("audio/corrupted-header.m4a")
     const corruptedResult = await audioValidator.validate(corruptedM4A)
     expect(corruptedResult.valid).toBe(false)
-    expect(corruptedResult.error).toContain('File header is corrupted')
+    expect(corruptedResult.error).toContain("File header is corrupted")
   })
 
-  test('validates audio duration bounds', async () => {
+  test("validates audio duration bounds", async () => {
     const validator = new AudioValidator()
 
     // Too short (< 1 second)
     const tooShort = await createAudioFixture({ duration: 0.5 })
     const shortResult = await validator.validate(tooShort)
     expect(shortResult.valid).toBe(false)
-    expect(shortResult.error).toContain('Audio too short (minimum 1 second)')
+    expect(shortResult.error).toContain("Audio too short (minimum 1 second)")
 
     // Valid duration
     const valid = await createAudioFixture({ duration: 30 })
@@ -1609,45 +1680,47 @@ describe('Audio File Format Validation (P0)', () => {
     const tooLong = await createAudioFixture({ duration: 660 }) // 11 minutes
     const longResult = await validator.validate(tooLong)
     expect(longResult.valid).toBe(false)
-    expect(longResult.error).toContain('Audio exceeds maximum duration (10 minutes)')
+    expect(longResult.error).toContain(
+      "Audio exceeds maximum duration (10 minutes)"
+    )
 
     // Silent audio
     const silent = await createAudioFixture({ duration: 30, amplitude: 0 })
     const silentResult = await validator.validate(silent)
     expect(silentResult.valid).toBe(false)
-    expect(silentResult.error).toContain('Audio appears to be silent')
+    expect(silentResult.error).toContain("Audio appears to be silent")
   })
 
-  test('validates file integrity and readability', async () => {
+  test("validates file integrity and readability", async () => {
     const validator = new AudioValidator()
 
     // Valid file
-    const valid = await loadFixture('audio/valid-voice-memo.m4a')
+    const valid = await loadFixture("audio/valid-voice-memo.m4a")
     const validResult = await validator.validate(valid)
     expect(validResult.valid).toBe(true)
     expect(validResult.fingerprint).toMatch(/^[0-9a-f]{64}$/) // SHA-256 fingerprint
 
     // Corrupted audio stream
-    const corrupted = await loadFixture('audio/corrupted-stream.m4a')
+    const corrupted = await loadFixture("audio/corrupted-stream.m4a")
     const corruptedResult = await validator.validate(corrupted)
     expect(corruptedResult.valid).toBe(false)
-    expect(corruptedResult.error).toContain('Audio stream is not readable')
+    expect(corruptedResult.error).toContain("Audio stream is not readable")
 
     // Truncated file
-    const truncated = await loadFixture('audio/truncated-file.m4a')
+    const truncated = await loadFixture("audio/truncated-file.m4a")
     const truncatedResult = await validator.validate(truncated)
     expect(truncatedResult.valid).toBe(false)
-    expect(truncatedResult.error).toContain('File appears to be truncated')
+    expect(truncatedResult.error).toContain("File appears to be truncated")
   })
 
-  test('validates file size bounds', async () => {
+  test("validates file size bounds", async () => {
     const validator = new AudioValidator()
 
     // Too small (< 10KB)
     const tooSmall = await createAudioFixture({ size: 5 * 1024 }) // 5KB
     const smallResult = await validator.validate(tooSmall)
     expect(smallResult.valid).toBe(false)
-    expect(smallResult.error).toContain('File too small (minimum 10KB)')
+    expect(smallResult.error).toContain("File too small (minimum 10KB)")
 
     // Valid size
     const valid = await createAudioFixture({ size: 500 * 1024 }) // 500KB
@@ -1658,31 +1731,33 @@ describe('Audio File Format Validation (P0)', () => {
     const tooLarge = await createAudioFixture({ size: 150 * 1024 * 1024 }) // 150MB
     const largeResult = await validator.validate(tooLarge)
     expect(largeResult.valid).toBe(false)
-    expect(largeResult.error).toContain('File exceeds maximum size (100MB)')
+    expect(largeResult.error).toContain("File exceeds maximum size (100MB)")
   })
 
-  test('handles corrupted audio gracefully', async () => {
+  test("handles corrupted audio gracefully", async () => {
     const db = new Database(createMemoryUrl())
     const stagingLedger = new StagingLedger(db)
     const captureWorker = new VoiceCaptureWorker(stagingLedger)
 
-    const corruptedAudio = await loadFixture('audio/corrupted-stream.m4a')
+    const corruptedAudio = await loadFixture("audio/corrupted-stream.m4a")
 
     // Attempt capture
     const result = await captureWorker.captureVoice(corruptedAudio)
 
     // Should fail gracefully
     expect(result.success).toBe(false)
-    expect(result.error.code).toBe('AUDIO_CORRUPTED')
+    expect(result.error.code).toBe("AUDIO_CORRUPTED")
     expect(result.error.retriable).toBe(false) // Permanent failure
 
     // Verify DLQ routing (Phase 2)
-    const capture = db.prepare('SELECT * FROM captures WHERE id = ?').get(result.captureId)
-    expect(capture.status).toBe('validation_failed')
+    const capture = db
+      .prepare("SELECT * FROM captures WHERE id = ?")
+      .get(result.captureId)
+    expect(capture.status).toBe("validation_failed")
 
     // Verify user notification
-    expect(result.error.message).toContain('Audio file is corrupted')
-    expect(result.error.message).toContain('Please re-record')
+    expect(result.error.message).toContain("Audio file is corrupted")
+    expect(result.error.message).toContain("Please re-record")
   })
 })
 ```
@@ -1692,6 +1767,7 @@ describe('Audio File Format Validation (P0)', () => {
 **Objective:** Verify robust handling of various iCloud sync states and edge cases for improved user experience.
 
 **Contract Definition:**
+
 - Handle iCloud sync paused gracefully with user warnings
 - Detect and report iCloud quota exceeded conditions
 - Validate voice memo metadata accuracy
@@ -1751,8 +1827,9 @@ describe('iCloud Integration Tests (P1)', () => {
 These tests verify end-to-end data flow integrity from capture ingestion through to Obsidian vault export, covering P0 cross-feature risks.
 
 #### Test Suite: Voice Capture → Export Pipeline Integration
+
 ```typescript
-describe('Voice Capture → Export Pipeline Integration', () => {
+describe("Voice Capture → Export Pipeline Integration", () => {
   let stagingLedger: StagingLedger
   let obsidianBridge: ObsidianAtomicWriter
   let captureWorker: VoiceCaptureWorker
@@ -1764,7 +1841,7 @@ describe('Voice Capture → Export Pipeline Integration', () => {
     obsidianBridge = new ObsidianAtomicWriter(tempVault, stagingLedger.db)
     captureWorker = new VoiceCaptureWorker(stagingLedger)
 
-    useFakeTimers({ now: new Date('2025-09-27T10:00:00Z') })
+    useFakeTimers({ now: new Date("2025-09-27T10:00:00Z") })
   })
 
   afterEach(async () => {
@@ -1773,16 +1850,18 @@ describe('Voice Capture → Export Pipeline Integration', () => {
     vi.useRealTimers()
   })
 
-  it('completes full voice pipeline with transcription success', async () => {
+  it("completes full voice pipeline with transcription success", async () => {
     // === STAGE 1: Voice File Discovery ===
-    const audioPath = '/icloud/test-memo.m4a'
-    const audioFingerprint = 'sha256_test_fingerprint'
+    const audioPath = "/icloud/test-memo.m4a"
+    const audioFingerprint = "sha256_test_fingerprint"
 
-    mockICloudFiles([{
-      path: audioPath,
-      size: 4096,
-      audioFingerprint
-    }])
+    mockICloudFiles([
+      {
+        path: audioPath,
+        size: 4096,
+        audioFingerprint,
+      },
+    ])
 
     // Execute initial capture ingestion
     const ingestResult = await captureWorker.pollAndIngest()
@@ -1792,28 +1871,30 @@ describe('Voice Capture → Export Pipeline Integration', () => {
 
     // Verify initial staging state
     const stagedCapture = await stagingLedger.getCapture(captureId)
-    expect(stagedCapture?.status).toBe('staged')
+    expect(stagedCapture?.status).toBe("staged")
     expect(stagedCapture?.content_hash).toBeNull() // Late hash binding for voice
     expect(stagedCapture?.meta_json.audio_fp).toBe(audioFingerprint)
 
     // === STAGE 2: Transcription Processing ===
-    const transcriptText = 'Remember to review the quarterly reports and schedule the team meeting'
+    const transcriptText =
+      "Remember to review the quarterly reports and schedule the team meeting"
     const contentHash = computeContentHash(transcriptText)
 
     mockWhisperAPI({
       [audioPath]: {
         text: transcriptText,
         duration: 5000,
-        model: 'whisper-medium'
-      }
+        model: "whisper-medium",
+      },
     })
 
-    const transcriptionResult = await captureWorker.processTranscription(captureId)
+    const transcriptionResult =
+      await captureWorker.processTranscription(captureId)
     expect(transcriptionResult.success).toBe(true)
 
     // Verify transcribed state with late hash binding
     const transcribedCapture = await stagingLedger.getCapture(captureId)
-    expect(transcribedCapture?.status).toBe('transcribed')
+    expect(transcribedCapture?.status).toBe("transcribed")
     expect(transcribedCapture?.content_hash).toBe(contentHash)
     expect(transcribedCapture?.raw_content).toBe(transcriptText)
 
@@ -1823,29 +1904,33 @@ describe('Voice Capture → Export Pipeline Integration', () => {
 
     // === STAGE 4: Export to Obsidian Vault ===
     const markdownContent = formatVoiceExport(transcribedCapture)
-    const exportResult = await obsidianBridge.writeAtomic(captureId, markdownContent, tempVault)
+    const exportResult = await obsidianBridge.writeAtomic(
+      captureId,
+      markdownContent,
+      tempVault
+    )
     expect(exportResult.success).toBe(true)
 
     await stagingLedger.recordExport(captureId, {
       vault_path: exportResult.export_path,
       hash_at_export: contentHash,
-      mode: 'initial',
-      error_flag: false
+      mode: "initial",
+      error_flag: false,
     })
 
     // === STAGE 5: End-to-End Verification ===
     // Verify final exported state
     const exportedCapture = await stagingLedger.getCapture(captureId)
-    expect(exportedCapture?.status).toBe('exported')
+    expect(exportedCapture?.status).toBe("exported")
 
     // Verify vault file exists with correct content
     const vaultFilePath = path.join(tempVault, exportResult.export_path)
     expect(await fileExists(vaultFilePath)).toBe(true)
 
-    const vaultContent = await fs.readFile(vaultFilePath, 'utf-8')
+    const vaultContent = await fs.readFile(vaultFilePath, "utf-8")
     expect(vaultContent).toContain(transcriptText)
     expect(vaultContent).toContain(`id: ${captureId}`)
-    expect(vaultContent).toContain('source: voice')
+    expect(vaultContent).toContain("source: voice")
     expect(vaultContent).toContain(`audio_file: ${audioPath}`)
 
     // Verify complete audit trail
@@ -1855,8 +1940,8 @@ describe('Voice Capture → Export Pipeline Integration', () => {
       capture_id: captureId,
       vault_path: exportResult.export_path,
       hash_at_export: contentHash,
-      mode: 'initial',
-      error_flag: 0
+      mode: "initial",
+      error_flag: 0,
     })
 
     // Verify no recoverable captures remain
@@ -1864,10 +1949,10 @@ describe('Voice Capture → Export Pipeline Integration', () => {
     expect(recoverable).toHaveLength(0)
   })
 
-  it('handles voice pipeline with transcription failure → placeholder export', async () => {
+  it("handles voice pipeline with transcription failure → placeholder export", async () => {
     // === STAGE 1: Voice Ingestion ===
-    const audioPath = '/icloud/corrupted-memo.m4a'
-    const audioFingerprint = 'sha256_corrupted_fingerprint'
+    const audioPath = "/icloud/corrupted-memo.m4a"
+    const audioFingerprint = "sha256_corrupted_fingerprint"
 
     mockICloudFiles([{ path: audioPath, size: 1024, audioFingerprint }])
 
@@ -1877,50 +1962,57 @@ describe('Voice Capture → Export Pipeline Integration', () => {
     // === STAGE 2: Transcription Failure ===
     mockWhisperAPI({
       [audioPath]: {
-        error: 'WHISPER_TIMEOUT',
-        message: 'Transcription timeout after 30 seconds'
-      }
+        error: "WHISPER_TIMEOUT",
+        message: "Transcription timeout after 30 seconds",
+      },
     })
 
-    const transcriptionResult = await captureWorker.processTranscription(captureId)
+    const transcriptionResult =
+      await captureWorker.processTranscription(captureId)
     expect(transcriptionResult.success).toBe(false)
 
     // Verify failed transcription state
     const failedCapture = await stagingLedger.getCapture(captureId)
-    expect(failedCapture?.status).toBe('failed_transcription')
+    expect(failedCapture?.status).toBe("failed_transcription")
     expect(failedCapture?.content_hash).toBeNull()
 
     // === STAGE 3: Placeholder Export ===
     const placeholderContent = formatPlaceholderExport(failedCapture, {
-      errorMessage: 'Transcription timeout after 30 seconds',
-      originalPath: audioPath
+      errorMessage: "Transcription timeout after 30 seconds",
+      originalPath: audioPath,
     })
 
-    const exportResult = await obsidianBridge.writeAtomic(captureId, placeholderContent, tempVault)
+    const exportResult = await obsidianBridge.writeAtomic(
+      captureId,
+      placeholderContent,
+      tempVault
+    )
     expect(exportResult.success).toBe(true)
 
     await stagingLedger.recordExport(captureId, {
       vault_path: exportResult.export_path,
       hash_at_export: null,
-      mode: 'placeholder',
-      error_flag: true
+      mode: "placeholder",
+      error_flag: true,
     })
 
     // === STAGE 4: Placeholder Verification ===
     const placeholderCapture = await stagingLedger.getCapture(captureId)
-    expect(placeholderCapture?.status).toBe('exported_placeholder')
+    expect(placeholderCapture?.status).toBe("exported_placeholder")
 
     const vaultFilePath = path.join(tempVault, exportResult.export_path)
-    const vaultContent = await fs.readFile(vaultFilePath, 'utf-8')
-    expect(vaultContent).toContain('# Placeholder Export (Transcription Failed)')
-    expect(vaultContent).toContain('Transcription timeout after 30 seconds')
+    const vaultContent = await fs.readFile(vaultFilePath, "utf-8")
+    expect(vaultContent).toContain(
+      "# Placeholder Export (Transcription Failed)"
+    )
+    expect(vaultContent).toContain("Transcription timeout after 30 seconds")
     expect(vaultContent).toContain(audioPath)
     expect(vaultContent).toContain(`id: ${captureId}`)
 
     // Verify error logged
     const errorLogs = await stagingLedger.getErrorLogs()
-    const transcriptionError = errorLogs.find(log =>
-      log.capture_id === captureId && log.stage === 'transcription'
+    const transcriptionError = errorLogs.find(
+      (log) => log.capture_id === captureId && log.stage === "transcription"
     )
     expect(transcriptionError).toBeDefined()
   })
@@ -1928,8 +2020,9 @@ describe('Voice Capture → Export Pipeline Integration', () => {
 ```
 
 #### Test Suite: Email Capture → Export Pipeline Integration
+
 ```typescript
-describe('Email Capture → Export Pipeline Integration', () => {
+describe("Email Capture → Export Pipeline Integration", () => {
   let stagingLedger: StagingLedger
   let obsidianBridge: ObsidianAtomicWriter
   let emailWorker: EmailCaptureWorker
@@ -1941,7 +2034,7 @@ describe('Email Capture → Export Pipeline Integration', () => {
     obsidianBridge = new ObsidianAtomicWriter(tempVault, stagingLedger.db)
     emailWorker = new EmailCaptureWorker(stagingLedger)
 
-    useFakeTimers({ now: new Date('2025-09-27T10:00:00Z') })
+    useFakeTimers({ now: new Date("2025-09-27T10:00:00Z") })
   })
 
   afterEach(async () => {
@@ -1950,23 +2043,26 @@ describe('Email Capture → Export Pipeline Integration', () => {
     vi.useRealTimers()
   })
 
-  it('completes full email pipeline with immediate hash binding', async () => {
+  it("completes full email pipeline with immediate hash binding", async () => {
     // === STAGE 1: Email Discovery and Ingestion ===
-    const messageId = 'gmail_msg_integration_test'
-    const emailContent = 'Please review the attached design document and provide feedback by Friday'
+    const messageId = "gmail_msg_integration_test"
+    const emailContent =
+      "Please review the attached design document and provide feedback by Friday"
     const contentHash = computeContentHash(emailContent)
 
-    mockGmailAPI([{
-      id: messageId,
-      snippet: emailContent,
-      payload: {
-        headers: [
-          { name: 'From', value: 'designer@company.com' },
-          { name: 'Subject', value: 'Design Review Required' },
-          { name: 'Date', value: 'Fri, 27 Sep 2025 14:30:00 +0000' }
-        ]
-      }
-    }])
+    mockGmailAPI([
+      {
+        id: messageId,
+        snippet: emailContent,
+        payload: {
+          headers: [
+            { name: "From", value: "designer@company.com" },
+            { name: "Subject", value: "Design Review Required" },
+            { name: "Date", value: "Fri, 27 Sep 2025 14:30:00 +0000" },
+          ],
+        },
+      },
+    ])
 
     const ingestResult = await emailWorker.pollAndIngest()
     expect(ingestResult.captures).toHaveLength(1)
@@ -1975,10 +2071,10 @@ describe('Email Capture → Export Pipeline Integration', () => {
 
     // Verify immediate staging with hash (no late binding for email)
     const stagedCapture = await stagingLedger.getCapture(captureId)
-    expect(stagedCapture?.status).toBe('staged')
+    expect(stagedCapture?.status).toBe("staged")
     expect(stagedCapture?.content_hash).toBe(contentHash)
     expect(stagedCapture?.raw_content).toBe(emailContent)
-    expect(stagedCapture?.meta_json.from).toBe('designer@company.com')
+    expect(stagedCapture?.meta_json.from).toBe("designer@company.com")
 
     // === STAGE 2: Duplicate Check ===
     const dupCheck = await stagingLedger.checkDuplicate(contentHash)
@@ -1986,49 +2082,55 @@ describe('Email Capture → Export Pipeline Integration', () => {
 
     // === STAGE 3: Export to Obsidian Vault ===
     const markdownContent = formatEmailExport(stagedCapture)
-    const exportResult = await obsidianBridge.writeAtomic(captureId, markdownContent, tempVault)
+    const exportResult = await obsidianBridge.writeAtomic(
+      captureId,
+      markdownContent,
+      tempVault
+    )
     expect(exportResult.success).toBe(true)
 
     await stagingLedger.recordExport(captureId, {
       vault_path: exportResult.export_path,
       hash_at_export: contentHash,
-      mode: 'initial',
-      error_flag: false
+      mode: "initial",
+      error_flag: false,
     })
 
     // === STAGE 4: End-to-End Verification ===
     const exportedCapture = await stagingLedger.getCapture(captureId)
-    expect(exportedCapture?.status).toBe('exported')
+    expect(exportedCapture?.status).toBe("exported")
 
     const vaultFilePath = path.join(tempVault, exportResult.export_path)
-    const vaultContent = await fs.readFile(vaultFilePath, 'utf-8')
+    const vaultContent = await fs.readFile(vaultFilePath, "utf-8")
     expect(vaultContent).toContain(emailContent)
-    expect(vaultContent).toContain('From: designer@company.com')
-    expect(vaultContent).toContain('Subject: Design Review Required')
+    expect(vaultContent).toContain("From: designer@company.com")
+    expect(vaultContent).toContain("Subject: Design Review Required")
     expect(vaultContent).toContain(`id: ${captureId}`)
 
     // Verify audit trail
     const auditRecords = await stagingLedger.getExportAudits(captureId)
     expect(auditRecords).toHaveLength(1)
-    expect(auditRecords[0].mode).toBe('initial')
+    expect(auditRecords[0].mode).toBe("initial")
   })
 
-  it('handles email duplicate detection across pipeline', async () => {
-    const messageId = 'gmail_duplicate_test'
-    const emailContent = 'Duplicate email content for testing'
+  it("handles email duplicate detection across pipeline", async () => {
+    const messageId = "gmail_duplicate_test"
+    const emailContent = "Duplicate email content for testing"
     const contentHash = computeContentHash(emailContent)
 
     // === FIRST EMAIL CAPTURE ===
-    mockGmailAPI([{
-      id: messageId,
-      snippet: emailContent,
-      payload: {
-        headers: [
-          { name: 'From', value: 'sender@company.com' },
-          { name: 'Subject', value: 'Original Email' }
-        ]
-      }
-    }])
+    mockGmailAPI([
+      {
+        id: messageId,
+        snippet: emailContent,
+        payload: {
+          headers: [
+            { name: "From", value: "sender@company.com" },
+            { name: "Subject", value: "Original Email" },
+          ],
+        },
+      },
+    ])
 
     const firstIngest = await emailWorker.pollAndIngest()
     const firstCaptureId = firstIngest.captures[0].id
@@ -2036,27 +2138,33 @@ describe('Email Capture → Export Pipeline Integration', () => {
     // Export first capture
     const firstCapture = await stagingLedger.getCapture(firstCaptureId)
     const firstMarkdown = formatEmailExport(firstCapture)
-    const firstExport = await obsidianBridge.writeAtomic(firstCaptureId, firstMarkdown, tempVault)
+    const firstExport = await obsidianBridge.writeAtomic(
+      firstCaptureId,
+      firstMarkdown,
+      tempVault
+    )
 
     await stagingLedger.recordExport(firstCaptureId, {
       vault_path: firstExport.export_path,
       hash_at_export: contentHash,
-      mode: 'initial',
-      error_flag: false
+      mode: "initial",
+      error_flag: false,
     })
 
     // === SECOND EMAIL CAPTURE (DUPLICATE CONTENT) ===
-    const secondMessageId = 'gmail_duplicate_different_id'
-    mockGmailAPI([{
-      id: secondMessageId,
-      snippet: emailContent, // Same content
-      payload: {
-        headers: [
-          { name: 'From', value: 'sender@company.com' },
-          { name: 'Subject', value: 'Forwarded: Original Email' } // Different subject
-        ]
-      }
-    }])
+    const secondMessageId = "gmail_duplicate_different_id"
+    mockGmailAPI([
+      {
+        id: secondMessageId,
+        snippet: emailContent, // Same content
+        payload: {
+          headers: [
+            { name: "From", value: "sender@company.com" },
+            { name: "Subject", value: "Forwarded: Original Email" }, // Different subject
+          ],
+        },
+      },
+    ])
 
     const secondIngest = await emailWorker.pollAndIngest()
     const secondCaptureId = secondIngest.captures[0].id
@@ -2070,26 +2178,26 @@ describe('Email Capture → Export Pipeline Integration', () => {
     await stagingLedger.recordExport(secondCaptureId, {
       vault_path: `inbox/${secondCaptureId}.md`,
       hash_at_export: contentHash,
-      mode: 'duplicate_skip',
-      error_flag: false
+      mode: "duplicate_skip",
+      error_flag: false,
     })
 
     // === VERIFICATION ===
     // Second capture should be marked as duplicate
     const secondCapture = await stagingLedger.getCapture(secondCaptureId)
-    expect(secondCapture?.status).toBe('exported_duplicate')
+    expect(secondCapture?.status).toBe("exported_duplicate")
 
     // Only one file should exist in vault
-    const vaultFiles = await listDirectory(path.join(tempVault, 'inbox'))
-    expect(vaultFiles.filter(f => f.endsWith('.md'))).toHaveLength(1)
+    const vaultFiles = await listDirectory(path.join(tempVault, "inbox"))
+    expect(vaultFiles.filter((f) => f.endsWith(".md"))).toHaveLength(1)
 
     // Two audit records should exist
     const firstAudit = await stagingLedger.getExportAudits(firstCaptureId)
     const secondAudit = await stagingLedger.getExportAudits(secondCaptureId)
     expect(firstAudit).toHaveLength(1)
     expect(secondAudit).toHaveLength(1)
-    expect(firstAudit[0].mode).toBe('initial')
-    expect(secondAudit[0].mode).toBe('duplicate_skip')
+    expect(firstAudit[0].mode).toBe("initial")
+    expect(secondAudit[0].mode).toBe("duplicate_skip")
   })
 })
 ```
@@ -2097,9 +2205,10 @@ describe('Email Capture → Export Pipeline Integration', () => {
 ### 9.2 Cross-Component State Machine Integration Tests
 
 #### Test Suite: Pipeline State Consistency
+
 ```typescript
-describe('Pipeline State Consistency', () => {
-  it('enforces state machine constraints across capture → staging → export', async () => {
+describe("Pipeline State Consistency", () => {
+  it("enforces state machine constraints across capture → staging → export", async () => {
     const stagingLedger = createTestLedger()
     const tempVault = await createTempDirectory()
     const obsidianBridge = new ObsidianAtomicWriter(tempVault, stagingLedger.db)
@@ -2109,50 +2218,54 @@ describe('Pipeline State Consistency', () => {
       // Voice capture - staged, ready for transcription
       {
         id: ulid(),
-        source: 'voice',
-        expectedState: 'staged',
-        rawContent: '',
+        source: "voice",
+        expectedState: "staged",
+        rawContent: "",
         contentHash: null,
-        meta: { channel: 'voice', channel_native_id: '/path/audio1.m4a', audio_fp: 'fp1' }
+        meta: {
+          channel: "voice",
+          channel_native_id: "/path/audio1.m4a",
+          audio_fp: "fp1",
+        },
       },
       // Email capture - staged, ready for export
       {
         id: ulid(),
-        source: 'email',
-        expectedState: 'staged',
-        rawContent: 'Email ready for export',
-        contentHash: computeContentHash('Email ready for export'),
-        meta: { channel: 'email', channel_native_id: 'msg1' }
-      }
+        source: "email",
+        expectedState: "staged",
+        rawContent: "Email ready for export",
+        contentHash: computeContentHash("Email ready for export"),
+        meta: { channel: "email", channel_native_id: "msg1" },
+      },
     ]
 
     for (const capture of captures) {
       await stagingLedger.insertCapture({
         id: capture.id,
-        source: capture.source as 'voice' | 'email',
+        source: capture.source as "voice" | "email",
         raw_content: capture.rawContent,
         content_hash: capture.contentHash,
-        meta_json: capture.meta
+        meta_json: capture.meta,
       })
     }
 
     // === VERIFY INITIAL STATES ===
     const initialCaptures = await stagingLedger.getAllCaptures()
-    expect(initialCaptures.every(c => c.status === 'staged')).toBe(true)
+    expect(initialCaptures.every((c) => c.status === "staged")).toBe(true)
 
     // === PROCESS VOICE TRANSCRIPTION ===
-    const voiceCapture = captures.find(c => c.source === 'voice')!
-    const transcriptText = 'Voice transcription content'
+    const voiceCapture = captures.find((c) => c.source === "voice")!
+    const transcriptText = "Voice transcription content"
     const voiceContentHash = computeContentHash(transcriptText)
 
     await stagingLedger.updateTranscription(voiceCapture.id, {
       transcript_text: transcriptText,
-      content_hash: voiceContentHash
+      content_hash: voiceContentHash,
     })
 
     // Verify state transition
     const transcribedCapture = await stagingLedger.getCapture(voiceCapture.id)
-    expect(transcribedCapture?.status).toBe('transcribed')
+    expect(transcribedCapture?.status).toBe("transcribed")
 
     // === PROCESS EXPORTS ===
     const readyForExport = await stagingLedger.queryRecoverable()
@@ -2160,28 +2273,32 @@ describe('Pipeline State Consistency', () => {
 
     for (const capture of readyForExport) {
       const markdownContent = formatCaptureExport(capture)
-      const exportResult = await obsidianBridge.writeAtomic(capture.id, markdownContent, tempVault)
+      const exportResult = await obsidianBridge.writeAtomic(
+        capture.id,
+        markdownContent,
+        tempVault
+      )
       expect(exportResult.success).toBe(true)
 
       await stagingLedger.recordExport(capture.id, {
         vault_path: exportResult.export_path,
         hash_at_export: capture.content_hash!,
-        mode: 'initial',
-        error_flag: false
+        mode: "initial",
+        error_flag: false,
       })
     }
 
     // === VERIFY FINAL STATES ===
     const finalCaptures = await stagingLedger.getAllCaptures()
-    expect(finalCaptures.every(c => c.status === 'exported')).toBe(true)
+    expect(finalCaptures.every((c) => c.status === "exported")).toBe(true)
 
     // === VERIFY STATE MACHINE CONSTRAINTS ===
     // Attempt invalid transition from terminal state
     for (const capture of finalCaptures) {
       await expect(
         stagingLedger.updateTranscription(capture.id, {
-          transcript_text: 'invalid update',
-          content_hash: computeContentHash('invalid update')
+          transcript_text: "invalid update",
+          content_hash: computeContentHash("invalid update"),
         })
       ).rejects.toThrow(InvalidStateTransitionError)
     }
@@ -2190,7 +2307,7 @@ describe('Pipeline State Consistency', () => {
     await cleanupTempDirectory(tempVault)
   })
 
-  it('maintains data integrity during concurrent multi-stage processing', async () => {
+  it("maintains data integrity during concurrent multi-stage processing", async () => {
     const stagingLedger = createTestLedger()
     const tempVault = await createTempDirectory()
     const obsidianBridge = new ObsidianAtomicWriter(tempVault, stagingLedger.db)
@@ -2198,34 +2315,35 @@ describe('Pipeline State Consistency', () => {
     // Create multiple captures for concurrent processing
     const captureSpecs = Array.from({ length: 10 }, (_, i) => ({
       id: ulid(),
-      source: i % 2 === 0 ? 'voice' : 'email',
+      source: i % 2 === 0 ? "voice" : "email",
       content: `Test content ${i}`,
       meta: {
-        channel: i % 2 === 0 ? 'voice' : 'email',
-        channel_native_id: i % 2 === 0 ? `/path/audio${i}.m4a` : `msg_${i}`
-      }
+        channel: i % 2 === 0 ? "voice" : "email",
+        channel_native_id: i % 2 === 0 ? `/path/audio${i}.m4a` : `msg_${i}`,
+      },
     }))
 
     // Stage all captures concurrently
-    const stagingPromises = captureSpecs.map(spec =>
+    const stagingPromises = captureSpecs.map((spec) =>
       stagingLedger.insertCapture({
         id: spec.id,
-        source: spec.source as 'voice' | 'email',
-        raw_content: spec.source === 'email' ? spec.content : '',
-        content_hash: spec.source === 'email' ? computeContentHash(spec.content) : null,
-        meta_json: spec.meta
+        source: spec.source as "voice" | "email",
+        raw_content: spec.source === "email" ? spec.content : "",
+        content_hash:
+          spec.source === "email" ? computeContentHash(spec.content) : null,
+        meta_json: spec.meta,
       })
     )
 
     const stagingResults = await Promise.allSettled(stagingPromises)
-    expect(stagingResults.every(r => r.status === 'fulfilled')).toBe(true)
+    expect(stagingResults.every((r) => r.status === "fulfilled")).toBe(true)
 
     // Process transcriptions for voice captures
-    const voiceCaptures = captureSpecs.filter(s => s.source === 'voice')
-    const transcriptionPromises = voiceCaptures.map(spec =>
+    const voiceCaptures = captureSpecs.filter((s) => s.source === "voice")
+    const transcriptionPromises = voiceCaptures.map((spec) =>
       stagingLedger.updateTranscription(spec.id, {
         transcript_text: spec.content,
-        content_hash: computeContentHash(spec.content)
+        content_hash: computeContentHash(spec.content),
       })
     )
 
@@ -2235,14 +2353,18 @@ describe('Pipeline State Consistency', () => {
     const allCaptures = await stagingLedger.getAllCaptures()
     const exportPromises = allCaptures.map(async (capture) => {
       const markdownContent = formatCaptureExport(capture)
-      const exportResult = await obsidianBridge.writeAtomic(capture.id, markdownContent, tempVault)
+      const exportResult = await obsidianBridge.writeAtomic(
+        capture.id,
+        markdownContent,
+        tempVault
+      )
 
       if (exportResult.success) {
         await stagingLedger.recordExport(capture.id, {
           vault_path: exportResult.export_path,
           hash_at_export: capture.content_hash!,
-          mode: 'initial',
-          error_flag: false
+          mode: "initial",
+          error_flag: false,
         })
       }
 
@@ -2250,15 +2372,17 @@ describe('Pipeline State Consistency', () => {
     })
 
     const exportResults = await Promise.allSettled(exportPromises)
-    const successfulExports = exportResults.filter(r => r.status === 'fulfilled')
+    const successfulExports = exportResults.filter(
+      (r) => r.status === "fulfilled"
+    )
     expect(successfulExports).toHaveLength(10)
 
     // Verify final consistency
     const finalCaptures = await stagingLedger.getAllCaptures()
-    expect(finalCaptures.every(c => c.status === 'exported')).toBe(true)
+    expect(finalCaptures.every((c) => c.status === "exported")).toBe(true)
 
-    const vaultFiles = await listDirectory(path.join(tempVault, 'inbox'))
-    expect(vaultFiles.filter(f => f.endsWith('.md'))).toHaveLength(10)
+    const vaultFiles = await listDirectory(path.join(tempVault, "inbox"))
+    expect(vaultFiles.filter((f) => f.endsWith(".md"))).toHaveLength(10)
 
     stagingLedger.close()
     await cleanupTempDirectory(tempVault)
@@ -2269,33 +2393,34 @@ describe('Pipeline State Consistency', () => {
 ### 9.3 Error Recovery Integration Tests
 
 #### Test Suite: Cross-Component Crash Recovery
+
 ```typescript
-describe('Cross-Component Crash Recovery', () => {
-  it('recovers from crash during capture → staging transition', async () => {
-    const dbPath = path.join(tmpdir(), 'crash-capture-staging.sqlite')
+describe("Cross-Component Crash Recovery", () => {
+  it("recovers from crash during capture → staging transition", async () => {
+    const dbPath = path.join(tmpdir(), "crash-capture-staging.sqlite")
 
     // === PRE-CRASH: Start capture process ===
     let stagingLedger = new StagingLedger(dbPath)
 
-    const audioPath = '/icloud/crash-test.m4a'
-    const audioFingerprint = 'sha256_crash_test_fp'
+    const audioPath = "/icloud/crash-test.m4a"
+    const audioFingerprint = "sha256_crash_test_fp"
 
     // Begin capture process (simulate crash before transcription)
     const captureId = ulid()
     await stagingLedger.insertCapture({
       id: captureId,
-      source: 'voice',
-      raw_content: '',
+      source: "voice",
+      raw_content: "",
       meta_json: {
-        channel: 'voice',
+        channel: "voice",
         channel_native_id: audioPath,
-        audio_fp: audioFingerprint
-      }
+        audio_fp: audioFingerprint,
+      },
     })
 
     // Verify staged state
     const stagedCapture = await stagingLedger.getCapture(captureId)
-    expect(stagedCapture?.status).toBe('staged')
+    expect(stagedCapture?.status).toBe("staged")
 
     // Simulate crash
     stagingLedger.close()
@@ -2309,31 +2434,35 @@ describe('Cross-Component Crash Recovery', () => {
     const recoverable = await stagingLedger.queryRecoverable()
     expect(recoverable).toHaveLength(1)
     expect(recoverable[0].id).toBe(captureId)
-    expect(recoverable[0].status).toBe('staged')
+    expect(recoverable[0].status).toBe("staged")
 
     // Complete the pipeline
-    const transcriptText = 'Recovered transcription content'
+    const transcriptText = "Recovered transcription content"
     const contentHash = computeContentHash(transcriptText)
 
     await stagingLedger.updateTranscription(captureId, {
       transcript_text: transcriptText,
-      content_hash: contentHash
+      content_hash: contentHash,
     })
 
     const updatedCapture = await stagingLedger.getCapture(captureId)
     const markdownContent = formatVoiceExport(updatedCapture)
-    const exportResult = await obsidianBridge.writeAtomic(captureId, markdownContent, tempVault)
+    const exportResult = await obsidianBridge.writeAtomic(
+      captureId,
+      markdownContent,
+      tempVault
+    )
 
     await stagingLedger.recordExport(captureId, {
       vault_path: exportResult.export_path,
       hash_at_export: contentHash,
-      mode: 'initial',
-      error_flag: false
+      mode: "initial",
+      error_flag: false,
     })
 
     // Verify successful recovery
     const finalCapture = await stagingLedger.getCapture(captureId)
-    expect(finalCapture?.status).toBe('exported')
+    expect(finalCapture?.status).toBe("exported")
 
     const vaultFile = path.join(tempVault, exportResult.export_path)
     expect(await fileExists(vaultFile)).toBe(true)
@@ -2344,50 +2473,54 @@ describe('Cross-Component Crash Recovery', () => {
     fs.unlinkSync(dbPath)
   })
 
-  it('handles partial failure with complete rollback across components', async () => {
+  it("handles partial failure with complete rollback across components", async () => {
     const stagingLedger = createTestLedger()
     const tempVault = await createTempDirectory()
     const obsidianBridge = new ObsidianAtomicWriter(tempVault, stagingLedger.db)
 
     const captureId = ulid()
-    const content = 'Test content for rollback scenario'
+    const content = "Test content for rollback scenario"
     const contentHash = computeContentHash(content)
 
     // Stage capture
     await stagingLedger.insertCapture({
       id: captureId,
-      source: 'email',
+      source: "email",
       raw_content: content,
       content_hash: contentHash,
-      meta_json: { channel: 'email', channel_native_id: 'rollback_msg' }
+      meta_json: { channel: "email", channel_native_id: "rollback_msg" },
     })
 
     // Mock export failure using TestKit fault injection
     const faultInjector = createFaultInjector()
-    faultInjector.injectFileSystemError('ENOSPC', {
+    faultInjector.injectFileSystemError("ENOSPC", {
       path: /.*\.md$/,
-      operation: 'writeFile',
-      message: 'Disk full'
+      operation: "writeFile",
+      message: "Disk full",
     })
 
     // Attempt export (should fail)
     const captureData = await stagingLedger.getCapture(captureId)
     const markdownContent = formatEmailExport(captureData)
-    const exportResult = await obsidianBridge.writeAtomic(captureId, markdownContent, tempVault)
+    const exportResult = await obsidianBridge.writeAtomic(
+      captureId,
+      markdownContent,
+      tempVault
+    )
     expect(exportResult.success).toBe(false)
 
     // === VERIFY COMPLETE ROLLBACK ===
     // Capture should remain in original state
     const captureAfterFailure = await stagingLedger.getCapture(captureId)
-    expect(captureAfterFailure?.status).toBe('staged')
+    expect(captureAfterFailure?.status).toBe("staged")
 
     // No audit record should exist
     const auditRecords = await stagingLedger.getExportAudits(captureId)
     expect(auditRecords).toHaveLength(0)
 
     // No vault file should exist
-    const vaultFiles = await listDirectory(path.join(tempVault, 'inbox'))
-    expect(vaultFiles.filter(f => f.endsWith('.md'))).toHaveLength(0)
+    const vaultFiles = await listDirectory(path.join(tempVault, "inbox"))
+    expect(vaultFiles.filter((f) => f.endsWith(".md"))).toHaveLength(0)
 
     // Should still be recoverable
     const recoverable = await stagingLedger.queryRecoverable()
@@ -2397,18 +2530,22 @@ describe('Cross-Component Crash Recovery', () => {
     // === VERIFY RECOVERY POSSIBLE ===
     faultInjector.clear()
 
-    const retryExport = await obsidianBridge.writeAtomic(captureId, markdownContent, tempVault)
+    const retryExport = await obsidianBridge.writeAtomic(
+      captureId,
+      markdownContent,
+      tempVault
+    )
     expect(retryExport.success).toBe(true)
 
     await stagingLedger.recordExport(captureId, {
       vault_path: retryExport.export_path,
       hash_at_export: contentHash,
-      mode: 'initial',
-      error_flag: false
+      mode: "initial",
+      error_flag: false,
     })
 
     const finalCapture = await stagingLedger.getCapture(captureId)
-    expect(finalCapture?.status).toBe('exported')
+    expect(finalCapture?.status).toBe("exported")
 
     stagingLedger.close()
     await cleanupTempDirectory(tempVault)
@@ -2426,19 +2563,19 @@ import {
   createTestLedger,
   mockICloudFiles,
   mockWhisperAPI,
-  mockGmailAPI
-} from '@adhd-brain/test-utils'
+  mockGmailAPI,
+} from "@adhd-brain/test-utils"
 
 // File system integration
 import {
   createTempDirectory,
   cleanupTempDirectory,
   fileExists,
-  listDirectory
-} from '@orchestr8/testkit/fs'
+  listDirectory,
+} from "@orchestr8/testkit/fs"
 
 // Time control for deterministic testing
-import { useFakeTimers } from '@orchestr8/testkit/time'
+import { useFakeTimers } from "@orchestr8/testkit/time"
 
 // Content formatting utilities
 function formatVoiceExport(capture: CaptureRecord): string {
@@ -2448,7 +2585,7 @@ id: ${capture.id}
 source: voice
 captured_at: ${capture.created_at}
 content_hash: ${capture.content_hash}
-audio_file: ${metadata.channel_native_id || 'unknown'}
+audio_file: ${metadata.channel_native_id || "unknown"}
 ---
 
 # Voice Capture
@@ -2459,8 +2596,8 @@ ${capture.raw_content}
 
 **Metadata:**
 - Source: Voice Recording
-- Audio File: ${metadata.channel_native_id || 'N/A'}
-- Audio Fingerprint: ${metadata.audio_fp || 'N/A'}
+- Audio File: ${metadata.channel_native_id || "N/A"}
+- Audio Fingerprint: ${metadata.audio_fp || "N/A"}
 - Captured: ${capture.created_at}`
 }
 
@@ -2471,18 +2608,21 @@ id: ${capture.id}
 source: email
 captured_at: ${capture.created_at}
 content_hash: ${capture.content_hash}
-message_id: ${metadata.channel_native_id || 'unknown'}
+message_id: ${metadata.channel_native_id || "unknown"}
 ---
 
-# Email: ${metadata.subject || 'No Subject'}
+# Email: ${metadata.subject || "No Subject"}
 
-**From:** ${metadata.from || 'Unknown'}
-**Subject:** ${metadata.subject || 'No Subject'}
+**From:** ${metadata.from || "Unknown"}
+**Subject:** ${metadata.subject || "No Subject"}
 
 ${capture.raw_content}`
 }
 
-function formatPlaceholderExport(capture: CaptureRecord, options: { errorMessage: string, originalPath: string }): string {
+function formatPlaceholderExport(
+  capture: CaptureRecord,
+  options: { errorMessage: string; originalPath: string }
+): string {
   return `---
 id: ${capture.id}
 source: ${capture.source}
@@ -2504,9 +2644,9 @@ This capture could not be processed due to a transcription error. The original a
 }
 
 function formatCaptureExport(capture: CaptureRecord): string {
-  if (capture.source === 'voice') {
+  if (capture.source === "voice") {
     return formatVoiceExport(capture)
-  } else if (capture.source === 'email') {
+  } else if (capture.source === "email") {
     return formatEmailExport(capture)
   }
   throw new Error(`Unsupported capture source: ${capture.source}`)
@@ -2514,27 +2654,35 @@ function formatCaptureExport(capture: CaptureRecord): string {
 
 // Custom matchers for pipeline testing
 expect.extend({
-  async toCompleteFullPipeline(captureId: string, stagingLedger: StagingLedger, tempVault: string) {
+  async toCompleteFullPipeline(
+    captureId: string,
+    stagingLedger: StagingLedger,
+    tempVault: string
+  ) {
     const capture = await stagingLedger.getCapture(captureId)
     const auditRecords = await stagingLedger.getExportAudits(captureId)
 
     if (!capture || auditRecords.length === 0) {
-      return { pass: false, message: () => 'Pipeline incomplete: missing capture or audit records' }
+      return {
+        pass: false,
+        message: () => "Pipeline incomplete: missing capture or audit records",
+      }
     }
 
     const expectedVaultPath = path.join(tempVault, auditRecords[0].vault_path)
     const vaultFileExists = await fileExists(expectedVaultPath)
 
     const pipelineComplete =
-      capture.status === 'exported' &&
-      auditRecords[0].mode === 'initial' &&
+      capture.status === "exported" &&
+      auditRecords[0].mode === "initial" &&
       vaultFileExists
 
     return {
       pass: pipelineComplete,
-      message: () => `Expected capture ${captureId} to complete full pipeline (capture → staging → export)`
+      message: () =>
+        `Expected capture ${captureId} to complete full pipeline (capture → staging → export)`,
     }
-  }
+  },
 })
 ```
 
@@ -2552,45 +2700,48 @@ expect.extend({
 
 ```typescript
 // packages/testkit/src/msw/gmail-handlers.ts
-import { http, HttpResponse } from 'msw'
+import { http, HttpResponse } from "msw"
 
-export function createGmailHandlers(baseUrl = 'https://gmail.googleapis.com') {
+export function createGmailHandlers(baseUrl = "https://gmail.googleapis.com") {
   return [
     // List messages endpoint
     http.get(`${baseUrl}/gmail/v1/users/me/messages`, ({ request }) => {
       const url = new URL(request.url)
-      const maxResults = url.searchParams.get('maxResults')
+      const maxResults = url.searchParams.get("maxResults")
 
       return HttpResponse.json({
         messages: [
-          { id: 'msg1', threadId: 'thread1' },
-          { id: 'msg2', threadId: 'thread2' }
+          { id: "msg1", threadId: "thread1" },
+          { id: "msg2", threadId: "thread2" },
         ],
-        nextPageToken: maxResults ? 'token123' : undefined
+        nextPageToken: maxResults ? "token123" : undefined,
       })
     }),
 
     // Get message endpoint
-    http.get(`${baseUrl}/gmail/v1/users/me/messages/:messageId`, ({ params }) => {
-      return HttpResponse.json({
-        id: params.messageId,
-        payload: {
-          headers: [
-            { name: 'Subject', value: 'Test Email' },
-            { name: 'From', value: 'test@example.com' }
-          ],
-          body: { data: 'Base64EncodedContent' }
-        }
-      })
-    }),
+    http.get(
+      `${baseUrl}/gmail/v1/users/me/messages/:messageId`,
+      ({ params }) => {
+        return HttpResponse.json({
+          id: params.messageId,
+          payload: {
+            headers: [
+              { name: "Subject", value: "Test Email" },
+              { name: "From", value: "test@example.com" },
+            ],
+            body: { data: "Base64EncodedContent" },
+          },
+        })
+      }
+    ),
 
     // Rate limit simulation
     http.get(`${baseUrl}/gmail/v1/users/me/messages/rate-limit-test`, () => {
       return HttpResponse.json(
-        { error: { message: 'Rate limit exceeded', code: 429 } },
+        { error: { message: "Rate limit exceeded", code: 429 } },
         { status: 429 }
       )
-    })
+    }),
   ]
 }
 
@@ -2603,17 +2754,17 @@ export function setupGmailAPI(handlers = createGmailHandlers()) {
 **Usage in tests:**
 
 ```typescript
-import { setupMSW } from '@adhd-brain/testkit/msw'
-import { createGmailHandlers } from '@adhd-brain/testkit/msw/gmail-handlers'
+import { setupMSW } from "@adhd-brain/testkit/msw"
+import { createGmailHandlers } from "@adhd-brain/testkit/msw/gmail-handlers"
 
-describe('Gmail Capture', () => {
+describe("Gmail Capture", () => {
   // Setup MSW with Gmail handlers
   setupMSW(createGmailHandlers())
 
-  test('fetches Gmail messages', async () => {
+  test("fetches Gmail messages", async () => {
     const messages = await gmailClient.listMessages({ maxResults: 10 })
     expect(messages).toHaveLength(2)
-    expect(messages[0].id).toBe('msg1')
+    expect(messages[0].id).toBe("msg1")
   })
 })
 ```
@@ -2629,8 +2780,8 @@ Performance regression gates ensure that the capture pipeline maintains P0 opera
 **Risk Classification: P1** - Performance regressions in capture operations impact user experience and system responsiveness.
 
 ```typescript
-describe('Performance Regression Detection (P1)', () => {
-  test('detects p95 latency regression for voice poll operations', async () => {
+describe("Performance Regression Detection (P1)", () => {
+  test("detects p95 latency regression for voice poll operations", async () => {
     const ledger = createTestLedger()
     const captureWorker = new VoiceCaptureWorker(ledger)
 
@@ -2644,7 +2795,7 @@ describe('Performance Regression Detection (P1)', () => {
     const mockFiles = Array.from({ length: 100 }, (_, i) => ({
       path: `/icloud/memo${i}.m4a`,
       size: 1024 * 50, // 50KB
-      audioFingerprint: `fp_${i}`
+      audioFingerprint: `fp_${i}`,
     }))
 
     mockICloudFiles(mockFiles)
@@ -2666,12 +2817,14 @@ describe('Performance Regression Detection (P1)', () => {
     expect(p95).toBeLessThan(REGRESSION_THRESHOLD)
 
     // Log metrics for tracking
-    console.log(`Voice poll P95 latency: ${p95}ms (baseline: ${BASELINE_P95}ms)`)
+    console.log(
+      `Voice poll P95 latency: ${p95}ms (baseline: ${BASELINE_P95}ms)`
+    )
 
     ledger.close()
   })
 
-  test('detects p95 latency regression for email poll operations', async () => {
+  test("detects p95 latency regression for email poll operations", async () => {
     const ledger = createTestLedger()
     const emailWorker = new EmailCaptureWorker(ledger)
 
@@ -2687,10 +2840,10 @@ describe('Performance Regression Detection (P1)', () => {
       snippet: `Test email ${i}`,
       payload: {
         headers: [
-          { name: 'From', value: `sender${i}@example.com` },
-          { name: 'Subject', value: `Test Email ${i}` }
-        ]
-      }
+          { name: "From", value: `sender${i}@example.com` },
+          { name: "Subject", value: `Test Email ${i}` },
+        ],
+      },
     }))
 
     mockGmailAPI(mockMessages)
@@ -2708,12 +2861,14 @@ describe('Performance Regression Detection (P1)', () => {
     const p95 = latencies[Math.floor(latencies.length * 0.95)]
 
     expect(p95).toBeLessThan(REGRESSION_THRESHOLD)
-    console.log(`Email poll P95 latency: ${p95}ms (baseline: ${BASELINE_P95}ms)`)
+    console.log(
+      `Email poll P95 latency: ${p95}ms (baseline: ${BASELINE_P95}ms)`
+    )
 
     ledger.close()
   })
 
-  test('detects p95 latency regression for hash computation', async () => {
+  test("detects p95 latency regression for hash computation", async () => {
     const BASELINE_P95 = 5 // ms
     const REGRESSION_THRESHOLD = 7 // 40% regression = failure
 
@@ -2721,9 +2876,9 @@ describe('Performance Regression Detection (P1)', () => {
 
     // Test content of varying sizes
     const testContents = [
-      'Short content',
-      'Medium length content with some additional text for testing hash computation performance',
-      'Very long content '.repeat(1000) // ~17KB
+      "Short content",
+      "Medium length content with some additional text for testing hash computation performance",
+      "Very long content ".repeat(1000), // ~17KB
     ]
 
     // Run operation 1000 times
@@ -2740,10 +2895,12 @@ describe('Performance Regression Detection (P1)', () => {
     const p95 = latencies[Math.floor(latencies.length * 0.95)]
 
     expect(p95).toBeLessThan(REGRESSION_THRESHOLD)
-    console.log(`Hash computation P95 latency: ${p95}ms (baseline: ${BASELINE_P95}ms)`)
+    console.log(
+      `Hash computation P95 latency: ${p95}ms (baseline: ${BASELINE_P95}ms)`
+    )
   })
 
-  test('detects throughput regression for capture processing', async () => {
+  test("detects throughput regression for capture processing", async () => {
     const ledger = createTestLedger()
     const captureWorker = new VoiceCaptureWorker(ledger)
 
@@ -2753,11 +2910,11 @@ describe('Performance Regression Detection (P1)', () => {
 
     // Mock fast transcription for throughput testing
     mockWhisperAPI({
-      '*': {
-        text: 'Fast transcription result',
+      "*": {
+        text: "Fast transcription result",
         duration: 50, // 50ms response time
-        model: 'whisper-medium'
-      }
+        model: "whisper-medium",
+      },
     })
 
     // Run for 10 seconds
@@ -2777,12 +2934,14 @@ describe('Performance Regression Detection (P1)', () => {
     // Gate: fail if throughput drops > 30%
     expect(throughput).toBeGreaterThan(MIN_THROUGHPUT)
 
-    console.log(`Capture throughput: ${throughput.toFixed(1)} ops/sec (baseline: ${BASELINE_THROUGHPUT})`)
+    console.log(
+      `Capture throughput: ${throughput.toFixed(1)} ops/sec (baseline: ${BASELINE_THROUGHPUT})`
+    )
 
     ledger.close()
   })
 
-  test('detects memory leak during sustained capture operations', async () => {
+  test("detects memory leak during sustained capture operations", async () => {
     const ledger = createTestLedger()
     const captureWorker = new VoiceCaptureWorker(ledger)
 
@@ -2793,11 +2952,11 @@ describe('Performance Regression Detection (P1)', () => {
 
     // Mock lightweight transcription
     mockWhisperAPI({
-      '*': {
-        text: 'Memory test transcription',
+      "*": {
+        text: "Memory test transcription",
         duration: 10,
-        model: 'whisper-medium'
-      }
+        model: "whisper-medium",
+      },
     })
 
     // Run 1,000 operations
@@ -2820,7 +2979,9 @@ describe('Performance Regression Detection (P1)', () => {
     // Gate: heap growth < 20MB for 1k operations
     expect(heapGrowth).toBeLessThan(20 * 1024 * 1024)
 
-    console.log(`Heap growth: ${(heapGrowth / 1024 / 1024).toFixed(2)}MB for 1k operations`)
+    console.log(
+      `Heap growth: ${(heapGrowth / 1024 / 1024).toFixed(2)}MB for 1k operations`
+    )
 
     ledger.close()
   })
@@ -2836,7 +2997,7 @@ describe('Performance Regression Detection (P1)', () => {
 Cross-feature integration tests with failure injection ensure robust error handling and recovery across the capture pipeline and other components.
 
 ```typescript
-describe('Full Pipeline Integration with Fault Injection (P1)', () => {
+describe("Full Pipeline Integration with Fault Injection (P1)", () => {
   let testPipeline: TestPipeline
 
   beforeEach(async () => {
@@ -2848,19 +3009,19 @@ describe('Full Pipeline Integration with Fault Injection (P1)', () => {
     await testPipeline.cleanup()
   })
 
-  test('handles iCloud download failure during voice capture', async () => {
+  test("handles iCloud download failure during voice capture", async () => {
     // Setup: Voice file available but download fails
-    const audioPath = '/icloud/test.m4a'
+    const audioPath = "/icloud/test.m4a"
 
     // Inject: Network timeout during iCloud download
-    testPipeline.injectFault('icloud-download', 'NETWORK_TIMEOUT')
+    testPipeline.injectFault("icloud-download", "NETWORK_TIMEOUT")
 
     // Attempt capture
     const result = await testPipeline.captureVoice(audioPath)
 
     // Verify: Capture fails with retriable error
     expect(result.success).toBe(false)
-    expect(result.error.code).toBe('ICLOUD_DOWNLOAD_FAILED')
+    expect(result.error.code).toBe("ICLOUD_DOWNLOAD_FAILED")
     expect(result.error.retriable).toBe(true)
 
     // Verify: No partial staging ledger entry
@@ -2870,52 +3031,62 @@ describe('Full Pipeline Integration with Fault Injection (P1)', () => {
     // Verify: Retry queue populated (Phase 2)
     const retries = await testPipeline.getRetryQueue().getPending()
     expect(retries).toHaveLength(1)
-    expect(retries[0].operation).toBe('voice_capture')
-    expect(retries[0].error_type).toBe('network.timeout')
+    expect(retries[0].operation).toBe("voice_capture")
+    expect(retries[0].error_type).toBe("network.timeout")
   })
 
-  test('handles transcription service failure during voice processing', async () => {
+  test("handles transcription service failure during voice processing", async () => {
     // Setup: Successful audio download
-    const audioPath = '/icloud/test.m4a'
-    mockICloudFiles([{ path: audioPath, size: 4096, audioFingerprint: 'fp_test' }])
+    const audioPath = "/icloud/test.m4a"
+    mockICloudFiles([
+      { path: audioPath, size: 4096, audioFingerprint: "fp_test" },
+    ])
 
     // Start capture process
     const captureResult = await testPipeline.captureVoice(audioPath)
     expect(captureResult.success).toBe(true)
 
     // Inject: Whisper service failure
-    testPipeline.injectFault('whisper-transcribe', 'SERVICE_UNAVAILABLE')
+    testPipeline.injectFault("whisper-transcribe", "SERVICE_UNAVAILABLE")
 
     // Attempt transcription
-    const transcriptionResult = await testPipeline.processTranscription(captureResult.captureId)
+    const transcriptionResult = await testPipeline.processTranscription(
+      captureResult.captureId
+    )
 
     // Verify: Transcription fails gracefully
     expect(transcriptionResult.success).toBe(false)
-    expect(transcriptionResult.error.code).toBe('TRANSCRIPTION_FAILED')
+    expect(transcriptionResult.error.code).toBe("TRANSCRIPTION_FAILED")
 
     // Verify: Staging ledger shows failed transcription status
-    const capture = await testPipeline.getStagingLedger().getCapture(captureResult.captureId)
-    expect(capture.status).toBe('transcription_failed')
+    const capture = await testPipeline
+      .getStagingLedger()
+      .getCapture(captureResult.captureId)
+    expect(capture.status).toBe("transcription_failed")
 
     // Verify: Placeholder export created
-    const exports = await testPipeline.getVault().listFiles('inbox')
+    const exports = await testPipeline.getVault().listFiles("inbox")
     expect(exports).toHaveLength(1)
 
-    const placeholderContent = await testPipeline.getVault().readFile(exports[0])
-    expect(placeholderContent).toContain('Placeholder Export (Transcription Failed)')
-    expect(placeholderContent).toContain('Whisper service unavailable')
+    const placeholderContent = await testPipeline
+      .getVault()
+      .readFile(exports[0])
+    expect(placeholderContent).toContain(
+      "Placeholder Export (Transcription Failed)"
+    )
+    expect(placeholderContent).toContain("Whisper service unavailable")
   })
 
-  test('handles Gmail API rate limiting during email capture', async () => {
+  test("handles Gmail API rate limiting during email capture", async () => {
     // Setup: Gmail API with rate limiting
-    testPipeline.injectFault('gmail-api', 'RATE_LIMITED')
+    testPipeline.injectFault("gmail-api", "RATE_LIMITED")
 
     // Attempt email poll
     const result = await testPipeline.pollGmailMessages()
 
     // Verify: Rate limit handled gracefully
     expect(result.success).toBe(false)
-    expect(result.error.code).toBe('GMAIL_RATE_LIMITED')
+    expect(result.error.code).toBe("GMAIL_RATE_LIMITED")
     expect(result.error.retriable).toBe(true)
 
     // Verify: Backoff applied
@@ -2933,65 +3104,75 @@ describe('Full Pipeline Integration with Fault Injection (P1)', () => {
     expect(retryResult.success).toBe(true)
   })
 
-  test('handles staging ledger corruption during capture', async () => {
+  test("handles staging ledger corruption during capture", async () => {
     // Setup: Valid voice file
-    const audioPath = '/icloud/test.m4a'
+    const audioPath = "/icloud/test.m4a"
 
     // Inject: Database corruption during insert
-    testPipeline.injectFault('staging-insert', 'DATABASE_CORRUPT')
+    testPipeline.injectFault("staging-insert", "DATABASE_CORRUPT")
 
     // Attempt capture
     const result = await testPipeline.captureVoice(audioPath)
 
     // Verify: Capture fails with database error
     expect(result.success).toBe(false)
-    expect(result.error.code).toBe('STAGING_LEDGER_CORRUPT')
+    expect(result.error.code).toBe("STAGING_LEDGER_CORRUPT")
 
     // Verify: Error logged for doctor command
     const errors = await testPipeline.getErrorLog()
-    expect(errors).toContainEqual(expect.objectContaining({
-      code: 'DATABASE_CORRUPT',
-      severity: 'critical',
-      message: expect.stringContaining('staging ledger integrity'),
-      component: 'capture-worker'
-    }))
+    expect(errors).toContainEqual(
+      expect.objectContaining({
+        code: "DATABASE_CORRUPT",
+        severity: "critical",
+        message: expect.stringContaining("staging ledger integrity"),
+        component: "capture-worker",
+      })
+    )
 
     // Verify: System suggests recovery action
-    expect(result.error.message).toContain('run adhd doctor --recover')
+    expect(result.error.message).toContain("run adhd doctor --recover")
   })
 
-  test('handles concurrent capture operations safely', async () => {
+  test("handles concurrent capture operations safely", async () => {
     // Setup: Multiple capture sources
-    const voiceFiles = ['/icloud/memo1.m4a', '/icloud/memo2.m4a', '/icloud/memo3.m4a']
-    const emailMessages = ['msg1', 'msg2', 'msg3']
+    const voiceFiles = [
+      "/icloud/memo1.m4a",
+      "/icloud/memo2.m4a",
+      "/icloud/memo3.m4a",
+    ]
+    const emailMessages = ["msg1", "msg2", "msg3"]
 
-    mockICloudFiles(voiceFiles.map((path, i) => ({
-      path,
-      size: 4096,
-      audioFingerprint: `fp_${i}`
-    })))
+    mockICloudFiles(
+      voiceFiles.map((path, i) => ({
+        path,
+        size: 4096,
+        audioFingerprint: `fp_${i}`,
+      }))
+    )
 
-    mockGmailAPI(emailMessages.map((id, i) => ({
-      id,
-      snippet: `Email content ${i}`,
-      payload: {
-        headers: [
-          { name: 'From', value: `sender${i}@example.com` },
-          { name: 'Subject', value: `Test ${i}` }
-        ]
-      }
-    })))
+    mockGmailAPI(
+      emailMessages.map((id, i) => ({
+        id,
+        snippet: `Email content ${i}`,
+        payload: {
+          headers: [
+            { name: "From", value: `sender${i}@example.com` },
+            { name: "Subject", value: `Test ${i}` },
+          ],
+        },
+      }))
+    )
 
     // Concurrent capture operations
     const promises = [
-      ...voiceFiles.map(path => testPipeline.captureVoice(path)),
-      testPipeline.pollGmailMessages()
+      ...voiceFiles.map((path) => testPipeline.captureVoice(path)),
+      testPipeline.pollGmailMessages(),
     ]
 
     const results = await Promise.all(promises)
 
     // Verify: All captures succeeded
-    expect(results.every(r => r.success)).toBe(true)
+    expect(results.every((r) => r.success)).toBe(true)
 
     // Verify: No database lock contention
     const dbStats = await testPipeline.getDatabaseStats()
@@ -3003,43 +3184,51 @@ describe('Full Pipeline Integration with Fault Injection (P1)', () => {
     expect(captures).toHaveLength(6) // 3 voice + 3 email
 
     // Verify: No duplicate content hashes
-    const contentHashes = captures.map(c => c.content_hash).filter(Boolean)
+    const contentHashes = captures.map((c) => c.content_hash).filter(Boolean)
     const uniqueHashes = new Set(contentHashes)
     expect(uniqueHashes.size).toBe(contentHashes.length)
   })
 
-  test('handles export failure after successful capture', async () => {
+  test("handles export failure after successful capture", async () => {
     // Setup: Successful voice capture
-    const audioPath = '/icloud/test.m4a'
+    const audioPath = "/icloud/test.m4a"
     const captureResult = await testPipeline.completeCaptureFlow(audioPath)
 
     // Inject: Vault write failure during export
-    testPipeline.injectFault('vault-write', 'DISK_FULL')
+    testPipeline.injectFault("vault-write", "DISK_FULL")
 
     // Attempt export
-    const exportResult = await testPipeline.attemptExport(captureResult.captureId)
+    const exportResult = await testPipeline.attemptExport(
+      captureResult.captureId
+    )
 
     // Verify: Export fails gracefully
     expect(exportResult.success).toBe(false)
-    expect(exportResult.error.code).toBe('VAULT_WRITE_FAILED')
+    expect(exportResult.error.code).toBe("VAULT_WRITE_FAILED")
 
     // Verify: Capture remains in transcribed state
-    const capture = await testPipeline.getStagingLedger().getCapture(captureResult.captureId)
-    expect(capture.status).toBe('transcribed')
+    const capture = await testPipeline
+      .getStagingLedger()
+      .getCapture(captureResult.captureId)
+    expect(capture.status).toBe("transcribed")
 
     // Verify: No partial files in vault
     const vaultFiles = await testPipeline.getVault().listFiles()
-    expect(vaultFiles.filter(f => f.includes('tmp'))).toHaveLength(0)
+    expect(vaultFiles.filter((f) => f.includes("tmp"))).toHaveLength(0)
 
     // Clear fault and retry
     testPipeline.clearFaults()
 
-    const retryResult = await testPipeline.attemptExport(captureResult.captureId)
+    const retryResult = await testPipeline.attemptExport(
+      captureResult.captureId
+    )
     expect(retryResult.success).toBe(true)
 
     // Verify: Final successful export
-    const finalCapture = await testPipeline.getStagingLedger().getCapture(captureResult.captureId)
-    expect(finalCapture.status).toBe('exported')
+    const finalCapture = await testPipeline
+      .getStagingLedger()
+      .getCapture(captureResult.captureId)
+    expect(finalCapture.status).toBe("exported")
   })
 })
 ```
@@ -3051,8 +3240,8 @@ describe('Full Pipeline Integration with Fault Injection (P1)', () => {
 ### 12.1 Sustained Load Testing
 
 ```typescript
-describe('Sustained Load (P1)', () => {
-  test('handles 1000 captures over 10 minutes', async () => {
+describe("Sustained Load (P1)", () => {
+  test("handles 1000 captures over 10 minutes", async () => {
     const loadTest = new LoadTestHarness()
     const ledger = createTestLedger()
     const captureWorker = new VoiceCaptureWorker(ledger)
@@ -3064,11 +3253,11 @@ describe('Sustained Load (P1)', () => {
 
     // Mock fast transcription for load testing
     mockWhisperAPI({
-      '*': {
-        text: 'Load test transcription',
+      "*": {
+        text: "Load test transcription",
         duration: 25, // 25ms response time
-        model: 'whisper-medium'
-      }
+        model: "whisper-medium",
+      },
     })
 
     // Run sustained load
@@ -3083,16 +3272,16 @@ describe('Sustained Load (P1)', () => {
           duration: performance.now() - start,
           success: true,
           memory: process.memoryUsage().heapUsed,
-          iteration
+          iteration,
         }
       },
       count: totalOperations,
-      interval
+      interval,
     })
 
     // Verify: No performance degradation over time
-    const firstHalf = results.slice(0, 500).map(r => r.duration)
-    const secondHalf = results.slice(500).map(r => r.duration)
+    const firstHalf = results.slice(0, 500).map((r) => r.duration)
+    const secondHalf = results.slice(500).map((r) => r.duration)
 
     const firstHalfP95 = percentile(firstHalf, 95)
     const secondHalfP95 = percentile(secondHalf, 95)
@@ -3105,46 +3294,57 @@ describe('Sustained Load (P1)', () => {
     expect(memoryGrowth).toBeLessThan(50 * 1024 * 1024) // < 50MB growth
 
     // Verify: All operations succeeded
-    const failures = results.filter(r => !r.success)
+    const failures = results.filter((r) => !r.success)
     expect(failures).toHaveLength(0)
 
     // Verify: All captures properly staged
     const captures = await ledger.getAllCaptures()
     expect(captures).toHaveLength(1000)
 
-    console.log(`Sustained capture load: ${firstHalfP95.toFixed(2)}ms → ${secondHalfP95.toFixed(2)}ms P95`)
+    console.log(
+      `Sustained capture load: ${firstHalfP95.toFixed(2)}ms → ${secondHalfP95.toFixed(2)}ms P95`
+    )
 
     ledger.close()
   })
 
-  test('maintains data integrity under sustained load', async () => {
+  test("maintains data integrity under sustained load", async () => {
     const loadTest = new LoadTestHarness()
     const ledger = createTestLedger()
 
     // Run concurrent capture operations
-    const concurrentPromises = Array.from({ length: 5 }, async (_, threadId) => {
-      const captureWorker = new VoiceCaptureWorker(ledger)
-      const threadResults = []
+    const concurrentPromises = Array.from(
+      { length: 5 },
+      async (_, threadId) => {
+        const captureWorker = new VoiceCaptureWorker(ledger)
+        const threadResults = []
 
-      for (let i = 0; i < 100; i++) {
-        const operationId = `${threadId}_${i}`
+        for (let i = 0; i < 100; i++) {
+          const operationId = `${threadId}_${i}`
 
-        try {
-          await captureWorker.captureVoice(`/icloud/thread_${operationId}.m4a`)
-          threadResults.push({ operationId, success: true })
-        } catch (error) {
-          threadResults.push({ operationId, success: false, error: error.message })
+          try {
+            await captureWorker.captureVoice(
+              `/icloud/thread_${operationId}.m4a`
+            )
+            threadResults.push({ operationId, success: true })
+          } catch (error) {
+            threadResults.push({
+              operationId,
+              success: false,
+              error: error.message,
+            })
+          }
         }
-      }
 
-      return threadResults
-    })
+        return threadResults
+      }
+    )
 
     const allResults = await Promise.all(concurrentPromises)
     const flatResults = allResults.flat()
 
     // Verify: All operations succeeded
-    const failures = flatResults.filter(r => !r.success)
+    const failures = flatResults.filter((r) => !r.success)
     expect(failures).toHaveLength(0)
 
     // Verify: Database consistency
@@ -3152,11 +3352,11 @@ describe('Sustained Load (P1)', () => {
     expect(allCaptures).toHaveLength(500) // 5 threads × 100 operations
 
     // Verify: No duplicate IDs
-    const uniqueIds = new Set(allCaptures.map(c => c.id))
+    const uniqueIds = new Set(allCaptures.map((c) => c.id))
     expect(uniqueIds.size).toBe(500)
 
     // Verify: All content hashes valid
-    allCaptures.forEach(capture => {
+    allCaptures.forEach((capture) => {
       if (capture.content_hash) {
         expect(capture.content_hash).toMatch(/^[a-f0-9]{64}$/) // SHA-256 format
       }
@@ -3164,25 +3364,25 @@ describe('Sustained Load (P1)', () => {
 
     // Verify: Database integrity
     const integrityCheck = await ledger.db.get(`PRAGMA integrity_check`)
-    expect(integrityCheck.integrity_check).toBe('ok')
+    expect(integrityCheck.integrity_check).toBe("ok")
 
     ledger.close()
   })
 })
 
-describe('Burst Load (P1)', () => {
-  test('handles 100 captures in 10 seconds', async () => {
+describe("Burst Load (P1)", () => {
+  test("handles 100 captures in 10 seconds", async () => {
     const loadTest = new LoadTestHarness()
     const ledger = createTestLedger()
     const captureWorker = new VoiceCaptureWorker(ledger)
 
     // Mock very fast transcription for burst testing
     mockWhisperAPI({
-      '*': {
-        text: 'Burst test transcription',
+      "*": {
+        text: "Burst test transcription",
         duration: 10, // 10ms response time
-        model: 'whisper-medium'
-      }
+        model: "whisper-medium",
+      },
     })
 
     // Run burst load - 100 operations as fast as possible over 10 seconds
@@ -3202,14 +3402,14 @@ describe('Burst Load (P1)', () => {
         results.push({
           duration: performance.now() - start,
           success: true,
-          operationCount
+          operationCount,
         })
       } catch (error) {
         results.push({
           duration: performance.now() - start,
           success: false,
           error: error.message,
-          operationCount
+          operationCount,
         })
       }
 
@@ -3217,25 +3417,30 @@ describe('Burst Load (P1)', () => {
     }
 
     // Verify: No data loss
-    const successCount = results.filter(r => r.success).length
+    const successCount = results.filter((r) => r.success).length
     expect(successCount).toBe(Math.min(100, operationCount))
 
     // Verify: Reasonable latency under burst load
-    const p95 = percentile(results.map(r => r.duration), 95)
+    const p95 = percentile(
+      results.map((r) => r.duration),
+      95
+    )
     expect(p95).toBeLessThan(300) // Allow 3x baseline under burst (100ms * 3)
 
     // Verify: All captures properly staged
     const captures = await ledger.getAllCaptures()
     expect(captures).toHaveLength(successCount)
 
-    console.log(`Burst capture load: ${results.length} operations, P95: ${p95.toFixed(2)}ms`)
+    console.log(
+      `Burst capture load: ${results.length} operations, P95: ${p95.toFixed(2)}ms`
+    )
 
     ledger.close()
   })
 })
 
-describe('Resource Exhaustion (P1)', () => {
-  test('handles graceful degradation approaching memory limit', async () => {
+describe("Resource Exhaustion (P1)", () => {
+  test("handles graceful degradation approaching memory limit", async () => {
     const loadTest = new LoadTestHarness()
     const ledger = createTestLedger()
     const captureWorker = new VoiceCaptureWorker(ledger)
@@ -3245,12 +3450,12 @@ describe('Resource Exhaustion (P1)', () => {
 
     // Mock transcription with large memory usage
     mockWhisperAPI({
-      '*': {
-        text: 'Large memory test result',
+      "*": {
+        text: "Large memory test result",
         duration: 50,
-        model: 'whisper-medium',
-        memoryUsage: 10 * 1024 * 1024 // 10MB per transcription
-      }
+        model: "whisper-medium",
+        memoryUsage: 10 * 1024 * 1024, // 10MB per transcription
+      },
     })
 
     const results = []
@@ -3271,22 +3476,22 @@ describe('Resource Exhaustion (P1)', () => {
           success: true,
           iteration: i,
           memoryGrowth,
-          totalMemory: memoryAfter
+          totalMemory: memoryAfter,
         })
 
         // Check for memory pressure
-        if (memoryAfter > 200 * 1024 * 1024) { // Approaching limit
+        if (memoryAfter > 200 * 1024 * 1024) {
+          // Approaching limit
           memoryPressureDetected = true
         }
-
       } catch (error) {
         results.push({
           success: false,
           iteration: i,
-          error: error.message
+          error: error.message,
         })
 
-        if (error.message.includes('memory') || error.message.includes('OOM')) {
+        if (error.message.includes("memory") || error.message.includes("OOM")) {
           memoryPressureDetected = true
           break
         }
@@ -3300,18 +3505,18 @@ describe('Resource Exhaustion (P1)', () => {
 
     // Verify: System handles memory pressure appropriately
     if (memoryPressureDetected) {
-      const lastSuccessful = results.filter(r => r.success).pop()
+      const lastSuccessful = results.filter((r) => r.success).pop()
       expect(lastSuccessful.totalMemory).toBeLessThan(256 * 1024 * 1024)
     }
 
     // Verify: Database integrity maintained under memory pressure
     const integrityCheck = await ledger.db.get(`PRAGMA integrity_check`)
-    expect(integrityCheck.integrity_check).toBe('ok')
+    expect(integrityCheck.integrity_check).toBe("ok")
 
     ledger.close()
   })
 
-  test('handles iCloud quota exhaustion gracefully', async () => {
+  test("handles iCloud quota exhaustion gracefully", async () => {
     const loadTest = new LoadTestHarness()
     const ledger = createTestLedger()
     const captureWorker = new VoiceCaptureWorker(ledger)
@@ -3331,7 +3536,10 @@ describe('Resource Exhaustion (P1)', () => {
       } catch (error) {
         results.push({ success: false, operation: i, error: error.message })
 
-        if (error.message.includes('quota') || error.message.includes('storage full')) {
+        if (
+          error.message.includes("quota") ||
+          error.message.includes("storage full")
+        ) {
           break
         }
       }
@@ -3343,12 +3551,12 @@ describe('Resource Exhaustion (P1)', () => {
       expect(lastResult.error).toMatch(/quota|storage full/)
 
       // Verify: Error provides actionable guidance
-      expect(lastResult.error).toContain('upgrade storage plan')
+      expect(lastResult.error).toContain("upgrade storage plan")
     }
 
     // Verify: No partial captures from failed operations
     const captures = await ledger.getAllCaptures()
-    const successCount = results.filter(r => r.success).length
+    const successCount = results.filter((r) => r.success).length
     expect(captures).toHaveLength(successCount)
 
     ledger.close()
@@ -3361,14 +3569,14 @@ describe('Resource Exhaustion (P1)', () => {
 ```typescript
 class LoadTestHarness {
   private memoryLimit?: number
-  private icloudQuota?: { used: number, total: number }
+  private icloudQuota?: { used: number; total: number }
 
   setMemoryLimit(bytes: number) {
     this.memoryLimit = bytes
     // Mock memory monitoring to respect limit
   }
 
-  setICloudQuota(quota: { used: number, total: number }) {
+  setICloudQuota(quota: { used: number; total: number }) {
     this.icloudQuota = quota
     // Mock iCloud status to simulate quota
   }
@@ -3391,7 +3599,7 @@ class LoadTestHarness {
           success: false,
           error: error.message,
           iteration: i,
-          duration: Date.now() - startTime
+          duration: Date.now() - startTime,
         })
       }
 
@@ -3406,7 +3614,9 @@ class LoadTestHarness {
     return results
   }
 
-  async checkCaptureIntegrity(ledger: StagingLedger): Promise<{ valid: boolean, issues: string[] }> {
+  async checkCaptureIntegrity(
+    ledger: StagingLedger
+  ): Promise<{ valid: boolean; issues: string[] }> {
     const issues = []
 
     try {
@@ -3416,33 +3626,42 @@ class LoadTestHarness {
 
       // Verify state consistency
       for (const capture of allCaptures) {
-        if (capture.source === 'voice' && capture.status === 'staged' && !capture.content_hash) {
+        if (
+          capture.source === "voice" &&
+          capture.status === "staged" &&
+          !capture.content_hash
+        ) {
           // Valid state: voice not yet transcribed
-        } else if (capture.source === 'email' && capture.status === 'staged' && capture.content_hash) {
+        } else if (
+          capture.source === "email" &&
+          capture.status === "staged" &&
+          capture.content_hash
+        ) {
           // Valid state: email ready for export
-        } else if (capture.status === 'transcribed' && capture.content_hash) {
+        } else if (capture.status === "transcribed" && capture.content_hash) {
           // Valid state: ready for export
-        } else if (capture.status === 'exported') {
+        } else if (capture.status === "exported") {
           // Valid state: completed
         } else {
-          issues.push(`Invalid capture state: ${capture.id} (${capture.status})`)
+          issues.push(
+            `Invalid capture state: ${capture.id} (${capture.status})`
+          )
         }
       }
 
       // Check content hash validity
-      for (const capture of allCaptures.filter(c => c.content_hash)) {
+      for (const capture of allCaptures.filter((c) => c.content_hash)) {
         if (!/^[a-f0-9]{64}$/.test(capture.content_hash)) {
           issues.push(`Invalid content hash format: ${capture.id}`)
         }
       }
-
     } catch (error) {
       issues.push(`Capture integrity check failed: ${error.message}`)
     }
 
     return {
       valid: issues.length === 0,
-      issues
+      issues,
     }
   }
 }
@@ -3465,7 +3684,7 @@ function percentile(values: number[], p: number): number {
 }
 
 function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 ```
 

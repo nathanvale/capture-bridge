@@ -1,0 +1,305 @@
+name: Weekly Paranoid Tests
+
+on:
+  schedule:
+    # Run at 3 AM UTC every Sunday
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      stress-iterations:
+        description: 'Number of stress test iterations'
+        required: false
+        default: '5'
+        type: choice
+        options:
+          - '3'
+          - '5'
+          - '10'
+
+env:
+  NODE_VERSION: "20.18.1"
+  PNPM_VERSION: "9.15.4"
+  NODE_OPTIONS: "--max-old-space-size=6144"
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
+  FORCE_COLOR: 3
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  full-coverage:
+    name: 📊 Full Coverage Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PNPM with Caching
+        uses: ./.github/actions/setup-pnpm
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          pnpm-version: ${{ env.PNPM_VERSION }}
+      - name: Run Full Test Suite with Coverage
+        run: |
+          mkdir -p paranoid-results
+          pnpm test:coverage -- --reporter=verbose | tee paranoid-results/coverage.log
+      - name: Run Integration Tests with Coverage
+        run: |
+          TEST_MODE=integration pnpm exec vitest run --coverage --reporter=verbose | tee paranoid-results/integration-coverage.log
+      - name: Check Coverage Thresholds
+        run: |
+          # Extract and validate coverage is meeting thresholds
+          node -e "
+            const coverage = require('./coverage/coverage-summary.json');
+            const total = coverage.total;
+            const failed = [];
+
+            if (total.lines.pct < 70) failed.push('Lines: ' + total.lines.pct + '% (threshold: 70%)');
+            if (total.statements.pct < 70) failed.push('Statements: ' + total.statements.pct + '% (threshold: 70%)');
+            if (total.functions.pct < 70) failed.push('Functions: ' + total.functions.pct + '% (threshold: 70%)');
+            if (total.branches.pct < 70) failed.push('Branches: ' + total.branches.pct + '% (threshold: 70%)');
+
+            if (failed.length > 0) {
+              console.error('❌ Coverage below thresholds:');
+              failed.forEach(f => console.error('  - ' + f));
+              process.exit(1);
+            }
+            console.log('✅ All coverage thresholds met');
+          "
+      - name: Upload Coverage Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paranoid-coverage-${{ github.run_number }}
+          path: |
+            coverage/
+            paranoid-results/
+          retention-days: 90
+
+  stress-tests:
+    name: 🔥 Stress Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        test-type: [unit, integration]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PNPM with Caching
+        uses: ./.github/actions/setup-pnpm
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          pnpm-version: ${{ env.PNPM_VERSION }}
+      - name: Run Stress Tests
+        run: |
+          ITERATIONS=${{ github.event.inputs.stress-iterations || '5' }}
+          echo "Running $ITERATIONS iterations of ${{ matrix.test-type }} tests..."
+
+          mkdir -p stress-results
+
+          for i in $(seq 1 $ITERATIONS); do
+            echo "🔄 Iteration $i/$ITERATIONS for ${{ matrix.test-type }}"
+
+            if [ "${{ matrix.test-type }}" = "integration" ]; then
+              TEST_MODE=integration pnpm exec vitest run --no-coverage --reporter=dot || echo "Iteration $i failed" >> stress-results/${{ matrix.test-type }}-failures.txt
+            else
+              pnpm test -- --no-coverage --reporter=dot || echo "Iteration $i failed" >> stress-results/${{ matrix.test-type }}-failures.txt
+            fi
+          done
+
+          # Check for failures
+          if [ -f stress-results/${{ matrix.test-type }}-failures.txt ]; then
+            echo "❌ Stress test failures detected:"
+            cat stress-results/${{ matrix.test-type }}-failures.txt
+            exit 1
+          fi
+
+          echo "✅ All $ITERATIONS iterations passed"
+      - name: Upload Stress Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stress-results-${{ matrix.test-type }}-${{ github.run_number }}
+          path: stress-results/
+          retention-days: 30
+
+  concurrency-tests:
+    name: 🧵 Concurrency Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PNPM with Caching
+        uses: ./.github/actions/setup-pnpm
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          pnpm-version: ${{ env.PNPM_VERSION }}
+      - name: Run Tests with Different Pool Configurations
+        run: |
+          mkdir -p concurrency-results
+
+          echo "Testing with single thread..."
+          pnpm exec vitest run --pool=threads --poolOptions.threads.singleThread --no-coverage --reporter=dot | tee concurrency-results/single-thread.log
+
+          echo "Testing with forks pool..."
+          pnpm exec vitest run --pool=forks --no-coverage --reporter=dot | tee concurrency-results/forks.log
+
+          echo "Testing with vmThreads pool..."
+          pnpm exec vitest run --pool=vmThreads --no-coverage --reporter=dot | tee concurrency-results/vm-threads.log
+
+          echo "Testing with maximum concurrency..."
+          pnpm exec vitest run --pool=threads --poolOptions.threads.maxThreads=10 --no-coverage --reporter=dot | tee concurrency-results/max-threads.log
+      - name: Upload Concurrency Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: concurrency-results-${{ github.run_number }}
+          path: concurrency-results/
+          retention-days: 30
+
+  memory-leak-detection:
+    name: 💾 Memory Leak Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PNPM with Caching
+        uses: ./.github/actions/setup-pnpm
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          pnpm-version: ${{ env.PNPM_VERSION }}
+      - name: Run Memory Profiling
+        run: |
+          mkdir -p memory-results
+
+          # Run tests with memory profiling
+          NODE_OPTIONS="--expose-gc --max-old-space-size=512" pnpm test -- --no-coverage --reporter=dot 2>&1 | tee memory-results/memory-test.log
+
+          # Check for common memory leak patterns
+          if grep -E "(FATAL ERROR|JavaScript heap out of memory|Allocation failed)" memory-results/memory-test.log; then
+            echo "❌ Potential memory leak detected"
+            exit 1
+          fi
+
+          echo "✅ No obvious memory leaks detected"
+      - name: Upload Memory Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: memory-results-${{ github.run_number }}
+          path: memory-results/
+          retention-days: 30
+
+  turbo-cache-analysis:
+    name: 📦 Turbo Cache Effectiveness
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PNPM with Caching
+        uses: ./.github/actions/setup-pnpm
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          pnpm-version: ${{ env.PNPM_VERSION }}
+      - name: Clear Turbo Cache
+        run: |
+          pnpm turbo daemon stop
+          rm -rf node_modules/.cache/turbo
+      - name: Cold Build
+        run: |
+          mkdir -p cache-analysis
+          echo "## Cold Build (no cache)" | tee cache-analysis/report.md
+          time pnpm build 2>&1 | tee cache-analysis/cold-build.log
+          COLD_TIME=$(grep "real" cache-analysis/cold-build.log | awk '{print $2}' || echo "unknown")
+          echo "Cold build time: $COLD_TIME" | tee -a cache-analysis/report.md
+      - name: Warm Build
+        run: |
+          echo "## Warm Build (with cache)" | tee -a cache-analysis/report.md
+          time pnpm build 2>&1 | tee cache-analysis/warm-build.log
+          WARM_TIME=$(grep "real" cache-analysis/warm-build.log | awk '{print $2}' || echo "unknown")
+          echo "Warm build time: $WARM_TIME" | tee -a cache-analysis/report.md
+
+          # Extract cache statistics
+          echo "## Cache Statistics" | tee -a cache-analysis/report.md
+          grep -E "(Remote|Local) cache|Cache" cache-analysis/warm-build.log | tee -a cache-analysis/report.md || echo "No cache statistics available"
+      - name: Upload Cache Analysis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cache-analysis-${{ github.run_number }}
+          path: cache-analysis/
+          retention-days: 30
+
+  paranoid-summary:
+    name: 📝 Paranoid Test Summary
+    runs-on: ubuntu-latest
+    needs: [full-coverage, stress-tests, concurrency-tests, memory-leak-detection, turbo-cache-analysis]
+    if: always()
+    steps:
+      - name: Generate Summary Report
+        run: |
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          # 🔍 Weekly Paranoid Test Results
+
+          ## Test Suite Status
+
+          | Test Type | Status |
+          |-----------|--------|
+          | Full Coverage | ${{ needs.full-coverage.result }} |
+          | Stress Tests | ${{ needs.stress-tests.result }} |
+          | Concurrency Tests | ${{ needs.concurrency-tests.result }} |
+          | Memory Leak Detection | ${{ needs.memory-leak-detection.result }} |
+          | Turbo Cache Analysis | ${{ needs.turbo-cache-analysis.result }} |
+
+          ## Recommendations
+
+          EOF
+
+          if [[ "${{ needs.full-coverage.result }}" == "failure" ]]; then
+            echo "- ⚠️ Coverage has dropped below thresholds. Review recent changes." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.stress-tests.result }}" == "failure" ]]; then
+            echo "- ⚠️ Stress tests are failing. Check for race conditions or flaky tests." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.concurrency-tests.result }}" == "failure" ]]; then
+            echo "- ⚠️ Concurrency issues detected. Review thread safety in tests." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.memory-leak-detection.result }}" == "failure" ]]; then
+            echo "- 🚨 Potential memory leaks detected. Investigate immediately." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Run triggered: $(date -u +%Y-%m-%d' '%H:%M:%S' UTC')" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create Issue if Failed
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🚨 Weekly Paranoid Tests Failed - ${new Date().toISOString().split('T')[0]}`;
+            const body = `The weekly paranoid test suite has detected issues that require attention.
+
+            ## Failed Tests
+            - Full Coverage: ${{ needs.full-coverage.result }}
+            - Stress Tests: ${{ needs.stress-tests.result }}
+            - Concurrency Tests: ${{ needs.concurrency-tests.result }}
+            - Memory Leak Detection: ${{ needs.memory-leak-detection.result }}
+            - Turbo Cache Analysis: ${{ needs.turbo-cache-analysis.result }}
+
+            ## Action Required
+            Please review the [workflow run](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}) for details.
+
+            cc: @nathanvale`;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['bug', 'paranoid-tests', 'automated']
+            });

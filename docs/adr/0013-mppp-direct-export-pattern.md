@@ -23,6 +23,7 @@ However, for MPPP (Minimum Pragmatic Product Package) scope targeting <200 captu
 - Testing complexity for concurrent scenarios
 
 MPPP requirements mandate:
+
 - Sub-3-second staging for immediate confidence
 - Sub-10-second export for responsive feedback
 - Zero data loss guarantees
@@ -45,20 +46,21 @@ MPPP requirements mandate:
 ```typescript
 // OLD: Outbox queue pattern (deferred)
 async function processCapture(capture) {
-  await stageCapture(capture);
-  await enqueueForExport(capture.id);  // Background worker processes later
+  await stageCapture(capture)
+  await enqueueForExport(capture.id) // Background worker processes later
 }
 
 // NEW: Direct export pattern (MPPP)
 async function processCapture(capture) {
-  await stageCapture(capture);
-  await directExporter.exportToVault(capture);  // Synchronous, blocks until complete
+  await stageCapture(capture)
+  await directExporter.exportToVault(capture) // Synchronous, blocks until complete
 }
 ```
 
 ### Triggers to Reconsider
 
 Direct Export Pattern should be reconsidered when:
+
 - Daily capture volume exceeds 200
 - Export backlog depth > 20 for >30 minutes
 - p95 export latency > 100ms
@@ -73,6 +75,7 @@ Direct Export Pattern should be reconsidered when:
 ## Consequences
 
 ### Positive
+
 - **Reduced Complexity**: No background workers, queues, or async coordination
 - **Immediate Feedback**: User sees export results within seconds of capture
 - **Simplified Testing**: Synchronous flows easier to test deterministically
@@ -80,18 +83,21 @@ Direct Export Pattern should be reconsidered when:
 - **Easier Debugging**: Linear execution flow simplifies troubleshooting
 
 ### Negative
+
 - **Latency Coupling**: Capture latency tied to vault write performance
 - **Limited Throughput**: Sequential processing caps maximum capture rate
 - **Blocking on Errors**: Export failures halt all processing
 - **No Retry Logic**: Transient failures require manual intervention (Phase 1)
 
 ### Technical Impact
+
 - Eliminates `outbox` table from staging ledger schema
 - Replaces background export workers with synchronous API calls
 - Simplifies failure modes to binary success/failure per capture
 - Atomic write pattern (temp → fsync → rename) ensures durability
 
 ### Migration Path
+
 - Phase 1-2: Direct Export Pattern (MPPP scope)
 - Phase 3+: Evaluate outbox queue if throughput/concurrency requirements emerge
 - **No Breaking Changes**: Staging ledger schema remains compatible

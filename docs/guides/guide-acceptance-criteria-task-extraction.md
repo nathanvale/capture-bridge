@@ -38,6 +38,7 @@ Use this guide when:
 - Implementing or updating the extraction agent logic
 
 **Related Features:**
+
 - All features defined in Master PRD acceptance criteria
 - Cross-cutting infrastructure capabilities
 - Phase-based delivery milestones
@@ -45,11 +46,13 @@ Use this guide when:
 ## Prerequisites
 
 **Required Knowledge:**
+
 - Understanding of PRD structure and acceptance criteria format
 - Familiarity with capability-based planning
 - Knowledge of risk classification and TDD applicability framework
 
 **Required Artifacts:**
+
 - [Master PRD v2.3.0-MPPP](../master/prd-master.md) - Source of acceptance criteria
 - [Roadmap v2.0-MPPP](../master/roadmap.md) - Phase and slice structure
 - [Virtual Backlog Contract](../agents/virtual-backlog-contract.md) - Output schema definitions
@@ -57,6 +60,7 @@ Use this guide when:
 ## Quick Reference
 
 **Core Principles:**
+
 1. **Deterministic:** Same inputs → byte-identical outputs
 2. **Traceable:** Every capability tracks explicit AC bullet references
 3. **Minimal:** No premature task decomposition
@@ -66,6 +70,7 @@ Use this guide when:
 7. **Non-Destructive:** Historical bullet hashes remain valid
 
 **Supported AC Source Sections:**
+
 - Success Criteria
 - Success Metrics
 - Acceptance
@@ -74,6 +79,7 @@ Use this guide when:
 - Launch Criteria
 
 **GAP Decision Flow:**
+
 ```
 Scan PRD → Normalize bullets → Classify → Detect gaps →
   ↓ (no blocking gaps)          ↓ (blocking gaps)
@@ -340,7 +346,7 @@ acceptance_refs:
 - CAPTURE-VOICE-TIMESTAMP
 
 # GOOD: Cohesive operational unit
-- CAPTURE-VOICE-INGEST  # Includes hash, size, timestamp
+- CAPTURE-VOICE-INGEST # Includes hash, size, timestamp
 ```
 
 ### Anti-Pattern: Speculative Future Work
@@ -366,17 +372,17 @@ acceptance_mapping:
 
 Complete keyword-to-category mapping with usage notes:
 
-| AC Signal Keywords | Capability Category Hint | Notes |
-|--------------------|--------------------------|-------|
-| `insert <`, `p95`, `latency`, `throughput` | performance | Risk escalation only; not separate capability unless user-facing SLO enforcement feature |
-| `duplicate`, `dedup`, `no duplicate` | data-integrity | May fold into ledger schema / write path capability |
-| `crash`, `resume`, `recovery`, `restart` | resilience | Attach as risk to core capture / processing capability; avoid standalone unless cross-cutting harness |
-| `backup`, `verification`, `consecutive` | durability | Distinct capability if involves scheduled verification subsystem |
-| `retention`, `90-day`, `purge` | retention | Separate capability (policy engine) |
-| `foreign key`, `no orphan`, `referential` | integrity-schema | Schema / migration capability |
-| `audit`, `traceable`, `ledger` | auditability | Possibly merges with durability unless feature breadth justifies split |
-| `metrics`, `emit`, `telemetry` | observability | If Phase 1 scope limited, flag as potential deferral with GAP unless explicitly required |
-| `zero data loss` | durability-core | Aggregate acceptance: do not create monolithic capability—split across capture durability, backup verification, crash recovery risk contexts |
+| AC Signal Keywords                         | Capability Category Hint | Notes                                                                                                                                        |
+| ------------------------------------------ | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `insert <`, `p95`, `latency`, `throughput` | performance              | Risk escalation only; not separate capability unless user-facing SLO enforcement feature                                                     |
+| `duplicate`, `dedup`, `no duplicate`       | data-integrity           | May fold into ledger schema / write path capability                                                                                          |
+| `crash`, `resume`, `recovery`, `restart`   | resilience               | Attach as risk to core capture / processing capability; avoid standalone unless cross-cutting harness                                        |
+| `backup`, `verification`, `consecutive`    | durability               | Distinct capability if involves scheduled verification subsystem                                                                             |
+| `retention`, `90-day`, `purge`             | retention                | Separate capability (policy engine)                                                                                                          |
+| `foreign key`, `no orphan`, `referential`  | integrity-schema         | Schema / migration capability                                                                                                                |
+| `audit`, `traceable`, `ledger`             | auditability             | Possibly merges with durability unless feature breadth justifies split                                                                       |
+| `metrics`, `emit`, `telemetry`             | observability            | If Phase 1 scope limited, flag as potential deferral with GAP unless explicitly required                                                     |
+| `zero data loss`                           | durability-core          | Aggregate acceptance: do not create monolithic capability—split across capture durability, backup verification, crash recovery risk contexts |
 
 **Usage Note:** Heuristics guide initial classification. Final capability boundaries require cohesion analysis (see Aggregated vs Atomic Capability Decisions).
 
@@ -385,12 +391,14 @@ Complete keyword-to-category mapping with usage notes:
 If an AC bullet includes any prematurely advanced scope terms, mark as out-of-scope:
 
 **Deferral Keywords:**
+
 - `classification`, `semantic`, `embedding`, `vector`
 - `FTS`, `RAG`, `UI`, `dashboard`
 - `multi-device`, `replication`, `analytics`
 - `search ranking`
 
 **Action:**
+
 - Do not emit a capability
 - Record GAP code `GAP::AC-OUT-OF-SCOPE`
 - Optionally mark deferral metadata (`defer_phase` guess) for reporting
@@ -400,40 +408,43 @@ If an AC bullet includes any prematurely advanced scope terms, mark as out-of-sc
 
 Derive initial capability risk level from AC content:
 
-| Condition | Risk | Notes |
-|-----------|------|-------|
-| Mentions durability / zero data loss / corruption prevention | High | Data integrity critical path |
-| Backup verification / retention enforcement | High | Regulatory / recovery surface |
-| Crash / recovery / resume guarantees | High | Complex failure modes |
-| Performance constraint (< threshold latency, p95) | Medium | Escalate to High if coupled with durability claim |
-| Operational metrics / simple observability | Low | Unless SLO enforcement tasks defined |
-| Schema integrity (foreign key / no orphan) | Medium | High if destructive migrations involved |
+| Condition                                                    | Risk   | Notes                                             |
+| ------------------------------------------------------------ | ------ | ------------------------------------------------- |
+| Mentions durability / zero data loss / corruption prevention | High   | Data integrity critical path                      |
+| Backup verification / retention enforcement                  | High   | Regulatory / recovery surface                     |
+| Crash / recovery / resume guarantees                         | High   | Complex failure modes                             |
+| Performance constraint (< threshold latency, p95)            | Medium | Escalate to High if coupled with durability claim |
+| Operational metrics / simple observability                   | Low    | Unless SLO enforcement tasks defined              |
+| Schema integrity (foreign key / no orphan)                   | Medium | High if destructive migrations involved           |
 
 ## TDD Mapping Rules
 
 Map test-driven development applicability from risk level:
 
-| Risk | TDD Default |
-|------|-------------|
-| High | Required (tests authored first) |
-| Medium | Recommended (core path first) |
-| Low | Optional |
+| Risk   | TDD Default                     |
+| ------ | ------------------------------- |
+| High   | Required (tests authored first) |
+| Medium | Recommended (core path first)   |
+| Low    | Optional                        |
 
 ## Aggregated vs Atomic Capability Decisions
 
 Guidelines for grouping or separating AC bullets:
 
 **Single Capability When:**
+
 - Multiple bullets describe sequential steps of one user/system interaction
 - Bullets represent different quality attributes of same functional unit
 - Splitting would create artificial dependencies or partial coherence
 
 **Separate Capabilities When:**
+
 - Bullets cover orthogonal subsystems (e.g., capture logic vs retention purge)
 - Bullet implies independent scheduler / background process (e.g., periodic backup verification)
 - Bullets have significantly different risk profiles or phase targets
 
 **Quality Attribute Handling:**
+
 - If bullet is purely quality attribute (latency threshold) tied to single functional capability → annotate risk; do not create performance-only capability
 - If quality attribute spans multiple capabilities → consider cross-cutting observability capability
 
@@ -441,15 +452,16 @@ Guidelines for grouping or separating AC bullets:
 
 Extraction layer GAP detection and handling:
 
-| GAP Code | Trigger | Action |
-|----------|--------|--------|
-| GAP::AC-AMBIGUOUS | Vague adjective ("fast", "robust") without metric | Clarify PRD; block mapping |
-| GAP::AC-OUT-OF-SCOPE | Terms match deferral triggers | Record deferral metadata |
-| GAP::AC-NO-SPEC | Mechanism referenced not present in any tech spec | Flag; propose spec addition |
-| GAP::AC-LOW-CONFIDENCE | Classifier confidence below threshold | Block until clarified |
-| GAP::AC-DUPLICATE | Canonical text duplicates existing bullet hash | Ignore second occurrence (log) |
+| GAP Code               | Trigger                                           | Action                         |
+| ---------------------- | ------------------------------------------------- | ------------------------------ |
+| GAP::AC-AMBIGUOUS      | Vague adjective ("fast", "robust") without metric | Clarify PRD; block mapping     |
+| GAP::AC-OUT-OF-SCOPE   | Terms match deferral triggers                     | Record deferral metadata       |
+| GAP::AC-NO-SPEC        | Mechanism referenced not present in any tech spec | Flag; propose spec addition    |
+| GAP::AC-LOW-CONFIDENCE | Classifier confidence below threshold             | Block until clarified          |
+| GAP::AC-DUPLICATE      | Canonical text duplicates existing bullet hash    | Ignore second occurrence (log) |
 
 **Blocking vs Non-Blocking:**
+
 - `GAP::AC-AMBIGUOUS` - Blocking (prevents capability creation)
 - `GAP::AC-OUT-OF-SCOPE` - Non-blocking (records deferral for future)
 - `GAP::AC-NO-SPEC` - Non-blocking (warns but allows provisional capability)
@@ -461,11 +473,13 @@ Extraction layer GAP detection and handling:
 Stable, human-readable capability identifiers:
 
 **Algorithm:**
+
 1. **Slug:** Lowercase, hyphenated first 4 significant words from title
 2. **Sequence:** Increment per category to retain ordering stability
 3. **Collision Fallback:** Append short hash if duplicate slug detected
 
 **Examples:**
+
 ```
 Title: "Voice File Capture and Ledger Storage"
 → Slug: "voice-file-capture-and"
@@ -485,12 +499,14 @@ Title: "Backup Verification Scheduler"
 Pre-processing pipeline for deterministic hashing:
 
 **Steps:**
+
 1. Strip leading markers: `-`, `*`, `[ ]`, `[x]`, numbers
 2. Collapse multiple spaces → single space
 3. Lowercase copy for classification (retain original for traceability)
 4. Extract quantitative targets: regex `(<|<=|=|>|>=)?\s?\d+(ms|s|%)`
 
 **Example:**
+
 ```
 Raw:    "- [ ] 50 captures with zero data loss"
 Strip:  "50 captures with zero data loss"
@@ -501,6 +517,7 @@ Targets: ["50 captures"]
 ```
 
 **Normalization Preserves:**
+
 - Original raw text for display
 - Source file, line number, section heading for traceability
 
@@ -508,12 +525,12 @@ Targets: ["50 captures"]
 
 Virtual backlog components (ephemeral unless debug mode):
 
-| Artifact | Persistence | Description |
-|----------|-------------|-------------|
-| Capability Graph | Ephemeral (optional debug: `.generated/capabilities.json`) | Ordered list of capability records + `graph_hash` |
-| Acceptance Mapping | Ephemeral (optional debug: `.generated/acceptance-mapping.json`) | Bullet hash mapping with confidence & gap codes |
-| GAP Report | Ephemeral / log output | Structured list of blocking & non-blocking gaps |
-| Orchestrator State Cache | `.generated/orchestrator-state.json` | Stores `inputs_hash` + last decision |
+| Artifact                 | Persistence                                                      | Description                                       |
+| ------------------------ | ---------------------------------------------------------------- | ------------------------------------------------- |
+| Capability Graph         | Ephemeral (optional debug: `.generated/capabilities.json`)       | Ordered list of capability records + `graph_hash` |
+| Acceptance Mapping       | Ephemeral (optional debug: `.generated/acceptance-mapping.json`) | Bullet hash mapping with confidence & gap codes   |
+| GAP Report               | Ephemeral / log output                                           | Structured list of blocking & non-blocking gaps   |
+| Orchestrator State Cache | `.generated/orchestrator-state.json`                             | Stores `inputs_hash` + last decision              |
 
 **Schema Reference:** See [Virtual Backlog Contract](../agents/virtual-backlog-contract.md) for detailed field definitions.
 
@@ -558,6 +575,7 @@ Complete execution flow with caching:
 On each execution, compare prior state to detect changes:
 
 **Detect:**
+
 - **Added bullets:** New hashes not in prior mapping
 - **Removed bullets:** Hashes absent from current PRD (retain historical mapping in downstream tasks until decomposed manifest updates)
 - **Risk class changes:** e.g., Medium → High (flag for downstream re-decomposition after manifest cycle)
@@ -565,6 +583,7 @@ On each execution, compare prior state to detect changes:
 - **Clarity drift:** Percentage of ambiguous bullets > threshold (default 10%) → warn overall PRD quality degradation
 
 **Actions:**
+
 - Log all changes for audit trail
 - Preserve historical bullet hashes (non-destructive)
 - Trigger alerts for significant drift (>20% ambiguous ratio)
@@ -587,6 +606,7 @@ Deferrals appear in acceptance mapping (not separate files):
 ```
 
 **Usage:**
+
 - Track future scope without creating speculative work
 - Provides context for phase planning discussions
 - Enables "when to reconsider" trigger definitions
@@ -600,6 +620,7 @@ Deferrals appear in acceptance mapping (not separate files):
 **Cause:** Identical normalized text appears in multiple AC sections
 
 **Solution:**
+
 1. Review PRD for redundant acceptance criteria
 2. Consolidate duplicate bullets into single canonical statement
 3. Or: If intentional repetition for emphasis, add distinguishing context
@@ -611,6 +632,7 @@ Deferrals appear in acceptance mapping (not separate files):
 **Cause:** Too many vague adjectives without metrics (e.g., "fast", "reliable", "robust")
 
 **Solution:**
+
 1. Identify flagged bullets in GAP report
 2. Add quantitative success criteria to each
 3. Replace vague terms: "fast" → "< 100ms p95", "reliable" → "99.9% uptime"
@@ -622,6 +644,7 @@ Deferrals appear in acceptance mapping (not separate files):
 **Cause:** Capability references non-existent `depends_on` ID
 
 **Solution:**
+
 1. Check capability ID generation for typos
 2. Verify dependency was not filtered due to GAP
 3. Review roadmap phase ordering (dependencies must be in same or earlier phase)
@@ -633,6 +656,7 @@ Deferrals appear in acceptance mapping (not separate files):
 **Cause:** Keyword classifier uncertain about category assignment
 
 **Solution:**
+
 1. Review bullet text for mixed signals (e.g., mentions both "performance" and "retention")
 2. Split bullet into separate focused acceptance criteria
 3. Or: Adjust classification heuristics if pattern is valid but unrecognized
@@ -657,8 +681,10 @@ export ADHD_ORCHESTRATOR_DEBUG=1
 ### Example 1: Voice Capture Capability Extraction
 
 **Input AC Bullets (from Master PRD):**
+
 ```markdown
 ## Success Criteria
+
 - Capture voice file via polling mechanism
 - Compute SHA-256 hash on ingestion
 - Record file size and capture timestamp
@@ -667,6 +693,7 @@ export ADHD_ORCHESTRATOR_DEBUG=1
 ```
 
 **Processing:**
+
 1. Normalize all bullets, compute hashes
 2. Classify: All match "capture" category
 3. Assess risk: "< 50ms p95" escalates to High
@@ -674,6 +701,7 @@ export ADHD_ORCHESTRATOR_DEBUG=1
 5. Extract metrics: "< 50ms p95" recorded
 
 **Output Capability:**
+
 ```json
 {
   "id": "CAPTURE-VOICE-INGEST",
@@ -685,11 +713,11 @@ export ADHD_ORCHESTRATOR_DEBUG=1
   "tdd": "Required",
   "depends_on": [],
   "acceptance_refs": [
-    {"bullet_hash": "sha256:poll...", "metric": null},
-    {"bullet_hash": "sha256:hash...", "metric": null},
-    {"bullet_hash": "sha256:size...", "metric": null},
-    {"bullet_hash": "sha256:latency...", "metric": "< 50ms p95"},
-    {"bullet_hash": "sha256:dedup...", "metric": null}
+    { "bullet_hash": "sha256:poll...", "metric": null },
+    { "bullet_hash": "sha256:hash...", "metric": null },
+    { "bullet_hash": "sha256:size...", "metric": null },
+    { "bullet_hash": "sha256:latency...", "metric": "< 50ms p95" },
+    { "bullet_hash": "sha256:dedup...", "metric": null }
   ],
   "defer": false,
   "provisional": false
@@ -699,17 +727,20 @@ export ADHD_ORCHESTRATOR_DEBUG=1
 ### Example 2: Deferred Feature Detection
 
 **Input AC Bullet:**
+
 ```markdown
 - Semantic vector search across voice transcripts for ad-hoc queries
 ```
 
 **Processing:**
+
 1. Normalize: "semantic vector search across voice transcripts for ad-hoc queries"
 2. Classify: Matches `vector`, `semantic` deferral triggers
 3. Mark: `GAP::AC-OUT-OF-SCOPE`
 4. Guess: Likely Phase 5+ (intelligence layer)
 
 **Output Acceptance Mapping Entry:**
+
 ```json
 {
   "bullet_hash": "sha256:search...",
@@ -726,12 +757,14 @@ export ADHD_ORCHESTRATOR_DEBUG=1
 ### Example 3: Separate Capabilities for Orthogonal Concerns
 
 **Input AC Bullets:**
+
 ```markdown
 - Voice files automatically purged after 90 days retention
 - Backup verification runs daily to ensure integrity
 ```
 
 **Processing:**
+
 1. Bullet 1: "retention", "purge" → retention category
 2. Bullet 2: "backup", "verification" → durability category
 3. Both High risk (regulatory/recovery)
@@ -739,6 +772,7 @@ export ADHD_ORCHESTRATOR_DEBUG=1
 5. Backup depends on capture existing
 
 **Output Capabilities:**
+
 ```json
 [
   {
@@ -746,14 +780,14 @@ export ADHD_ORCHESTRATOR_DEBUG=1
     "category": "retention",
     "risk": "High",
     "depends_on": ["CAPTURE-VOICE-INGEST"],
-    "acceptance_refs": [{"bullet_hash": "sha256:purge..."}]
+    "acceptance_refs": [{ "bullet_hash": "sha256:purge..." }]
   },
   {
     "id": "DURABILITY-BACKUP-VERIFICATION",
     "category": "durability",
     "risk": "High",
     "depends_on": ["CAPTURE-VOICE-INGEST"],
-    "acceptance_refs": [{"bullet_hash": "sha256:backup..."}]
+    "acceptance_refs": [{ "bullet_hash": "sha256:backup..." }]
   }
 ]
 ```
@@ -761,51 +795,61 @@ export ADHD_ORCHESTRATOR_DEBUG=1
 ## Related Documentation
 
 **Core Planning Documents:**
+
 - [Master PRD v2.3.0-MPPP](../master/prd-master.md) - Source of acceptance criteria
 - [Roadmap v2.0-MPPP](../master/roadmap.md) - Phase and slice structure
 - [Virtual Backlog Contract](../agents/virtual-backlog-contract.md) - Output schema definitions
 
 **Agent Documentation:**
+
 - [Roadmap Orchestrator](../agents/roadmap-orchestrator.md) - Implements this extraction logic
 - [Task Decomposition Agent](../agents/task-decomposition-agent.md) - Consumes capability graph
 
 **Related Guides:**
+
 - [TDD Applicability Framework](./tdd-applicability.md) - Testing strategy derivation
 - [Test Strategy Guide](./test-strategy.md) - Test planning patterns
 - [YAGNI Enforcement](./yagni-enforcement.md) - Scope control principles
 
 **Architecture Decision Records:**
+
 - [ADR-0001: Voice File Sovereignty](../adr/0001-voice-file-sovereignty.md) - Capture durability requirements
 - [ADR-0002: Dual Hash Migration](../adr/0002-dual-hash-migration.md) - Deduplication strategy
 
 **External Resources:**
+
 - [Capability-Based Planning](https://example.com) - Conceptual background
 - [SHA-256 Hashing](https://example.com) - Cryptographic hash functions
 
 ## Maintenance Notes
 
 **Update Triggers:**
+
 - New AC wording patterns emerge requiring heuristic table updates
 - Risk or category taxonomy changes (version bump: minor if additive, major if breaking)
 - Confidence scoring approach improvements (rule-based → ML model consideration)
 - Section boundary detection enhancements
 
 **Version Bump Policy:**
+
 - **Patch (0.3.x):** Bug fixes, documentation clarification
 - **Minor (0.x.0):** New heuristics, additional classification categories, non-breaking schema additions
 - **Major (x.0.0):** Breaking changes to capability graph schema, removal of classification categories
 
 **Historical Preservation:**
+
 - Never rewrite past bullet hashes (new hash = new lineage)
 - Retain historical mapping entries even when bullets removed from current PRD
 - Document rationale for deprecated heuristics in change log
 
 **Known Limitations:**
+
 - Confidence scoring currently rule-based; may benefit from ML model for complex cases
 - Section boundary detection can have false positives with nested headings
 - Near-duplicate bullet detection not yet implemented (planned: edit distance threshold)
 
 **Open Questions:**
+
 1. Formal JSON Schema publication for capability_graph & acceptance_mapping? (Planned)
 2. Confidence scoring approach standardization (rule-based vs ML model)?
 3. Automated section boundary detection improvements (to reduce false positives)?

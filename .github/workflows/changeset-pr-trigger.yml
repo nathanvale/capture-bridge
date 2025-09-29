@@ -1,0 +1,116 @@
+name: Changeset PR CI Trigger
+
+# This workflow ensures CI runs on changeset release PRs
+# Even if created by bots (which sometimes don't trigger CI automatically)
+on:
+  pull_request_target:
+    types: [opened, reopened]
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to trigger CI for'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: write
+
+jobs:
+  trigger-ci:
+    name: Ensure CI Runs on Changeset PRs
+    runs-on: ubuntu-latest
+    # Only run for changeset release PRs (automatic trigger)
+    # OR when manually triggered via workflow_dispatch
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (startsWith(github.event.pull_request.head.ref, 'changeset-release/') &&
+       (github.event.pull_request.user.type == 'Bot' ||
+        endsWith(github.event.pull_request.user.login, '[bot]')))
+    steps:
+      - name: Get PR Info
+        id: pr-info
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            PR_NUM="${{ github.event.inputs.pr_number }}"
+            echo "Manual trigger for PR #$PR_NUM"
+            PR_DATA=$(gh api repos/${{ github.repository }}/pulls/$PR_NUM)
+            PR_HEAD_REF=$(echo "$PR_DATA" | jq -r '.head.ref')
+            PR_HEAD_SHA=$(echo "$PR_DATA" | jq -r '.head.sha')
+          else
+            PR_NUM="${{ github.event.pull_request.number }}"
+            PR_HEAD_REF="${{ github.event.pull_request.head.ref }}"
+            PR_HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            echo "PR Author: ${{ github.event.pull_request.user.login }}"
+            echo "PR Author Type: ${{ github.event.pull_request.user.type }}"
+          fi
+          echo "pr_number=$PR_NUM" >> $GITHUB_OUTPUT
+          echo "pr_head_ref=$PR_HEAD_REF" >> $GITHUB_OUTPUT
+          echo "pr_head_sha=$PR_HEAD_SHA" >> $GITHUB_OUTPUT
+          echo "PR Branch: $PR_HEAD_REF"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr-info.outputs.pr_head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if CI is running
+        id: check-ci
+        run: |
+          # Wait a moment for CI to potentially start
+          sleep 10
+
+          # Check if there are any check runs for this SHA
+          CHECK_COUNT=$(gh api \
+            repos/${{ github.repository }}/commits/${{ steps.pr-info.outputs.pr_head_sha }}/check-runs \
+            --jq '.total_count')
+
+          echo "check_count=$CHECK_COUNT" >> $GITHUB_OUTPUT
+
+          if [ "$CHECK_COUNT" -eq "0" ]; then
+            echo "❌ No CI checks found, will trigger CI"
+            echo "needs_trigger=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ CI is already running ($CHECK_COUNT checks found)"
+            echo "needs_trigger=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger CI with empty commit
+        if: steps.check-ci.outputs.needs_trigger == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create an empty commit to trigger CI
+          git commit --allow-empty -m "chore: trigger CI for changeset release PR"
+          git push origin HEAD:${{ steps.pr-info.outputs.pr_head_ref }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on PR
+        if: steps.check-ci.outputs.needs_trigger == 'true'
+        run: |
+          gh pr comment ${{ steps.pr-info.outputs.pr_number }} --body "🤖 **CI Trigger Bot**
+
+          I've detected this is a changeset release PR without CI checks running.
+          An empty commit has been pushed to trigger the CI workflow.
+
+          This is an automated action to ensure all release PRs pass CI before merging.
+
+          **Note:** If CI still doesn't run, you may need to manually push an empty commit:
+          \`\`\`bash
+          git checkout ${{ steps.pr-info.outputs.pr_head_ref }}
+          git commit --allow-empty -m \"chore: trigger CI [skip changelog]\"
+          git push
+          \`\`\`"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

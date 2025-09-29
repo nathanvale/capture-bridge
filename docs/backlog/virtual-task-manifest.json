@@ -39,9 +39,7 @@
         "size": "M"
       },
       "depends_on_tasks": [],
-      "related_specs": [
-        "docs/cross-cutting/spec-foundation-monorepo-arch.md"
-      ],
+      "related_specs": ["docs/cross-cutting/spec-foundation-monorepo-arch.md"],
       "related_adrs": [
         "ADR-0019: Monorepo Tooling Stack (pnpm + Turbo + TSUP)",
         "docs/guides/guide-monorepo-mppp.md"
@@ -78,12 +76,8 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "MONOREPO_STRUCTURE--T01"
-      ],
-      "related_specs": [
-        "docs/cross-cutting/spec-foundation-monorepo-arch.md"
-      ],
+      "depends_on_tasks": ["MONOREPO_STRUCTURE--T01"],
+      "related_specs": ["docs/cross-cutting/spec-foundation-monorepo-arch.md"],
       "related_adrs": [
         "ADR-0019: Monorepo Tooling Stack (pnpm + Turbo + TSUP)",
         "docs/guides/guide-monorepo-mppp.md"
@@ -132,12 +126,8 @@
       "est": {
         "size": "L"
       },
-      "depends_on_tasks": [
-        "MONOREPO_STRUCTURE--T02"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-arch.md"
-      ],
+      "depends_on_tasks": ["MONOREPO_STRUCTURE--T02"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-arch.md"],
       "related_adrs": [
         "ADR-0003: Four-Table Hard Cap",
         "ADR-0004: Status-Driven State Machine",
@@ -171,12 +161,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "SQLITE_SCHEMA--T01"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-arch.md"
-      ],
+      "depends_on_tasks": ["SQLITE_SCHEMA--T01"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-arch.md"],
       "related_adrs": [
         "ADR-0003: Four-Table Hard Cap",
         "ADR-0004: Status-Driven State Machine",
@@ -226,12 +212,8 @@
       "est": {
         "size": "L"
       },
-      "depends_on_tasks": [
-        "MONOREPO_STRUCTURE--T02"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "depends_on_tasks": ["MONOREPO_STRUCTURE--T02"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [
         "ADR-0002: Dual Hash Migration (superseded, SHA-256 only)",
         "ADR-0006: Late Hash Binding for Voice",
@@ -262,12 +244,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "CONTENT_HASH_IMPLEMENTATION--T01"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "depends_on_tasks": ["CONTENT_HASH_IMPLEMENTATION--T01"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [
         "ADR-0002: Dual Hash Migration (superseded, SHA-256 only)",
         "ADR-0006: Late Hash Binding for Voice",
@@ -298,12 +276,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "CONTENT_HASH_IMPLEMENTATION--T02"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "depends_on_tasks": ["CONTENT_HASH_IMPLEMENTATION--T02"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [
         "ADR-0002: Dual Hash Migration (superseded, SHA-256 only)",
         "ADR-0006: Late Hash Binding for Voice",
@@ -354,12 +328,8 @@
       "est": {
         "size": "L"
       },
-      "depends_on_tasks": [
-        "MONOREPO_STRUCTURE--T02"
-      ],
-      "related_specs": [
-        "docs/features/obsidian-bridge/spec-obsidian-arch.md"
-      ],
+      "depends_on_tasks": ["MONOREPO_STRUCTURE--T02"],
+      "related_specs": ["docs/features/obsidian-bridge/spec-obsidian-arch.md"],
       "related_adrs": [
         "ADR-0009: Atomic Write via Temp-Then-Rename Pattern",
         "ADR-0010: ULID-Based Deterministic Filenames",
@@ -392,12 +362,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "ATOMIC_FILE_WRITER--T01"
-      ],
-      "related_specs": [
-        "docs/features/obsidian-bridge/spec-obsidian-arch.md"
-      ],
+      "depends_on_tasks": ["ATOMIC_FILE_WRITER--T01"],
+      "related_specs": ["docs/features/obsidian-bridge/spec-obsidian-arch.md"],
       "related_adrs": [
         "ADR-0009: Atomic Write via Temp-Then-Rename Pattern",
         "ADR-0010: ULID-Based Deterministic Filenames",
@@ -430,12 +396,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "ATOMIC_FILE_WRITER--T02"
-      ],
-      "related_specs": [
-        "docs/features/obsidian-bridge/spec-obsidian-arch.md"
-      ],
+      "depends_on_tasks": ["ATOMIC_FILE_WRITER--T02"],
+      "related_specs": ["docs/features/obsidian-bridge/spec-obsidian-arch.md"],
       "related_adrs": [
         "ADR-0009: Atomic Write via Temp-Then-Rename Pattern",
         "ADR-0010: ULID-Based Deterministic Filenames",
@@ -488,12 +450,8 @@
       "est": {
         "size": "L"
       },
-      "depends_on_tasks": [
-        "MONOREPO_STRUCTURE--T02"
-      ],
-      "related_specs": [
-        "docs/cross-cutting/spec-foundation-monorepo-test.md"
-      ],
+      "depends_on_tasks": ["MONOREPO_STRUCTURE--T02"],
+      "related_specs": ["docs/cross-cutting/spec-foundation-monorepo-test.md"],
       "related_adrs": [
         "ADR-0019: Monorepo Tooling Stack",
         "docs/guides/guide-testkit-usage.md",
@@ -522,12 +480,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "TESTKIT_INTEGRATION--T01"
-      ],
-      "related_specs": [
-        "docs/cross-cutting/spec-foundation-monorepo-test.md"
-      ],
+      "depends_on_tasks": ["TESTKIT_INTEGRATION--T01"],
+      "related_specs": ["docs/cross-cutting/spec-foundation-monorepo-test.md"],
       "related_adrs": [
         "ADR-0019: Monorepo Tooling Stack",
         "docs/guides/guide-testkit-usage.md",
@@ -556,12 +510,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "MONOREPO_STRUCTURE--T02"
-      ],
-      "related_specs": [
-        "docs/cross-cutting/spec-metrics-contract-tech.md"
-      ],
+      "depends_on_tasks": ["MONOREPO_STRUCTURE--T02"],
+      "related_specs": ["docs/cross-cutting/spec-metrics-contract-tech.md"],
       "related_adrs": [
         "ADR-0021: Local-Only NDJSON Metrics Strategy",
         "docs/guides/guide-testkit-usage.md"
@@ -607,12 +557,8 @@
       "est": {
         "size": "L"
       },
-      "depends_on_tasks": [
-        "METRICS_INFRASTRUCTURE--T01"
-      ],
-      "related_specs": [
-        "docs/cross-cutting/spec-metrics-contract-tech.md"
-      ],
+      "depends_on_tasks": ["METRICS_INFRASTRUCTURE--T01"],
+      "related_specs": ["docs/cross-cutting/spec-metrics-contract-tech.md"],
       "related_adrs": [
         "ADR-0021: Local-Only NDJSON Metrics Strategy",
         "docs/guides/guide-testkit-usage.md"
@@ -646,12 +592,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "METRICS_INFRASTRUCTURE--T02"
-      ],
-      "related_specs": [
-        "docs/cross-cutting/spec-metrics-contract-tech.md"
-      ],
+      "depends_on_tasks": ["METRICS_INFRASTRUCTURE--T02"],
+      "related_specs": ["docs/cross-cutting/spec-metrics-contract-tech.md"],
       "related_adrs": [
         "ADR-0021: Local-Only NDJSON Metrics Strategy",
         "docs/guides/guide-testkit-usage.md"
@@ -709,9 +651,7 @@
         "SQLITE_SCHEMA--T02",
         "CONTENT_HASH_IMPLEMENTATION--T03"
       ],
-      "related_specs": [
-        "docs/features/capture/spec-capture-arch.md"
-      ],
+      "related_specs": ["docs/features/capture/spec-capture-arch.md"],
       "related_adrs": [
         "ADR-0001: Voice File Sovereignty (never move/copy Apple files)",
         "ADR-0006: Late Hash Binding for Voice",
@@ -748,12 +688,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "VOICE_POLLING_ICLOUD--T01"
-      ],
-      "related_specs": [
-        "docs/features/capture/spec-capture-arch.md"
-      ],
+      "depends_on_tasks": ["VOICE_POLLING_ICLOUD--T01"],
+      "related_specs": ["docs/features/capture/spec-capture-arch.md"],
       "related_adrs": [
         "ADR-0001: Voice File Sovereignty (never move/copy Apple files)",
         "ADR-0006: Late Hash Binding for Voice",
@@ -786,12 +722,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "VOICE_POLLING_ICLOUD--T02"
-      ],
-      "related_specs": [
-        "docs/features/capture/spec-capture-arch.md"
-      ],
+      "depends_on_tasks": ["VOICE_POLLING_ICLOUD--T02"],
+      "related_specs": ["docs/features/capture/spec-capture-arch.md"],
       "related_adrs": [
         "ADR-0001: Voice File Sovereignty (never move/copy Apple files)",
         "ADR-0006: Late Hash Binding for Voice",
@@ -836,12 +768,8 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "VOICE_POLLING_ICLOUD--T03"
-      ],
-      "related_specs": [
-        "docs/features/capture/spec-capture-tech.md"
-      ],
+      "depends_on_tasks": ["VOICE_POLLING_ICLOUD--T03"],
+      "related_specs": ["docs/features/capture/spec-capture-tech.md"],
       "related_adrs": [
         "ADR-0006: Late Hash Binding for Voice",
         "ADR-0008: Sequential Processing MPPP",
@@ -882,12 +810,8 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "WHISPER_TRANSCRIPTION--T01"
-      ],
-      "related_specs": [
-        "docs/features/capture/spec-capture-tech.md"
-      ],
+      "depends_on_tasks": ["WHISPER_TRANSCRIPTION--T01"],
+      "related_specs": ["docs/features/capture/spec-capture-tech.md"],
       "related_adrs": [
         "ADR-0006: Late Hash Binding for Voice",
         "ADR-0008: Sequential Processing MPPP",
@@ -928,12 +852,8 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "WHISPER_TRANSCRIPTION--T02"
-      ],
-      "related_specs": [
-        "docs/features/capture/spec-capture-tech.md"
-      ],
+      "depends_on_tasks": ["WHISPER_TRANSCRIPTION--T02"],
+      "related_specs": ["docs/features/capture/spec-capture-tech.md"],
       "related_adrs": [
         "ADR-0006: Late Hash Binding for Voice",
         "ADR-0008: Sequential Processing MPPP",
@@ -998,9 +918,7 @@
         "CONTENT_HASH_IMPLEMENTATION--T03",
         "SQLITE_SCHEMA--T02"
       ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [
         "ADR-0006: Late Hash Binding for Voice",
         "docs/guides/guide-tdd-applicability.md"
@@ -1030,12 +948,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "DEDUPLICATION_LOGIC--T01"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "depends_on_tasks": ["DEDUPLICATION_LOGIC--T01"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [
         "ADR-0006: Late Hash Binding for Voice",
         "docs/guides/guide-tdd-applicability.md"
@@ -1094,9 +1008,7 @@
         "ATOMIC_FILE_WRITER--T03",
         "DEDUPLICATION_LOGIC--T02"
       ],
-      "related_specs": [
-        "docs/features/obsidian-bridge/spec-obsidian-tech.md"
-      ],
+      "related_specs": ["docs/features/obsidian-bridge/spec-obsidian-tech.md"],
       "related_adrs": [
         "ADR-0011: Inbox-Only Export Pattern",
         "ADR-0013: MPPP Direct Export Pattern",
@@ -1127,12 +1039,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "DIRECT_EXPORT_VOICE--T01"
-      ],
-      "related_specs": [
-        "docs/features/obsidian-bridge/spec-obsidian-tech.md"
-      ],
+      "depends_on_tasks": ["DIRECT_EXPORT_VOICE--T01"],
+      "related_specs": ["docs/features/obsidian-bridge/spec-obsidian-tech.md"],
       "related_adrs": [
         "ADR-0011: Inbox-Only Export Pattern",
         "ADR-0013: MPPP Direct Export Pattern",
@@ -1183,9 +1091,7 @@
         "WHISPER_TRANSCRIPTION--T03",
         "ATOMIC_FILE_WRITER--T03"
       ],
-      "related_specs": [
-        "docs/features/capture/spec-capture-tech.md"
-      ],
+      "related_specs": ["docs/features/capture/spec-capture-tech.md"],
       "related_adrs": [
         "ADR-0014: Placeholder Export Immutability",
         "docs/guides/guide-error-recovery.md",
@@ -1219,12 +1125,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "PLACEHOLDER_EXPORT--T01"
-      ],
-      "related_specs": [
-        "docs/features/capture/spec-capture-tech.md"
-      ],
+      "depends_on_tasks": ["PLACEHOLDER_EXPORT--T01"],
+      "related_specs": ["docs/features/capture/spec-capture-tech.md"],
       "related_adrs": [
         "ADR-0014: Placeholder Export Immutability",
         "docs/guides/guide-error-recovery.md",
@@ -1262,9 +1164,7 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "SQLITE_SCHEMA--T02"
-      ],
+      "depends_on_tasks": ["SQLITE_SCHEMA--T02"],
       "related_specs": [
         "docs/features/staging-ledger/spec-staging-arch.md",
         "docs/features/capture/spec-capture-tech.md"
@@ -1330,9 +1230,7 @@
       "est": {
         "size": "L"
       },
-      "depends_on_tasks": [
-        "CAPTURE_STATE_MACHINE--T01"
-      ],
+      "depends_on_tasks": ["CAPTURE_STATE_MACHINE--T01"],
       "related_specs": [
         "docs/features/staging-ledger/spec-staging-arch.md",
         "docs/features/capture/spec-capture-tech.md"
@@ -1378,9 +1276,7 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "CAPTURE_STATE_MACHINE--T02"
-      ],
+      "depends_on_tasks": ["CAPTURE_STATE_MACHINE--T02"],
       "related_specs": [
         "docs/features/staging-ledger/spec-staging-arch.md",
         "docs/features/capture/spec-capture-tech.md"
@@ -1450,12 +1346,8 @@
       "est": {
         "size": "L"
       },
-      "depends_on_tasks": [
-        "SQLITE_SCHEMA--T02"
-      ],
-      "related_specs": [
-        "docs/features/capture/spec-capture-arch.md"
-      ],
+      "depends_on_tasks": ["SQLITE_SCHEMA--T02"],
+      "related_specs": ["docs/features/capture/spec-capture-arch.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-gmail-oauth2-setup.md",
@@ -1484,12 +1376,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "EMAIL_POLLING_GMAIL--T01"
-      ],
-      "related_specs": [
-        "docs/features/capture/spec-capture-arch.md"
-      ],
+      "depends_on_tasks": ["EMAIL_POLLING_GMAIL--T01"],
+      "related_specs": ["docs/features/capture/spec-capture-arch.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-gmail-oauth2-setup.md",
@@ -1542,9 +1430,7 @@
         "EMAIL_POLLING_GMAIL--T02",
         "CONTENT_HASH_IMPLEMENTATION--T03"
       ],
-      "related_specs": [
-        "docs/features/capture/spec-capture-tech.md"
-      ],
+      "related_specs": ["docs/features/capture/spec-capture-tech.md"],
       "related_adrs": [],
       "related_guides": [],
       "test_verification": [
@@ -1570,12 +1456,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "EMAIL_NORMALIZATION--T01"
-      ],
-      "related_specs": [
-        "docs/features/capture/spec-capture-tech.md"
-      ],
+      "depends_on_tasks": ["EMAIL_NORMALIZATION--T01"],
+      "related_specs": ["docs/features/capture/spec-capture-tech.md"],
       "related_adrs": [],
       "related_guides": [],
       "test_verification": [
@@ -1630,9 +1512,7 @@
         "ATOMIC_FILE_WRITER--T03",
         "DEDUPLICATION_LOGIC--T02"
       ],
-      "related_specs": [
-        "docs/features/obsidian-bridge/spec-obsidian-tech.md"
-      ],
+      "related_specs": ["docs/features/obsidian-bridge/spec-obsidian-tech.md"],
       "related_adrs": [
         "ADR-0011: Inbox-Only Export Pattern",
         "ADR-0013: MPPP Direct Export Pattern",
@@ -1663,12 +1543,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "DIRECT_EXPORT_EMAIL--T01"
-      ],
-      "related_specs": [
-        "docs/features/obsidian-bridge/spec-obsidian-tech.md"
-      ],
+      "depends_on_tasks": ["DIRECT_EXPORT_EMAIL--T01"],
+      "related_specs": ["docs/features/obsidian-bridge/spec-obsidian-tech.md"],
       "related_adrs": [
         "ADR-0011: Inbox-Only Export Pattern",
         "ADR-0013: MPPP Direct Export Pattern",
@@ -1699,12 +1575,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "MONOREPO_STRUCTURE--T02"
-      ],
-      "related_specs": [
-        "docs/features/cli/spec-cli-arch.md"
-      ],
+      "depends_on_tasks": ["MONOREPO_STRUCTURE--T02"],
+      "related_specs": ["docs/features/cli/spec-cli-arch.md"],
       "related_adrs": [
         "ADR-0015: CLI Library Stack Selection",
         "ADR-0016: CLI as Feature Architecture",
@@ -1750,12 +1622,8 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "CLI_FOUNDATION--T01"
-      ],
-      "related_specs": [
-        "docs/features/cli/spec-cli-arch.md"
-      ],
+      "depends_on_tasks": ["CLI_FOUNDATION--T01"],
+      "related_specs": ["docs/features/cli/spec-cli-arch.md"],
       "related_adrs": [
         "ADR-0015: CLI Library Stack Selection",
         "ADR-0016: CLI as Feature Architecture",
@@ -1793,12 +1661,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "CLI_FOUNDATION--T02"
-      ],
-      "related_specs": [
-        "docs/features/cli/spec-cli-arch.md"
-      ],
+      "depends_on_tasks": ["CLI_FOUNDATION--T02"],
+      "related_specs": ["docs/features/cli/spec-cli-arch.md"],
       "related_adrs": [
         "ADR-0015: CLI Library Stack Selection",
         "ADR-0016: CLI as Feature Architecture",
@@ -1832,12 +1696,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "CLI_FOUNDATION--T03"
-      ],
-      "related_specs": [
-        "docs/features/cli/spec-cli-arch.md"
-      ],
+      "depends_on_tasks": ["CLI_FOUNDATION--T03"],
+      "related_specs": ["docs/features/cli/spec-cli-arch.md"],
       "related_adrs": [
         "ADR-0015: CLI Library Stack Selection",
         "ADR-0016: CLI as Feature Architecture",
@@ -1896,16 +1756,10 @@
         "VOICE_POLLING_ICLOUD--T03",
         "EMAIL_POLLING_GMAIL--T02"
       ],
-      "related_specs": [
-        "docs/features/cli/spec-cli-tech.md"
-      ],
-      "related_adrs": [
-        "ADR-0016: CLI as Feature Architecture"
-      ],
+      "related_specs": ["docs/features/cli/spec-cli-tech.md"],
+      "related_adrs": ["ADR-0016: CLI as Feature Architecture"],
       "related_guides": [],
-      "test_verification": [
-        "packages/cli/tests/capture-voice-command.spec.ts"
-      ],
+      "test_verification": ["packages/cli/tests/capture-voice-command.spec.ts"],
       "gap_codes": [],
       "provisional": false
     },
@@ -1926,19 +1780,11 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "CLI_CAPTURE_COMMANDS--T01"
-      ],
-      "related_specs": [
-        "docs/features/cli/spec-cli-tech.md"
-      ],
-      "related_adrs": [
-        "ADR-0016: CLI as Feature Architecture"
-      ],
+      "depends_on_tasks": ["CLI_CAPTURE_COMMANDS--T01"],
+      "related_specs": ["docs/features/cli/spec-cli-tech.md"],
+      "related_adrs": ["ADR-0016: CLI as Feature Architecture"],
       "related_guides": [],
-      "test_verification": [
-        "packages/cli/tests/capture-voice-command.spec.ts"
-      ],
+      "test_verification": ["packages/cli/tests/capture-voice-command.spec.ts"],
       "gap_codes": [],
       "provisional": false
     },
@@ -1959,20 +1805,11 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "CLI_FOUNDATION--T04",
-        "SQLITE_SCHEMA--T02"
-      ],
-      "related_specs": [
-        "docs/features/cli/spec-cli-tech.md"
-      ],
-      "related_adrs": [
-        "ADR-0017: JSON Output Contract Stability"
-      ],
+      "depends_on_tasks": ["CLI_FOUNDATION--T04", "SQLITE_SCHEMA--T02"],
+      "related_specs": ["docs/features/cli/spec-cli-tech.md"],
+      "related_adrs": ["ADR-0017: JSON Output Contract Stability"],
       "related_guides": [],
-      "test_verification": [
-        "packages/cli/tests/ledger-list-command.spec.ts"
-      ],
+      "test_verification": ["packages/cli/tests/ledger-list-command.spec.ts"],
       "gap_codes": [],
       "provisional": false
     },
@@ -2005,19 +1842,11 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "CLI_LEDGER_COMMANDS--T01"
-      ],
-      "related_specs": [
-        "docs/features/cli/spec-cli-tech.md"
-      ],
-      "related_adrs": [
-        "ADR-0017: JSON Output Contract Stability"
-      ],
+      "depends_on_tasks": ["CLI_LEDGER_COMMANDS--T01"],
+      "related_specs": ["docs/features/cli/spec-cli-tech.md"],
+      "related_adrs": ["ADR-0017: JSON Output Contract Stability"],
       "related_guides": [],
-      "test_verification": [
-        "packages/cli/tests/ledger-list-command.spec.ts"
-      ],
+      "test_verification": ["packages/cli/tests/ledger-list-command.spec.ts"],
       "gap_codes": [],
       "provisional": false
     },
@@ -2038,19 +1867,11 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "CLI_LEDGER_COMMANDS--T02"
-      ],
-      "related_specs": [
-        "docs/features/cli/spec-cli-tech.md"
-      ],
-      "related_adrs": [
-        "ADR-0017: JSON Output Contract Stability"
-      ],
+      "depends_on_tasks": ["CLI_LEDGER_COMMANDS--T02"],
+      "related_specs": ["docs/features/cli/spec-cli-tech.md"],
+      "related_adrs": ["ADR-0017: JSON Output Contract Stability"],
       "related_guides": [],
-      "test_verification": [
-        "packages/cli/tests/ledger-list-command.spec.ts"
-      ],
+      "test_verification": ["packages/cli/tests/ledger-list-command.spec.ts"],
       "gap_codes": [],
       "provisional": false
     },
@@ -2071,19 +1892,11 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "CLI_LEDGER_COMMANDS--T03"
-      ],
-      "related_specs": [
-        "docs/features/cli/spec-cli-tech.md"
-      ],
-      "related_adrs": [
-        "ADR-0017: JSON Output Contract Stability"
-      ],
+      "depends_on_tasks": ["CLI_LEDGER_COMMANDS--T03"],
+      "related_specs": ["docs/features/cli/spec-cli-tech.md"],
+      "related_adrs": ["ADR-0017: JSON Output Contract Stability"],
       "related_guides": [],
-      "test_verification": [
-        "packages/cli/tests/ledger-list-command.spec.ts"
-      ],
+      "test_verification": ["packages/cli/tests/ledger-list-command.spec.ts"],
       "gap_codes": [],
       "provisional": false
     },
@@ -2112,13 +1925,8 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "CLI_FOUNDATION--T04",
-        "SQLITE_SCHEMA--T02"
-      ],
-      "related_specs": [
-        "docs/features/cli/spec-cli-tech.md"
-      ],
+      "depends_on_tasks": ["CLI_FOUNDATION--T04", "SQLITE_SCHEMA--T02"],
+      "related_specs": ["docs/features/cli/spec-cli-tech.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-health-command.md",
@@ -2184,12 +1992,8 @@
       "est": {
         "size": "L"
       },
-      "depends_on_tasks": [
-        "DOCTOR_HEALTH_CHECKS--T01"
-      ],
-      "related_specs": [
-        "docs/features/cli/spec-cli-tech.md"
-      ],
+      "depends_on_tasks": ["DOCTOR_HEALTH_CHECKS--T01"],
+      "related_specs": ["docs/features/cli/spec-cli-tech.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-health-command.md",
@@ -2219,12 +2023,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "DOCTOR_HEALTH_CHECKS--T02"
-      ],
-      "related_specs": [
-        "docs/features/cli/spec-cli-tech.md"
-      ],
+      "depends_on_tasks": ["DOCTOR_HEALTH_CHECKS--T02"],
+      "related_specs": ["docs/features/cli/spec-cli-tech.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-health-command.md",
@@ -2270,13 +2070,8 @@
       "est": {
         "size": "L"
       },
-      "depends_on_tasks": [
-        "CAPTURE_STATE_MACHINE--T03",
-        "SQLITE_SCHEMA--T02"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-arch.md"
-      ],
+      "depends_on_tasks": ["CAPTURE_STATE_MACHINE--T03", "SQLITE_SCHEMA--T02"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-arch.md"],
       "related_adrs": [
         "ADR-0004: Status-Driven State Machine",
         "docs/guides/guide-error-recovery.md",
@@ -2311,12 +2106,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "CRASH_RECOVERY_MECHANISM--T01"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-arch.md"
-      ],
+      "depends_on_tasks": ["CRASH_RECOVERY_MECHANISM--T01"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-arch.md"],
       "related_adrs": [
         "ADR-0004: Status-Driven State Machine",
         "docs/guides/guide-error-recovery.md",
@@ -2347,12 +2138,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "SQLITE_SCHEMA--T02"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "depends_on_tasks": ["SQLITE_SCHEMA--T02"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-error-recovery.md",
@@ -2389,12 +2176,8 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "ERROR_LOGGING_STRUCTURED--T01"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "depends_on_tasks": ["ERROR_LOGGING_STRUCTURED--T01"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-error-recovery.md",
@@ -2431,12 +2214,8 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "ERROR_LOGGING_STRUCTURED--T02"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "depends_on_tasks": ["ERROR_LOGGING_STRUCTURED--T02"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-error-recovery.md",
@@ -2485,9 +2264,7 @@
         "WHISPER_TRANSCRIPTION--T03",
         "ERROR_LOGGING_STRUCTURED--T03"
       ],
-      "related_specs": [
-        "docs/features/capture/spec-capture-tech.md"
-      ],
+      "related_specs": ["docs/features/capture/spec-capture-tech.md"],
       "related_adrs": [
         "ADR-0014: Placeholder Export Immutability",
         "docs/guides/guide-error-recovery.md",
@@ -2517,12 +2294,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "TRANSCRIPTION_RETRY_LOGIC--T01"
-      ],
-      "related_specs": [
-        "docs/features/capture/spec-capture-tech.md"
-      ],
+      "depends_on_tasks": ["TRANSCRIPTION_RETRY_LOGIC--T01"],
+      "related_specs": ["docs/features/capture/spec-capture-tech.md"],
       "related_adrs": [
         "ADR-0014: Placeholder Export Immutability",
         "docs/guides/guide-error-recovery.md",
@@ -2556,13 +2329,9 @@
         "ATOMIC_FILE_WRITER--T03",
         "ERROR_LOGGING_STRUCTURED--T03"
       ],
-      "related_specs": [
-        "docs/features/obsidian-bridge/spec-obsidian-tech.md"
-      ],
+      "related_specs": ["docs/features/obsidian-bridge/spec-obsidian-tech.md"],
       "related_adrs": [],
-      "related_guides": [
-        "docs/guides/guide-error-recovery.md"
-      ],
+      "related_guides": ["docs/guides/guide-error-recovery.md"],
       "test_verification": [
         "packages/obsidian-bridge/tests/vault-write-errors.spec.ts"
       ],
@@ -2614,16 +2383,10 @@
       "est": {
         "size": "L"
       },
-      "depends_on_tasks": [
-        "VAULT_WRITE_ERROR_HANDLING--T01"
-      ],
-      "related_specs": [
-        "docs/features/obsidian-bridge/spec-obsidian-tech.md"
-      ],
+      "depends_on_tasks": ["VAULT_WRITE_ERROR_HANDLING--T01"],
+      "related_specs": ["docs/features/obsidian-bridge/spec-obsidian-tech.md"],
       "related_adrs": [],
-      "related_guides": [
-        "docs/guides/guide-error-recovery.md"
-      ],
+      "related_guides": ["docs/guides/guide-error-recovery.md"],
       "test_verification": [
         "packages/obsidian-bridge/tests/vault-write-errors.spec.ts"
       ],
@@ -2671,12 +2434,8 @@
       "est": {
         "size": "L"
       },
-      "depends_on_tasks": [
-        "CRASH_RECOVERY_MECHANISM--T02"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-test.md"
-      ],
+      "depends_on_tasks": ["CRASH_RECOVERY_MECHANISM--T02"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-test.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-fault-injection-registry.md",
@@ -2725,12 +2484,8 @@
       "est": {
         "size": "L"
       },
-      "depends_on_tasks": [
-        "SQLITE_SCHEMA--T02"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "depends_on_tasks": ["SQLITE_SCHEMA--T02"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-backup-verification.md",
@@ -2763,12 +2518,8 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "HOURLY_BACKUP_AUTOMATION--T01"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "depends_on_tasks": ["HOURLY_BACKUP_AUTOMATION--T01"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-backup-verification.md",
@@ -2805,9 +2556,7 @@
         "docs/features/staging-ledger/spec-staging-tech.md",
         "docs/features/staging-ledger/spec-staging-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0007: 90-Day Retention for Exported Captures Only"
-      ],
+      "related_adrs": ["ADR-0007: 90-Day Retention for Exported Captures Only"],
       "related_guides": [
         "docs/guides/guide-backup-verification.md",
         "docs/guides/guide-backup-restore-drill.md"
@@ -2866,16 +2615,12 @@
       "est": {
         "size": "L"
       },
-      "depends_on_tasks": [
-        "BACKUP_VERIFICATION_PROTOCOL--T01"
-      ],
+      "depends_on_tasks": ["BACKUP_VERIFICATION_PROTOCOL--T01"],
       "related_specs": [
         "docs/features/staging-ledger/spec-staging-tech.md",
         "docs/features/staging-ledger/spec-staging-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0007: 90-Day Retention for Exported Captures Only"
-      ],
+      "related_adrs": ["ADR-0007: 90-Day Retention for Exported Captures Only"],
       "related_guides": [
         "docs/guides/guide-backup-verification.md",
         "docs/guides/guide-backup-restore-drill.md"
@@ -2914,16 +2659,12 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "BACKUP_VERIFICATION_PROTOCOL--T02"
-      ],
+      "depends_on_tasks": ["BACKUP_VERIFICATION_PROTOCOL--T02"],
       "related_specs": [
         "docs/features/staging-ledger/spec-staging-tech.md",
         "docs/features/staging-ledger/spec-staging-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0007: 90-Day Retention for Exported Captures Only"
-      ],
+      "related_adrs": ["ADR-0007: 90-Day Retention for Exported Captures Only"],
       "related_guides": [
         "docs/guides/guide-backup-verification.md",
         "docs/guides/guide-backup-restore-drill.md"
@@ -2962,16 +2703,12 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "BACKUP_VERIFICATION_PROTOCOL--T03"
-      ],
+      "depends_on_tasks": ["BACKUP_VERIFICATION_PROTOCOL--T03"],
       "related_specs": [
         "docs/features/staging-ledger/spec-staging-tech.md",
         "docs/features/staging-ledger/spec-staging-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0007: 90-Day Retention for Exported Captures Only"
-      ],
+      "related_adrs": ["ADR-0007: 90-Day Retention for Exported Captures Only"],
       "related_guides": [
         "docs/guides/guide-backup-verification.md",
         "docs/guides/guide-backup-restore-drill.md"
@@ -3002,17 +2739,10 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "SQLITE_SCHEMA--T02",
-        "METRICS_INFRASTRUCTURE--T03"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "depends_on_tasks": ["SQLITE_SCHEMA--T02", "METRICS_INFRASTRUCTURE--T03"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [],
-      "related_guides": [
-        "docs/guides/guide-health-command.md"
-      ],
+      "related_guides": ["docs/guides/guide-health-command.md"],
       "test_verification": [
         "packages/staging-ledger/tests/storage-monitoring.spec.ts"
       ],
@@ -3052,16 +2782,10 @@
       "est": {
         "size": "L"
       },
-      "depends_on_tasks": [
-        "STORAGE_SIZE_MONITORING--T01"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "depends_on_tasks": ["STORAGE_SIZE_MONITORING--T01"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [],
-      "related_guides": [
-        "docs/guides/guide-health-command.md"
-      ],
+      "related_guides": ["docs/guides/guide-health-command.md"],
       "test_verification": [
         "packages/staging-ledger/tests/storage-monitoring.spec.ts"
       ],
@@ -3085,16 +2809,10 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "STORAGE_SIZE_MONITORING--T02"
-      ],
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "depends_on_tasks": ["STORAGE_SIZE_MONITORING--T02"],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [],
-      "related_guides": [
-        "docs/guides/guide-health-command.md"
-      ],
+      "related_guides": ["docs/guides/guide-health-command.md"],
       "test_verification": [
         "packages/staging-ledger/tests/storage-monitoring.spec.ts"
       ],

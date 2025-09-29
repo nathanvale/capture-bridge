@@ -12,26 +12,29 @@ The `resilience-implementation-details` archive contains 6 documents that were a
 
 ## Complete Inventory
 
-| File | Size | Type | Content Description |
-|------|------|------|-------------------|
-| `README.md` | 1.77 KB | Archive Documentation | Explains archival reason and replacement docs |
-| `guide-external-service-resilience.md` | 28.31 KB | Implementation Guide | Gmail/iCloud/Whisper specific retry configs |
-| `guide-mppp-sequential-resilience.md` | 36.95 KB | Implementation Guide | Sequential processing resilience patterns |
-| `guide-resilience-usage.md` | 22.62 KB | Package Documentation | API docs for fictional @adhd-brain/resilience package |
-| `spec-circuit-breaker-configs.md` | 16.89 KB | Technical Specification | Service-specific circuit breaker configurations |
-| `spec-resilience-testing.md` | 25.94 KB | Test Specification | Comprehensive resilience testing strategies |
+| File                                   | Size     | Type                    | Content Description                                   |
+| -------------------------------------- | -------- | ----------------------- | ----------------------------------------------------- |
+| `README.md`                            | 1.77 KB  | Archive Documentation   | Explains archival reason and replacement docs         |
+| `guide-external-service-resilience.md` | 28.31 KB | Implementation Guide    | Gmail/iCloud/Whisper specific retry configs           |
+| `guide-mppp-sequential-resilience.md`  | 36.95 KB | Implementation Guide    | Sequential processing resilience patterns             |
+| `guide-resilience-usage.md`            | 22.62 KB | Package Documentation   | API docs for fictional @adhd-brain/resilience package |
+| `spec-circuit-breaker-configs.md`      | 16.89 KB | Technical Specification | Service-specific circuit breaker configurations       |
+| `spec-resilience-testing.md`           | 25.94 KB | Test Specification      | Comprehensive resilience testing strategies           |
 
 **Total Archive Size**: 132.48 KB
 
 ## Analysis by Document
 
 ### 1. README.md - Archive Context ✅ WELL-DOCUMENTED
+
 **Content**: Clear explanation of why documents were archived and what replaced them
 **Status**: Documents proper archival process
 **Recommendation**: **DELETE** after other files are removed
 
 ### 2. guide-external-service-resilience.md - Implementation Details ❌ SUPERSEDED
+
 **Content**:
+
 - Production-ready configs for Gmail API, iCloud, Whisper
 - Specific retry settings, timeout values, error codes
 - Code examples with actual package imports
@@ -39,13 +42,16 @@ The `resilience-implementation-details` archive contains 6 documents that were a
 
 **Why Archived**: Contains implementation details inappropriate for Phase 1 planning
 **Superseded By**:
+
 - `docs/guides/guide-resilience-patterns.md` (pattern-focused approach)
 - `docs/guides/guide-resilience-package-usage.md` (uses production libraries)
 
 **Recommendation**: **DELETE** - Successfully replaced by pattern guides
 
 ### 3. guide-mppp-sequential-resilience.md - Sequential Processing ❌ SUPERSEDED
+
 **Content**:
+
 - MPPP sequential processing implementation
 - Queue management with checkpoint recovery
 - State machine resilience patterns
@@ -53,13 +59,16 @@ The `resilience-implementation-details` archive contains 6 documents that were a
 
 **Why Archived**: Implementation-heavy content during planning phase
 **Superseded By**:
+
 - ADR-0021 (decided to embed patterns in existing packages)
 - Pattern-focused resilience guides
 
 **Recommendation**: **DELETE** - Architectural approach changed
 
 ### 4. guide-resilience-usage.md - Fictional Package ❌ SUPERSEDED
+
 **Content**:
+
 - API documentation for `@adhd-brain/resilience` package
 - Package imports and usage examples
 - Subpath exports and domain organization
@@ -67,13 +76,16 @@ The `resilience-implementation-details` archive contains 6 documents that were a
 
 **Why Archived**: Documents a package that was never built
 **Superseded By**:
+
 - ADR-0021 (embed patterns instead of separate package)
 - `docs/guides/guide-resilience-package-usage.md` (uses real libraries)
 
 **Recommendation**: **DELETE** - Package concept abandoned
 
 ### 5. spec-circuit-breaker-configs.md - Service Configurations ❌ SUPERSEDED
+
 **Content**:
+
 - Gmail, iCloud, Whisper, Vault circuit breaker configs
 - Error classification rules with specific codes
 - Monitoring and alerting specifications
@@ -85,7 +97,9 @@ The `resilience-implementation-details` archive contains 6 documents that were a
 **Recommendation**: **DELETE** - Specific configs deferred to implementation phase
 
 ### 6. spec-resilience-testing.md - Test Implementation ❌ SUPERSEDED
+
 **Content**:
+
 - Unit tests for circuit breaker state transitions
 - Fault injection framework code
 - Contract tests and chaos testing
@@ -133,41 +147,46 @@ The archived content has been **successfully replaced** by:
 ### What Could Be Valuable Later 💡
 
 Some research content might be useful during implementation:
+
 - **Service Error Codes**: Gmail, iCloud, Whisper specific error patterns
 - **Timeout Research**: Specific timeouts discovered through research
 - **Test Scenarios**: Comprehensive failure scenarios
 
 However, this content should be **re-researched during implementation** rather than preserved, as:
+
 - External APIs change their error patterns
 - Timeout values need current testing
 - New testing frameworks may be better
 
 ## Recommendations by File
 
-| File | Action | Rationale |
-|------|--------|-----------|
-| `README.md` | **DELETE** | Archive housekeeping only |
+| File                                   | Action     | Rationale                           |
+| -------------------------------------- | ---------- | ----------------------------------- |
+| `README.md`                            | **DELETE** | Archive housekeeping only           |
 | `guide-external-service-resilience.md` | **DELETE** | Successfully superseded by patterns |
-| `guide-mppp-sequential-resilience.md` | **DELETE** | Architecture changed per ADR-0021 |
-| `guide-resilience-usage.md` | **DELETE** | Package concept abandoned |
-| `spec-circuit-breaker-configs.md` | **DELETE** | Implementation details deferred |
-| `spec-resilience-testing.md` | **DELETE** | Testing approach will be different |
+| `guide-mppp-sequential-resilience.md`  | **DELETE** | Architecture changed per ADR-0021   |
+| `guide-resilience-usage.md`            | **DELETE** | Package concept abandoned           |
+| `spec-circuit-breaker-configs.md`      | **DELETE** | Implementation details deferred     |
+| `spec-resilience-testing.md`           | **DELETE** | Testing approach will be different  |
 
 ## Proposed Cleanup Actions
 
 ### 1. Immediate Cleanup
+
 ```bash
 # Remove entire archive directory
 rm -rf /Users/nathanvale/code/adhd-brain/docs/archive/resilience-implementation-details/
 ```
 
 ### 2. Verify No References
+
 ```bash
 # Already verified - no references found
 grep -r "resilience-implementation-details" docs/
 ```
 
 ### 3. Update Archive Index (if exists)
+
 - Remove references to this archive from any index files
 - Update any archive cataloging systems
 
@@ -199,6 +218,7 @@ This archive represents a **successful documentation evolution**. The content wa
 **Final Recommendation**: **DELETE ALL ARCHIVED FILES**
 
 The archived resilience implementation details serve no future purpose:
+
 - All valuable patterns have been preserved in current guides
 - Implementation details will need fresh research anyway
 - The fictional package concept was abandoned per ADR-0021

@@ -13,6 +13,7 @@ Accepted
 ## Context
 
 The Obsidian Bridge must decide where to place exported markdown files within the vault structure. Options include:
+
 - Direct filing into organized folders (PARA method, by source, by date)
 - Smart classification using content analysis
 - Daily notes integration with backlinks
@@ -42,6 +43,7 @@ Export all captures to a single `inbox/` directory within the vault:
 ## Consequences
 
 **Positive:**
+
 - Maximum simplicity: Single target directory
 - Zero classification errors: No wrong folder placements
 - Fast exports: No decision logic or content analysis
@@ -49,12 +51,14 @@ Export all captures to a single `inbox/` directory within the vault:
 - Easy debugging: All exports in one location
 
 **Negative:**
+
 - Manual organization required: User must file from inbox
 - Inbox accumulation: Files pile up without manual intervention
 - No automatic categorization: Misses intelligent filing opportunities
 - Scalability concern: Large inbox becomes unwieldy over time
 
 **Phase Transition Plan:**
+
 - Phase 2: Optional folder classification (user configurable)
 - Phase 3: PARA method integration with content analysis
 - Phase 5: Daily notes and backlink automation

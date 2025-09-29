@@ -17,6 +17,7 @@ roadmap_version: 3.0.0
 ---
 
 **Related Documentation:**
+
 - **PRD**: [Capture Product Requirements](./prd-capture.md)
 - **Tech Spec**: [Capture Technical Specification](./spec-capture-tech.md)
 - **Test Spec**: [Capture Test Specification](./spec-capture-test.md)
@@ -47,6 +48,7 @@ Provide a durable, extensible, low-friction ingestion layer that:
 ## 1. High-Level Placement
 
 **MPPP Implementation (Current):**
+
 ```text
 Input (voice | email)
   -> Channel Adapter
@@ -58,6 +60,7 @@ Input (voice | email)
 ```
 
 **Phase 5+ Future Architecture (Outbox Pattern):**
+
 ```text
 Input (voice | text | web | email)
   -> Channel Adapter
@@ -75,18 +78,18 @@ Input (voice | text | web | email)
 
 ⚠️ **Historical Architecture:** Components marked with ⏳ are deferred to Phase 5+ (outbox pattern).
 
-| Component | Responsibility | Notes | MPPP Status |
-|-----------|---------------|-------|-------------|
-| Channel Adapters | Normalize raw input | Stateless; minimal validation | ✅ Active |
-| Ingestion Service | Build envelope + compute hashes | Transaction boundary | ✅ Active |
-| Dedup Subsystem | Hash + fingerprint lookups | SHA-256 only (MPPP) | ✅ Active |
-| State Manager | Enforce legal transitions | Pure logic layer | ✅ Active |
-| Staging Ledger | Durable persistence | WAL + tuned pragmas | ✅ Active |
+| Component          | Responsibility                    | Notes                                       | MPPP Status |
+| ------------------ | --------------------------------- | ------------------------------------------- | ----------- |
+| Channel Adapters   | Normalize raw input               | Stateless; minimal validation               | ✅ Active   |
+| Ingestion Service  | Build envelope + compute hashes   | Transaction boundary                        | ✅ Active   |
+| Dedup Subsystem    | Hash + fingerprint lookups        | SHA-256 only (MPPP)                         | ✅ Active   |
+| State Manager      | Enforce legal transitions         | Pure logic layer                            | ✅ Active   |
+| Staging Ledger     | Durable persistence               | WAL + tuned pragmas                         | ✅ Active   |
 | Enrichment Workers | Async transcript / classification | ⏳ Deferred (sequential transcription only) | ⏳ Phase 5+ |
-| Outbox Processor | Create vault notes | ⏳ Replaced by Direct Export Pattern | ⏳ Phase 5+ |
-| Metrics Emitter | Local JSONL counters/histograms | No network I/O | ✅ Active |
-| Recovery Manager | Startup reconciliation | Quarantine missing refs | ✅ Active |
-| Doctor Command | Health & integrity surfacing | User trust anchor | ✅ Active |
+| Outbox Processor   | Create vault notes                | ⏳ Replaced by Direct Export Pattern        | ⏳ Phase 5+ |
+| Metrics Emitter    | Local JSONL counters/histograms   | No network I/O                              | ✅ Active   |
+| Recovery Manager   | Startup reconciliation            | Quarantine missing refs                     | ✅ Active   |
+| Doctor Command     | Health & integrity surfacing      | User trust anchor                           | ✅ Active   |
 
 **MPPP Implementation:** See [Direct Export Pattern](../../cross-cutting/spec-direct-export-tech.md) for synchronous export replacing outbox queue.
 
@@ -156,6 +159,7 @@ Recovery sweeps ENRICHING timeouts back to STAGED safely.
 - **Email Dedup:** Message-ID + SHA-256 content hash
 
 **Deduplication Layers:**
+
 1. **Layer 1 (Channel Native ID):** Unique constraint on (channel, channel_native_id) prevents duplicate staging
 2. **Layer 2 (Content Hash):** SHA-256 content_hash prevents duplicate exports
 
@@ -184,6 +188,7 @@ Recovery sweeps ENRICHING timeouts back to STAGED safely.
 ⚠️ **Replaces Outbox Pattern:** See [Direct Export Pattern](../../cross-cutting/spec-direct-export-tech.md) for full implementation.
 
 **Flow:**
+
 1. Capture reaches READY state (transcribed + content_hash available)
 2. DirectExporter.exportToVault() invoked **synchronously**
 3. Atomic write: temp → fsync → rename to inbox/{ulid}.md
@@ -200,23 +205,23 @@ Recovery sweeps ENRICHING timeouts back to STAGED safely.
 
 ## 7. Performance Targets
 
-| Operation | p95 Target | Notes |
-|-----------|-----------|-------|
-| Text insert | < 25ms | Hash + transaction |
-| Voice stage | < 150ms | Partial read only |
-| Dedup lookup | < 10ms | Indexed hash |
-| Recovery (1k rows) | < 250ms | Single scan |
-| Outbox simple write | < 500ms | Disk bound |
+| Operation           | p95 Target | Notes              |
+| ------------------- | ---------- | ------------------ |
+| Text insert         | < 25ms     | Hash + transaction |
+| Voice stage         | < 150ms    | Partial read only  |
+| Dedup lookup        | < 10ms     | Indexed hash       |
+| Recovery (1k rows)  | < 250ms    | Single scan        |
+| Outbox simple write | < 500ms    | Disk bound         |
 
 ## 8. Failure Modes
 
-| Failure | Detection | Containment | Surface |
-|---------|-----------|------------|---------|
-| Crash mid-capture | Missing audit pair | Atomic insert ensures validity | Doctor |
-| Hash divergence | Metrics anomaly | Phase halt + warning | Doctor |
-| Lost voice file | stat failure / recovery | Quarantine flag | Doctor |
-| Partial note write | Temp file residue | Cleanup on start | Doctor |
-| DB corruption | pragma quick_check | Halt enrichment | Doctor |
+| Failure            | Detection               | Containment                    | Surface |
+| ------------------ | ----------------------- | ------------------------------ | ------- |
+| Crash mid-capture  | Missing audit pair      | Atomic insert ensures validity | Doctor  |
+| Hash divergence    | Metrics anomaly         | Phase halt + warning           | Doctor  |
+| Lost voice file    | stat failure / recovery | Quarantine flag                | Doctor  |
+| Partial note write | Temp file residue       | Cleanup on start               | Doctor  |
+| DB corruption      | pragma quick_check      | Halt enrichment                | Doctor  |
 
 ## 9. Security & Privacy
 
@@ -239,43 +244,43 @@ Deferred: plugins, remote ingestion, streaming partial transcripts, embedding pi
 
 ## 12. Testing Layers
 
-| Layer | Focus |
-|-------|-------|
-| Unit | Envelope construction, hashing |
-| Integration | Ingestion → SQLite atomicity |
-| Contract | CLI schema & exit codes |
-| Property | Dedup idempotency |
-| Fault | Crash/restart recovery |
-| Performance | p95 regression detection |
+| Layer       | Focus                          |
+| ----------- | ------------------------------ |
+| Unit        | Envelope construction, hashing |
+| Integration | Ingestion → SQLite atomicity   |
+| Contract    | CLI schema & exit codes        |
+| Property    | Dedup idempotency              |
+| Fault       | Crash/restart recovery         |
+| Performance | p95 regression detection       |
 
 ## 13. Risks
 
-| Risk | Mitigation |
-|------|-----------|
-| Schema churn | Centralized schema module + migrations |
-| Over-enrichment | Feature flags + staged rollout |
-| Migration stall | Phase checkpoints + doctor warnings |
-| Large audio files | Partial fingerprint cap |
-| Silent failures | Doctor + metrics visibility |
+| Risk              | Mitigation                             |
+| ----------------- | -------------------------------------- |
+| Schema churn      | Centralized schema module + migrations |
+| Over-enrichment   | Feature flags + staged rollout         |
+| Migration stall   | Phase checkpoints + doctor warnings    |
+| Large audio files | Partial fingerprint cap                |
+| Silent failures   | Doctor + metrics visibility            |
 
 ## 14. Decision Log
 
-| Decision | Date | Rationale | ADR |
-|----------|------|-----------|-----|
-| Voice file sovereignty | 2025-09-24 | Avoid duplication/sync issues | [ADR-0001](../../adr/0001-voice-file-sovereignty.md) |
-| Late hash binding for voice | 2025-09-28 | Sub-100ms staging requirement | [ADR-0006](../../adr/0006-late-hash-binding-voice.md) |
-| Sequential processing model | 2025-09-28 | MPPP scope simplicity | [ADR-0008](../../adr/0008-sequential-processing-mppp.md) |
-| Direct export pattern | 2025-09-27 | Replace outbox queue complexity | [ADR-0013](../../adr/0013-mppp-direct-export-pattern.md) |
-| Placeholder export immutability | 2025-09-27 | Simplify state machine | [ADR-0014](../../adr/0014-placeholder-export-immutability.md) |
+| Decision                        | Date       | Rationale                       | ADR                                                           |
+| ------------------------------- | ---------- | ------------------------------- | ------------------------------------------------------------- |
+| Voice file sovereignty          | 2025-09-24 | Avoid duplication/sync issues   | [ADR-0001](../../adr/0001-voice-file-sovereignty.md)          |
+| Late hash binding for voice     | 2025-09-28 | Sub-100ms staging requirement   | [ADR-0006](../../adr/0006-late-hash-binding-voice.md)         |
+| Sequential processing model     | 2025-09-28 | MPPP scope simplicity           | [ADR-0008](../../adr/0008-sequential-processing-mppp.md)      |
+| Direct export pattern           | 2025-09-27 | Replace outbox queue complexity | [ADR-0013](../../adr/0013-mppp-direct-export-pattern.md)      |
+| Placeholder export immutability | 2025-09-27 | Simplify state machine          | [ADR-0014](../../adr/0014-placeholder-export-immutability.md) |
 
 ## 15. Evolution Triggers
 
-| Trigger | Threshold | Action |
-|---------|-----------|--------|
-| Row volume | > 100k | Partition/prune strategy |
-| p95 regression | +30% 3 days | Index/optimize |
-| Transcript backlog | > 200 pending | Parallelism / batching |
-| Hash divergence | > 0.1% mismatch | Investigate / pause phase |
+| Trigger            | Threshold       | Action                    |
+| ------------------ | --------------- | ------------------------- |
+| Row volume         | > 100k          | Partition/prune strategy  |
+| p95 regression     | +30% 3 days     | Index/optimize            |
+| Transcript backlog | > 200 pending   | Parallelism / batching    |
+| Hash divergence    | > 0.1% mismatch | Investigate / pause phase |
 
 ## 16. Open Questions
 
@@ -307,13 +312,13 @@ If triggered: add persisted column + backward-fill in single transaction; add to
 
 ## 18. Glossary
 
-| Term | Meaning |
-|------|---------|
-| Envelope | Canonical capture representation |
-| Staging Ledger | Durable pre-filing store |
-| Outbox | Queue + processor producing vault notes |
-| Quarantine | Flag for missing / invalid external ref |
-| Dual Hash | Transitional period storing SHA-256 + BLAKE3 |
+| Term           | Meaning                                      |
+| -------------- | -------------------------------------------- |
+| Envelope       | Canonical capture representation             |
+| Staging Ledger | Durable pre-filing store                     |
+| Outbox         | Queue + processor producing vault notes      |
+| Quarantine     | Flag for missing / invalid external ref      |
+| Dual Hash      | Transitional period storing SHA-256 + BLAKE3 |
 
 ---
 

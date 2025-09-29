@@ -65,17 +65,17 @@ Secondary: ADHD knowledge workers (variable technical skill) needing trust + fas
 - Real-time collaboration
 - PARA auto-classification (deferred to Phase 5+)
 - Inbox triage UI (deferred to Phase 5+)
-- Plugin command injection (covered separately; deferred)  
+- Plugin command injection (covered separately; deferred)
 
 ---
 
 ## 5. Scope
 
-| Phase | Channels Included | Key Outcomes | Excluded |
-|-------|-------------------|--------------|----------|
-| MPPP (Phase 1) | Voice memos + Email (Gmail) | Durable staging, direct to Obsidian inbox/, dedup, audit | Classification, inbox UI, daily note append |
-| Phase 2 | Hardening + observability | Health checks, backup verification, error recovery | All cognitive features |
-| Phase 5+ (Future) | Quick text, web clipper, attachments | Additional capture channels | Still deferred |
+| Phase             | Channels Included                    | Key Outcomes                                             | Excluded                                    |
+| ----------------- | ------------------------------------ | -------------------------------------------------------- | ------------------------------------------- |
+| MPPP (Phase 1)    | Voice memos + Email (Gmail)          | Durable staging, direct to Obsidian inbox/, dedup, audit | Classification, inbox UI, daily note append |
+| Phase 2           | Hardening + observability            | Health checks, backup verification, error recovery       | All cognitive features                      |
+| Phase 5+ (Future) | Quick text, web clipper, attachments | Additional capture channels                              | Still deferred                              |
 
 **YAGNI - Not building now:**
 
@@ -112,13 +112,13 @@ Key Feature-Specific Clarifications:
 
 ### 6.1 Status States (Simplified)
 
-| State | Meaning | Next State |
-|-------|---------|------------|
-| staged | Row inserted, fingerprint computed | transcribed (voice) or exported (email) |
-| transcribed | Voice transcript available | exported |
-| exported | Successfully written to vault | terminal state |
-| exported_duplicate | Duplicate detected, not written | terminal state |
-| error | Processing failed, needs retry | staged (after retry) or terminal |
+| State              | Meaning                            | Next State                              |
+| ------------------ | ---------------------------------- | --------------------------------------- |
+| staged             | Row inserted, fingerprint computed | transcribed (voice) or exported (email) |
+| transcribed        | Voice transcript available         | exported                                |
+| exported           | Successfully written to vault      | terminal state                          |
+| exported_duplicate | Duplicate detected, not written    | terminal state                          |
+| error              | Processing failed, needs retry     | staged (after retry) or terminal        |
 
 ### 6.2 Hashing & Dedup
 
@@ -139,10 +139,10 @@ We store only: `external_ref`, `external_fingerprint`, `size_bytes`. No copying,
 
 ### 7.1 Channels (MPPP Only)
 
-| Channel | Trigger | Minimum Persisted Fields | Export Behavior |
-|---------|---------|---------------------------|-----------------|
-| Voice | iCloud folder polling (automatic) | id, source_type=voice, external_ref, fingerprint | Transcribe → export to inbox/ulid.md |
-| Email | Gmail API polling (automatic) | id, source_type=email, message_id, raw_content, hash | Normalize → export to inbox/ulid.md |
+| Channel | Trigger                           | Minimum Persisted Fields                             | Export Behavior                      |
+| ------- | --------------------------------- | ---------------------------------------------------- | ------------------------------------ |
+| Voice   | iCloud folder polling (automatic) | id, source_type=voice, external_ref, fingerprint     | Transcribe → export to inbox/ulid.md |
+| Email   | Gmail API polling (automatic)     | id, source_type=email, message_id, raw_content, hash | Normalize → export to inbox/ulid.md  |
 
 **Voice Polling Details:**
 
@@ -183,14 +183,14 @@ On startup all non-exported captures re-evaluated; errors flagged for missing vo
 
 ## 8. Non-Functional Requirements
 
-| Aspect | Target | Rationale |
-|--------|--------|-----------|
-| Voice reference staging | < 150ms p95 | Reinforce confidence |
-| Email staging | < 200ms p95 | Maintain responsiveness |
-| Crash durability | 100% of staged persisted | Trust |
-| Duplicate check | < 10ms | Avoid slowing polling |
-| Direct export write | < 1s | Obsidian note feel responsive |
-| Voice transcription | < 10s average | Reasonable for background job |
+| Aspect                  | Target                   | Rationale                     |
+| ----------------------- | ------------------------ | ----------------------------- |
+| Voice reference staging | < 150ms p95              | Reinforce confidence          |
+| Email staging           | < 200ms p95              | Maintain responsiveness       |
+| Crash durability        | 100% of staged persisted | Trust                         |
+| Duplicate check         | < 10ms                   | Avoid slowing polling         |
+| Direct export write     | < 1s                     | Obsidian note feel responsive |
+| Voice transcription     | < 10s average            | Reasonable for background job |
 
 SQLite PRAGMAs (inherit master): WAL journal, synchronous=NORMAL, busy_timeout=5000.
 
@@ -205,7 +205,7 @@ Backups: hourly + retention policy (24 hourly + 7 daily) with checksum; restore 
 Essential metrics (activated with `CAPTURE_METRICS=1`):
 
 - `capture_voice_staging_ms` - Voice memo staging duration
-- `capture_email_staging_ms` - Email capture staging duration  
+- `capture_email_staging_ms` - Email capture staging duration
 - `transcription_duration_ms` - Whisper processing time
 - `export_write_ms` - Vault file write duration
 - `dedup_hits_total` - Duplicate detection events
@@ -244,20 +244,20 @@ Essential metrics (activated with `CAPTURE_METRICS=1`):
 1. Restart triggers recovery scan
 2. Any transcribed but not exported -> retry export
 3. Any staged with missing file -> status=error
-4. Health command (`capture doctor`) displays errors for manual review  
+4. Health command (`capture doctor`) displays errors for manual review
 
 ---
 
 ## 11. Risks & Mitigations
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| iCloud partial availability (APFS dataless) | Delayed voice export | APFS check + sequential download + retry backoff |
-| Gmail API quota limits | Email capture delays | Built-in rate limiting + backoff |
-| Voice transcription latency | User impatience | Single retry + placeholder fallback |
-| Vault write conflicts | Note duplication confusion | ULID-based naming (collision extremely rare) |
-| SQLite growth | Performance degradation | Retention thresholds + cleanup jobs |
-| User distrust from hidden failures | Abandonment | Infrastructure health command (`capture doctor`) + observability metrics |
+| Risk                                        | Impact                     | Mitigation                                                               |
+| ------------------------------------------- | -------------------------- | ------------------------------------------------------------------------ |
+| iCloud partial availability (APFS dataless) | Delayed voice export       | APFS check + sequential download + retry backoff                         |
+| Gmail API quota limits                      | Email capture delays       | Built-in rate limiting + backoff                                         |
+| Voice transcription latency                 | User impatience            | Single retry + placeholder fallback                                      |
+| Vault write conflicts                       | Note duplication confusion | ULID-based naming (collision extremely rare)                             |
+| SQLite growth                               | Performance degradation    | Retention thresholds + cleanup jobs                                      |
+| User distrust from hidden failures          | Abandonment                | Infrastructure health command (`capture doctor`) + observability metrics |
 
 ---
 
@@ -299,11 +299,11 @@ Essential metrics (activated with `CAPTURE_METRICS=1`):
 
 ## 13. Roadmap Alignment (Extract)
 
-| Phase | Capture Deliverables |
-|-------|----------------------|
+| Phase               | Capture Deliverables                                                            |
+| ------------------- | ------------------------------------------------------------------------------- |
 | 1 (MPPP Foundation) | Schema, voice + email polling, direct export, dedup, audit, basic observability |
-| 2 (Hardening) | Health command, backup verification, error recovery |
-| 5+ (Future) | Quick text, web clipper, classification, inbox UI |
+| 2 (Hardening)       | Health command, backup verification, error recovery                             |
+| 5+ (Future)         | Quick text, web clipper, classification, inbox UI                               |
 
 ---
 
@@ -313,22 +313,22 @@ This PRD delivers the following Master PRD v2.3.0-MPPP §12 success criteria:
 
 ### Phase 1 (MVP) Criteria Mapping
 
-| Master PRD Criterion | Capture PRD Deliverable | Verification Test |
-|---------------------|------------------------|-------------------|
-| ✅ Voice capture operational | Voice polling + transcription pipeline | `test-capture-voice-e2e.spec.ts` |
-| ✅ Email capture operational | Email polling + normalization pipeline | `test-capture-email-e2e.spec.ts` |
-| ✅ Deduplication working | Content hash + fingerprint dedup logic | `test-capture-dedup.spec.ts` |
-| ✅ Export to vault | Staging → export worker → Obsidian Bridge | `test-capture-export-flow.spec.ts` |
-| ✅ Audit trail complete | `exports_audit` table populated | `test-audit-trail.spec.ts` |
+| Master PRD Criterion         | Capture PRD Deliverable                   | Verification Test                  |
+| ---------------------------- | ----------------------------------------- | ---------------------------------- |
+| ✅ Voice capture operational | Voice polling + transcription pipeline    | `test-capture-voice-e2e.spec.ts`   |
+| ✅ Email capture operational | Email polling + normalization pipeline    | `test-capture-email-e2e.spec.ts`   |
+| ✅ Deduplication working     | Content hash + fingerprint dedup logic    | `test-capture-dedup.spec.ts`       |
+| ✅ Export to vault           | Staging → export worker → Obsidian Bridge | `test-capture-export-flow.spec.ts` |
+| ✅ Audit trail complete      | `exports_audit` table populated           | `test-audit-trail.spec.ts`         |
 
 ### Phase 2 (Production Ready) Criteria Mapping
 
-| Master PRD Criterion | Capture PRD Deliverable | Verification Test |
-|---------------------|------------------------|-------------------|
-| ✅ Both capture channels stable | Voice + Email error handling | `test-capture-error-recovery.spec.ts` |
-| ✅ Error recovery working | Whisper failure → placeholder export | `test-transcription-fallback.spec.ts` |
-| ✅ 7 days without data loss | Voice + Email durability | Manual 7-day validation |
-| ✅ Fault injection validated | Crash → restart → resume | `test-crash-recovery.spec.ts` |
+| Master PRD Criterion            | Capture PRD Deliverable              | Verification Test                     |
+| ------------------------------- | ------------------------------------ | ------------------------------------- |
+| ✅ Both capture channels stable | Voice + Email error handling         | `test-capture-error-recovery.spec.ts` |
+| ✅ Error recovery working       | Whisper failure → placeholder export | `test-transcription-fallback.spec.ts` |
+| ✅ 7 days without data loss     | Voice + Email durability             | Manual 7-day validation               |
+| ✅ Fault injection validated    | Crash → restart → resume             | `test-crash-recovery.spec.ts`         |
 
 ### Test Traceability
 
@@ -371,7 +371,7 @@ Not building: quick text capture, web clipper, inbox UI, classification, multi-d
 1. Should voice transcription failures block export with placeholder content?
 2. Gmail API vs IMAP for email polling (current: Gmail API)?
 3. Should health command check transcription service availability?
-4. Notification method for voice transcription failures (current: error log only)?  
+4. Notification method for voice transcription failures (current: error log only)?
 
 ---
 
