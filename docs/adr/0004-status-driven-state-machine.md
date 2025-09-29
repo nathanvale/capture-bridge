@@ -1,9 +1,17 @@
+---
+adr: 0004
+title: Status-Driven State Machine for Capture Lifecycle
+status: accepted
+context-date: 2025-09-28
+owner: Nathan
+spec_type: adr
+version: 0.1.0
+---
+
 # ADR 0004: Status-Driven State Machine for Capture Lifecycle
 
-## Date
-2025-09-28
-
 ## Status
+
 Accepted
 
 ## Context

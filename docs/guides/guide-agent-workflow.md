@@ -12,59 +12,115 @@ This guide explains how to use the ADHD Brain agent system to go from planning d
 
 | File | Purpose | Modified By |
 |------|---------|-------------|
-| `docs/master/prd-master.md` | Master product requirements | Manual + roadmap-orchestrator |
+| `docs/master/prd-master.md` | Master product requirements | adhd-brain-planner + roadmap-orchestrator |
 | `docs/master/roadmap.md` | Capability breakdown by phase/slice | roadmap-orchestrator |
-| `docs/features/*/prd-*.md` | Feature-specific requirements | Manual + roadmap-orchestrator |
+| `docs/features/*/prd-*.md` | Feature-specific requirements | adhd-brain-planner + roadmap-orchestrator |
+| `docs/features/*/spec-*.md` | Technical specifications | adhd-brain-planner + spec-librarian |
 | `docs/backlog/virtual-task-manifest.json` | Decomposed task list (68 tasks) | task-decomposition-architect |
 | `docs/backlog/task-state.json` | Execution progress tracking | task-implementer + implementation-orchestrator |
-| `docs/adr/*.md` | Architectural decisions | Manual + adr-curator |
-| `docs/guides/*.md` | Implementation patterns | Manual + spec-librarian |
+| `docs/adr/*.md` | Architectural decisions | adr-curator |
+| `docs/guides/*.md` | Implementation patterns | adhd-brain-planner + spec-librarian |
 
 ## The Agent Pipeline
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ PLANNING PHASE (Documents → Capabilities → Tasks)              │
+│ PLANNING PHASE (Research → Documents → Capabilities → Tasks)   │
 └─────────────────────────────────────────────────────────────────┘
 
-1. Manual: Write/update feature PRDs with acceptance criteria
+1. adhd-brain-planner: Research and create PRDs/specs with full context
    ↓
-2. roadmap-orchestrator: Sync PRDs → roadmap, detect drift
+2. adr-curator: Capture architectural decisions as ADRs
    ↓
-3. spec-librarian: Validate specs, guides, fix documentation issues
+3. roadmap-orchestrator: Sync PRDs → roadmap, detect drift
    ↓
-4. task-decomposition-architect: Decompose capabilities → VTM tasks
+4. spec-librarian: Validate specs, guides, fix documentation issues
+   ↓
+5. task-decomposition-architect: Decompose capabilities → VTM tasks
    ↓
 
 ┌─────────────────────────────────────────────────────────────────┐
 │ IMPLEMENTATION PHASE (Tasks → Code)                             │
 └─────────────────────────────────────────────────────────────────┘
 
-5a. implementation-orchestrator: Auto-pilot (sequential execution)
+6a. implementation-orchestrator: Auto-pilot (sequential execution)
     OR
-5b. task-implementer: Manual (pick specific tasks)
+6b. task-implementer: Manual (pick specific tasks)
 ```
 
 ---
 
 ## Phase 1: Planning & Roadmap Creation
 
-### Step 1: Update Feature PRDs
+### Step 1: Research & Create Planning Documents
 
-When you have new features or requirements:
+**When to use:** Starting any new feature, evaluating technical decisions, or updating existing plans
 
-```bash
-# Manually edit feature PRDs to add/update acceptance criteria
-vim docs/features/capture/prd-capture.md
+**PRIMARY AGENT:**
+```
+Use adhd-brain-planner to research and create [PRD/spec/evaluation] for [feature]
 ```
 
-**What to include:**
-- Clear acceptance criteria bullets under each phase
-- Risk levels (Low/Medium/High)
-- Success metrics
-- Deferral triggers for future phases
+**What it does:**
+- Loads full project context (reads all PRDs, specs, ADRs, guides)
+- Researches current best practices using web search + MCP tools (if available)
+- **NEW**: Spawns parallel research agents for comprehensive coverage
+  - Agent 1: Official documentation research
+  - Agent 2: Community wisdom (Reddit, Stack Overflow)
+  - Agent 3: Production gotchas (GitHub issues, blog posts)
+- Combines official docs + community experiences + anecdotal evidence
+- Creates evidence-based planning documents with citations
+- Enforces YAGNI principles and MPPP scope
+- Documents security, performance, and migration considerations
 
-### Step 2: Synchronize Roadmap
+**Example invocations:**
+```
+# Creating new specs with research
+Use adhd-brain-planner to research Gmail API limits and create polling spec
+Use adhd-brain-planner to evaluate TDD approach for backup/restore feature
+Use adhd-brain-planner to research APFS handling and update voice capture spec
+
+# Reviewing existing specs with research
+Use adhd-brain-planner to review staging ledger spec against current best practices
+Use adhd-brain-planner to research updates to Gmail API since our spec was written
+Use adhd-brain-planner to identify outdated patterns in our capture specs
+
+# Parallel research for complex topics
+Use adhd-brain-planner to research SQLite performance (official + community + production)
+Use adhd-brain-planner to find Gmail API gotchas across Stack Overflow and GitHub issues
+```
+
+**Output includes:**
+- Clear acceptance criteria with risk levels (Low/Medium/High)
+- TDD applicability decision with justification
+- YAGNI deferrals explicitly documented
+- Security and privacy analysis
+- Migration and rollback procedures
+- Cited sources with URLs
+
+### Step 2: Document Architectural Decisions
+
+**When to use:** When making significant architectural or technical decisions
+
+**Command:**
+```
+Use adr-curator to document [specific decision]
+```
+
+**What it does:**
+- Creates new ADR files with proper numbering (0022, 0023, etc.)
+- Links ADRs to relevant PRDs and specs
+- Updates ADR index at `docs/adr/_index.md`
+- Identifies undocumented decisions in recent changes
+- Ensures decision traceability
+
+**Example invocations:**
+```
+Use adr-curator to document the APFS handling strategy
+Use adr-curator to review recent specs for undocumented decisions
+```
+
+### Step 3: Synchronize Roadmap
 
 **When to use:** After updating PRDs, ADRs, or specs
 
@@ -91,7 +147,7 @@ Use roadmap-orchestrator to sync all documentation and update the roadmap
 Create a new roadmap from scratch using roadmap-orchestrator
 ```
 
-### Step 3: Fix Documentation Issues
+### Step 4: Fix Documentation Issues
 
 **When to use:** If roadmap-orchestrator reports issues
 
@@ -111,7 +167,7 @@ Use spec-librarian to fix [specific issue from report]
 - Broken links between specs
 - Incomplete capability documentation
 
-### Step 4: Generate Task Manifest
+### Step 5: Generate Task Manifest
 
 **When to use:** After roadmap is clean and validated
 
@@ -459,6 +515,9 @@ vim docs/features/capture/prd-capture.md
 ## Agent Decision Tree
 
 ```
+Need to research/plan/review ANY feature or technical decision?
+  → Use adhd-brain-planner (PRIMARY - always start here!)
+
 Need to sync docs/roadmap?
   → Use roadmap-orchestrator
 
@@ -479,6 +538,9 @@ Need to document architectural decision?
 
 Need test strategy for new component?
   → Use testing-strategist
+
+Quarterly scope/YAGNI review?
+  → Use risk-yagni-enforcer
 ```
 
 ---
@@ -584,6 +646,9 @@ cat docs/backlog/task-state.json | jq '.tasks[] | select(.status=="in-progress")
 
 | Goal | Command |
 |------|---------|
+| Research & plan ANY feature | `Use adhd-brain-planner to research and create [spec/PRD]` |
+| Review existing specs | `Use adhd-brain-planner to review [spec] against best practices` |
+| Document decisions | `Use adr-curator to document [decision]` |
 | Sync docs → roadmap | `Use roadmap-orchestrator to sync and validate` |
 | Fix doc issues | `Use spec-librarian to fix [issue]` |
 | Generate tasks | `Use task-decomposition-architect to generate VTM` |
@@ -594,14 +659,46 @@ cat docs/backlog/task-state.json | jq '.tasks[] | select(.status=="in-progress")
 
 ---
 
+## Quarterly Reviews
+
+### Risk & YAGNI Audit
+
+**When to use:** Every quarter or when scope creep is suspected
+
+**Command:**
+```
+Use risk-yagni-enforcer to audit current specs and PRDs
+```
+
+**What it does:**
+- Reviews all specs for proper risk classification (High/Medium/Low)
+- Identifies YAGNI violations and premature features
+- Ensures scope alignment with roadmap phases
+- Flags hidden complexity and underestimated risks
+- Verifies all specs have "Out-of-scope (YAGNI)" sections
+
+**Expected output:**
+- Risk classification audit report
+- List of features to defer to future phases
+- Recommendations for scope reduction
+- Hidden risks that need addressing
+
+**Example invocation:**
+```
+Use risk-yagni-enforcer to review Phase 2 specs for scope creep
+```
+
+---
+
 ## Next Steps
 
 After reading this guide:
 
-1. ✅ Validate your roadmap: `roadmap-orchestrator assessment`
-2. ✅ Generate VTM: `task-decomposition-architect`
-3. ✅ Start implementing: Choose orchestrator (auto) or task-implementer (manual)
-4. 📊 Monitor progress via task-state.json
-5. 🎯 Complete Phase 1 Slice 1.1 (6 tasks)
+1. 🔬 Research & plan features: `adhd-brain-planner` (PRIMARY - start here!)
+2. ✅ Validate your roadmap: `roadmap-orchestrator assessment`
+3. ✅ Generate VTM: `task-decomposition-architect`
+4. ✅ Start implementing: Choose orchestrator (auto) or task-implementer (manual)
+5. 📊 Monitor progress via task-state.json
+6. 🎯 Complete Phase 1 Slice 1.1 (6 tasks)
 
 **Ready to build!** 🚀

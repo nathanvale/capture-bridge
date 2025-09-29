@@ -45,7 +45,7 @@ Use this guide when:
 - Vitest configured in your package
 
 **Related documentation:**
-- [TestKit Tech Spec](../cross-cutting/spec-testkit-tech.md) - TestKit capabilities
+- [TestKit Tech Spec](../cross-cutting/../guides/guide-testkit-usage.md) - TestKit capabilities
 - [Test Strategy Guide](./test-strategy.md) - Overall testing approach
 - [TDD Applicability Framework](./tdd-applicability.md) - When to write tests first
 
@@ -526,7 +526,7 @@ describe('CLI Capture', () => {
 **Core specifications:**
 - [Master PRD v2.3.0-MPPP](../master/prd-master.md) - Phase 1 scope and success criteria
 - [Roadmap v2.0-MPPP](../master/roadmap.md) - Phase 1 delivery slices
-- [TestKit Tech Spec](../cross-cutting/spec-testkit-tech.md) - TestKit capabilities
+- [TestKit Tech Spec](../cross-cutting/../guides/guide-testkit-usage.md) - TestKit capabilities
 
 **Testing strategy:**
 - [Test Strategy Guide](./test-strategy.md) - Overall testing approach

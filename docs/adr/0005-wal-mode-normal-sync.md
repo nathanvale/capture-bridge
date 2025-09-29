@@ -1,9 +1,17 @@
+---
+adr: 0005
+title: WAL Mode with NORMAL Synchronous for Local-First Durability
+status: accepted
+context-date: 2025-09-28
+owner: Nathan
+spec_type: adr
+version: 0.1.0
+---
+
 # ADR 0005: WAL Mode with NORMAL Synchronous for Local-First Durability
 
-## Date
-2025-09-28
-
 ## Status
+
 Accepted
 
 ## Context

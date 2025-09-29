@@ -61,6 +61,7 @@ graph TD
     TestKitStandardization[guide-testkit-standardization.md]
     PollingGuide[guide-polling-implementation.md]
     WhisperGuide[guide-whisper-transcription.md]
+    VoiceDebugGuide[guide-voice-capture-debugging.md]
     ErrorGuide[guide-error-recovery.md]
     DoctorGuide[guide-cli-doctor-implementation.md]
 
@@ -136,6 +137,8 @@ graph TD
 
     PollingGuide -.->|Supports| CaptureTECH
     WhisperGuide -.->|Supports| CaptureTECH
+    VoiceDebugGuide -.->|Supports| CaptureTECH
+    VoiceDebugGuide -.->|Supports| CaptureTEST
     ErrorGuide -.->|Supports| CaptureTECH
     ErrorGuide -.->|Supports| StagingTECH
     DoctorGuide -.->|Supports| CLITECH
@@ -161,7 +164,7 @@ graph TD
     class FoundationTEST missingDocs
     class TestKitCore,TestKitDomains,TestKitFixtures,TestKitHelpers testkitInfra
     class ADR0001,ADR0002 adrDocs
-    class TDDGuide,TestKitGuide,TestKitStandardization,PollingGuide,WhisperGuide,ErrorGuide,DoctorGuide guideDocs
+    class TDDGuide,TestKitGuide,TestKitStandardization,PollingGuide,WhisperGuide,VoiceDebugGuide,ErrorGuide,DoctorGuide guideDocs
     class IntelligencePRD,InboxPlaceholder deferredDocs
 ```
 
@@ -202,7 +205,7 @@ prd-capture.md (v3.1.0) ✅ Living
           └─ spec-capture-test.md (v0.1.0) ✅ Living
 ```
 **ADR Links:** ADR-0001 (Voice File Sovereignty)
-**Guide Links:** guide-polling-implementation.md, guide-whisper-transcription.md, guide-gmail-oauth2-setup.md, guide-capture-debugging.md, guide-tdd-applicability.md, guide-testkit-usage.md, guide-error-recovery.md
+**Guide Links:** guide-polling-implementation.md, guide-whisper-transcription.md, guide-gmail-oauth2-setup.md, guide-capture-debugging.md, guide-voice-capture-debugging.md, guide-tdd-applicability.md, guide-testkit-usage.md, guide-error-recovery.md
 
 ---
 
@@ -509,7 +512,8 @@ Practical how-to documentation and best practices.
 - **[guide-polling-implementation.md](../guides/guide-polling-implementation.md)** - Voice memo and email polling workers
 - **[guide-gmail-oauth2-setup.md](../guides/guide-gmail-oauth2-setup.md)** - Gmail authentication and polling cursor
 - **[guide-whisper-transcription.md](../guides/guide-whisper-transcription.md)** - Local audio transcription implementation
-- **[guide-capture-debugging.md](../guides/guide-capture-debugging.md)** - Capture debugging techniques
+- **[guide-capture-debugging.md](../guides/guide-capture-debugging.md)** - General capture debugging techniques
+- **[guide-voice-capture-debugging.md](../guides/guide-voice-capture-debugging.md)** - Voice memo specific troubleshooting (APFS dataless files, iCloud sync, voice memo metadata, iOS sync detection)
 
 ### CLI Implementation
 - **[guide-cli-doctor-implementation.md](../guides/guide-cli-doctor-implementation.md)** - Doctor command implementation guide

@@ -35,6 +35,7 @@ Use this guide when:
 - [Error Recovery Guide](./guide-error-recovery.md) - Retry orchestration and error classification
 - [Polling Implementation Guide](./guide-polling-implementation.md) - Polling architecture and sync state
 - [Whisper Transcription Guide](./guide-whisper-transcription.md) - Transcription debugging
+- **[Voice Capture Debugging Guide](./guide-voice-capture-debugging.md) - Voice memo specific troubleshooting** (APFS dataless files, iCloud sync, voice memo metadata, iOS sync detection)
 - [Capture Tech Spec](../features/capture/spec-capture-tech.md) - Implementation details
 - [Capture Test Spec](../features/capture/spec-capture-test.md) - Test patterns
 - [Direct Export Pattern](../cross-cutting/spec-direct-export-tech.md) - Export mechanics
@@ -1410,6 +1411,7 @@ gnuplot -e "set datafile separator ','; plot 'latency.csv' with lines"
 - [Error Recovery Guide](./guide-error-recovery.md) - Retry policies and DLQ
 - [Polling Implementation Guide](./guide-polling-implementation.md) - Polling architecture
 - [Whisper Transcription Guide](./guide-whisper-transcription.md) - Transcription internals
+- **[Voice Capture Debugging Guide](./guide-voice-capture-debugging.md) - Voice memo specific troubleshooting** (APFS dataless files, iCloud sync, voice memo metadata, iOS sync detection, advanced debugging techniques)
 - [Capture PRD](../features/capture/prd-capture.md) - Product requirements
 - [Capture Tech Spec](../features/capture/spec-capture-tech.md) - Technical details
 - [Capture Test Spec](../features/capture/spec-capture-test.md) - Test strategies

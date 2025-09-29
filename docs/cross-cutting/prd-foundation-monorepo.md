@@ -867,7 +867,7 @@ All checks passed! 🎉
 
 - [Foundation Monorepo TECH Spec](./spec-foundation-monorepo-tech.md) - Technical implementation details
 - [Foundation Monorepo ARCH Spec](./spec-foundation-monorepo-arch.md) - Architecture specification
-- [TestKit Tech Spec](/Users/nathanvale/code/adhd-brain/docs/cross-cutting/spec-testkit-tech.md) - Test isolation patterns
+- [TestKit Tech Spec](../guides/guide-testkit-usage.md) - Test isolation patterns
 
 ### Supporting Guides
 

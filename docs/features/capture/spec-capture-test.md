@@ -1,12 +1,12 @@
 ---
 title: Capture Test Spec
-status: draft
+status: approved
 owner: Nathan
-version: 0.1.0
-date: 2025-09-27
+version: 0.2.0
+date: 2025-09-29
 spec_type: test
 master_prd_version: 2.3.0-MPPP
-roadmap_version: 2.0.0-MPPP
+roadmap_version: 3.0.0
 ---
 
 ⚠️ **MPPP Scope Warning:** This test spec includes extensive Phase 2+ test patterns:
@@ -15,6 +15,8 @@ roadmap_version: 2.0.0-MPPP
 - **Outbox pattern tests:** Deferred to Phase 5+ per [Master PRD v2.3.0-MPPP](../../master/prd-master.md)
 
 **MPPP Phase 1 Focus:** Test direct export idempotency, atomic writes, and crash recovery (Section 8.4 + basic integration tests).
+
+Related Guides: [Voice Capture Debugging Guide](../../guides/guide-voice-capture-debugging.md) for APFS dataless file troubleshooting, voice memo metadata validation, iOS sync detection, and system-level debugging techniques.
 
 ---
 
@@ -41,12 +43,344 @@ roadmap_version: 2.0.0-MPPP
 - Atomic temp/rename write
 - Crash + auto-recovery (queryRecoverable flow)
 - Direct export pattern contracts (Section 8.4)
+- **APFS dataless file handling (Section 4.1 - NEW P0 CRITICAL)**
+- Voice memo metadata extraction
+- iOS sync detection
 
 **Phase 2+ (Deferred):**
 - ⏳ Retry coordinator integration contracts (Section 8.1)
 - ⏳ Metrics emission contracts (Section 8.2 - basic metrics only in Phase 1)
 - ⏳ Error recovery flow contracts (Section 8.3 - DLQ, circuit breaker)
 - ⏳ Conflict sibling creation (ULID collisions handled by halt in Phase 1)
+
+### 4.1 APFS Dataless File Handling Tests (P0 CRITICAL)
+
+**Context:** Voice memos may be stored as APFS dataless files that require iCloud download. This is a critical P0 gap that must be tested comprehensively.
+
+#### Unit Tests
+
+```typescript
+describe('APFS Dataless Detection', () => {
+  it('detects .icloud placeholder files', async () => {
+    // Create mock .icloud file
+    const mockPath = '/path/to/Recording.m4a';
+    const icloudPath = '/path/to/.Recording.m4a.icloud';
+
+    mockFs.existsSync.mockImplementation((path) => {
+      if (path === mockPath) return false;
+      if (path === icloudPath) return true;
+      return false;
+    });
+
+    const status = await detectAPFSStatus(mockPath);
+
+    expect(status.exists).toBe(true);
+    expect(status.isDataless).toBe(true);
+    expect(status.isDownloading).toBe(false);
+  });
+
+  it('detects files with size < 1KB as dataless', async () => {
+    const mockPath = '/path/to/Recording.m4a';
+
+    mockFs.statSync.mockReturnValue({
+      size: 512, // Less than 1KB
+      birthtime: new Date(),
+      mtime: new Date()
+    });
+
+    const status = await detectAPFSStatus(mockPath);
+
+    expect(status.isDataless).toBe(true);
+  });
+
+  it('checks extended attributes for download state', async () => {
+    const mockPath = '/path/to/Recording.m4a';
+
+    mockXattr.get.mockReturnValue({
+      'com.apple.metadata:com_apple_clouddocs_downloading': Buffer.from('1')
+    });
+
+    const status = await detectAPFSStatus(mockPath);
+
+    expect(status.isDownloading).toBe(true);
+  });
+});
+```
+
+#### Integration Tests
+
+```typescript
+describe('APFS Download Handling', () => {
+  let icloudctl: MockICloudController;
+  let downloader: VoiceFileDownloader;
+
+  beforeEach(() => {
+    icloudctl = new MockICloudController();
+    downloader = new VoiceFileDownloader(icloudctl);
+  });
+
+  it('triggers sequential download for dataless files', async () => {
+    const files = [
+      '/path/to/file1.m4a',
+      '/path/to/file2.m4a',
+      '/path/to/file3.m4a'
+    ];
+
+    // Mock all files as dataless
+    files.forEach(file => {
+      icloudctl.mockFileStatus(file, {
+        isUbiquitousItem: true,
+        isDownloaded: false
+      });
+    });
+
+    const results = await Promise.all(
+      files.map(file => downloader.downloadIfNeeded(file))
+    );
+
+    // Verify sequential processing (semaphore = 1)
+    const downloadCalls = icloudctl.getDownloadCalls();
+    expect(downloadCalls.length).toBe(3);
+
+    // Check timing to ensure sequential
+    for (let i = 1; i < downloadCalls.length; i++) {
+      expect(downloadCalls[i].startTime).toBeGreaterThanOrEqual(
+        downloadCalls[i-1].endTime
+      );
+    }
+  });
+
+  it('handles download timeout with retry', async () => {
+    const filePath = '/path/to/timeout.m4a';
+
+    // Mock timeout on first attempt
+    let attempts = 0;
+    icloudctl.startDownload.mockImplementation(async () => {
+      attempts++;
+      if (attempts === 1) {
+        await sleep(61000); // Exceed 60s timeout
+        throw new Error('Download timeout');
+      }
+      // Success on retry
+    });
+
+    const result = await handleDatalessFile(
+      filePath,
+      DatalessHandlingStrategy.FORCE_DOWNLOAD
+    );
+
+    expect(result.ready).toBe(false);
+    expect(result.error).toContain('timeout');
+    expect(result.retryAfter).toBeDefined();
+  });
+
+  it('applies exponential backoff during download polling', async () => {
+    const filePath = '/path/to/slow-download.m4a';
+    const pollDelays: number[] = [];
+
+    // Mock gradual download progress
+    let progress = 0;
+    icloudctl.checkFileStatus.mockImplementation(async () => {
+      const delay = Date.now() - lastPoll;
+      if (lastPoll) pollDelays.push(delay);
+      lastPoll = Date.now();
+
+      progress += 20;
+      return {
+        isDownloaded: progress >= 100,
+        percentDownloaded: progress
+      };
+    });
+
+    await handleDatalessFile(filePath);
+
+    // Verify exponential backoff: 1s, 1.5s, 2.25s, 3.375s...
+    expect(pollDelays[0]).toBeCloseTo(1000, -2);
+    expect(pollDelays[1]).toBeCloseTo(1500, -2);
+    expect(pollDelays[2]).toBeCloseTo(2250, -2);
+  });
+});
+```
+
+#### Error Recovery Tests
+
+```typescript
+describe('APFS Error Recovery', () => {
+  it('recovers from network offline during download', async () => {
+    const filePath = '/path/to/offline.m4a';
+
+    // Mock network offline error
+    icloudctl.startDownload.mockRejectedValue(
+      new Error('Network offline: NSURLErrorDomain -1009')
+    );
+
+    const result = await handleDatalessFile(filePath);
+
+    expect(result.ready).toBe(false);
+    expect(result.error).toContain('Network offline');
+    expect(result.retryAfter).toBeDefined();
+
+    // Should retry on next poll cycle (60s later)
+    const retryDelay = result.retryAfter.getTime() - Date.now();
+    expect(retryDelay).toBeCloseTo(60000, -3);
+  });
+
+  it('handles iCloud quota exceeded error', async () => {
+    const filePath = '/path/to/quota-exceeded.m4a';
+
+    icloudctl.startDownload.mockRejectedValue(
+      new Error('iCloud storage full: NSUbiquitousErrorDomain 507')
+    );
+
+    const result = await handleDatalessFile(filePath);
+
+    expect(result.ready).toBe(false);
+    expect(result.error).toContain('storage full');
+
+    // Should not retry automatically
+    expect(result.retryAfter).toBeUndefined();
+
+    // Should export placeholder
+    const placeholder = await getExportedPlaceholder(filePath);
+    expect(placeholder).toContain('iCloud storage full');
+  });
+
+  it('quarantines file on SHA-256 mismatch after download', async () => {
+    const filePath = '/path/to/corrupted.m4a';
+    const expectedFingerprint = 'abc123...';
+
+    // Mock successful download
+    icloudctl.startDownload.mockResolvedValue();
+
+    // Mock fingerprint mismatch
+    mockSha256.mockReturnValue('xyz789...');
+
+    const capture = await stageVoiceCapture(filePath, expectedFingerprint);
+
+    expect(capture.metadata.integrity.quarantine).toBe(true);
+    expect(capture.metadata.integrity.quarantine_reason).toBe('fingerprint_mismatch');
+
+    // Should log to errors_log
+    const error = await db.get(
+      'SELECT * FROM errors_log WHERE capture_id = ?',
+      [capture.id]
+    );
+    expect(error.error_type).toBe('integrity.fingerprint_mismatch');
+  });
+});
+```
+
+#### Edge Case Tests
+
+```typescript
+describe('APFS Edge Cases', () => {
+  it('handles race condition: file becomes dataless during processing', async () => {
+    const filePath = '/path/to/race-condition.m4a';
+
+    let callCount = 0;
+    icloudctl.checkFileStatus.mockImplementation(async () => {
+      callCount++;
+      // First call: file is downloaded
+      if (callCount === 1) {
+        return { isDownloaded: true, isUbiquitousItem: true };
+      }
+      // Second call: file evicted (became dataless)
+      return { isDownloaded: false, isUbiquitousItem: true };
+    });
+
+    const result = await processVoiceMemo(filePath);
+
+    expect(result.status).toBe('retry_needed');
+    expect(result.reason).toContain('became dataless');
+  });
+
+  it('handles concurrent download requests for same file', async () => {
+    const filePath = '/path/to/concurrent.m4a';
+
+    // Start two downloads simultaneously
+    const download1 = downloader.downloadIfNeeded(filePath);
+    const download2 = downloader.downloadIfNeeded(filePath);
+
+    const [result1, result2] = await Promise.all([download1, download2]);
+
+    // Only one actual download should occur
+    expect(icloudctl.startDownload).toHaveBeenCalledTimes(1);
+
+    // Both should get success result
+    expect(result1.success).toBe(true);
+    expect(result2.success).toBe(true);
+  });
+
+  it('handles file deletion during download', async () => {
+    const filePath = '/path/to/deleted.m4a';
+
+    // Start download
+    const downloadPromise = handleDatalessFile(filePath);
+
+    // Simulate file deletion mid-download
+    setTimeout(() => {
+      mockFs.unlinkSync(filePath);
+    }, 100);
+
+    const result = await downloadPromise;
+
+    expect(result.ready).toBe(false);
+    expect(result.error).toContain('File not found');
+
+    // Should mark as permanent error
+    const capture = await getCaptureByPath(filePath);
+    expect(capture.status).toBe('error');
+    expect(capture.metadata.error.permanent).toBe(true);
+  });
+});
+```
+
+#### Performance Tests
+
+```typescript
+describe('APFS Performance', () => {
+  it('processes large voice memo library efficiently', async () => {
+    // Create 1000 mock voice memos
+    const files = Array.from({ length: 1000 }, (_, i) =>
+      `/path/to/Recording-${i}.m4a`
+    );
+
+    // 10% are dataless
+    files.slice(0, 100).forEach(file => {
+      icloudctl.mockFileStatus(file, { isDownloaded: false });
+    });
+
+    const startTime = Date.now();
+    const results = await scanner.scanIncrementally(files);
+    const duration = Date.now() - startTime;
+
+    expect(results.filesScanned).toBe(1000);
+    expect(results.errors.length).toBe(0);
+
+    // Should complete within reasonable time (< 30s for 1000 files)
+    expect(duration).toBeLessThan(30000);
+
+    // Should batch process to avoid memory overload
+    const memoryUsage = process.memoryUsage().rss / 1e6;
+    expect(memoryUsage).toBeLessThan(500); // Less than 500MB
+  });
+
+  it('uses LRU cache to avoid redundant fingerprinting', async () => {
+    const filePath = '/path/to/cached.m4a';
+
+    // Process same file multiple times
+    for (let i = 0; i < 10; i++) {
+      await scanner.processFile(filePath);
+    }
+
+    // Fingerprint should only be computed once
+    expect(mockSha256).toHaveBeenCalledTimes(1);
+
+    // Subsequent calls should hit cache
+    expect(scanner.cacheHits).toBe(9);
+  });
+});
+```
 
 ## 5) Tooling
 - **Vitest**: Test runner and assertion library

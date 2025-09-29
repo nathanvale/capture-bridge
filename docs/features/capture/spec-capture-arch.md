@@ -1,22 +1,31 @@
 ---
 title: Capture Architecture Overview
-status: living
+status: approved
 owner: Nathan
-version: 1.0.0
-date: 2025-09-27
+version: 1.1.0
+date: 2025-09-29
 spec_type: architecture
 master_prd_version: 2.3.0-MPPP
-roadmap_version: 2.0.0-MPPP
+roadmap_version: 3.0.0
 ---
 
-⚠️ **Superseded (MPPP):** This architecture document describes an outbox queue pattern.
-**MPPP implementation uses direct synchronous export to Obsidian vault (no queue).**
-Outbox pattern deferred to Phase 5+ per [Master PRD v2.3.0-MPPP](../../master/prd-master.md).
-Sections referencing "Outbox Queue" are retained for historical context only.
+⚠️ **Architecture Evolution (MPPP):** This spec describes both historical outbox queue architecture and current Direct Export Pattern.
+**Current MPPP implementation:** Direct synchronous export to Obsidian vault (no queue) per [Direct Export Pattern](../../cross-cutting/spec-direct-export-tech.md).
+**Deferred to Phase 5+:** Outbox queue pattern for background processing and advanced workflow automation.
+**Sections marked with ⏳:** Historical/future architecture preserved for context.
 
 ---
 
-Related: `prd-capture.md` • Tech: `spec-capture-tech.md` • Guides: `../../guides/guide-polling-implementation.md`, `../../guides/guide-gmail-oauth2-setup.md`, `../../guides/guide-whisper-transcription.md`
+**Related Documentation:**
+- **PRD**: [Capture Product Requirements](./prd-capture.md)
+- **Tech Spec**: [Capture Technical Specification](./spec-capture-tech.md)
+- **Test Spec**: [Capture Test Specification](./spec-capture-test.md)
+- **Guides**:
+  - [Voice Capture Debugging](../../guides/guide-voice-capture-debugging.md) - APFS dataless files, voice memo metadata, iOS sync detection
+  - [Polling Implementation](../../guides/guide-polling-implementation.md) - Voice and email polling patterns
+  - [Gmail OAuth2 Setup](../../guides/guide-gmail-oauth2-setup.md) - Email capture authentication
+  - [Whisper Transcription](../../guides/guide-whisper-transcription.md) - Voice transcription configuration
+  - [Error Recovery](../../guides/guide-error-recovery.md) - General error handling patterns
 
 # Capture Feature Architecture
 
@@ -30,25 +39,37 @@ Provide a durable, extensible, low-friction ingestion layer that:
 ## 0. Guiding Principles
 
 - Durability first: not "captured" until persisted in the staging ledger
-- Single write funnel to the vault (outbox only)
+- Single write funnel to the vault (Direct Export Pattern in MPPP; outbox deferred to Phase 5+)
 - Cheap early structure (envelope + hash) / expensive enrichment deferred
 - Every stage must be crash safe + replayable
 - YAGNI boundaries strictly enforced
 
 ## 1. High-Level Placement
 
+**MPPP Implementation (Current):**
 ```text
-Input (voice | text | web* | email*)
+Input (voice | email)
   -> Channel Adapter
     -> Ingestion Service (envelope + hashes + dedup)
       -> Staging Ledger (SQLite WAL)
-        -> (Optional) Enrichment Workers
-          -> Outbox Queue
-            -> Vault Writer (atomic temp+rename)
+        -> Sequential Transcription (voice only)
+          -> Direct Export (synchronous, atomic temp+rename)
+            -> Audit Log / Metrics
+```
+
+**Phase 5+ Future Architecture (Outbox Pattern):**
+```text
+Input (voice | text | web | email)
+  -> Channel Adapter
+    -> Ingestion Service (envelope + hashes + dedup)
+      -> Staging Ledger (SQLite WAL)
+        -> ⏳ Enrichment Workers (parallel processing)
+          -> ⏳ Outbox Queue (background processing)
+            -> ⏳ Vault Writer (batch operations)
               -> Audit Log / Metrics
 ```
 
-Web/email are deferred; seams reserved for future phases.
+**MPPP Scope:** Voice + email only; web/text deferred to Phase 5+.
 
 ## 2. Component Overview
 
@@ -272,7 +293,19 @@ If triggered: add persisted column + backward-fill in single transaction; add to
 1. Automated user remediation flow for quarantine?
 1. Schema → generated CLI help artifacts (MDX)?
 
-## 17. Glossary
+## 17. ADR References
+
+- [ADR 0001: Voice File Sovereignty](../../adr/0001-voice-file-sovereignty.md)
+- [ADR 0003: Four-Table Hard Cap](../../adr/0003-four-table-hard-cap.md)
+- [ADR 0004: Status-Driven State Machine](../../adr/0004-status-driven-state-machine.md)
+- [ADR 0005: WAL Mode with NORMAL Synchronous](../../adr/0005-wal-mode-normal-sync.md)
+- [ADR 0008: Sequential Processing](../../adr/0008-sequential-processing-mppp.md)
+- [ADR 0022: SQLite Cache Size Optimization](../../adr/0022-sqlite-cache-size-optimization.md)
+- [ADR 0023: Composite Indexes for Recovery and Export](../../adr/0023-composite-indexes-recovery-export.md)
+- [ADR 0024: PRAGMA optimize Implementation](../../adr/0024-pragma-optimize-implementation.md)
+- [ADR 0025: Memory Mapping for Large Data Performance](../../adr/0025-memory-mapping-large-data-performance.md)
+
+## 18. Glossary
 
 | Term | Meaning |
 |------|---------|
@@ -284,6 +317,7 @@ If triggered: add persisted column + backward-fill in single transaction; add to
 
 ---
 
-Version: 1.0.0  
-Last Updated: 2025-09-26  
+Version: 1.1.0
+Last Updated: 2025-09-29
 Author: Copilot (pairing with Nathan)
+Change Log: v1.1.0 - Version sync to roadmap v3.0.0, outbox pattern clearly marked as deferred

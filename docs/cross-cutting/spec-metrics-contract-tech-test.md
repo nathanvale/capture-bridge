@@ -1048,7 +1048,7 @@ export const ERROR_FIXTURES = {
 
 ### 12.2 TestKit Integration
 - [TestKit Usage Guide](../guides/guide-testkit-usage.md) - Practical testing patterns
-- [TestKit Technical Specification](./spec-testkit-tech.md) - Testing infrastructure
+- [TestKit Technical Specification](./../guides/guide-testkit-usage.md) - Testing infrastructure
 - [Test Strategy Guide](../guides/guide-test-strategy.md) - Overall testing approach
 
 ### 12.3 Feature Integration

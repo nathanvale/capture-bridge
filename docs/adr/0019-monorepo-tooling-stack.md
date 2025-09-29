@@ -1,9 +1,17 @@
-# ADR 0013: Monorepo Tooling Stack (pnpm + Turbo + TSUP)
+---
+adr: 0019
+title: Monorepo Tooling Stack (pnpm + Turbo + TSUP)
+status: accepted
+context-date: 2025-09-28
+owner: Nathan
+spec_type: adr
+version: 0.1.0
+---
 
-## Date
-2025-09-28
+# ADR 0019: Monorepo Tooling Stack (pnpm + Turbo + TSUP)
 
 ## Status
+
 Accepted
 
 ## Context

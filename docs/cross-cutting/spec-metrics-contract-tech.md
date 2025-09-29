@@ -1505,9 +1505,9 @@ describe('Metrics Schema Compatibility', () => {
 
 | Document | Relationship |
 |----------|--------------|
-| [Gmail OAuth2 Tech Spec](../features/capture/spec-capture-gmail-oauth2-tech.md) | Gmail-specific metrics |
-| [Whisper Runtime Tech Spec](../features/capture/spec-capture-whisper-runtime-tech.md) | Transcription metrics |
-| [Error Recovery Tech Spec](./spec-error-recovery-tech.md) | Retry and DLQ metrics |
+| [Gmail OAuth2 Tech Spec](../features/capture/spec-capture-tech.md#gmail-oauth2) | Gmail-specific metrics |
+| [Whisper Runtime Tech Spec](../features/capture/spec-capture-tech.md#whisper-transcription) | Transcription metrics |
+| [Error Recovery Guide](../guides/guide-error-recovery.md) | Retry and DLQ metrics |
 | [CLI Doctor Implementation Guide](../guides/guide-cli-doctor-implementation.md) | Health check integration |
 
 ### 11.3 Cross-Cutting

@@ -21,7 +21,7 @@ roadmap_version: 2.0.0-MPPP
 - [Master PRD](../master/prd-master.md) - Section 5.3 (Health Command)
 - [Capture Feature PRD](../features/capture/prd-capture.md) - Section 10.3 (Crash Recovery)
 - [Metrics Contract Tech Spec](../cross-cutting/spec-metrics-contract-tech.md) - §7.2 (Health Check Format)
-- [Error Recovery Tech Spec](../cross-cutting/spec-error-recovery-tech.md) - Error states to check
+- [Error Recovery Tech Spec](../guides/guide-error-recovery.md) - Error states to check
 - [Health Command Usage Guide](./health-command.md) - End-user documentation
 
 ---
@@ -1182,7 +1182,7 @@ export const EXIT_CODE_CONTRACT = {
 | Document | Relationship |
 |----------|--------------|
 | [Metrics Contract Tech Spec](../../cross-cutting/spec-metrics-contract-tech.md) | Section 7.2 Health Check Integration |
-| [Error Recovery Tech Spec](../../cross-cutting/spec-error-recovery-tech.md) | Error states to check |
+| [Error Recovery Tech Spec](../../guides/guide-error-recovery.md) | Error states to check |
 
 ### Guides (How-To)
 

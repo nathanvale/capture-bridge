@@ -1,9 +1,17 @@
+---
+adr: 0008
+title: Sequential Processing for MPPP Scope
+status: accepted
+context-date: 2025-09-28
+owner: Nathan
+spec_type: adr
+version: 0.1.0
+---
+
 # ADR 0008: Sequential Processing for MPPP Scope
 
-## Date
-2025-09-28
-
 ## Status
+
 Accepted
 
 ## Context

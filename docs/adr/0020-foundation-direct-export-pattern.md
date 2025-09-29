@@ -1,9 +1,17 @@
-# ADR 0015: Foundation Direct Export Pattern (Synchronous Atomic Writes)
+---
+adr: 0020
+title: Foundation Direct Export Pattern (Synchronous Atomic Writes)
+status: accepted
+context-date: 2025-09-28
+owner: Nathan
+spec_type: adr
+version: 0.1.0
+---
 
-## Date
-2025-09-28
+# ADR 0020: Foundation Direct Export Pattern (Synchronous Atomic Writes)
 
 ## Status
+
 Accepted
 
 ## Context

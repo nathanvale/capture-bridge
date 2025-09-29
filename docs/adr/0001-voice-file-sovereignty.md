@@ -1,9 +1,17 @@
+---
+adr: 0001
+title: Voice File Sovereignty (In-Place References Only)
+status: accepted
+context-date: 2025-01-19
+owner: Nathan
+spec_type: adr
+version: 0.1.0
+---
+
 # ADR 0001: Voice File Sovereignty (In-Place References Only)
 
-## Date
-2025-01-19
-
 ## Status
+
 Accepted
 
 ## Context

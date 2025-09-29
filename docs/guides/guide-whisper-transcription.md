@@ -29,6 +29,8 @@ Use this guide when you need to:
 
 **Related Features:** Voice capture (`docs/features/capture/`), capture architecture, polling implementation
 
+**Related Debugging:** [Voice Capture Debugging Guide](./guide-voice-capture-debugging.md) - Section 3 (Transcription Failures) for troubleshooting Whisper model issues, audio file validation, and resource monitoring
+
 **Key Constraint:** Sequential processing only (concurrency=1) to prevent resource exhaustion in MPPP.
 
 ## Prerequisites

@@ -1,17 +1,19 @@
 ---
 title: Capture Ingestion Core Technical Specification
-status: draft
+status: approved
 owner: Nathan
-version: 0.2.0-MPPP
-date: 2025-09-28
+version: 0.3.0
+date: 2025-09-29
 spec_type: tech
 master_prd_version: 2.3.0-MPPP
-roadmap_version: 2.0.0-MPPP
+roadmap_version: 3.0.0
 ---
 
-# Capture Ingestion Core Spec v0.2-MPPP
+# Capture Ingestion Core Spec v0.3.0
 
 Source of Truth Alignment: Anchored to `docs/master/prd-master.md` (Master PRD v2.3.0-MPPP), ADR-0001 Voice File Sovereignty, and `docs/cross-cutting/spec-direct-export-tech.md` (Direct Export Pattern).
+
+Related Guides: [Voice Capture Debugging Guide](../../guides/guide-voice-capture-debugging.md) for troubleshooting APFS dataless files, iCloud sync issues, transcription failures, and voice memo metadata extraction.
 
 **MPPP Scope:** This spec covers capture ingestion through staging ledger. For export behavior (staging → Obsidian vault), see [Direct Export Pattern Tech Spec](../../cross-cutting/spec-direct-export-tech.md).
 
@@ -170,6 +172,725 @@ Policy Recap:
 Integrity Measures:
 
 - Re-verify size + partial fingerprint during recovery scan; mismatch → quarantine flag `metadata.integrity.quarantine=true`.
+
+### 7.1 APFS Dataless File Detection & Handling
+
+**Context:** macOS stores Voice Memos in iCloud-synced folders. Files may exist as "dataless" placeholders (`.icloud` files or files with NSURLIsUbiquitousItemKey flag) that download on-demand when accessed.
+
+**Debugging Note:** For comprehensive troubleshooting of dataless file issues, download failures, and iCloud sync problems, see [Voice Capture Debugging Guide](../../guides/guide-voice-capture-debugging.md) Section 2 (APFS Dataless File Download Failures).
+
+**Detection Strategy:**
+
+```typescript
+interface APFSFileStatus {
+  exists: boolean;
+  isDataless: boolean;
+  isDownloading: boolean;
+  downloadProgress?: number; // 0-100
+  downloadError?: string;
+  fileSize?: number;
+  lastError?: Date;
+}
+
+async function detectAPFSStatus(filePath: string): Promise<APFSFileStatus> {
+  // Step 1: Check if file exists at all
+  const exists = await fs.access(filePath).then(() => true).catch(() => false);
+  if (!exists) {
+    // Check for .icloud placeholder file
+    const icloudPath = `${path.dirname(filePath)}/.${path.basename(filePath)}.icloud`;
+    const hasPlaceholder = await fs.access(icloudPath).then(() => true).catch(() => false);
+
+    return {
+      exists: hasPlaceholder,
+      isDataless: hasPlaceholder,
+      isDownloading: false,
+      downloadError: hasPlaceholder ? undefined : 'File not found'
+    };
+  }
+
+  // Step 2: Check extended attributes for iCloud state
+  const xattrs = await getExtendedAttributes(filePath);
+
+  // Common iCloud extended attributes:
+  // com.apple.metadata:com_apple_clouddocs_downloading - file is downloading
+  // com.apple.metadata:kMDItemIsScreenCapture - not relevant for voice memos
+  // com.apple.quarantine - security attribute, not iCloud related
+
+  const isDownloading = xattrs.has('com.apple.metadata:com_apple_clouddocs_downloading');
+
+  // Step 3: Stat the file to check size (dataless files report size 0 or small stub)
+  const stats = await fs.stat(filePath);
+  const isDataless = stats.size < 1024 && !isDownloading; // Less than 1KB likely dataless
+
+  // Step 4: For definitive check, use NSFileManager via Swift helper
+  const nsStatus = await icloudctl.checkFileStatus(filePath);
+
+  return {
+    exists: true,
+    isDataless: nsStatus.isUbiquitousItem && !nsStatus.isDownloaded,
+    isDownloading: nsStatus.isDownloading || isDownloading,
+    downloadProgress: nsStatus.percentDownloaded,
+    fileSize: stats.size,
+    lastError: undefined
+  };
+}
+```
+
+**Handling Strategy:**
+
+```typescript
+enum DatalessHandlingStrategy {
+  FORCE_DOWNLOAD = 'force_download',    // Trigger download and wait
+  SKIP_RETRY_LATER = 'skip_retry',      // Skip this poll cycle
+  QUEUE_BACKGROUND = 'queue_background', // Queue for background download
+  FAIL_FAST = 'fail_fast'               // Mark as error immediately
+}
+
+async function handleDatalessFile(
+  filePath: string,
+  strategy: DatalessHandlingStrategy = DatalessHandlingStrategy.FORCE_DOWNLOAD
+): Promise<HandleResult> {
+  const status = await detectAPFSStatus(filePath);
+
+  if (!status.isDataless) {
+    return { ready: true, path: filePath };
+  }
+
+  switch (strategy) {
+    case DatalessHandlingStrategy.FORCE_DOWNLOAD:
+      // Use icloudctl Swift helper to trigger download
+      try {
+        await icloudctl.startDownload(filePath, {
+          timeout: 60000,  // 60s timeout
+          priority: 'high'
+        });
+
+        // Poll for completion with exponential backoff
+        let attempts = 0;
+        const maxAttempts = 10;
+        let delay = 1000; // Start with 1s
+
+        while (attempts < maxAttempts) {
+          const currentStatus = await detectAPFSStatus(filePath);
+
+          if (!currentStatus.isDataless && !currentStatus.isDownloading) {
+            return { ready: true, path: filePath };
+          }
+
+          if (currentStatus.downloadError) {
+            throw new Error(`Download failed: ${currentStatus.downloadError}`);
+          }
+
+          await sleep(delay);
+          delay = Math.min(delay * 1.5, 10000); // Cap at 10s
+          attempts++;
+        }
+
+        throw new Error('Download timeout exceeded');
+
+      } catch (error) {
+        return {
+          ready: false,
+          path: filePath,
+          error: error.message,
+          retryAfter: new Date(Date.now() + 300000) // Retry in 5 minutes
+        };
+      }
+
+    case DatalessHandlingStrategy.SKIP_RETRY_LATER:
+      return {
+        ready: false,
+        path: filePath,
+        skipped: true,
+        retryAfter: new Date(Date.now() + 60000) // Retry next poll cycle
+      };
+
+    case DatalessHandlingStrategy.QUEUE_BACKGROUND:
+      await backgroundDownloadQueue.enqueue({
+        filePath,
+        priority: 'low',
+        captureId: null // Not yet captured
+      });
+
+      return {
+        ready: false,
+        path: filePath,
+        queued: true
+      };
+
+    case DatalessHandlingStrategy.FAIL_FAST:
+      throw new Error('File is dataless and immediate access required');
+  }
+}
+```
+
+**Swift Helper Integration (icloudctl):**
+
+```typescript
+interface ICloudController {
+  // Check if file is managed by iCloud
+  checkFileStatus(path: string): Promise<{
+    exists: boolean;
+    isUbiquitousItem: boolean;
+    isDownloaded: boolean;
+    isDownloading: boolean;
+    hasUnresolvedConflicts: boolean;
+    percentDownloaded?: number;
+    downloadError?: string;
+  }>;
+
+  // Trigger download of dataless file
+  startDownload(path: string, options?: {
+    timeout?: number;
+    priority?: 'high' | 'normal' | 'low';
+  }): Promise<void>;
+
+  // Force eviction (make dataless) - for testing
+  evictFile(path: string): Promise<void>;
+
+  // Monitor download progress
+  monitorDownload(path: string, callback: (progress: number) => void): () => void;
+}
+
+// Implementation wraps Swift binary
+class ICloudControllerImpl implements ICloudController {
+  private binaryPath = '/usr/local/bin/icloudctl'; // Installed by setup
+
+  async checkFileStatus(path: string) {
+    const result = await execAsync(`${this.binaryPath} status "${path}"`);
+    return JSON.parse(result.stdout);
+  }
+
+  async startDownload(path: string, options = {}) {
+    const args = [
+      'download',
+      `"${path}"`,
+      options.timeout ? `--timeout ${options.timeout}` : '',
+      options.priority ? `--priority ${options.priority}` : ''
+    ].filter(Boolean).join(' ');
+
+    await execAsync(`${this.binaryPath} ${args}`);
+  }
+}
+```
+
+**Error Recovery Matrix:**
+
+| Error Condition | Detection Method | Recovery Action | Retry Strategy |
+|----------------|------------------|-----------------|----------------|
+| File not found | ENOENT | Check for .icloud placeholder | Immediate retry if placeholder exists |
+| Dataless file | Size < 1KB + xattr check | Force download via icloudctl | Exponential backoff (1s, 1.5s, 2.25s...) |
+| Download in progress | xattr or NSFileManager | Wait with timeout | Poll every 2s up to 60s |
+| Download failed | icloudctl error | Log error, mark for manual review | Retry after 5 minutes, max 3 attempts |
+| Network offline | icloudctl timeout | Skip this poll cycle | Check network, retry on next poll |
+| iCloud quota exceeded | NSFileManager error | Alert user, export placeholder | No automatic retry |
+| File corrupted | SHA-256 mismatch after download | Quarantine file | Manual intervention required |
+
+**Sequential Download Enforcement:**
+
+```typescript
+class VoiceFileDownloader {
+  private downloadSemaphore = new Semaphore(1); // Only 1 concurrent download
+  private activeDownload?: string;
+
+  async downloadIfNeeded(filePath: string): Promise<DownloadResult> {
+    // Enforce sequential downloads to prevent ubd daemon overload
+    const release = await this.downloadSemaphore.acquire();
+
+    try {
+      this.activeDownload = filePath;
+
+      const status = await detectAPFSStatus(filePath);
+      if (!status.isDataless) {
+        return { success: true, alreadyDownloaded: true };
+      }
+
+      // Trigger download with careful resource management
+      const result = await handleDatalessFile(filePath, DatalessHandlingStrategy.FORCE_DOWNLOAD);
+
+      if (!result.ready) {
+        await logError(null, 'voice_download', `Failed to download: ${result.error}`);
+        return { success: false, error: result.error };
+      }
+
+      return { success: true, downloadedBytes: result.fileSize };
+
+    } finally {
+      this.activeDownload = undefined;
+      release();
+    }
+  }
+
+  getStatus(): DownloaderStatus {
+    return {
+      isDownloading: !!this.activeDownload,
+      currentFile: this.activeDownload,
+      queueDepth: this.downloadSemaphore.waitingCount
+    };
+  }
+}
+```
+
+**Integration with Voice Polling:**
+
+```typescript
+async function pollVoiceFolder(): Promise<PollResult> {
+  const voicePath = '~/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings/';
+  const files = await glob(`${voicePath}/*.m4a`);
+
+  const results = [];
+
+  for (const filePath of files) {
+    try {
+      // Step 1: Check if already processed
+      const fingerprint = await computePartialFingerprint(filePath);
+      if (await isDuplicate(fingerprint)) {
+        continue;
+      }
+
+      // Step 2: Check APFS status
+      const apfsStatus = await detectAPFSStatus(filePath);
+
+      if (apfsStatus.isDataless) {
+        // Step 3: Handle dataless file
+        const downloadResult = await voiceDownloader.downloadIfNeeded(filePath);
+
+        if (!downloadResult.success) {
+          // Record error but continue with other files
+          results.push({
+            path: filePath,
+            status: 'download_failed',
+            error: downloadResult.error
+          });
+          continue;
+        }
+      }
+
+      // Step 4: Proceed with normal capture flow
+      const captureId = await stageVoiceCapture(filePath, fingerprint);
+      results.push({
+        path: filePath,
+        status: 'staged',
+        captureId
+      });
+
+    } catch (error) {
+      logger.error('Voice polling error', { filePath, error });
+      results.push({
+        path: filePath,
+        status: 'error',
+        error: error.message
+      });
+    }
+  }
+
+  return {
+    filesProcessed: results.length,
+    staged: results.filter(r => r.status === 'staged').length,
+    downloadsFailed: results.filter(r => r.status === 'download_failed').length,
+    errors: results.filter(r => r.status === 'error').length
+  };
+}
+```
+
+### 7.2 Voice Memo File Metadata & Naming Patterns
+
+**Debugging Note:** For diagnostic commands, file inspection techniques, and metadata troubleshooting, see [Voice Capture Debugging Guide](../../guides/guide-voice-capture-debugging.md) Section 1 (Quick Diagnostic Commands) and Section 4 (Voice Memo File Metadata).
+
+**Voice Memo File Locations:**
+
+```typescript
+const VOICE_MEMO_PATHS = {
+  // Primary location for Voice Memos.app recordings
+  primary: '~/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings/',
+
+  // Legacy location (pre-macOS 10.15)
+  legacy: '~/Library/Application Support/com.apple.voicememos/Recordings/',
+
+  // Temporary processing location
+  temp: '/var/folders/.../com.apple.VoiceMemos.tmp/',
+
+  // Database containing metadata
+  database: '~/Library/Group Containers/group.com.apple.VoiceMemos.shared/CloudRecordings.db'
+};
+```
+
+**File Naming Patterns:**
+
+```typescript
+interface VoiceMemoFilePattern {
+  // Standard patterns observed in Voice Memos.app
+  patterns: {
+    // Format: YYYYMMDD HHMMSS.m4a (e.g., "20250927 143022.m4a")
+    dateTime: /^\d{8} \d{6}\.m4a$/,
+
+    // Format: Recording.m4a (unnamed recordings)
+    unnamed: /^Recording\.m4a$/,
+
+    // Format: Recording N.m4a (e.g., "Recording 2.m4a")
+    unnamedNumbered: /^Recording \d+\.m4a$/,
+
+    // Format: Custom Name.m4a (user-renamed)
+    custom: /^.+\.m4a$/,
+
+    // Format: UUID-based (synced from iOS)
+    uuid: /^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}\.m4a$/i
+  };
+}
+
+function parseVoiceMemoFilename(filename: string): VoiceMemoMetadata {
+  // Extract metadata from filename
+  const dateTimeMatch = filename.match(/^(\d{4})(\d{2})(\d{2}) (\d{2})(\d{2})(\d{2})\.m4a$/);
+
+  if (dateTimeMatch) {
+    const [, year, month, day, hour, minute, second] = dateTimeMatch;
+    return {
+      type: 'datetime',
+      recordedAt: new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`),
+      originalName: filename,
+      isRenamed: false
+    };
+  }
+
+  if (filename.match(/^Recording( \d+)?\.m4a$/)) {
+    return {
+      type: 'unnamed',
+      recordedAt: null, // Must get from file stats or metadata
+      originalName: filename,
+      isRenamed: false
+    };
+  }
+
+  return {
+    type: 'custom',
+    recordedAt: null,
+    originalName: filename,
+    isRenamed: true
+  };
+}
+```
+
+**Audio Format Metadata Extraction:**
+
+```typescript
+interface AudioMetadata {
+  duration: number;        // seconds
+  bitrate: number;         // kbps
+  sampleRate: number;      // Hz (typically 44100)
+  channels: number;        // 1 (mono) or 2 (stereo)
+  codec: string;          // 'aac', 'alac', etc.
+  fileSize: number;       // bytes
+  creationDate: Date;
+  modificationDate: Date;
+  device?: string;        // Recording device if available
+  location?: {            // GPS if location services enabled
+    latitude: number;
+    longitude: number;
+  };
+}
+
+async function extractAudioMetadata(filePath: string): Promise<AudioMetadata> {
+  // Use ffprobe for reliable metadata extraction
+  const ffprobeCmd = `ffprobe -v quiet -print_format json -show_format -show_streams "${filePath}"`;
+  const result = await execAsync(ffprobeCmd);
+  const metadata = JSON.parse(result.stdout);
+
+  // Extract core audio properties
+  const audioStream = metadata.streams.find(s => s.codec_type === 'audio');
+  const format = metadata.format;
+
+  // Get file system metadata
+  const stats = await fs.stat(filePath);
+
+  // Try to extract device info from tags
+  const device = format.tags?.['com.apple.recording.device'] ||
+                 format.tags?.['encoder'] ||
+                 undefined;
+
+  return {
+    duration: parseFloat(format.duration),
+    bitrate: parseInt(format.bit_rate) / 1000,
+    sampleRate: parseInt(audioStream.sample_rate),
+    channels: audioStream.channels,
+    codec: audioStream.codec_name,
+    fileSize: stats.size,
+    creationDate: new Date(stats.birthtime),
+    modificationDate: new Date(stats.mtime),
+    device,
+    location: extractGPSFromTags(format.tags)
+  };
+}
+```
+
+**Handling Edited/Trimmed Voice Memos:**
+
+```typescript
+interface EditDetection {
+  isEdited: boolean;
+  editType?: 'trimmed' | 'enhanced' | 'merged';
+  originalDuration?: number;
+  editedDuration?: number;
+  editTimestamp?: Date;
+}
+
+async function detectVoiceMemoEdits(filePath: string): Promise<EditDetection> {
+  const metadata = await extractAudioMetadata(filePath);
+  const stats = await fs.stat(filePath);
+
+  // Heuristics for detecting edits:
+
+  // 1. Creation date significantly different from modification date
+  const timeDiff = stats.mtime.getTime() - stats.birthtime.getTime();
+  const significantEdit = timeDiff > 60000; // More than 1 minute difference
+
+  // 2. Check for edit markers in metadata
+  const ffprobeResult = await execAsync(`ffprobe -show_format "${filePath}"`);
+  const hasEditMarkers = ffprobeResult.stdout.includes('com.apple.voice.edits');
+
+  // 3. Check for non-standard encoder tags (Voice Memos uses specific encoder)
+  const nonStandardEncoder = metadata.device &&
+    !metadata.device.includes('com.apple.VoiceMemos');
+
+  if (!significantEdit && !hasEditMarkers && !nonStandardEncoder) {
+    return { isEdited: false };
+  }
+
+  // Determine edit type
+  let editType: EditDetection['editType'] = 'trimmed'; // Default assumption
+
+  if (hasEditMarkers) {
+    // Parse edit markers for specific type
+    if (ffprobeResult.stdout.includes('trim')) editType = 'trimmed';
+    if (ffprobeResult.stdout.includes('enhance')) editType = 'enhanced';
+    if (ffprobeResult.stdout.includes('merge')) editType = 'merged';
+  }
+
+  return {
+    isEdited: true,
+    editType,
+    editedDuration: metadata.duration,
+    editTimestamp: stats.mtime
+  };
+}
+```
+
+**Collision Handling for Voice Memo Names:**
+
+```typescript
+class VoiceMemoNameResolver {
+  private processedNames = new Set<string>();
+
+  async resolveUniqueName(originalPath: string): Promise<string> {
+    const basename = path.basename(originalPath, '.m4a');
+    const dir = path.dirname(originalPath);
+
+    // If name is unique, use it
+    if (!this.processedNames.has(basename)) {
+      this.processedNames.add(basename);
+      return originalPath;
+    }
+
+    // Generate unique suffix
+    let counter = 1;
+    let uniqueName: string;
+
+    do {
+      uniqueName = `${basename} (${counter})`;
+      counter++;
+    } while (this.processedNames.has(uniqueName));
+
+    this.processedNames.add(uniqueName);
+    return path.join(dir, `${uniqueName}.m4a`);
+  }
+
+  async generateCaptureId(filePath: string, metadata: AudioMetadata): Promise<string> {
+    // Use ULID for time-sortable unique IDs
+    const ulid = generateULID();
+
+    // Store mapping for collision detection
+    await db.run(
+      `INSERT INTO capture_name_map (capture_id, original_path, resolved_name, created_at)
+       VALUES (?, ?, ?, CURRENT_TIMESTAMP)`,
+      [ulid, filePath, ulid]
+    );
+
+    return ulid;
+  }
+}
+```
+
+### 7.3 iOS Device Sync Detection
+
+**Detecting Voice Memos from iOS Devices:**
+
+```typescript
+interface IOSSyncDetection {
+  isFromIOS: boolean;
+  deviceName?: string;
+  deviceModel?: string;
+  syncedAt?: Date;
+  originalRecordingDate?: Date;
+}
+
+async function detectIOSSync(filePath: string): Promise<IOSSyncDetection> {
+  // Check for iOS-specific patterns
+
+  // 1. UUID-based filenames are typically from iOS
+  const filename = path.basename(filePath);
+  const isUUID = /^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}\.m4a$/i.test(filename);
+
+  // 2. Check metadata for iOS device markers
+  const metadata = await extractAudioMetadata(filePath);
+  const isIOSDevice = metadata.device?.includes('iPhone') ||
+                      metadata.device?.includes('iPad') ||
+                      metadata.device?.includes('iOS');
+
+  // 3. Check CloudRecordings.db for sync metadata (if accessible)
+  let syncMetadata: any = null;
+  try {
+    const dbPath = expandPath('~/Library/Group Containers/group.com.apple.VoiceMemos.shared/CloudRecordings.db');
+    const db = await sqlite3.open(dbPath, { readonly: true });
+
+    syncMetadata = await db.get(
+      `SELECT * FROM recordings WHERE file_path LIKE ?`,
+      [`%${filename}`]
+    );
+
+    await db.close();
+  } catch (error) {
+    // Database might not be accessible or recording not found
+    logger.debug('CloudRecordings.db not accessible', { error });
+  }
+
+  if (!isUUID && !isIOSDevice && !syncMetadata) {
+    return { isFromIOS: false };
+  }
+
+  return {
+    isFromIOS: true,
+    deviceName: syncMetadata?.device_name || metadata.device,
+    deviceModel: syncMetadata?.device_model,
+    syncedAt: syncMetadata?.synced_at ? new Date(syncMetadata.synced_at) : undefined,
+    originalRecordingDate: syncMetadata?.recorded_at ? new Date(syncMetadata.recorded_at) : metadata.creationDate
+  };
+}
+```
+
+### 7.4 Privacy & Security Considerations
+
+**Metadata Sanitization:**
+
+```typescript
+class VoiceMemoPrivacyFilter {
+  private sensitivePatterns = [
+    /\b\d{3}-\d{3}-\d{4}\b/g,  // Phone numbers
+    /\b\d{3}-\d{2}-\d{4}\b/g,   // SSN
+    /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, // Email
+  ];
+
+  sanitizeForLogging(metadata: AudioMetadata): SafeMetadata {
+    // Never log GPS coordinates
+    const { location, ...safeMetadata } = metadata;
+
+    // Hash device identifiers
+    if (safeMetadata.device) {
+      safeMetadata.device = sha256(safeMetadata.device).substring(0, 8);
+    }
+
+    return safeMetadata;
+  }
+
+  sanitizeFilePath(filePath: string): string {
+    // Replace username in path
+    return filePath.replace(/\/Users\/[^\/]+/, '/Users/***');
+  }
+
+  shouldRedactTranscript(transcript: string): boolean {
+    // Check for sensitive patterns
+    return this.sensitivePatterns.some(pattern => pattern.test(transcript));
+  }
+}
+```
+
+### 7.5 Performance Optimizations for Large Libraries
+
+**Incremental Scanning with Checkpoint:**
+
+```typescript
+class VoiceMemoScanner {
+  private lastScanCheckpoint?: Date;
+  private processedFingerprints = new LRUCache<string, boolean>(10000);
+
+  async scanIncrementally(): Promise<ScanResult> {
+    // Load checkpoint from sync_state
+    const checkpoint = await this.loadCheckpoint();
+
+    // Get only files modified since last scan
+    const files = await this.getModifiedFiles(checkpoint);
+
+    // Process in batches to avoid memory overload
+    const batchSize = 50;
+    const results = [];
+
+    for (let i = 0; i < files.length; i += batchSize) {
+      const batch = files.slice(i, i + batchSize);
+      const batchResults = await Promise.all(
+        batch.map(file => this.processFile(file))
+      );
+      results.push(...batchResults);
+
+      // Update checkpoint after each batch
+      await this.saveCheckpoint(new Date());
+
+      // Yield to event loop
+      await new Promise(resolve => setImmediate(resolve));
+    }
+
+    return {
+      filesScanned: files.length,
+      newCaptures: results.filter(r => r.status === 'new').length,
+      duplicates: results.filter(r => r.status === 'duplicate').length,
+      errors: results.filter(r => r.status === 'error').length
+    };
+  }
+
+  private async getModifiedFiles(since: Date): Promise<string[]> {
+    const voicePath = expandPath(VOICE_MEMO_PATHS.primary);
+
+    // Use find command for efficient filtering
+    const cmd = `find "${voicePath}" -name "*.m4a" -newermt "${since.toISOString()}" -type f`;
+    const result = await execAsync(cmd);
+
+    return result.stdout.split('\n').filter(Boolean);
+  }
+
+  private async processFile(filePath: string): Promise<ProcessResult> {
+    // Quick fingerprint check using LRU cache
+    const fingerprint = await this.computeQuickFingerprint(filePath);
+
+    if (this.processedFingerprints.get(fingerprint)) {
+      return { status: 'duplicate', path: filePath };
+    }
+
+    // Process new file
+    this.processedFingerprints.set(fingerprint, true);
+    return { status: 'new', path: filePath };
+  }
+
+  private async computeQuickFingerprint(filePath: string): Promise<string> {
+    // Use first 512KB for quick fingerprint (faster than 4MB)
+    const buffer = Buffer.alloc(524288); // 512KB
+    const fd = await fs.open(filePath, 'r');
+
+    try {
+      await fd.read(buffer, 0, buffer.length, 0);
+      return sha256(buffer);
+    } finally {
+      await fd.close();
+    }
+  }
+}
+```
 
 ## 8. Concurrency & Ordering
 
@@ -379,16 +1100,32 @@ Not introducing new tables beyond MPPP 4-table limit (`captures`, `exports_audit
 }
 ```
 
-## 20. Nerdy Joke
+## 20. ADR References
+
+- [ADR 0001: Voice File Sovereignty](../../adr/0001-voice-file-sovereignty.md)
+- [ADR 0003: Four-Table Hard Cap](../../adr/0003-four-table-hard-cap.md)
+- [ADR 0004: Status-Driven State Machine](../../adr/0004-status-driven-state-machine.md)
+- [ADR 0005: WAL Mode with NORMAL Synchronous](../../adr/0005-wal-mode-normal-sync.md)
+- [ADR 0006: Late Hash Binding for Voice](../../adr/0006-late-hash-binding-voice.md)
+- [ADR 0007: 90-Day Retention](../../adr/0007-90-day-retention-exported-only.md)
+- [ADR 0008: Sequential Processing](../../adr/0008-sequential-processing-mppp.md)
+- [ADR 0021: Local-Only NDJSON Metrics](../../adr/0021-local-metrics-ndjson-strategy.md)
+- [ADR 0022: SQLite Cache Size Optimization](../../adr/0022-sqlite-cache-size-optimization.md)
+- [ADR 0023: Composite Indexes for Recovery and Export](../../adr/0023-composite-indexes-recovery-export.md)
+- [ADR 0024: PRAGMA optimize Implementation](../../adr/0024-pragma-optimize-implementation.md)
+- [ADR 0025: Memory Mapping for Large Data Performance](../../adr/0025-memory-mapping-large-data-performance.md)
+
+## 21. Nerdy Joke
 
 Ingestion state machines are like ADHD-friendly checklists—short, linear, and everything past READY is someone else's problem (specifically, the Direct Export Pattern's problem). Keep the state machine shallow and the hash fast.
 
 ---
-Version: 0.2.0-MPPP
-Last Updated: 2025-09-28
+Version: 0.3.0
+Last Updated: 2025-09-29
 Author: adhd-brain-planner (Nathan)
 Reviewers: (TBD)
 Change Log:
 
+- 0.3.0 (2025-09-29): Version sync to roadmap v3.0.0; enhanced APFS dataless file handling; comprehensive voice memo debugging
 - 0.2.0-MPPP (2025-09-28): Removed outbox queue references; aligned with Direct Export Pattern; clarified MPPP 4-table scope
 - 0.1.0 (2025-09-26): Initial draft including SHA-256 hashing strategy

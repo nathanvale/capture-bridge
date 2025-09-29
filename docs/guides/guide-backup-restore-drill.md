@@ -729,7 +729,7 @@ $ rm "${RESTORE_TEST}"
 
 ### Technical Specs
 - [Staging Ledger Tech Spec](../features/staging-ledger/spec-staging-tech.md) - Backup/restore API implementation
-- [CLI Doctor Tech Spec](../features/cli/spec-cli-doctor-tech.md) - Health check implementation
+- [CLI Doctor Tech Spec](../features/cli/spec-cli-tech.md#doctor-command) - Health check implementation
 
 ## Maintenance Notes
 

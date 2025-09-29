@@ -538,7 +538,7 @@ adhd doctor --category=infrastructure
 - [Error Recovery Guide](./guide-error-recovery.md) - Error classification and retry logic
 
 ### Technical Specs
-- [CLI Doctor Tech Spec](../features/cli/spec-cli-doctor-tech.md) - Health check implementation
+- [CLI Doctor Tech Spec](../features/cli/spec-cli-tech.md#doctor-command) - Health check implementation
 
 ## Maintenance Notes
 

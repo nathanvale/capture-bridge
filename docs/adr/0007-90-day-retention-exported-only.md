@@ -1,9 +1,17 @@
+---
+adr: 0007
+title: 90-Day Retention for Exported Captures Only
+status: accepted
+context-date: 2025-09-28
+owner: Nathan
+spec_type: adr
+version: 0.1.0
+---
+
 # ADR 0007: 90-Day Retention for Exported Captures Only
 
-## Date
-2025-09-28
-
 ## Status
+
 Accepted
 
 ## Context

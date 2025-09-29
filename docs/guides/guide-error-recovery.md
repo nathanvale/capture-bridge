@@ -32,8 +32,12 @@ Use this guide when:
 
 - [Capture Feature PRD](../features/capture/prd-capture.md)
 - [Staging Ledger PRD](../features/staging-ledger/prd-staging.md)
-- [Gmail OAuth2 Technical Spec](../features/capture/spec-capture-gmail-oauth2-tech.md)
-- [Whisper Runtime Technical Spec](../features/capture/spec-capture-whisper-runtime-tech.md)
+- [Gmail OAuth2 Technical Spec](../features/capture/spec-capture-tech.md#gmail-oauth2)
+- [Whisper Runtime Technical Spec](../features/capture/spec-capture-tech.md#whisper-transcription)
+
+**Related Debugging Guides:**
+
+- [Voice Capture Debugging Guide](./guide-voice-capture-debugging.md) - Comprehensive troubleshooting for APFS dataless files, iCloud sync issues, and voice memo metadata problems
 
 ## Prerequisites
 
@@ -713,6 +717,8 @@ async function executeRetry(operation: FailedOperation): Promise<void> {
 
 Voice captures may fail due to iCloud placeholder files (dataless). Retry with longer backoff:
 
+**Debugging Note:** For detailed APFS diagnostics, download troubleshooting, and system-level debugging, see [Voice Capture Debugging Guide](./guide-voice-capture-debugging.md) Section 2.
+
 ```typescript
 async function pollVoiceMemosWithRetry(): Promise<void> {
   try {
@@ -1263,7 +1269,7 @@ For testing patterns and utilities, see:
 - [Capture Debugging Guide](./guide-capture-debugging.md) - Debugging retry failures
 
 **ADRs (Architecture Decisions):**
-- [ADR-0007: Sequential Processing Model](../adr/0008-sequential-processing-mppp.md) - Retry concurrency constraints
+- [ADR-0008: Sequential Processing Model](../adr/0008-sequential-processing-mppp.md) - Retry concurrency constraints
 - [ADR-0014: Placeholder Export Immutability](../adr/0014-placeholder-export-immutability.md) - Error recovery boundaries
 
 **External Resources:**

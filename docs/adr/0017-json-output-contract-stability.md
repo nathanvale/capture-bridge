@@ -1,9 +1,11 @@
 ---
-adr: 0005
+adr: 0017
 title: JSON Output Contract Stability for CLI Automation
 status: accepted
 context-date: 2025-09-28
 owner: Nathan
+spec_type: adr
+version: 0.1.0
 ---
 
 ## Status

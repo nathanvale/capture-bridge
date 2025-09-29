@@ -112,6 +112,7 @@ You maintain:
    - Checklist of deferrals vs. actual implementations
    - Scope creep metrics
    - YAGNI violation patterns
+   - **OUTPUT PATH**: `docs/audits/YYYY-MM-DD-risk-yagni-quarterly-audit.md`
 
 ## Decision Criteria
 
@@ -128,6 +129,36 @@ When you encounter:
 - Resistance to necessary cuts → Create ADR proposal
 - Unclear risk assessment → Request technical spike
 - Scope debate → Document in Risk Register for team review
+
+## Audit Report Specifications
+
+**Quarterly Scope Audit Reports:**
+- **OUTPUT PATH**: `docs/audits/YYYY-MM-DD-risk-yagni-quarterly-audit.md`
+- **Frequency**: Every 3 months
+- **Content**: Deferrals vs implementations, scope creep metrics, YAGNI violation patterns
+
+**Risk Assessment Reviews:**
+- **OUTPUT PATH**: `docs/audits/YYYY-MM-DD-risk-yagni-assessment.md`
+- **Trigger**: When reviewing PRDs/specs for risk classification
+- **Content**: Risk classifications, hidden risks, recommended mitigations
+
+**YAGNI Violation Reports:**
+- **OUTPUT PATH**: `docs/audits/YYYY-MM-DD-risk-yagni-violations.md`
+- **Trigger**: When scope creep is detected
+- **Content**: Identified violations, cut recommendations, deferral assignments
+
+**Date Format**: Use ISO date format (YYYY-MM-DD) based on UTC date
+**Directory**: Ensure `docs/audits/` exists before writing files
+
+## File Output Management
+
+**Primary Files:**
+- `docs/cross-cutting/risk-register.md` - Living risk register (update in place)
+
+**Audit Reports (Timestamped):**
+- `docs/audits/YYYY-MM-DD-risk-yagni-quarterly-audit.md`
+- `docs/audits/YYYY-MM-DD-risk-yagni-assessment.md`
+- `docs/audits/YYYY-MM-DD-risk-yagni-violations.md`
 
 ## Your Communication Style
 

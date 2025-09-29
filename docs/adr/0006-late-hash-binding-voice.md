@@ -1,9 +1,17 @@
+---
+adr: 0006
+title: Late Hash Binding for Voice Captures
+status: accepted
+context-date: 2025-09-28
+owner: Nathan
+spec_type: adr
+version: 0.1.0
+---
+
 # ADR 0006: Late Hash Binding for Voice Captures
 
-## Date
-2025-09-28
-
 ## Status
+
 Accepted
 
 ## Context

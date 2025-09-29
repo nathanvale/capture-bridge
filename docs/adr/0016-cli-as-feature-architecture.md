@@ -1,9 +1,11 @@
 ---
-adr: 0004
+adr: 0016
 title: CLI as Feature Architecture (Not Foundation Infrastructure)
 status: accepted
 context-date: 2025-09-28
 owner: Nathan
+spec_type: adr
+version: 0.1.0
 ---
 
 ## Status

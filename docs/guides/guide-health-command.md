@@ -34,9 +34,9 @@ Use this guide when:
 
 **Related Features:**
 - [CLI Feature PRD](../features/cli/prd-cli.md) - Doctor command requirements
-- [Health Command Tech Spec](../features/cli/spec-cli-doctor-tech.md) - Implementation details
-- [Gmail OAuth2 Tech Spec](../features/capture/spec-capture-gmail-oauth2-tech.md) - Email credential health
-- [Whisper Runtime Tech Spec](../features/capture/spec-capture-whisper-runtime-tech.md) - Transcription worker health
+- [Health Command Tech Spec](../features/cli/spec-cli-tech.md#doctor-command) - Implementation details
+- [Gmail OAuth2 Tech Spec](../features/capture/spec-capture-tech.md#gmail-oauth2) - Email credential health
+- [Whisper Runtime Tech Spec](../features/capture/spec-capture-tech.md#whisper-transcription) - Transcription worker health
 
 ## Prerequisites
 
@@ -601,9 +601,9 @@ Critical: 0
 **PRDs and Specs:**
 - [Master PRD v2.3.0-MPPP](../master/prd-master.md) - System-wide health requirements
 - [CLI Feature PRD](../features/cli/prd-cli.md) - Doctor command requirements
-- [Health Command Tech Spec](../features/cli/spec-cli-doctor-tech.md) - Implementation details
-- [Gmail OAuth2 Tech Spec](../features/capture/spec-capture-gmail-oauth2-tech.md) - Email credential health
-- [Whisper Runtime Tech Spec](../features/capture/spec-capture-whisper-runtime-tech.md) - Transcription worker health
+- [Health Command Tech Spec](../features/cli/spec-cli-tech.md#doctor-command) - Implementation details
+- [Gmail OAuth2 Tech Spec](../features/capture/spec-capture-tech.md#gmail-oauth2) - Email credential health
+- [Whisper Runtime Tech Spec](../features/capture/spec-capture-tech.md#whisper-transcription) - Transcription worker health
 
 **Related Guides:**
 - [Backup Verification Guide](./guide-backup-verification.md) - Backup integrity validation and escalation

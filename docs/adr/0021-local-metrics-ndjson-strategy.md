@@ -1,9 +1,17 @@
-# ADR 0016: Local-Only NDJSON Metrics Strategy
+---
+adr: 0021
+title: Local-Only NDJSON Metrics Strategy
+status: accepted
+context-date: 2025-09-28
+owner: Nathan
+spec_type: adr
+version: 0.1.0
+---
 
-## Date
-2025-09-28
+# ADR 0021: Local-Only NDJSON Metrics Strategy
 
 ## Status
+
 Accepted
 
 ## Context

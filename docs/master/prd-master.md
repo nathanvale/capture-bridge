@@ -816,9 +816,9 @@ Core and supporting documents refining this Master PRD:
 | [Capture Feature PRD](../features/capture/prd-capture.md) | Feature scope, flows, success criteria |
 | [Capture Architecture Spec](../features/capture/spec-capture-arch.md) | Component model, data model, performance + failure modes |
 | [Capture Tech Spec](../features/capture/spec-capture-tech.md) | Implementation details, APIs, error handling |
-| [CLI Tech Spec](../cross-cutting/foundation/spec-cli-tech.md) | Command contracts, layering, error model |
-| [CLI Test Spec](../cross-cutting/foundation/spec-cli-test.md) | Exit codes, schema stability, perf gates |
-| [TestKit Tech Spec](../cross-cutting/spec-testkit-tech.md) | Test isolation, fixtures, cleanup |
+| [CLI Tech Spec](../features/cli/spec-cli-tech.md) | Command contracts, layering, error model |
+| [CLI Test Spec](../features/cli/spec-cli-test.md) | Exit codes, schema stability, perf gates |
+| [TestKit Usage Guide](../guides/guide-testkit-usage.md) - External TestKit integration patterns | Test isolation, fixtures, cleanup |
 | [ADR-0001 Voice File Sovereignty](../adr/0001-voice-file-sovereignty.md) | Never copy/move Apple Voice Memos |
 | [ADR-0002 Dual Hash Migration](../adr/0002-dual-hash-migration.md) | Phased SHA-256 → BLAKE3 adoption strategy |
 

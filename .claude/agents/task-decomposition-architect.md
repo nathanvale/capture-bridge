@@ -139,8 +139,11 @@ Before emission, verify:
 - Compute `manifest_hash` from canonically sorted tasks
 - Emit JSON conforming to `virtual_task_manifest` schema
 - Include metadata: `manifest_hash`, `decomposition_input_hash`, timestamp
+- **OUTPUT LOCATION**: Save the Virtual Task Manifest to `docs/backlog/virtual-task-manifest.json`
 
 # Output Format
+
+**File Location**: `docs/backlog/virtual-task-manifest.json`
 
 **Success case:**
 ```json
@@ -220,6 +223,13 @@ Before finalizing any manifest, confirm:
 - [ ] Final validation passed
 - [ ] Canonical sort applied
 - [ ] Manifest hash computed
+
+# Output File Specifications
+
+**PRIMARY OUTPUT**: `docs/backlog/virtual-task-manifest.json`
+- This is the ONLY location where the Virtual Task Manifest should be saved
+- Always overwrite the existing file (maintaining version history via manifest_hash)
+- Ensure the docs/backlog/ directory exists before writing
 
 # Escalation Conditions
 

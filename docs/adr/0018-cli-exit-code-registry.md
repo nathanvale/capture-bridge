@@ -1,9 +1,11 @@
 ---
-adr: 0009
+adr: 0018
 title: CLI Exit Code Registry Pattern for Automation
 status: accepted
 context-date: 2025-09-28
 owner: Nathan
+spec_type: adr
+version: 0.1.0
 ---
 
 ## Status

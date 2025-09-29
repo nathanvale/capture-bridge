@@ -41,7 +41,7 @@ This guide applies to all features and cross-cutting infrastructure across the A
 
 **Required Reading:**
 - [TestKit Usage Guide](./guide-testkit-usage.md) - for implementation patterns
-- [TestKit Technical Specification](../cross-cutting/spec-testkit-tech.md) - for tooling details
+- [TestKit Technical Specification](../cross-cutting/../guides/guide-testkit-usage.md) - for tooling details
 
 ## Quick Reference
 
@@ -406,7 +406,7 @@ A: Unit for pure logic, integration for boundaries (DB, API, file system). When 
 - [Roadmap v2.0.0-MPPP](../master/roadmap.md) - Development phases and priorities
 
 ### Testing Infrastructure
-- [TestKit Technical Specification](../cross-cutting/spec-testkit-tech.md) - Testing tools and utilities
+- [TestKit Technical Specification](../cross-cutting/../guides/guide-testkit-usage.md) - Testing tools and utilities
 - [TestKit Usage Guide](./guide-testkit-usage.md) - Practical testing patterns
 - [Test Strategy Guide](./test-strategy.md) - Overall testing approach
 - [Phase 1 Testing Patterns](./phase1-testing-patterns.md) - MPPP-specific patterns

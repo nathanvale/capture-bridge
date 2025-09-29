@@ -1,9 +1,17 @@
+---
+adr: 0003
+title: Four-Table Hard Cap for Staging Ledger
+status: accepted
+context-date: 2025-09-28
+owner: Nathan
+spec_type: adr
+version: 0.1.0
+---
+
 # ADR 0003: Four-Table Hard Cap for Staging Ledger
 
-## Date
-2025-09-28
-
 ## Status
+
 Accepted
 
 ## Context
