@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "ESM Library",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2022",
+
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+
+    "verbatimModuleSyntax": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo",
+
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowJs": false,
+
+    "lib": ["ES2022"],
+    "types": ["node"]
+  },
+  "include": ["src"],
+  "exclude": ["dist", "dist-types", "node_modules", "**/*.test.ts", "**/*.spec.ts"]
+}

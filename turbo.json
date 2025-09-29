@@ -1,0 +1,141 @@
+{
+  "$schema": "./node_modules/turbo/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "dist-node/**", "dist-types/**", ".tsbuildinfo"],
+      "cache": true,
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.test.ts", "!**/*.spec.ts", "!tests/**"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "cache": true,
+      "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts", "src/**/*.{ts,tsx,js,jsx}", "!**/*.md"],
+      "env": ["NODE_ENV", "VITEST_SILENT", "MEMORY_DEBUG", "CI"],
+      "outputLogs": "new-only"
+    },
+    "test:nocache": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "cache": false,
+      "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts"],
+      "env": ["NODE_ENV", "VITEST_SILENT", "MEMORY_DEBUG", "CI"],
+      "outputLogs": "new-only"
+    },
+    "lint": {
+      "dependsOn": ["//#format:root"],
+      "outputs": [".eslintcache"],
+      "cache": true,
+      "inputs": ["$TURBO_DEFAULT$", "eslint.config.mjs"],
+      "outputLogs": "errors-only"
+    },
+    "//#format:root": {
+      "outputs": [".prettierrcache"],
+      "cache": true,
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".prettierrc*",
+        "prettier.config.*",
+        "**/.prettierrc*",
+        "**/*.{ts,tsx,js,jsx,json,md,mjs,cjs,yml,yaml}",
+        "!**/node_modules/**",
+        "!**/dist/**",
+        "!**/coverage/**",
+        "!**/.turbo/**"
+      ],
+      "outputLogs": "none"
+    },
+    "//#format:check:root": {
+      "outputs": [".prettierrcache"],
+      "cache": true,
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".prettierrc*",
+        "prettier.config.*",
+        "**/.prettierrc*",
+        "**/*.{ts,tsx,js,jsx,json,md,mjs,cjs,yml,yaml}",
+        "!**/node_modules/**",
+        "!**/dist/**",
+        "!**/coverage/**",
+        "!**/.turbo/**"
+      ],
+      "outputLogs": "errors-only"
+    },
+    "typecheck": {
+      "dependsOn": ["^build", "^typecheck"],
+      "outputs": [],
+      "cache": true,
+      "inputs": ["$TURBO_DEFAULT$", "src/**/*.{ts,tsx}"],
+      "outputLogs": "errors-only"
+    },
+    "clean": {
+      "cache": false
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "test:dist": {
+      "dependsOn": ["^build"],
+      "cache": true,
+      "inputs": ["dist/**", "dist-node/**", "dist-types/**"]
+    },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "outputs": ["test-results/**"],
+      "cache": false,
+      "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts", "**/*.integration.test.*"],
+      "env": ["NODE_ENV", "TEST_MODE", "CI"],
+      "outputLogs": "new-only"
+    },
+    "//#test:root": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**", "test-results/**"],
+      "cache": false,
+      "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts", "vitest.projects.ts"],
+      "env": ["NODE_ENV", "VITEST_SILENT", "MEMORY_DEBUG", "CI"],
+      "outputLogs": "new-only"
+    },
+    "//#test:integration:root": {
+      "dependsOn": ["^build"],
+      "outputs": ["test-results/**"],
+      "cache": false,
+      "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts", "vitest.projects.ts", "**/*.integration.test.*"],
+      "env": ["NODE_ENV", "TEST_MODE", "CI"],
+      "outputLogs": "new-only"
+    }
+  },
+  "globalDependencies": [
+    "tsconfig.json",
+    "tooling/tsconfig/base.json",
+    "tooling/tsconfig/library.json",
+    ".changeset/config.json",
+    "eslint.config.mjs",
+    "vitest.config.ts",
+    ".prettierrc*",
+    "prettier.config.*",
+    "turbo.json*",
+    ".env*"
+  ],
+  "globalEnv": [
+    "NODE_ENV",
+    "CI",
+    "VITEST",
+    "VITEST_SILENT",
+    "VITEST_WORKER_ID",
+    "JEST_WORKER_ID",
+    "WALLABY_ENV",
+    "ELEVENLABS_API_KEY",
+    "OPENAI_API_KEY",
+    "DEBUG",
+    "MEMORY_DEBUG",
+    "TURBO_TOKEN",
+    "TURBO_TEAM",
+    "TURBO_REMOTE_CACHE_SIGNATURE_KEY",
+    "TURBO_SCM_BASE"
+  ],
+  "remoteCache": {
+    "signature": true
+  }
+}
