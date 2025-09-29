@@ -82,7 +82,7 @@ The Obsidian Bridge sits between the **Staging Ledger** (SQLite durability layer
 
 - ❌ **Content transformer:** No markdown formatting (upstream responsibility)
 - ❌ **Classification engine:** No PARA filing decisions (Phase 3+ feature)
-- ❌ **State manager:** No retry logic, queueing, or outbox pattern
+- ❌ **State manager:** No retry logic in Phase 1 (see [Resilience Guide](../../guides/guide-resilience-patterns.md) for Phase 2+)
 - ❌ **Validation layer:** Assumes well-formed input from Staging Ledger
 
 ### 1.3 Component Boundaries
@@ -255,11 +255,11 @@ interface AtomicWriteResult {
 1. AtomicWriter.writeAtomic(...) encounters error
    │
    ├─► Error Classification
-   │   ├─► EACCES → Permission denied (retry eligible)
-   │   ├─► ENOSPC → Disk full (halt worker)
+   │   ├─► EACCES → Permission denied (retry per [File System Pattern](../../guides/guide-resilience-patterns.md#file-system-operations))
+   │   ├─► ENOSPC → Disk full (halt per [Error Classification](../../guides/guide-resilience-patterns.md#error-classification))
    │   ├─► EEXIST → Collision after rename (check duplicate)
-   │   ├─► EROFS → Read-only FS (halt worker)
-   │   ├─► ENETDOWN → Network mount failure (retry eligible)
+   │   ├─► EROFS → Read-only FS (halt per guide)
+   │   ├─► ENETDOWN → Network mount (retry per [Network Pattern](../../guides/guide-resilience-patterns.md#network-errors))
    │   └─► EUNKNOWN → Log and fail
    │
    ├─► Cleanup Temp File
@@ -372,7 +372,7 @@ await db.run(`
 
 | Failure | Trigger | Containment | Recovery |
 |---------|---------|-------------|----------|
-| **Partial Write** | Process crash mid-write | Temp file in `.trash/` discarded | Retry from Staging Ledger |
+| **Partial Write** | Process crash mid-write | Temp file in `.trash/` discarded | Recovery per [Resilience Guide](../../guides/guide-resilience-patterns.md#atomic-writes) |
 | **fsync Skip** | Bug omits fsync call | Potential data loss on power failure | TDD Required: fsync call verification |
 | **ULID Collision** | Same ULID, different content | Halt export, log CRITICAL | Manual investigation required |
 | **Vault Corruption** | Concurrent writes, race conditions | Atomic rename prevents | No recovery needed (design prevents) |
@@ -382,15 +382,15 @@ await db.run(`
 | Failure | Trigger | Containment | Recovery |
 |---------|---------|-------------|----------|
 | **ENOSPC** (Disk Full) | Vault disk full during write | Halt export worker | Alert via `doctor` command, user frees space |
-| **EACCES** (Permission) | Vault directory not writable | Retry with backoff (3x) | Alert via `doctor` command, user fixes permissions |
+| **EACCES** (Permission) | Vault directory not writable | Retry per [File System Pattern](../../guides/guide-resilience-patterns.md#permission-errors) | Alert via `doctor` command |
 | **EROFS** (Read-Only) | Vault on read-only mount | Halt export worker | Alert via `doctor` command, remount read-write |
-| **ENETDOWN** (Network) | Network mount disconnected | Retry with backoff (5x) | Auto-recover when mount restored |
+| **ENETDOWN** (Network) | Network mount disconnected | Retry per [Network Pattern](../../guides/guide-resilience-patterns.md#network-mounts) | Auto-recover when restored |
 
 **P2 Failures (Logging Only):**
 
 | Failure | Trigger | Containment | Recovery |
 |---------|---------|-------------|----------|
-| **Duplicate Export** | Retry with same capture_id | Skip write, record duplicate | No action needed (idempotent) |
+| **Duplicate Export** | Retry with same capture_id | Skip write per [Idempotency Pattern](../../guides/guide-resilience-patterns.md#idempotency) | No action needed |
 | **Temp File Orphaned** | Crash before cleanup | File remains in `.trash/` | `doctor --cleanup` removes |
 
 ### 4.2 Containment Strategies
@@ -599,7 +599,7 @@ const atomicWriter = new ObsidianAtomicWriter(vault_path, {
 
 **Phase 2: Error Recovery Enhancements**
 
-- **Retry logic:** Exponential backoff for EACCES, ENETDOWN
+- **Retry logic:** Implement patterns from [Resilience Guide](../../guides/guide-resilience-patterns.md#file-system-operations)
 - **Health monitoring:** Integrate with `doctor` command
 - **Metrics collection:** Export latency, collision rate
 
@@ -622,7 +622,7 @@ const atomicWriter = new ObsidianAtomicWriter(vault_path, {
 1. **Collision detected in production:** ULID collision with different content
    - Action: Investigate ULID generator, consider BLAKE3 upgrade
 2. **Export failure rate > 5%:** Persistent write errors
-   - Action: Add retry logic, health monitoring
+   - Action: Add retry logic per [Resilience Guide](../../guides/guide-resilience-patterns.md), health monitoring
 3. **p95 latency > 100ms:** Performance degradation
    - Action: Profile fsync behavior, optimize audit logging
 4. **Concurrency requirement:** Outbox pattern introduced
@@ -641,7 +641,7 @@ const atomicWriter = new ObsidianAtomicWriter(vault_path, {
 **May Change (Phase 2+):**
 
 1. **Export path pattern:** Could support dynamic folders
-2. **Audit schema:** May add fields for retry count, error details
+2. **Audit schema:** May add fields per [Resilience Guide](../../guides/guide-resilience-patterns.md#audit-patterns)
 3. **Concurrency model:** May introduce worker pool
 4. **Hash algorithm:** May upgrade SHA-256 → BLAKE3
 
@@ -663,7 +663,7 @@ const atomicWriter = new ObsidianAtomicWriter(vault_path, {
 **End-to-End Scenarios:**
 
 1. **Happy Path:** New capture → atomic write → audit logged
-2. **Duplicate Path:** Retry same capture → skip write, audit duplicate
+2. **Duplicate Path:** Retry handling per [Idempotency Pattern](../../guides/guide-resilience-patterns.md#idempotency)
 3. **Collision Path:** ULID collision → CRITICAL error, no write
 4. **Crash Recovery:** Kill process mid-write → no partial file, temp cleaned
 
@@ -714,11 +714,11 @@ const atomicWriter = new ObsidianAtomicWriter(vault_path, {
 ✅ **Filename strategy:** ULID only (no timestamp prefix, no custom templates)
 ✅ **Collision policy:** Duplicate skip (same hash) vs. CRITICAL halt (different hash)
 ✅ **Audit granularity:** One record per export attempt (success or duplicate)
-✅ **Error recovery:** Cleanup temp files, no automatic retry in MPPP
+✅ **Error recovery:** Cleanup per [Recovery Pattern](../../guides/guide-resilience-patterns.md#cleanup-strategies)
 
 ### Remaining Questions (Phase 2+)
 
-1. **Retry Strategy:** How many retries for EACCES/ENETDOWN? Exponential backoff parameters?
+1. **Retry Strategy:** Parameters defined in [Resilience Guide](../../guides/guide-resilience-patterns.md#retry-parameters)
 2. **Health Command Integration:** Which export metrics should `doctor` surface?
 3. **Metrics Schema:** Which fields in NDJSON metrics logs? Sampling rate?
 4. **Multi-Vault:** How to configure multiple export destinations if needed?

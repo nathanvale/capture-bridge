@@ -343,7 +343,7 @@ describe('Doctor → Diagnosis → Recovery Chain', () => {
     expect(fixOutput.summary.pass).toBeGreaterThan(0)
     expect(fixOutput.summary.fail).toBe(0)
 
-    // Step 4: Retry capture (should succeed)
+    // Step 4: Retry capture per [Idempotency Pattern](../../guides/guide-resilience-patterns.md#idempotency)
     const retryResult = await harness.execCLI([
       'capture', 'voice', 'test.m4a', '--json'
     ])
@@ -392,7 +392,7 @@ describe('Init → Configure → First Capture Chain', () => {
 
 ### 17.4 Error Recovery Chain Scenarios
 
-#### Scenario 4: Failed Capture → Diagnosis → Retry Workflow
+#### Scenario 4: Failed Capture → Diagnosis → Retry Workflow (Per [Recovery Pattern](../../guides/guide-resilience-patterns.md#recovery-workflows))
 ```typescript
 describe('Capture Failure Recovery Chain', () => {
   it('handles capture failures with guided recovery', async () => {
@@ -413,7 +413,7 @@ describe('Capture Failure Recovery Chain', () => {
     expect(listResult.exitCode).toBe(0)
     expect(JSON.parse(listResult.stdout).items).toHaveLength(0)
 
-    // Step 3: Create valid file and retry
+    // Step 3: Create valid file and retry per [Recovery Pattern](../../guides/guide-resilience-patterns.md#error-recovery)
     await harness.tempVault.writeFile('valid-memo.m4a', 'mock-audio-data')
 
     const retryResult = await harness.execCLI([
@@ -462,10 +462,10 @@ describe('Export Failure Recovery Chain', () => {
       id: captureId,
       status: 'failed',
       error: expect.stringContaining('vault not writable'),
-      retry_count: 1
+      retry_count: 1 // Tracked per [Resilience Guide](../../guides/guide-resilience-patterns.md#retry-tracking)
     })
 
-    // Step 4: Fix permissions and retry
+    // Step 4: Fix permissions and retry per [Permission Pattern](../../guides/guide-resilience-patterns.md#permission-errors)
     await harness.tempVault.chmod('755')
 
     const retryResult = await harness.execCLI([
@@ -602,7 +602,7 @@ describe('CLI Crash Safety (P0)', () => {
     const pending = JSON.parse(result.stdout)
     expect(pending.length).toBe(1) // Capture still pending
 
-    // Retry export
+    // Retry export per [Retry Pattern](../../guides/guide-resilience-patterns.md#retry-parameters)
     const retryResult = await harness.run('adhd export')
     expect(retryResult.exitCode).toBe(0)
 
@@ -1049,7 +1049,7 @@ describe('Command Chain Performance', () => {
 #### Phase 2: Error Recovery Tests (Week 2)
 - Failed capture recovery chains
 - Export failure → DLQ → recovery
-- Permission error handling
+- Permission error handling per [Resilience Guide](../../guides/guide-resilience-patterns.md#permission-errors)
 
 #### Phase 3: Advanced Integration (Week 3)
 - Concurrent command safety
@@ -1250,6 +1250,7 @@ describe('CLI Performance Regression Detection (P1)', () => {
     const duration = 60_000
     const startTime = Date.now()
 
+    // Timeout per [Resilience Guide](../../guides/guide-resilience-patterns.md#timeout-patterns)
     const batchResult = await harness.runWithTimeout('adhd export --all', duration)
 
     const actualDuration = Date.now() - startTime
@@ -1305,7 +1306,7 @@ describe('CLI Performance Regression Detection (P1)', () => {
 
 ### 25.1 CLI Pipeline Integration with Fault Injection
 
-Cross-feature integration tests with failure injection ensure robust error handling and recovery across CLI commands and backend components.
+Cross-feature integration tests with failure injection ensure robust error handling and recovery per [Resilience Patterns Guide](../../guides/guide-resilience-patterns.md).
 
 ```typescript
 describe('CLI Pipeline Integration with Fault Injection (P1)', () => {
@@ -1344,7 +1345,7 @@ describe('CLI Pipeline Integration with Fault Injection (P1)', () => {
       }
     })
 
-    // Clear fault and retry
+    // Clear fault and retry per [Recovery Pattern](../../guides/guide-resilience-patterns.md#fault-recovery)
     testPipeline.clearFaults()
 
     const retryResult = await harness.run('adhd capture --voice /icloud/test.m4a')
@@ -1459,7 +1460,7 @@ describe('CLI Pipeline Integration with Fault Injection (P1)', () => {
     const harness = new CLIChainTestHarness()
     await harness.setup()
 
-    // Inject: Network timeout for transcription service
+    // Inject: Network timeout per [Test Pattern](../../guides/guide-resilience-patterns.md#test-scenarios)
     testPipeline.injectFault('whisper-api', 'NETWORK_TIMEOUT')
 
     // Attempt voice capture that requires transcription
@@ -1467,7 +1468,7 @@ describe('CLI Pipeline Integration with Fault Injection (P1)', () => {
 
     // Verify: CLI handles network failure gracefully
     expect(result.exitCode).toBe(30) // CLI_TRANSCRIPTION_FAILED
-    expect(result.stderr).toContain('NETWORK_TIMEOUT')
+    expect(result.stderr).toContain('NETWORK_TIMEOUT') // Per [Error Pattern](../../guides/guide-resilience-patterns.md#error-messages)
 
     // Verify: Partial capture created with placeholder
     const listResult = await harness.run('adhd list --json')
@@ -1482,7 +1483,7 @@ describe('CLI Pipeline Integration with Fault Injection (P1)', () => {
 
     const placeholderContent = await vault.readFile(files[0])
     expect(placeholderContent).toContain('Transcription Failed')
-    expect(placeholderContent).toContain('network timeout')
+    expect(placeholderContent).toContain('network timeout') // Per [Fallback Pattern](../../guides/guide-resilience-patterns.md#fallback-strategies)
 
     await harness.cleanup()
   })
@@ -1869,6 +1870,7 @@ class CLILoadTestHarness extends CLIChainTestHarness {
 
     try {
       // Check CLI responsiveness
+      // Health check timeout per [Resilience Guide](../../guides/guide-resilience-patterns.md#health-checks)
       const healthResult = await this.run('adhd health --timeout 5000')
       if (healthResult.exitCode !== 0) {
         issues.push('CLI health check failed')

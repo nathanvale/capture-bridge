@@ -104,10 +104,10 @@ This test specification defines comprehensive testing for the **Obsidian Bridge*
 #### P1 Tests (Operational Reliability - Recommended)
 
 1. **Error Recovery Paths**
-   - EACCES (permission denied) → retry eligible
-   - ENOSPC (disk full) → halt worker
-   - EROFS (read-only filesystem) → halt worker
-   - ENETDOWN (network mount) → retry eligible
+   - EACCES (permission denied) → retry per [File System Pattern](../../guides/guide-resilience-patterns.md#file-system-operations)
+   - ENOSPC (disk full) → halt per [Error Classification](../../guides/guide-resilience-patterns.md#error-classification)
+   - EROFS (read-only filesystem) → halt per guide
+   - ENETDOWN (network mount) → retry per [Network Pattern](../../guides/guide-resilience-patterns.md#network-errors)
 
 2. **Filesystem Edge Cases**
    - Directory creation (idempotent)
@@ -148,8 +148,8 @@ All tests MUST use TestKit patterns per [TestKit Standardization Guide](../../gu
 
 4. **Utils Domain** (`@template/testkit/utils`)
    - `delay()` for async operation testing
-   - `retry()` for error recovery testing
-   - `withTimeout()` for performance validation
+   - `retry()` for testing patterns from [Resilience Guide](../../guides/guide-resilience-patterns.md#retry-parameters)
+   - `withTimeout()` for testing timeout patterns from guide
 
 **TestKit Pattern Usage:**
 
@@ -625,7 +625,7 @@ describe('Filesystem Error Handling', () => {
     // Cleanup automatic with TestKit
   })
 
-  it('should handle ENETDOWN (network mount failure) with retry eligibility', async () => {
+  it('should handle ENETDOWN per [Network Pattern](../../guides/guide-resilience-patterns.md#network-errors)', async () => {
     const tempVault = await createTempDirectory()
     const db = new Database(createMemoryUrl())
 
@@ -641,7 +641,7 @@ describe('Filesystem Error Handling', () => {
     expect(result.success).toBe(false)
     expect(result.error?.code).toBe('ENETDOWN')
 
-    // Verify error marked as retry eligible
+    // Verify retry eligibility per [Resilience Guide](../../guides/guide-resilience-patterns.md)
     const errorRecord = db.prepare('SELECT * FROM errors_log WHERE message LIKE ?').get('%network%')
     expect(errorRecord).toBeDefined()
 
@@ -1105,9 +1105,10 @@ afterEach(async () => {
 ### 9.1 Phase 2 Enhancements
 
 **Retry Logic Testing (Phase 2):**
-- Exponential backoff verification
-- Max retry limit enforcement
-- Backoff jitter randomization
+- Test patterns from [Resilience Guide](../../guides/guide-resilience-patterns.md#retry-parameters)
+- Verify exponential backoff per guide
+- Max retry limits per pattern
+- Jitter verification per guide
 
 **Metrics Collection Testing (Phase 2):**
 - NDJSON log format validation
@@ -1945,11 +1946,11 @@ describe('Full Pipeline Integration with Fault Injection (P1)', () => {
     // Attempt export
     const result = await testPipeline.attemptExport(captureId)
 
-    // Verify: Export retries with backoff
+    // Verify: Export retries per [Resilience Guide](../../guides/guide-resilience-patterns.md#retry-parameters)
     expect(result.success).toBe(false)
     expect(result.error.code).toBe('AUDIT_WRITE_FAILED')
 
-    // Clear fault and retry
+    // Clear fault and retry per [Recovery Pattern](../../guides/guide-resilience-patterns.md#fault-recovery)
     testPipeline.clearFaults()
 
     const retryResult = await testPipeline.attemptExport(captureId)

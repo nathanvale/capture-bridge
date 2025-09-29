@@ -1,1 +1,4 @@
 .vault-id
+node_modules
+dist
+coverage

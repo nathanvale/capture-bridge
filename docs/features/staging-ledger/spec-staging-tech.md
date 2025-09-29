@@ -335,7 +335,7 @@ CREATE TABLE IF NOT EXISTS sync_state (
 PRAGMA journal_mode = WAL;                   -- Write-ahead logging
 PRAGMA synchronous = NORMAL;                 -- Balance safety/performance
 PRAGMA foreign_keys = ON;                    -- Referential integrity
-PRAGMA busy_timeout = 5000;                  -- 5s lock wait
+PRAGMA busy_timeout = 5000;                  -- Per [Database Resilience](../../guides/guide-resilience-patterns.md#database-resilience)
 PRAGMA wal_autocheckpoint = 1000;            -- Checkpoint every 1000 pages
 PRAGMA cache_size = -2000;                   -- 2MB cache
 PRAGMA temp_store = MEMORY;                  -- Temp tables in RAM
@@ -346,7 +346,7 @@ PRAGMA temp_store = MEMORY;                  -- Temp tables in RAM
 - **WAL mode:** Concurrent reads, crash-safe, faster writes
 - **NORMAL sync:** Acceptable risk for local-only ledger (< 1s data loss window on OS crash)
 - **Foreign keys:** Prevent orphaned audit rows
-- **Busy timeout:** Handle burst captures without SQLITE_BUSY
+- **Busy timeout:** Handle burst captures per [Database Pattern](../../guides/guide-resilience-patterns.md#sqlite-pragmas)
 - **Cache size:** Small cache (2MB) sufficient for MPPP scope
 
 ### 2.3 Schema Migrations
@@ -922,7 +922,7 @@ describe('API Contract: insertCapture', () => {
 - ✅ Crash after capture insert (verify staged row persists)
 - ✅ Crash after transcription (verify transcribed row persists)
 - ✅ Crash before export (verify no vault file, recoverable)
-- ✅ Crash after temp file write (verify cleanup + retry)
+- ✅ Crash after temp file write (verify cleanup + retry per [Recovery Pattern](../../guides/guide-resilience-patterns.md#crash-recovery))
 - ✅ Crash after audit insert (verify status eventually updated)
 
 **Test Example (using TestKit fault injection):**
@@ -1053,7 +1053,8 @@ await ledger.updateTranscription(captureId, {
 });
 
 // Mark failure
-await ledger.markTranscriptionFailed(captureId, 'Whisper timeout after 30s');
+// Timeout per [Whisper Pattern](../../guides/guide-resilience-patterns.md#whisper-transcription)
+await ledger.markTranscriptionFailed(captureId, 'Whisper timeout exceeded');
 ```
 
 **Export Worker:**
@@ -1196,7 +1197,7 @@ interface ErrorLog {
 await logError({
   capture_id: captureId,
   stage: 'transcribe',
-  message: 'Whisper timeout after 30s'
+  message: 'Whisper timeout exceeded' // Per [Resilience Guide](../../guides/guide-resilience-patterns.md)
 });
 ```
 
@@ -1257,6 +1258,7 @@ class StagingLedger {
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('synchronous = NORMAL');
     this.db.pragma('foreign_keys = ON');
+    // Database timeout per [Resilience Guide](../../guides/guide-resilience-patterns.md#database-resilience)
     this.db.pragma('busy_timeout = 5000');
 
     // Run migrations

@@ -37,6 +37,7 @@ Related: [Master PRD](/docs/master/prd-master.md)
 | [0027](0027-production-safety-gap-analysis.md) | Production Safety Gap Analysis (Primary Development Focus) | Accepted | 2025-09-29 | — | Staging Ledger, Production Safety |
 | [0028](0028-p0-production-safety-optimizations.md) | P0 Production Safety Optimizations (Bulletproof System Implementation) | Accepted | 2025-09-29 | — | Staging Ledger, Production Safety |
 | [0029](0029-production-first-prioritization-strategy.md) | Production-First Prioritization Strategy (Safety Over Features) | Accepted | 2025-09-29 | — | Strategy, Production Safety |
+| [0030](0030-resilience-library-selection.md) | Resilience Library Selection (Production-Ready Modular Stack) | Accepted | 2025-09-29 | — | Foundation, Resilience |
 
 ## Decision Summary
 
@@ -52,10 +53,11 @@ Related: [Master PRD](/docs/master/prd-master.md)
 - **Direct Export Strategy**: Synchronous atomic writes over outbox queue pattern for MPPP scope (< 200 captures/day)
 - **Metrics Collection**: Local-only NDJSON files with opt-in activation and additive-only schema evolution
 - **SQLite Performance Optimization**: 64MB cache size (32x increase), composite indexes for recovery/export queries, automated PRAGMA optimize, and memory mapping for large data operations delivering 40-60% faster reads and 5-10x faster recovery operations
+- **Resilience Library Stack**: Replaced @orchestr8/resilience with production-ready modular stack (p-retry, opossum, bottleneck, p-limit, p-throttle) providing 28M+ download proven reliability with strong TypeScript support
 
 ## Creating New ADRs
 
-1. Use next sequential number (0026, 0027, etc.)
+1. Use next sequential number (0031, 0032, etc.)
 2. Follow the standard ADR template in `/docs/templates/`
 3. Update this index immediately after creation
 4. Add cross-references to related PRDs and specs

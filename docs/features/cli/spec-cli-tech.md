@@ -57,7 +57,7 @@ adhd metrics:dump            # Local metrics
 ## 2. Guiding Principles
 
 1. **Startup < 150ms cold** (Node 20)
-2. **All commands idempotent** where feasible; safe to retry after crash
+2. **All commands idempotent** where feasible; retry safety per [Idempotency Pattern](../../guides/guide-resilience-patterns.md#idempotency)
 3. **Fail loud** with structured error codes; never silent exit(1)
 4. **Zero network dependency**; local-only side effects
 5. **Thin orchestration layer**; push logic into domain modules (testable)
@@ -291,13 +291,15 @@ Options:
 
 ## 5. Error Handling
 
+**Note:** Error handling follows patterns from [Resilience Patterns Guide](../../guides/guide-resilience-patterns.md#error-handling) Section 5.
+
 ### 5.1 Error Registry
 
 Central registry with stable codes (prefix `CLI_`). Mapping includes `code`, `exit_code`, and `category`.
 
-| Code | Exit | Category | Meaning | Retry? |
-|------|------|----------|---------|--------|
-| `CLI_INPUT_INVALID` | 2 | user | Validation failed | user-fix |
+| Code | Exit | Category | Meaning | Retry Strategy |
+|------|------|----------|---------|----------------|
+| `CLI_INPUT_INVALID` | 2 | user | Validation failed | Per [User Error Pattern](../../guides/guide-resilience-patterns.md#user-errors) |
 | `CLI_CAPTURE_NOT_FOUND` | 3 | user | Capture id unknown | depends |
 | `CLI_VOICE_FILE_MISSING` | 4 | integrity | Voice memo path missing | after-fix |
 | `CLI_DB_UNAVAILABLE` | 10 | infra | SQLite open / lock error | yes |
@@ -393,7 +395,7 @@ No interactive config wizard (deferred). `doctor` reports effective config.
 
 - **Tables**: Auto-detect column widths, no external deps
 - **Colors**: Use chalk for status (green=success, red=error, yellow=warn)
-- **Spinners**: Use ora for long-running operations (with fallback for non-TTY)
+- **Spinners**: Use ora for operations >3s per [ADHD Pattern](../../guides/guide-resilience-patterns.md#adhd-considerations)
 - **Progress**: Concise status lines, avoid non-deterministic output
 
 ### 7.2 JSON Output

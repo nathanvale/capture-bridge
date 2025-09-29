@@ -523,6 +523,7 @@ Practical how-to documentation and best practices.
 ### Monorepo & Architecture
 - **[guide-monorepo-mppp.md](../guides/guide-monorepo-mppp.md)** - Monorepo Package Publishing Protocol
 - **[guide-error-recovery.md](../guides/guide-error-recovery.md)** - Error recovery patterns
+- **[guide-resilience-patterns.md](../guides/guide-resilience-patterns.md)** - Resilience patterns and strategies for external services
 
 ### Obsidian Bridge Implementation
 - **[guide-obsidian-bridge-usage.md](../guides/guide-obsidian-bridge-usage.md)** - Atomic writer quick-start and integration guide

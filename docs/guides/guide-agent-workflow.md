@@ -539,6 +539,9 @@ Need to document architectural decision?
 Need test strategy for new component?
   → Use testing-strategist
 
+Need resilience patterns for features/APIs?
+  → Use resilience-strategist
+
 Quarterly scope/YAGNI review?
   → Use risk-yagni-enforcer
 ```
@@ -660,6 +663,34 @@ cat docs/backlog/task-state.json | jq '.tasks[] | select(.status=="in-progress")
 ---
 
 ## Quarterly Reviews
+
+### Resilience Pattern Review
+
+**When to use:** When adding external APIs, critical operations, or error-prone features
+
+**Command:**
+```
+Use resilience-strategist to review [feature] resilience patterns
+```
+
+**What it does:**
+- Validates P0/P1 risks have proper resilience coverage
+- Reviews retry, circuit breaker, and timeout configurations
+- Ensures error classification covers all failure modes
+- Validates ADHD-friendly error messages and timeouts
+- Checks compliance with resilience usage guide
+
+**Expected output:**
+- Resilience coverage audit report
+- Specific pattern recommendations (circuit breakers, backoff strategies)
+- Error classification rules for domain
+- Integration code examples
+
+**Example invocation:**
+```
+Use resilience-strategist to design Gmail API retry patterns
+Use resilience-strategist to audit voice capture error handling
+```
 
 ### Risk & YAGNI Audit
 

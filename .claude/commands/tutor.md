@@ -77,6 +77,7 @@ Task({
 /tutor which agent should I use for planning?
 /tutor how do I use the roadmap-orchestrator?
 /tutor what's the difference between implementation-orchestrator and task-implementer?
+/tutor when should I use resilience-strategist?
 
 # When stuck
 /tutor I'm overwhelmed, help!
@@ -100,6 +101,11 @@ Task({
 /tutor I'm ready to start coding, what's next?
 /tutor how do I run tests for my changes?
 /tutor my implementation is failing, help!
+
+# Resilience & Error Handling
+/tutor how do I handle errors in my Gmail integration?
+/tutor what retry patterns should I use for external APIs?
+/tutor help me design resilience for voice capture
 ```
 
 ## Expected Output
