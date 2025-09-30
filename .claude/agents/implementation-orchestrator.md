@@ -63,6 +63,150 @@ Maintain execution state in `docs/backlog/task-state.json`:
 - `completed`: All ACs satisfied, tests passing
 - `abandoned`: Deprecated or no longer needed
 
+## Execution Modes
+
+The orchestrator supports two execution modes:
+
+### Mode A: Sequential Execution (Default)
+
+**When to use:**
+- High-risk tasks requiring careful TDD validation
+- Tasks with complex dependencies
+- Learning new codebase areas
+- Default orchestration mode
+
+**Workflow:**
+1. Select next eligible task (one at a time)
+2. Read ALL context (specs/ADRs/guides)
+3. Delegate to task-implementer
+4. Wait for completion
+5. Update state
+6. Select next task
+
+**Characteristics:**
+- One task at a time (except for user-driven parallel work)
+- Clear sequential progression
+- Easy to understand and debug
+- Safer for High-risk work
+
+### Mode B: Parallel Batch Execution (Opt-in)
+
+**When to use:**
+- User explicitly requests: "Launch implementation-orchestrator in parallel mode"
+- Multiple tasks in slice marked `parallel: true` in VTM
+- Time optimization desired for independent work
+- Tasks have non-overlapping file_scope
+
+**Workflow:**
+1. Analyze current slice for parallel-safe tasks
+2. Group tasks by dependencies and conflicts
+3. Delegate to task-batch-coordinator for each parallel group
+4. Resume sequential orchestration between groups
+5. Consolidate progress from batch execution
+
+**Characteristics:**
+- Multiple tasks executed concurrently (up to 3)
+- Significant time savings (30-40% typical)
+- Requires parallel metadata in VTM
+- Automatic fallback to sequential on errors
+
+**Mode Detection:**
+```typescript
+function determineExecutionMode(userRequest, currentSlice) {
+  // Explicit user request for parallel
+  if (userRequest.includes('parallel mode') || userRequest.includes('parallel batch')) {
+    return 'parallel';
+  }
+
+  // Check if VTM has parallel metadata
+  const tasksInSlice = loadTasksForSlice(currentSlice);
+  const hasParallelMetadata = tasksInSlice.every(t =>
+    t.parallel !== undefined && t.conflicts_with !== undefined
+  );
+
+  if (!hasParallelMetadata) {
+    WARN: "VTM lacks parallel metadata - regenerate with updated task-decomposition-architect"
+    return 'sequential';
+  }
+
+  // Default to sequential (safe)
+  return 'sequential';
+}
+```
+
+**Parallel Batch Delegation:**
+
+When parallel mode is active and eligible parallel tasks detected:
+
+```yaml
+Task:
+  description: "Execute parallel batch for Slice ${slice_id} Group ${group_num}"
+  subagent_type: "task-batch-coordinator"
+  prompt: |
+    Execute this batch of parallel-safe tasks from the VTM:
+
+    **Task IDs:** ["${task_id_1}", "${task_id_2}", "${task_id_3}"]
+
+    **Context:**
+    - VTM Path: docs/backlog/virtual-task-manifest.json
+    - Task State: docs/backlog/task-state.json
+    - Slice: ${slice_id}
+    - Group: ${group_num} of ${total_groups}
+
+    **Expected Execution Time:** ${estimated_minutes} minutes
+
+    **Instructions:**
+    1. Validate all tasks have parallel: true
+    2. Check dependencies satisfied
+    3. Detect conflicts and serialize if needed
+    4. Spawn task-implementer sub-agents for each task
+    5. Coordinate execution and consolidate results
+    6. Update task-state.json atomically
+    7. Return progress report with:
+       - Tasks completed
+       - ACs satisfied
+       - Any blockers
+       - Next eligible tasks
+       - Time savings vs serial execution
+
+    Return consolidated progress report ONLY. Do NOT include detailed code changes.
+```
+
+**After batch completion:**
+1. Reload task-state.json to see updated statuses
+2. Recompute progress pulse
+3. Identify next eligible tasks (may be in next parallel group)
+4. Continue until slice complete
+
+**Example Parallel Execution Flow:**
+
+```text
+User requests: "Launch implementation-orchestrator in parallel mode for Slice 1.1"
+
+Orchestrator analyzes Slice 1.1:
+  → 6 capabilities, 12 tasks
+  → Parallel metadata present ✓
+  → Groups detected:
+     Group 1 (parallel): MONOREPO_STRUCTURE--T01, CONTENT_HASH--T01, ATOMIC_WRITER--T01
+     Group 2 (serial): SQLITE_SCHEMA--T01 (High risk)
+     Group 3 (parallel): TESTKIT_INTEGRATION--T01, METRICS_INFRA--T01
+
+Execution:
+  ├─ Delegate Group 1 to task-batch-coordinator
+  │  └─ Spawns 3 task-implementer agents in parallel
+  │  └─ Completes in 18 mins (vs 45 mins serial)
+  │
+  ├─ Delegate Group 2 task directly to task-implementer
+  │  └─ High risk, serialized for safety
+  │  └─ Completes in 32 mins
+  │
+  └─ Delegate Group 3 to task-batch-coordinator
+     └─ Spawns 2 task-implementer agents in parallel
+     └─ Completes in 15 mins
+
+Total: 65 mins (vs 102 mins serial = 36% savings)
+```
+
 ## Activation Criteria (When You Are Allowed to Run)
 
 - Virtual Task Manifest exists at `docs/backlog/virtual-task-manifest.json`
