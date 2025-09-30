@@ -33,10 +33,13 @@
     "test:integration": "TEST_MODE=integration vitest run",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {},
   "devDependencies": {
     "@adhd-brain/build-config": "workspace:*",
+    "@orchestr8/testkit": "file:/Users/nathanvale/code/@orchestr8/packages/testkit",
     "@types/node": "^24.3.0",
+    "better-sqlite3": "^12.4.1",
+    "happy-dom": "^18.0.1",
+    "msw": "^2.11.3",
     "tsup": "^8.3.0",
     "typescript": "^5.7.3",
     "vitest": "^3.2.4"

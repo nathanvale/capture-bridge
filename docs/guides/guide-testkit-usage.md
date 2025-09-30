@@ -11,7 +11,7 @@ roadmap_version: 2.0.0-MPPP
 
 # TestKit Developer Guide
 
-> **Complete NPM package reference for `@template/testkit` - An AI agent's guide to understanding and using the test kit features**
+> **Complete NPM package reference for `@orchestr8/testkit` - An AI agent's guide to understanding and using the test kit features with lean core implementation**
 >
 > **Alignment**: Supports MPPP requirements for deterministic testing, sequential processing validation, and no-outbox architecture verification
 >
@@ -24,25 +24,50 @@ roadmap_version: 2.0.0-MPPP
 
 ## 📦 Package Overview
 
-**Package Name:** `@template/testkit`
+**Package Name:** `@orchestr8/testkit` (formerly `@template/testkit`)
 **Purpose:** Comprehensive testing utilities for monorepo projects
-**Architecture:** Domain-based subpath exports with tree-shakable modules
+**Architecture:** Lean core with optional domain-based subpath exports
 **Philosophy:** Test isolation, deterministic behavior, ADHD-friendly patterns
+
+### 🎯 Lean Core Implementation (Fixed as of v1.1.0+)
+
+The package now uses a **lean core approach**:
+- **Main export** (`@orchestr8/testkit`) contains ONLY core utilities
+- **Sub-exports** provide optional features via lazy loading
+- **No dependency bloat** - Only loads what you explicitly use
+- **Fixed module resolution** - Works with vitest/vite/pnpm
 
 ## 🚀 Installation & Import
 
 ```bash
-pnpm add -D @template/testkit
+pnpm add -D @orchestr8/testkit
 ```
 
+### Core Utilities (No Optional Dependencies Required)
+
 ```typescript
-// Import from domain-specific subpaths
-import { setupMSW } from "@template/testkit/msw"
-import { createMemoryUrl } from "@template/testkit/sqlite"
-import { useFakeTimers } from "@template/testkit/env"
-import { createTempDirectory } from "@template/testkit/fs"
-import { quickMocks } from "@template/testkit/cli"
-import { createConvexTestHarness } from "@template/testkit/convex"
+// Import core utilities from main export - always available
+import {
+  delay,           // Promise-based delay
+  createMockFn,    // Basic mock function
+  retry,           // Retry with backoff
+  withTimeout      // Timeout wrapper
+} from "@orchestr8/testkit"
+```
+
+### Optional Features (Via Sub-Exports)
+
+```typescript
+// Import optional features from domain-specific subpaths
+// These load lazily - only when you explicitly import them
+import { setupMSW } from "@orchestr8/testkit/msw"
+import { createMemoryUrl } from "@orchestr8/testkit/sqlite"
+import { useFakeTimers } from "@orchestr8/testkit/env"
+import { createTempDirectory } from "@orchestr8/testkit/fs"
+import { quickMocks } from "@orchestr8/testkit/cli"
+import { createConvexTestHarness } from "@orchestr8/testkit/convex"
+import { createTestFixture } from "@orchestr8/testkit/utils"
+import { createBaseVitestConfig } from "@orchestr8/testkit/config/vitest"
 ```
 
 ## 🎯 Core Domains & Features
@@ -365,8 +390,8 @@ controlRandomness(seed)
 The MPPP architecture requires **sequential processing** with no outbox pattern. TestKit provides tools to validate these constraints:
 
 ```typescript
-import { useFakeTimers, setSystemTime } from "@template/testkit/env"
-import { createMemoryUrl, withTransaction } from "@template/testkit/sqlite"
+import { useFakeTimers, setSystemTime } from "@orchestr8/testkit/env"
+import { createMemoryUrl, withTransaction } from "@orchestr8/testkit/sqlite"
 
 // Test that operations are truly sequential (no concurrent writes)
 useFakeTimers()
@@ -438,7 +463,7 @@ expect(duplicate2.status).toBe("captured")
 
 ```typescript
 // Test polling-based file discovery (no fs.watch in MPPP scope)
-import { quickMocks } from "@template/testkit/cli"
+import { quickMocks } from "@orchestr8/testkit/cli"
 
 quickMocks.batch([
   { command: "ls", output: "file1.m4a\nfile2.m4a\n", exitCode: 0 },
@@ -456,7 +481,7 @@ expect(poller.discoveredFiles).toEqual(["file1.m4a", "file2.m4a"])
 ### Recipe: Testing with Gmail API Mock
 
 ```typescript
-import { setupMSW, createDelayedResponse } from "@template/testkit/msw"
+import { setupMSW, createDelayedResponse } from "@orchestr8/testkit/msw"
 
 setupMSW([
   http.post("https://oauth2.googleapis.com/token", () => ({
@@ -501,12 +526,15 @@ const result = execSync("npm install") // Returns 'installed'
 
 ## 🚨 Important Notes for AI Agents
 
-### Package Philosophy
+### Package Philosophy (Updated with Lean Core)
 
-- **Import order matters** - Use `@template/testkit/register` in setupFiles
-- **Subpath exports only** - No deep imports allowed
+- **Lean core principle** - Main export contains only essential utilities
+- **Lazy loading** - Optional features load only when explicitly imported
+- **No dependency bloat** - Core utilities work without optional dependencies
+- **Subpath exports** - Optional features accessed via domain-specific paths
 - **Domain isolation** - Each domain is independent
 - **Tree-shakable** - Only import what you need
+- **Module resolution fixed** - Works correctly with vitest/vite/pnpm
 
 ### Maturity Guidance
 
@@ -547,31 +575,22 @@ Per Master PRD v2.3.0-MPPP scope reduction:
 ## 🔗 Quick Reference
 
 ```typescript
-// Common imports
+// Core utilities from main export (always available, no optional deps)
 import {
-  // MSW
-  setupMSW,
-  createSuccessResponse,
-  http,
-  // SQLite
-  createMemoryUrl,
-  createFileDatabase,
-  applyTestPragmas,
-  // CLI
-  quickMocks,
-  processHelpers,
-  // FileSystem
-  createTempDirectory,
-  useTempDirectory,
-  // Environment
-  useFakeTimers,
-  controlRandomness,
-  setSystemTime,
-  // Utils
   delay,
   retry,
   withTimeout,
-} from "@template/testkit"
+  createMockFn
+} from "@orchestr8/testkit"
+
+// Optional features from sub-exports (lazy loaded)
+import { setupMSW, createSuccessResponse, http } from "@orchestr8/testkit/msw"
+import { createMemoryUrl, createFileDatabase, applyTestPragmas } from "@orchestr8/testkit/sqlite"
+import { quickMocks, processHelpers } from "@orchestr8/testkit/cli"
+import { createTempDirectory, useTempDirectory } from "@orchestr8/testkit/fs"
+import { useFakeTimers, controlRandomness, setSystemTime } from "@orchestr8/testkit/env"
+import { createTestFixture } from "@orchestr8/testkit/utils"
+import { createBaseVitestConfig } from "@orchestr8/testkit/config/vitest"
 ```
 
 ## Related Documentation

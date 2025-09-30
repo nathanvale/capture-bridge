@@ -48,7 +48,7 @@
   "devDependencies": {
     "@eslint/js": "^9.34.0",
     "@orchestr8/quality-check": "^1.0.0",
-    "@orchestr8/testkit": "^1.0.0",
+    "@orchestr8/testkit": "^1.0.1",
     "@types/node": "^24.3.0",
     "@typescript-eslint/eslint-plugin": "^8.44.1",
     "@typescript-eslint/parser": "^8.44.1",
