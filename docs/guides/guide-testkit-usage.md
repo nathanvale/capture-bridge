@@ -3,15 +3,16 @@ title: TestKit Developer Guide
 doc_type: guide
 status: living
 owner: Nathan
-version: 1.0.0
-date: 2025-09-28
+version: 2.0.0
+date: 2025-09-30
 master_prd_version: 2.3.0-MPPP
 roadmap_version: 2.0.0-MPPP
+testkit_version: 2.0.0
 ---
 
-# TestKit Developer Guide
+# TestKit Developer Guide v2.0
 
-> **Complete NPM package reference for `@orchestr8/testkit` - An AI agent's guide to understanding and using the test kit features with lean core implementation**
+> **Complete NPM package reference for `@orchestr8/testkit` v2.0 - Modular testing utilities with security validation, resource management, and concurrency control**
 >
 > **Alignment**: Supports MPPP requirements for deterministic testing, sequential processing validation, and no-outbox architecture verification
 >
@@ -19,55 +20,125 @@ roadmap_version: 2.0.0-MPPP
 >
 > - Master PRD: [prd-master.md](../master/prd-master.md)
 > - Roadmap: [roadmap.md](../master/roadmap.md)
+> - **Migration Guide**: [testkit-2.0-migration.md](../tasks/testkit-2.0-migration.md)
 > - TDD Applicability Guide: [tdd-applicability.md](./tdd-applicability.md)
 > - Test Strategy Guide: [test-strategy.md](./test-strategy.md)
 
 ## 📦 Package Overview
 
-**Package Name:** `@orchestr8/testkit` (formerly `@template/testkit`)
-**Purpose:** Comprehensive testing utilities for monorepo projects
-**Architecture:** Lean core with optional domain-based subpath exports
+**Package Name:** `@orchestr8/testkit`
+**Version:** 2.0.0
+**Purpose:** Comprehensive testing utilities with modular imports and optional dependencies
+**Architecture:** Lean core with modular sub-exports
 **Philosophy:** Test isolation, deterministic behavior, ADHD-friendly patterns
 
-### 🎯 Lean Core Implementation (Fixed as of v1.1.0+)
+### 🎯 Modular Architecture (v2.0)
 
-The package now uses a **lean core approach**:
-- **Main export** (`@orchestr8/testkit`) contains ONLY core utilities
-- **Sub-exports** provide optional features via lazy loading
-- **No dependency bloat** - Only loads what you explicitly use
-- **Fixed module resolution** - Works with vitest/vite/pnpm
+TestKit 2.0 uses **modular sub-exports**:
+- **Main export** (`@orchestr8/testkit`) - Core utilities only (delay, retry, withTimeout, createMockFn)
+- **Sub-exports** - Feature-specific modules (env, fs, sqlite, msw, containers, etc.)
+- **No optional dependency bloat** - Install only what you need
+- **Tree-shakable** - Import exactly what you use
+- **Enhanced TypeScript support** - Full type safety across all modules
+
+### ✨ New in v2.0
+
+- **Security Validation** - Command injection prevention, path traversal protection, SQL injection guards
+- **Resource Management** - Automatic resource tracking, priority cleanup, leak detection
+- **Concurrency Control** - Operation-specific limits, batch processing, predefined managers
+- **Enhanced Environment Control** - Fake timers, deterministic randomness, crypto mocking
+- **SQLite Connection Pooling** - Advanced connection management, transaction adapters
+- **Naming Conventions** - Consistent `create*`, `setup*`, `use*`, `with*`, `get*` patterns
 
 ## 🚀 Installation & Import
 
 ```bash
-pnpm add -D @orchestr8/testkit
+# Install core package
+pnpm add -D @orchestr8/testkit @vitest/ui vitest
+
+# Install optional dependencies as needed
+pnpm add -D msw happy-dom                    # For MSW testing
+pnpm add -D better-sqlite3                    # For SQLite testing
+pnpm add -D testcontainers pg mysql2          # For container testing
+pnpm add -D convex-test                       # For Convex testing
 ```
 
-### Core Utilities (No Optional Dependencies Required)
+### Core Utilities (No Optional Dependencies)
 
 ```typescript
-// Import core utilities from main export - always available
+// Import from main export - requires only vitest
 import {
   delay,           // Promise-based delay
-  createMockFn,    // Basic mock function
-  retry,           // Retry with backoff
-  withTimeout      // Timeout wrapper
+  retry,           // Retry with exponential/linear backoff
+  withTimeout,     // Timeout wrapper
+  createMockFn     // Vitest-compatible mock function with call tracking
 } from "@orchestr8/testkit"
 ```
 
-### Optional Features (Via Sub-Exports)
+### Modular Sub-Exports (v2.0)
 
 ```typescript
-// Import optional features from domain-specific subpaths
-// These load lazily - only when you explicitly import them
-import { setupMSW } from "@orchestr8/testkit/msw"
-import { createMemoryUrl } from "@orchestr8/testkit/sqlite"
-import { useFakeTimers } from "@orchestr8/testkit/env"
-import { createTempDirectory } from "@orchestr8/testkit/fs"
-import { quickMocks } from "@orchestr8/testkit/cli"
-import { createConvexTestHarness } from "@orchestr8/testkit/convex"
-import { createTestFixture } from "@orchestr8/testkit/utils"
-import { createBaseVitestConfig } from "@orchestr8/testkit/config/vitest"
+// Environment utilities
+import {
+  getTestEnvironment,
+  setupTestEnv,
+  useFakeTime,           // NEW in v2.0 - replaces useFakeTimers
+  controlRandomness,
+  quickRandom,
+  quickCrypto
+} from "@orchestr8/testkit/env"
+
+// File system utilities
+import {
+  createTempDirectory,
+  createTempDirectoryWithResourceManager,  // NEW in v2.0
+  useTempDirectory,
+  withTempDirectoryScope
+} from "@orchestr8/testkit/fs"
+
+// SQLite testing
+import {
+  createMemoryUrl,
+  createFileDatabase,
+  createSQLitePool,              // NEW in v2.0
+  withSQLiteTransaction,         // NEW in v2.0
+  migrateDatabase,               // NEW in v2.0
+  applyRecommendedPragmas        // NEW in v2.0
+} from "@orchestr8/testkit/sqlite"
+
+// MSW mock server (requires msw@^2.0.0)
+import {
+  setupMSW,
+  http,                          // MSW v2 - replaces 'rest'
+  HttpResponse,                  // MSW v2
+  createSuccessResponse,
+  createAuthHandlers
+} from "@orchestr8/testkit/msw"
+
+// CLI process mocking
+import {
+  spawnUtils,
+  createProcessMock,
+  mockProcess
+} from "@orchestr8/testkit/cli"
+
+// Container testing (requires testcontainers)
+import {
+  createPostgresContext,
+  createMySQLContext
+} from "@orchestr8/testkit/containers"
+
+// Convex testing (requires convex-test)
+import {
+  createConvexTestHarness,
+  withConvexTest
+} from "@orchestr8/testkit/convex"
+
+// Vitest configuration
+import {
+  createVitestConfig,            // NEW in v2.0 - single config function
+  defineVitestConfig
+} from "@orchestr8/testkit/config"
 ```
 
 ## 🎯 Core Domains & Features
@@ -76,6 +147,13 @@ import { createBaseVitestConfig } from "@orchestr8/testkit/config/vitest"
 
 **Purpose:** API mocking for unit/integration tests
 **Maturity:** ✅ Stable (Production Ready)
+
+> ⚠️ **MSW Module Status**
+> Currently experiencing build issues. Use native MSW setup until fixed:
+> ```typescript
+> import { setupServer } from 'msw/node';
+> import { http, HttpResponse } from 'msw';
+> ```
 
 #### Server Lifecycle Functions
 
@@ -125,7 +203,7 @@ setupMSW([
 #### Database Management
 
 - `createMemoryUrl(options?)` - In-memory SQLite URL generation
-- `createFileDatabase(name?, options?)` - File-based DB with cleanup
+- `createFileDatabase(name?, options?)` - Factory function for file-based DB with cleanup (returns { url, path, dir, cleanup })
 - `createInMemoryDatabase(options?)` - Memory DB wrapper
 - `withTransaction(db, fn)` - Transaction isolation wrapper
 
@@ -205,11 +283,23 @@ const result = execSync("git status") // Returns mocked output
 **Purpose:** Temp directory management and file operations
 **Maturity:** ✅ Stable (Production Ready)
 
+#### Async vs Sync Methods
+
+| Method | Returns | Usage |
+|--------|---------|-------|
+| createTempDirectory() | TempDirectory | Synchronous |
+| createNamedTempDirectory(prefix) | TempDirectory | Synchronous |
+| createMultipleTempDirectories(n) | Promise<TempDirectory[]> | Await required |
+| cleanupMultipleTempDirectories(dirs) | Promise<void> | Await required |
+
+> ⚠️ **Note:** Some functions shown in examples may not be available in current version.
+> Use createTempDirectory() and manual cleanup for now.
+
 #### Temp Directory Creation
 
-- `createTempDirectory(options?)` - Create temp dir with manual cleanup
-- `useTempDirectory(fn)` - Auto-cleanup temp dir in callback
-- `createManagedTempDirectory(options?)` - Suite-managed temp dir
+- `createTempDirectory(options?)` - Create temp dir with manual cleanup (synchronous, returns {path, cleanup})
+- `useTempDirectory(fn)` - Auto-cleanup temp dir in callback (not currently exported)
+- `createManagedTempDirectory(options?)` - Suite-managed temp dir (not currently exported)
 - `withTempDirectoryScope(fn)` - Scoped temp dir with auto-cleanup
 
 #### Directory Operations
@@ -244,6 +334,17 @@ await temp.cleanup()
 
 **Purpose:** Time control, randomness, and data generation
 **Maturity:** ✅ Stable (Production Ready)
+
+#### Test Environment
+
+- `getTestEnvironment()` - Returns environment flags
+  - Available properties: `isCI`, `isWallaby`, `isLocal`, `isDebug`, `isTurbo`
+  - Note: `isTest` property not available, use `process.env.NODE_ENV === 'test'`
+- `setupTestEnv(env)` - Sets environment variables, returns restore function directly (not object)
+  ```typescript
+  const restore = setupTestEnv({ VAR: 'value' });
+  restore(); // ✅ Correct - returns function directly
+  ```
 
 #### Time Control
 
@@ -344,7 +445,22 @@ const result = await harness.auth
 **Purpose:** Vitest configuration helpers
 **Maturity:** ✅ Stable
 
-- `createBaseVitestConfig(overrides?)` - Base Vitest config
+**Available Exports:**
+```typescript
+export {
+  baseVitestConfig,        // Pre-configured object
+  createVitestBaseConfig,   // Function to create config (note: name is swapped from expected pattern)
+  createCIOptimizedConfig,  // CI-specific config
+  createWallabyOptimizedConfig, // Wallaby-specific config
+  defineVitestConfig,       // Wrapper for defineConfig
+  createVitestCoverage,     // Coverage configuration
+  createVitestEnvironmentConfig, // Environment setup
+  createVitestPoolOptions,  // Thread pool config
+  createVitestTimeouts,     // Timeout configuration
+}
+```
+
+- `createVitestBaseConfig(overrides?)` - Base Vitest config (⚠️ Note: function name is swapped)
 - `createWorkspaceConfig(projects)` - Workspace config
 - `detectEnvironment()` - Environment detection
 - `getTestTimeouts()` - Timeout configuration
@@ -355,9 +471,27 @@ const result = await harness.auth
 **Maturity:** ✅ Stable
 
 - `delay(ms)` - Promise-based delay
-- `retry(fn, maxAttempts?, delayMs?)` - Retry with backoff
+- `retry(fn, maxAttempts, delayMs)` - Retry with linear backoff (both parameters required)
+  ```typescript
+  // Note: Current implementation uses linear backoff
+  // Each retry waits delayMs (not exponential)
+  await retry(operation, 3, 100); // Retries at 100ms intervals
+  ```
 - `withTimeout(promise, timeoutMs)` - Timeout wrapper
+  ```typescript
+  try {
+    await withTimeout(slowOp, 1000);
+  } catch (error) {
+    // Error message: "Timeout after 1000ms"
+  }
+  ```
 - `createMockFn(implementation?)` - Basic mock function
+  ```typescript
+  const mockFn = createMockFn();
+  mockFn('test');
+  // Note: Returns basic function, not a vitest spy
+  // For spy functionality, use vi.fn() directly
+  ```
 
 ## 🔄 Cross-Domain Patterns
 
@@ -578,20 +712,233 @@ Per Master PRD v2.3.0-MPPP scope reduction:
 // Core utilities from main export (always available, no optional deps)
 import {
   delay,
-  retry,
-  withTimeout,
-  createMockFn
+  retry,              // Requires both maxAttempts AND delayMs parameters
+  withTimeout,        // Error format: "Timeout after {ms}ms"
+  createMockFn        // Returns basic function, not vitest spy
 } from "@orchestr8/testkit"
 
 // Optional features from sub-exports (lazy loaded)
-import { setupMSW, createSuccessResponse, http } from "@orchestr8/testkit/msw"
+// Note: MSW currently has build issues - use native MSW imports for now
+import { setupServer } from 'msw/node';  // Use this instead of @orchestr8/testkit/msw
+import { http, HttpResponse } from 'msw';
+
 import { createMemoryUrl, createFileDatabase, applyTestPragmas } from "@orchestr8/testkit/sqlite"
 import { quickMocks, processHelpers } from "@orchestr8/testkit/cli"
-import { createTempDirectory, useTempDirectory } from "@orchestr8/testkit/fs"
-import { useFakeTimers, controlRandomness, setSystemTime } from "@orchestr8/testkit/env"
+import { createTempDirectory } from "@orchestr8/testkit/fs"  // useTempDirectory not exported
+import { useFakeTimers, controlRandomness, setSystemTime, getTestEnvironment, setupTestEnv } from "@orchestr8/testkit/env"
 import { createTestFixture } from "@orchestr8/testkit/utils"
-import { createBaseVitestConfig } from "@orchestr8/testkit/config/vitest"
+import { createVitestBaseConfig } from "@orchestr8/testkit/config/vitest"  // Note: function name is swapped
 ```
+
+## 🆕 TestKit 2.0 New Features
+
+### Security Validation
+
+```typescript
+import {
+  validateCommand,
+  sanitizeCommand,
+  validatePath,
+  sanitizeSqlIdentifier,
+  escapeShellArg,
+  validateShellExecution
+} from "@orchestr8/testkit"
+
+// Command injection prevention
+validateCommand('echo hello') // ✅ Safe
+validateCommand('rm -rf /') // ❌ Throws SecurityValidationError
+
+// Path traversal protection
+const safePath = validatePath('/tmp/test', 'file.txt') // ✅
+validatePath('/tmp/test', '../../../etc/passwd') // ❌ Throws
+
+// SQL injection prevention
+const tableName = sanitizeSqlIdentifier('user_table') // ✅
+
+// Shell argument escaping
+const escaped = escapeShellArg('hello world; rm -rf /')
+// Returns: "'hello world; rm -rf /'"
+```
+
+### Resource Management
+
+```typescript
+import {
+  registerResource,
+  cleanupAllResources,
+  getResourceStats,
+  detectResourceLeaks,
+  ResourceCategory,
+  ResourcePriority
+} from "@orchestr8/testkit"
+
+// Register resources for automatic cleanup
+registerResource('db-connection', () => db.close(), {
+  category: ResourceCategory.DATABASE,
+  priority: ResourcePriority.CRITICAL
+})
+
+// Get statistics
+const stats = getResourceStats()
+console.log(`Active: ${stats.active}, Total: ${stats.total}`)
+
+// Detect leaks
+const leaks = detectResourceLeaks()
+
+// Clean up all resources
+await cleanupAllResources({ timeout: 10000 })
+```
+
+### Concurrency Control
+
+```typescript
+import {
+  limitConcurrency,
+  limitedPromiseAll,
+  ConcurrencyManager,
+  databaseOperationsManager
+} from "@orchestr8/testkit"
+
+// Limit concurrent operations
+const tasks = Array.from({ length: 10 }, (_, i) =>
+  limitConcurrency(() => processItem(i), 3)
+)
+await Promise.all(tasks) // Only 3 running at once
+
+// Batch processing with limits
+const results = await limitedPromiseAll(promises, { maxConcurrent: 5 })
+
+// Predefined managers
+await databaseOperationsManager.execute(() => db.query('SELECT * FROM users'))
+```
+
+### Enhanced Environment Control
+
+```typescript
+import {
+  useFakeTime,
+  controlRandomness,
+  quickRandom,
+  quickCrypto
+} from "@orchestr8/testkit/env"
+
+// Time control (replaces useFakeTimers)
+const timeController = useFakeTime(new Date('2023-01-01'))
+timeController.advance(1000 * 60 * 60) // Advance 1 hour
+timeController.restore()
+
+// Deterministic randomness
+const randomController = controlRandomness(12345)
+expect(Math.random()).toBe(0.123456789)
+randomController.restore()
+
+// Quick random helpers
+const restore = quickRandom.sequence([0.1, 0.5, 0.9])
+expect(Math.random()).toBe(0.1)
+restore()
+
+// Quick crypto mocking
+const cryptoRestore = quickCrypto.uuid([
+  '550e8400-e29b-41d4-a716-446655440000'
+])
+expect(crypto.randomUUID()).toBe('550e8400-e29b-41d4-a716-446655440000')
+cryptoRestore()
+```
+
+### SQLite Connection Pooling
+
+```typescript
+import {
+  createSQLitePool,
+  createMemoryUrl,
+  withSQLiteTransaction,
+  migrateDatabase,
+  applyRecommendedPragmas
+} from "@orchestr8/testkit/sqlite"
+import { betterSqliteAdapter } from "@orchestr8/testkit/sqlite/adapters"
+
+// Connection pooling
+const pool = createSQLitePool({
+  databaseUrl: createMemoryUrl('raw'),
+  maxConnections: 5,
+  idleTimeoutMs: 30000
+})
+
+await pool.withConnection(async (db) => {
+  const result = await db.prepare('SELECT 1 as test').get()
+  expect(result.test).toBe(1)
+})
+
+// Transactions with adapters
+await withSQLiteTransaction(db, betterSqliteAdapter, async (tx) => {
+  tx.run('INSERT INTO users (name) VALUES (?)', 'Alice')
+})
+
+// Migrations
+await migrateDatabase(db, './migrations')
+
+// Recommended pragmas
+await applyRecommendedPragmas(db, {
+  journalMode: 'WAL',
+  foreignKeys: true,
+  busyTimeoutMs: 5000
+})
+```
+
+### MSW v2 API (Breaking Change)
+
+```typescript
+// OLD (MSW v1 - no longer supported)
+import { rest } from 'msw'
+rest.get('/api/users', (req, res, ctx) => res(ctx.json([])))
+
+// NEW (MSW v2 - TestKit 2.0)
+import { http, HttpResponse } from '@orchestr8/testkit/msw'
+http.get('/api/users', () => HttpResponse.json([]))
+```
+
+### setupTestEnv Return Value (Breaking Change)
+
+```typescript
+// OLD (returned object with restore method)
+const envRestore = setupTestEnv({ NODE_ENV: 'test' })
+envRestore.restore()
+
+// NEW (returns object with restore method - API unchanged, but documented correctly)
+const envRestore = setupTestEnv({ NODE_ENV: 'test' })
+envRestore.restore() // ✅ Correct usage
+```
+
+### createFileDatabase Return Value (Breaking Change)
+
+```typescript
+// OLD (returned db directly)
+const db = await createFileDatabase('test.db')
+
+// NEW (returns object with db and cleanup)
+const { db, cleanup } = await createFileDatabase('test.db')
+// ... use db
+await cleanup()
+```
+
+### Naming Conventions (v2.0)
+
+TestKit 2.0 follows consistent naming patterns:
+
+- **`create*`** - Factory functions returning new instances
+  - `createTempDirectory()`, `createSQLitePool()`, `createConvexTestHarness()`
+
+- **`setup*`** - One-time initialization with side effects
+  - `setupMSW()`, `setupTestEnv()`, `setupCryptoControl()`
+
+- **`use*`** - Hook-style functions for test lifecycle
+  - `useTempDirectory()`, `useFakeTime()`, `usePrismaTestDatabase()`
+
+- **`with*`** - Scoped operations with automatic cleanup
+  - `withTempDirectoryScope()`, `withSQLiteTransaction()`, `withFakeTimers()`
+
+- **`get*`** - Pure getter functions without side effects
+  - `getTestEnvironment()`, `getResourceStats()`, `getMSWServer()`
 
 ## Related Documentation
 
@@ -610,6 +957,8 @@ import { createBaseVitestConfig } from "@orchestr8/testkit/config/vitest"
 
 **Guides (How-To):**
 
+- **[TestKit 2.0 Migration Guide](../tasks/testkit-2.0-migration.md)** - **IMPORTANT: Upgrade guide for v2.0**
+- [TestKit Standardization Guide](./guide-testkit-standardization.md) - Mandatory patterns for TestKit usage
 - [TDD Applicability Guide](./guide-tdd-applicability.md) - When to apply TDD with TestKit
 - [Test Strategy Guide](./guide-test-strategy.md) - Overall testing approach
 - [Phase 1 Testing Patterns](./guide-phase1-testing-patterns.md) - MPPP-specific testing patterns
