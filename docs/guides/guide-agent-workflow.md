@@ -418,6 +418,98 @@ Marking task completed in task-state.json ✓
 
 ---
 
+### Option C: Parallel Batch Execution (For Independent Tasks)
+
+**Use:** `task-batch-coordinator`
+
+**When to use:**
+- Multiple tasks in same slice marked `parallel: true`
+- Tasks are truly independent (different files, packages, or layers)
+- Want to reduce total implementation time
+- Have capacity to monitor multiple work streams
+
+**Command:**
+
+```
+Execute parallel tasks for Slice 1.1 using task-batch-coordinator
+```
+
+**What it does:**
+
+1. Reads VTM and identifies tasks in batch
+2. Validates parallel safety (checks `parallel`, `conflicts_with`, `file_scope`)
+3. Detects conflicts and groups tasks (parallel vs serial)
+4. Spawns task-implementer sub-agents for each task in parallel groups
+5. Coordinates execution, consolidates results
+6. Updates task-state.json with all task completions
+7. Reports overall progress and next steps
+
+**Example workflow:**
+
+```
+You request: "Execute parallel tasks for Slice 1.1"
+
+Coordinator analyzes:
+  Slice 1.1 has 6 tasks
+  → Group 1 (parallel): 3 tasks (foundation-setup)
+  → Group 2 (serial): 1 task (High risk)
+  → Group 3 (parallel): 2 tasks (utilities)
+
+Coordinator executes:
+  Group 1: Spawns 3 task-implementer agents in parallel
+    ├─ MONOREPO_STRUCTURE--T01 completes in 15 mins ✅
+    ├─ CONTENT_HASH--T01 completes in 12 mins ✅
+    └─ ATOMIC_WRITER--T01 completes in 18 mins ✅
+
+  Group 2: Spawns 1 task-implementer (High risk, serialized)
+    └─ SQLITE_SCHEMA--T01 completes in 32 mins ✅
+
+  Group 3: Spawns 2 task-implementer agents in parallel
+    ├─ TESTKIT_INTEGRATION--T01 completes in 10 mins ✅
+    └─ METRICS_INFRA--T01 blocked after 8 mins ⚠️
+
+Total time: 68 minutes (vs ~115 mins if serial)
+Time savings: 47 minutes (41% reduction)
+```
+
+**Progress tracking:**
+- Real-time updates as each task completes
+- Consolidated task-state.json updates after each group
+- Final summary with:
+  - Tasks completed / total
+  - ACs satisfied
+  - Test results (combined across tasks)
+  - Time savings vs serial execution
+  - Any blockers requiring attention
+  - Next eligible tasks
+
+**When to use parallel vs sequential:**
+
+| Scenario | Recommended Mode |
+|----------|------------------|
+| Starting new slice with multiple independent tasks | **Parallel** (task-batch-coordinator) |
+| High-risk tasks requiring careful TDD | **Sequential** (task-implementer one at a time) |
+| Tasks with file conflicts or shared state | **Sequential** (orchestrator handles ordering) |
+| Learning new codebase area | **Sequential** (better for understanding) |
+| Time-sensitive delivery | **Parallel** (maximize throughput) |
+| Single task or tightly coupled chain | **Sequential** (task-implementer) |
+
+**Safety features:**
+- Max 3 concurrent tasks (ADHD-friendly limit)
+- Automatic conflict detection prevents file collisions
+- High-risk tasks never parallelized
+- Clean git state required before starting
+- WIP limit enforced (refuses if ≥3 tasks already in-progress)
+- TestKit isolation ensures no test interference
+
+**Failure handling:**
+- If any task blocks, others continue
+- Partial completion is valid state
+- Clear remediation steps for blockers
+- Can resume batch execution after fixing issues
+
+---
+
 ## Monitoring Progress
 
 ### View Current State
@@ -448,6 +540,26 @@ cat docs/backlog/task-state.json | jq '.tasks | length'
 
 ```bash
 cat docs/backlog/task-state.json | jq '[.tasks[] | select(.status=="completed")] | length'
+```
+
+### View Parallel Execution Groups
+
+**Check parallelization potential:**
+
+```bash
+cat docs/backlog/virtual-task-manifest.json | jq '[.tasks[] | select(.parallel==true)] | length'
+# Shows count of parallel-safe tasks
+
+cat docs/backlog/virtual-task-manifest.json | jq '.tasks[] | select(.parallel==true) | .parallelism_group' | sort | uniq -c
+# Shows parallel groups with task counts
+```
+
+**Expected output:**
+```
+  3 foundation-setup
+  2 storage-foundation
+  4 capture-polling
+  2 utilities
 ```
 
 ### Progress Pulse (from orchestrator)
@@ -564,7 +676,11 @@ Need to break capabilities into tasks?
   → Use task-decomposition-architect
 
 Want auto-pilot implementation?
-  → Use implementation-orchestrator
+  → Single-threaded: Use implementation-orchestrator
+  → Parallel batch: Use implementation-orchestrator in parallel mode (delegates to task-batch-coordinator)
+
+Want to implement specific independent tasks in parallel?
+  → Use task-batch-coordinator with task ID list
 
 Want to implement specific task manually?
   → Use task-implementer
