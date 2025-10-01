@@ -10,9 +10,9 @@ roadmap_version: 2.0.0-MPPP
 testkit_version: 2.0.0
 ---
 
-# TestKit Developer Guide v2.0
+# TestKit Developer Guide
 
-> **Complete NPM package reference for `@orchestr8/testkit` v2.0 - Modular testing utilities with security validation, resource management, and concurrency control**
+> **Complete NPM package reference for `@orchestr8/testkit` - Modular testing utilities with security validation, resource management, and concurrency control**
 >
 > **Alignment**: Supports MPPP requirements for deterministic testing, sequential processing validation, and no-outbox architecture verification
 >
@@ -20,7 +20,6 @@ testkit_version: 2.0.0
 >
 > - Master PRD: [prd-master.md](../master/prd-master.md)
 > - Roadmap: [roadmap.md](../master/roadmap.md)
-> - **Migration Guide**: [testkit-2.0-migration.md](../tasks/testkit-2.0-migration.md)
 > - TDD Applicability Guide: [tdd-applicability.md](./tdd-applicability.md)
 > - Test Strategy Guide: [test-strategy.md](./test-strategy.md)
 
@@ -32,16 +31,16 @@ testkit_version: 2.0.0
 **Architecture:** Lean core with modular sub-exports
 **Philosophy:** Test isolation, deterministic behavior, ADHD-friendly patterns
 
-### 🎯 Modular Architecture (v2.0)
+### 🎯 Modular Architecture
 
-TestKit 2.0 uses **modular sub-exports**:
+TestKit uses **modular sub-exports**:
 - **Main export** (`@orchestr8/testkit`) - Core utilities only (delay, retry, withTimeout, createMockFn)
 - **Sub-exports** - Feature-specific modules (env, fs, sqlite, msw, containers, etc.)
 - **No optional dependency bloat** - Install only what you need
 - **Tree-shakable** - Import exactly what you use
 - **Enhanced TypeScript support** - Full type safety across all modules
 
-### ✨ New in v2.0
+### ✨ Key Features
 
 - **Security Validation** - Command injection prevention, path traversal protection, SQL injection guards
 - **Resource Management** - Automatic resource tracking, priority cleanup, leak detection
@@ -730,9 +729,7 @@ import { createTestFixture } from "@orchestr8/testkit/utils"
 import { createVitestBaseConfig } from "@orchestr8/testkit/config/vitest"  // Note: function name is swapped
 ```
 
-## 🆕 TestKit 2.0 New Features
-
-### Security Validation
+## 🔒 Security Validation
 
 ```typescript
 import {
@@ -760,7 +757,7 @@ const escaped = escapeShellArg('hello world; rm -rf /')
 // Returns: "'hello world; rm -rf /'"
 ```
 
-### Resource Management
+## 📊 Resource Management
 
 ```typescript
 import {
@@ -789,7 +786,7 @@ const leaks = detectResourceLeaks()
 await cleanupAllResources({ timeout: 10000 })
 ```
 
-### Concurrency Control
+## 🔄 Concurrency Control
 
 ```typescript
 import {
@@ -812,7 +809,7 @@ const results = await limitedPromiseAll(promises, { maxConcurrent: 5 })
 await databaseOperationsManager.execute(() => db.query('SELECT * FROM users'))
 ```
 
-### Enhanced Environment Control
+## 🕐 Enhanced Environment Control
 
 ```typescript
 import {
@@ -822,7 +819,7 @@ import {
   quickCrypto
 } from "@orchestr8/testkit/env"
 
-// Time control (replaces useFakeTimers)
+// Time control
 const timeController = useFakeTime(new Date('2023-01-01'))
 timeController.advance(1000 * 60 * 60) // Advance 1 hour
 timeController.restore()
@@ -845,7 +842,7 @@ expect(crypto.randomUUID()).toBe('550e8400-e29b-41d4-a716-446655440000')
 cryptoRestore()
 ```
 
-### SQLite Connection Pooling
+## 💾 SQLite Connection Pooling
 
 ```typescript
 import {
@@ -885,45 +882,21 @@ await applyRecommendedPragmas(db, {
 })
 ```
 
-### MSW v2 API (Breaking Change)
+## 🌐 MSW v2 API
 
 ```typescript
-// OLD (MSW v1 - no longer supported)
-import { rest } from 'msw'
-rest.get('/api/users', (req, res, ctx) => res(ctx.json([])))
-
-// NEW (MSW v2 - TestKit 2.0)
 import { http, HttpResponse } from '@orchestr8/testkit/msw'
-http.get('/api/users', () => HttpResponse.json([]))
+
+// Define handlers using MSW v2 API
+http.get('/api/users', () => HttpResponse.json([
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' }
+]))
 ```
 
-### setupTestEnv Return Value (Breaking Change)
+## 📝 Naming Conventions
 
-```typescript
-// OLD (returned object with restore method)
-const envRestore = setupTestEnv({ NODE_ENV: 'test' })
-envRestore.restore()
-
-// NEW (returns object with restore method - API unchanged, but documented correctly)
-const envRestore = setupTestEnv({ NODE_ENV: 'test' })
-envRestore.restore() // ✅ Correct usage
-```
-
-### createFileDatabase Return Value (Breaking Change)
-
-```typescript
-// OLD (returned db directly)
-const db = await createFileDatabase('test.db')
-
-// NEW (returns object with db and cleanup)
-const { db, cleanup } = await createFileDatabase('test.db')
-// ... use db
-await cleanup()
-```
-
-### Naming Conventions (v2.0)
-
-TestKit 2.0 follows consistent naming patterns:
+TestKit follows consistent naming patterns:
 
 - **`create*`** - Factory functions returning new instances
   - `createTempDirectory()`, `createSQLitePool()`, `createConvexTestHarness()`
@@ -957,7 +930,6 @@ TestKit 2.0 follows consistent naming patterns:
 
 **Guides (How-To):**
 
-- **[TestKit 2.0 Migration Guide](../tasks/testkit-2.0-migration.md)** - **IMPORTANT: Upgrade guide for v2.0**
 - [TestKit Standardization Guide](./guide-testkit-standardization.md) - Mandatory patterns for TestKit usage
 - [TDD Applicability Guide](./guide-tdd-applicability.md) - When to apply TDD with TestKit
 - [Test Strategy Guide](./guide-test-strategy.md) - Overall testing approach
