@@ -76,10 +76,10 @@ Use this guide when:
 adhd capture doctor
 
 # 2. Inspect staging ledger state
-sqlite3 ~/.adhd-brain/staging.db "SELECT id, status, source, created_at FROM captures ORDER BY created_at DESC LIMIT 10;"
+sqlite3 ~/.capture-bridge/staging.db "SELECT id, status, source, created_at FROM captures ORDER BY created_at DESC LIMIT 10;"
 
 # 3. Check for errors in last 24 hours
-sqlite3 ~/.adhd-brain/staging.db "SELECT stage, error_type, COUNT(*) FROM errors_log WHERE created_at > datetime('now', '-1 day') GROUP BY stage, error_type;"
+sqlite3 ~/.capture-bridge/staging.db "SELECT stage, error_type, COUNT(*) FROM errors_log WHERE created_at > datetime('now', '-1 day') GROUP BY stage, error_type;"
 
 # 4. Verify voice file accessibility
 icloudctl list --folder ~/Library/Group\ Containers/group.com.apple.VoiceMemos.shared/Recordings/
@@ -146,7 +146,7 @@ Use the staging ledger to identify where captures are getting stuck:
 
 ```bash
 # Check capture status distribution
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   status,
   source,
@@ -178,7 +178,7 @@ exported_placeholder  | voice   | 2     | 2025-09-28 13:20:18
 Query the `errors_log` table for recent failures:
 
 ```bash
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   capture_id,
   stage,
@@ -243,7 +243,7 @@ icloudctl list --folder ~/Library/Group\ Containers/group.com.apple.VoiceMemos.s
 2. **Check sync state cursor:**
 
 ```bash
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   channel,
   last_cursor,
@@ -268,7 +268,7 @@ voice   | 2025-09-28T14:30Z  | 2025-09-28 14:30:15| 47
 
 ```bash
 # Reset sync state cursor (will re-poll all files)
-sqlite3 ~/.adhd-brain/staging.db "UPDATE sync_state SET last_cursor = datetime('now', '-1 hour') WHERE channel = 'voice';"
+sqlite3 ~/.capture-bridge/staging.db "UPDATE sync_state SET last_cursor = datetime('now', '-1 hour') WHERE channel = 'voice';"
 
 # Trigger manual poll
 adhd capture voice
@@ -278,7 +278,7 @@ adhd capture voice
 
 ```bash
 # Check if audio fingerprints are being computed
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   id,
   json_extract(meta_json, '$.audio_fp') as audio_fingerprint,
@@ -306,13 +306,13 @@ id                    | audio_fingerprint                                  | aud
 
 ```bash
 # Check file permissions
-ls -l $(sqlite3 ~/.adhd-brain/staging.db "SELECT json_extract(meta_json, '$.channel_native_id') FROM captures WHERE source = 'voice' AND json_extract(meta_json, '$.audio_fp') IS NULL LIMIT 1;")
+ls -l $(sqlite3 ~/.capture-bridge/staging.db "SELECT json_extract(meta_json, '$.channel_native_id') FROM captures WHERE source = 'voice' AND json_extract(meta_json, '$.audio_fp') IS NULL LIMIT 1;")
 
 # Verify file integrity
 ffprobe -v error -show_format -show_streams <audio_path>
 
 # If corrupted, quarantine and skip
-sqlite3 ~/.adhd-brain/staging.db "UPDATE captures SET meta_json = json_set(meta_json, '$.integrity.quarantine', 1) WHERE id = '<capture_id>';"
+sqlite3 ~/.capture-bridge/staging.db "UPDATE captures SET meta_json = json_set(meta_json, '$.integrity.quarantine', 1) WHERE id = '<capture_id>';"
 ```
 
 ### Symptom: Voice File Sovereignty Violations
@@ -323,7 +323,7 @@ sqlite3 ~/.adhd-brain/staging.db "UPDATE captures SET meta_json = json_set(meta_
 
 ```bash
 # Check for missing voice files
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   id,
   json_extract(meta_json, '$.channel_native_id') as audio_path,
@@ -339,7 +339,7 @@ EOF
 
 ```bash
 # Check if file exists at original path
-for path in $(sqlite3 ~/.adhd-brain/staging.db "SELECT json_extract(meta_json, '$.channel_native_id') FROM captures WHERE source = 'voice' AND status = 'staged';"); do
+for path in $(sqlite3 ~/.capture-bridge/staging.db "SELECT json_extract(meta_json, '$.channel_native_id') FROM captures WHERE source = 'voice' AND status = 'staged';"); do
   if [ ! -f "$path" ]; then
     echo "MISSING: $path"
   fi
@@ -365,7 +365,7 @@ icloudctl download --file "$path"
 
 ```bash
 # Mark as quarantined, export placeholder
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 UPDATE captures
 SET meta_json = json_set(meta_json, '$.integrity.quarantine', 1, '$.integrity.quarantine_reason', 'missing_file')
 WHERE source = 'voice'
@@ -383,7 +383,7 @@ adhd capture export-placeholders
 find ~/Library/Group\ Containers/group.com.apple.VoiceMemos.shared/ -name "*.m4a" -exec sh -c 'sha256sum {} | head -c 64' \; | grep "$audio_fingerprint"
 
 # If found, update path in staging ledger
-sqlite3 ~/.adhd-brain/staging.db "UPDATE captures SET meta_json = json_set(meta_json, '$.channel_native_id', '$new_path') WHERE id = '$capture_id';"
+sqlite3 ~/.capture-bridge/staging.db "UPDATE captures SET meta_json = json_set(meta_json, '$.channel_native_id', '$new_path') WHERE id = '$capture_id';"
 ```
 
 ### Symptom: Transcription Timeouts or Failures
@@ -392,7 +392,7 @@ sqlite3 ~/.adhd-brain/staging.db "UPDATE captures SET meta_json = json_set(meta_
 
 ```bash
 # Check recent transcription failures
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   c.id,
   json_extract(c.meta_json, '$.channel_native_id') as audio_path,
@@ -446,7 +446,7 @@ ffmpeg -v error -i "$audio_path" -f null - 2>&1
 
 ```bash
 # Mark as quarantined
-sqlite3 ~/.adhd-brain/staging.db "UPDATE captures SET meta_json = json_set(meta_json, '$.integrity.quarantine', 1, '$.integrity.quarantine_reason', 'corrupt_audio') WHERE id = '$capture_id';"
+sqlite3 ~/.capture-bridge/staging.db "UPDATE captures SET meta_json = json_set(meta_json, '$.integrity.quarantine', 1, '$.integrity.quarantine_reason', 'corrupt_audio') WHERE id = '$capture_id';"
 
 # Export placeholder
 adhd capture export-placeholders --capture-id "$capture_id"
@@ -485,7 +485,7 @@ adhd capture start --voice
 
 ```bash
 # Find captures with identical audio fingerprints
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   json_extract(meta_json, '$.audio_fp') as audio_fingerprint,
   COUNT(*) as duplicate_count,
@@ -514,7 +514,7 @@ sha256_a1b2c3d4e5f6...                        | 2               | 01JTEST123, 01
 head -c 4194304 "$audio_path" | sha256sum
 
 # Compare with stored fingerprint
-sqlite3 ~/.adhd-brain/staging.db "SELECT json_extract(meta_json, '$.audio_fp') FROM captures WHERE json_extract(meta_json, '$.channel_native_id') = '$audio_path';"
+sqlite3 ~/.capture-bridge/staging.db "SELECT json_extract(meta_json, '$.audio_fp') FROM captures WHERE json_extract(meta_json, '$.channel_native_id') = '$audio_path';"
 ```
 
 **If fingerprints don't match:**
@@ -566,7 +566,7 @@ New messages since last poll: 3
 
 ```bash
 # Inspect stored OAuth2 token
-cat ~/.adhd-brain/gmail-credentials.json | jq '.expiry_date'
+cat ~/.capture-bridge/gmail-credentials.json | jq '.expiry_date'
 
 # Check if expired (expiry_date < current timestamp)
 date +%s
@@ -588,7 +588,7 @@ adhd capture email --reauth
 # https://console.cloud.google.com/apis/api/gmail.googleapis.com/quotas
 
 # Check for quota exceeded errors
-sqlite3 ~/.adhd-brain/staging.db "SELECT COUNT(*) FROM errors_log WHERE error_type = 'api.quota_exceeded' AND created_at > datetime('now', '-1 day');"
+sqlite3 ~/.capture-bridge/staging.db "SELECT COUNT(*) FROM errors_log WHERE error_type = 'api.quota_exceeded' AND created_at > datetime('now', '-1 day');"
 ```
 
 **If quota exceeded:**
@@ -600,7 +600,7 @@ sqlite3 ~/.adhd-brain/staging.db "SELECT COUNT(*) FROM errors_log WHERE error_ty
 4. **Check sync state cursor:**
 
 ```bash
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   channel,
   last_cursor,
@@ -625,7 +625,7 @@ email   | history_12345  | 2025-09-28 14:30:22| 128
 
 ```bash
 # Reset sync state (will re-fetch recent emails)
-sqlite3 ~/.adhd-brain/staging.db "UPDATE sync_state SET last_cursor = NULL WHERE channel = 'email';"
+sqlite3 ~/.capture-bridge/staging.db "UPDATE sync_state SET last_cursor = NULL WHERE channel = 'email';"
 
 # Trigger manual poll
 adhd capture email
@@ -639,7 +639,7 @@ adhd capture email
 
 ```bash
 # Find captures with identical message IDs
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   json_extract(meta_json, '$.message_id') as message_id,
   COUNT(*) as duplicate_count,
@@ -657,7 +657,7 @@ EOF
 
 ```bash
 # Check if message_id is NULL
-sqlite3 ~/.adhd-brain/staging.db "SELECT COUNT(*) FROM captures WHERE source = 'email' AND json_extract(meta_json, '$.message_id') IS NULL;"
+sqlite3 ~/.capture-bridge/staging.db "SELECT COUNT(*) FROM captures WHERE source = 'email' AND json_extract(meta_json, '$.message_id') IS NULL;"
 ```
 
 **Fix:** Verify Gmail API response includes `id` field.
@@ -666,7 +666,7 @@ sqlite3 ~/.adhd-brain/staging.db "SELECT COUNT(*) FROM captures WHERE source = '
 
 ```bash
 # Find emails with identical content but different hashes
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   raw_content,
   content_hash,
@@ -693,7 +693,7 @@ adhd capture recompute-hashes --source email
 
 ```bash
 # Check for empty or truncated email bodies
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   id,
   json_extract(meta_json, '$.message_id') as message_id,
@@ -722,7 +722,7 @@ adhd capture email --message-id "$message_id" --debug
 
 ```bash
 # Check if Gmail snippet was used instead of full body
-sqlite3 ~/.adhd-brain/staging.db "SELECT raw_content FROM captures WHERE id = '$capture_id';"
+sqlite3 ~/.capture-bridge/staging.db "SELECT raw_content FROM captures WHERE id = '$capture_id';"
 ```
 
 **Expected:** Full email body, not just snippet.
@@ -782,14 +782,14 @@ export VOICE_POLL_INTERVAL_MS=60000  # Poll every 60s instead of 30s
 
 ```bash
 # Check transcription failure rate
-sqlite3 ~/.adhd-brain/staging.db "SELECT COUNT(*) FROM errors_log WHERE stage = 'transcription' AND created_at > datetime('now', '-1 hour');"
+sqlite3 ~/.capture-bridge/staging.db "SELECT COUNT(*) FROM errors_log WHERE stage = 'transcription' AND created_at > datetime('now', '-1 hour');"
 ```
 
 **If failure rate >10%:**
 
 ```bash
 # Investigate failure reasons
-sqlite3 ~/.adhd-brain/staging.db "SELECT error_type, COUNT(*) FROM errors_log WHERE stage = 'transcription' GROUP BY error_type;"
+sqlite3 ~/.capture-bridge/staging.db "SELECT error_type, COUNT(*) FROM errors_log WHERE stage = 'transcription' GROUP BY error_type;"
 
 # Address specific failure types (timeouts, OOM, corrupt audio)
 ```
@@ -800,7 +800,7 @@ sqlite3 ~/.adhd-brain/staging.db "SELECT error_type, COUNT(*) FROM errors_log WH
 
 ```bash
 # Sample recent transcriptions
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   id,
   raw_content,
@@ -876,7 +876,7 @@ adhd capture retranscribe --capture-id "$capture_id"
 
 ```bash
 # Find captures marked as duplicate
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   c1.id as duplicate_id,
   c1.content_hash as duplicate_hash,
@@ -932,7 +932,7 @@ adhd capture recompute-hashes --all
 adhd capture deduplicate --all
 
 # Unmark false duplicate
-sqlite3 ~/.adhd-brain/staging.db "UPDATE captures SET status = 'transcribed' WHERE id = '$duplicate_id';"
+sqlite3 ~/.capture-bridge/staging.db "UPDATE captures SET status = 'transcribed' WHERE id = '$duplicate_id';"
 
 # Trigger export
 adhd capture export --capture-id "$duplicate_id"
@@ -944,7 +944,7 @@ adhd capture export --capture-id "$duplicate_id"
 
 ```bash
 # Find captures with identical content but different hashes
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   raw_content,
   COUNT(DISTINCT content_hash) as unique_hashes,
@@ -966,7 +966,7 @@ EOF
 
 ```bash
 # Check for leading/trailing whitespace
-sqlite3 ~/.adhd-brain/staging.db "SELECT id, LENGTH(raw_content), LENGTH(TRIM(raw_content)) FROM captures WHERE id IN ('$id1', '$id2');"
+sqlite3 ~/.capture-bridge/staging.db "SELECT id, LENGTH(raw_content), LENGTH(TRIM(raw_content)) FROM captures WHERE id IN ('$id1', '$id2');"
 ```
 
 2. **Unicode normalization differences:**
@@ -1002,7 +1002,7 @@ adhd capture deduplicate --all
 
 ```bash
 # Check recent export failures
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   e.capture_id,
   e.error_type,
@@ -1072,7 +1072,7 @@ ls "$OBSIDIAN_VAULT/inbox/" | sort | uniq -d
 
 ```bash
 # Verify collision is real (not just duplicate detection)
-sqlite3 ~/.adhd-brain/staging.db "SELECT id, content_hash, status FROM captures WHERE id IN ('$ulid1', '$ulid2');"
+sqlite3 ~/.capture-bridge/staging.db "SELECT id, content_hash, status FROM captures WHERE id IN ('$ulid1', '$ulid2');"
 
 # If different content_hash, genuine collision (Phase 1: halt)
 echo "CRITICAL: ULID collision detected. Halting export."
@@ -1119,7 +1119,7 @@ file "$OBSIDIAN_VAULT/inbox/<ulid>.md"
 
 ```bash
 # Re-export with corrected formatting
-sqlite3 ~/.adhd-brain/staging.db "UPDATE captures SET status = 'transcribed' WHERE id = '<capture_id>';"
+sqlite3 ~/.capture-bridge/staging.db "UPDATE captures SET status = 'transcribed' WHERE id = '<capture_id>';"
 adhd capture export --capture-id "<capture_id>"
 ```
 
@@ -1131,7 +1131,7 @@ adhd capture export --capture-id "<capture_id>"
 
 ```bash
 # Check for failed transcriptions without placeholder exports
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   c.id,
   c.status,
@@ -1227,7 +1227,7 @@ export WHISPER_MODEL=small  # Faster model
 top -l 1 -pid $(pgrep -f "adhd capture") | grep -E "(MEM|adhd)"
 
 # Check for memory leaks
-node --expose-gc --trace-gc packages/@adhd-brain/cli/dist/index.js capture start --all
+node --expose-gc --trace-gc packages/@capture-bridge/cli/dist/index.js capture start --all
 ```
 
 **Common causes:**
@@ -1272,7 +1272,7 @@ ls -lh ~/Library/Group\ Containers/group.com.apple.VoiceMemos.shared/Recordings/
 
 ```bash
 # Query recoverable captures
-sqlite3 ~/.adhd-brain/staging.db <<EOF
+sqlite3 ~/.capture-bridge/staging.db <<EOF
 SELECT
   id,
   source,
@@ -1290,7 +1290,7 @@ EOF
 
 ```bash
 # Check for WAL mode (crash recovery requires WAL)
-sqlite3 ~/.adhd-brain/staging.db "PRAGMA journal_mode;"
+sqlite3 ~/.capture-bridge/staging.db "PRAGMA journal_mode;"
 ```
 
 **Expected:** `wal`.
@@ -1299,7 +1299,7 @@ sqlite3 ~/.adhd-brain/staging.db "PRAGMA journal_mode;"
 
 ```bash
 # Enable WAL mode
-sqlite3 ~/.adhd-brain/staging.db "PRAGMA journal_mode=WAL;"
+sqlite3 ~/.capture-bridge/staging.db "PRAGMA journal_mode=WAL;"
 
 # Restart capture process
 adhd capture start --all
@@ -1318,7 +1318,7 @@ kill -9 $PID  # Simulate crash
 adhd capture start --voice
 
 # Verify no captures lost
-sqlite3 ~/.adhd-brain/staging.db "SELECT COUNT(*) FROM captures WHERE status NOT IN ('exported', 'exported_duplicate', 'exported_placeholder');"
+sqlite3 ~/.capture-bridge/staging.db "SELECT COUNT(*) FROM captures WHERE status NOT IN ('exported', 'exported_duplicate', 'exported_placeholder');"
 ```
 
 ### Symptom: Staging Ledger Corruption
@@ -1327,7 +1327,7 @@ sqlite3 ~/.adhd-brain/staging.db "SELECT COUNT(*) FROM captures WHERE status NOT
 
 ```bash
 # Run SQLite integrity check
-sqlite3 ~/.adhd-brain/staging.db "PRAGMA integrity_check;"
+sqlite3 ~/.capture-bridge/staging.db "PRAGMA integrity_check;"
 ```
 
 **Expected output:** `ok`.
@@ -1336,21 +1336,21 @@ sqlite3 ~/.adhd-brain/staging.db "PRAGMA integrity_check;"
 
 ```bash
 # Attempt automatic repair
-sqlite3 ~/.adhd-brain/staging.db ".recover" > recovered.sql
+sqlite3 ~/.capture-bridge/staging.db ".recover" > recovered.sql
 
 # Create new database from recovered SQL
-mv ~/.adhd-brain/staging.db ~/.adhd-brain/staging.db.corrupt
-sqlite3 ~/.adhd-brain/staging.db < recovered.sql
+mv ~/.capture-bridge/staging.db ~/.capture-bridge/staging.db.corrupt
+sqlite3 ~/.capture-bridge/staging.db < recovered.sql
 
 # Verify recovery
-sqlite3 ~/.adhd-brain/staging.db "SELECT COUNT(*) FROM captures;"
+sqlite3 ~/.capture-bridge/staging.db "SELECT COUNT(*) FROM captures;"
 ```
 
 **If recovery fails:**
 
 ```bash
 # Restore from backup
-cp ~/.adhd-brain/backups/staging-hourly-latest.db ~/.adhd-brain/staging.db
+cp ~/.capture-bridge/backups/staging-hourly-latest.db ~/.capture-bridge/staging.db
 
 # Verify restore
 adhd capture doctor
@@ -1387,11 +1387,11 @@ sudo tcpdump -i en0 -A 'host gmail.googleapis.com'
 
 ```bash
 # Generate CPU profile
-node --prof packages/@adhd-brain/cli/dist/index.js capture start --voice
+node --prof packages/@capture-bridge/cli/dist/index.js capture start --voice
 node --prof-process isolate-*.log > cpu-profile.txt
 
 # Generate heap snapshot
-node --inspect packages/@adhd-brain/cli/dist/index.js capture start --voice
+node --inspect packages/@capture-bridge/cli/dist/index.js capture start --voice
 # Open chrome://inspect in Chrome, take heap snapshot
 ```
 

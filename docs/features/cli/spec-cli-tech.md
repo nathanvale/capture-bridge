@@ -96,7 +96,7 @@ apps/
     │   │   ├── registry.ts          # Error code registry
     │   │   └── factory.ts           # Error factory
     │   ├── lib/
-    │   │   ├── config.ts            # Load .adhd-brain.json
+    │   │   ├── config.ts            # Load .capture-bridge.json
     │   │   ├── output.ts            # Styled console output
     │   │   └── spinner.ts           # Progress indicators
     │   └── utils/
@@ -115,10 +115,10 @@ apps/
 ```json
 {
   "dependencies": {
-    "@adhd-brain/foundation": "workspace:*",
-    "@adhd-brain/core": "workspace:*",
-    "@adhd-brain/storage": "workspace:*",
-    "@adhd-brain/capture-service": "workspace:*",
+    "@capture-bridge/foundation": "workspace:*",
+    "@capture-bridge/core": "workspace:*",
+    "@capture-bridge/storage": "workspace:*",
+    "@capture-bridge/capture-service": "workspace:*",
     "commander": "^12.1.0",
     "chalk": "^5.3.0",
     "ora": "^8.0.1",
@@ -368,7 +368,7 @@ Minimal environment variables (all optional):
 - `CAPTURE_HASH_MIGRATION` (enum: `disabled|dual|prefer|primary`)
 - `CAPTURE_DEBUG` (debug logging: `0|1`)
 
-### 6.2 Configuration File (.adhd-brain.json)
+### 6.2 Configuration File (.capture-bridge.json)
 
 ```json
 {
@@ -392,7 +392,7 @@ Minimal environment variables (all optional):
 
 1. CLI flags (highest priority)
 2. Environment variables
-3. .adhd-brain.json
+3. .capture-bridge.json
 4. Defaults (lowest priority)
 
 No interactive config wizard (deferred). `doctor` reports effective config.
@@ -598,7 +598,7 @@ Excluded until activation criteria met (tracked in guide-cli-extensibility-defer
 ```typescript
 // src/commands/capture-voice.ts
 import { Command } from "commander"
-import { CaptureService } from "@adhd-brain/capture-service"
+import { CaptureService } from "@capture-bridge/capture-service"
 import ora from "ora"
 import chalk from "chalk"
 

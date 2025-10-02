@@ -40,7 +40,7 @@ Before using the Obsidian Bridge, ensure:
 **Required Packages:**
 
 ```bash
-pnpm add @adhd-brain/obsidian-bridge @adhd-brain/staging-ledger
+pnpm add @capture-bridge/obsidian-bridge @capture-bridge/staging-ledger
 ```
 
 ## Quick Reference - 3-Minute Implementation
@@ -48,15 +48,15 @@ pnpm add @adhd-brain/obsidian-bridge @adhd-brain/staging-ledger
 ### Step 1: Install and Import
 
 ```typescript
-import { ObsidianAtomicWriter } from "@adhd-brain/obsidian-bridge"
-import { Database } from "@adhd-brain/staging-ledger"
+import { ObsidianAtomicWriter } from "@capture-bridge/obsidian-bridge"
+import { Database } from "@capture-bridge/staging-ledger"
 ```
 
 ### Step 2: Initialize Writer
 
 ```typescript
 const vault_path = "/Users/nathan/vault" // Absolute path to Obsidian vault
-const db = new Database("~/.adhd-brain/staging.db")
+const db = new Database("~/.capture-bridge/staging.db")
 const writer = new ObsidianAtomicWriter(vault_path, db)
 ```
 
@@ -534,7 +534,7 @@ const result = await writer.writeAtomic(capture_id, content, vault_path)
 
 ```bash
 # 1. Investigate collision in staging ledger
-sqlite3 ~/.adhd-brain/staging.db
+sqlite3 ~/.capture-bridge/staging.db
 SELECT id, content_hash, created_at FROM captures WHERE id = '01HZVM8YWRQT5J3M3K7YPTX9RZ';
 
 # 2. Check existing file in vault
@@ -697,8 +697,8 @@ async function exportWithNetworkRetry(
 
 ```typescript
 import { Command } from "commander"
-import { ObsidianAtomicWriter } from "@adhd-brain/obsidian-bridge"
-import { Database } from "@adhd-brain/staging-ledger"
+import { ObsidianAtomicWriter } from "@capture-bridge/obsidian-bridge"
+import { Database } from "@capture-bridge/staging-ledger"
 import * as path from "path"
 
 const program = new Command()
@@ -710,7 +710,7 @@ program
   .option("--retry <count>", "Retry attempts", "3")
   .action(async (captureId: string, options) => {
     const vault_path = path.resolve(options.vault)
-    const db = new Database("~/.adhd-brain/staging.db")
+    const db = new Database("~/.capture-bridge/staging.db")
     const writer = new ObsidianAtomicWriter(vault_path, db)
 
     try {
@@ -748,12 +748,12 @@ program.parse()
 
 ```typescript
 #!/usr/bin/env node
-import { ObsidianAtomicWriter } from "@adhd-brain/obsidian-bridge"
-import { Database } from "@adhd-brain/staging-ledger"
+import { ObsidianAtomicWriter } from "@capture-bridge/obsidian-bridge"
+import { Database } from "@capture-bridge/staging-ledger"
 
 async function batchExportPending() {
   const vault_path = process.env.OBSIDIAN_VAULT_PATH
-  const db = new Database("~/.adhd-brain/staging.db")
+  const db = new Database("~/.capture-bridge/staging.db")
   const writer = new ObsidianAtomicWriter(vault_path, db)
 
   // Query pending captures (transcribed but not exported)

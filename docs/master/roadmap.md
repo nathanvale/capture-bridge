@@ -101,7 +101,7 @@ Each capability includes:
 - **Dependencies**: []
 - **Description**: Set up pnpm workspaces + Turbo monorepo with 4-package hard cap (foundation, storage, capture, cli). External @orchestr8/testkit for test isolation. Shared configs (TypeScript, ESLint, Prettier).
 - **Acceptance Criteria**:
-  - [x] 4 packages defined: @adhd-brain/foundation, @adhd-brain/storage, @adhd-brain/capture, @adhd-brain/cli
+  - [x] 4 packages defined: @capture-bridge/foundation, @capture-bridge/storage, @capture-bridge/capture, @capture-bridge/cli
   - [x] Turbo pipeline configured (build, test, lint)
   - [x] Shared tsconfig.base.json, eslint.config.js, prettier.config.js
   - [x] Build time < 30s

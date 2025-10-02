@@ -25,10 +25,10 @@ comprehensive_spec: docs/cross-cutting/spec-foundation-monorepo-mppp.md
 
 ### 1.1 Package Exports
 
-**@adhd-brain/foundation** (0 dependencies)
+**@capture-bridge/foundation** (0 dependencies)
 
 ```typescript
-// packages/@adhd-brain/foundation/src/index.ts
+// packages/@capture-bridge/foundation/src/index.ts
 export * from "./types/capture"
 export * from "./types/common"
 export * from "./errors/capture"
@@ -60,10 +60,10 @@ export const CONSTANTS = {
 }
 ```
 
-**@adhd-brain/core** (foundation only)
+**@capture-bridge/core** (foundation only)
 
 ```typescript
-// packages/@adhd-brain/core/src/index.ts
+// packages/@capture-bridge/core/src/index.ts
 export { DeduplicationService } from "./deduplication"
 export { ValidationService } from "./validation"
 export { normalizationService } from "./normalization"
@@ -75,10 +75,10 @@ export class DeduplicationService {
 }
 ```
 
-**@adhd-brain/storage** (foundation only)
+**@capture-bridge/storage** (foundation only)
 
 ```typescript
-// packages/@adhd-brain/storage/src/index.ts
+// packages/@capture-bridge/storage/src/index.ts
 export { DatabaseClient } from "./database"
 export { CaptureRepository } from "./repositories/capture"
 export { AuditRepository } from "./repositories/audit"
@@ -97,10 +97,10 @@ export class CaptureRepository {
 }
 ```
 
-**@adhd-brain/capture** (foundation + core + storage)
+**@capture-bridge/capture** (foundation + core + storage)
 
 ```typescript
-// packages/@adhd-brain/capture/src/index.ts
+// packages/@capture-bridge/capture/src/index.ts
 export { VoiceProcessor } from "./voice-processor"
 export { EmailProcessor } from "./email-processor"
 export { ObsidianExporter } from "./obsidian-exporter"
@@ -246,10 +246,10 @@ packages:
     "types": ["node", "vitest/globals"],
     "baseUrl": ".",
     "paths": {
-      "@adhd-brain/foundation": ["./packages/foundation/src/index.ts"],
-      "@adhd-brain/core": ["./packages/core/src/index.ts"],
-      "@adhd-brain/storage": ["./packages/storage/src/index.ts"],
-      "@adhd-brain/capture": ["./packages/capture/src/index.ts"]
+      "@capture-bridge/foundation": ["./packages/foundation/src/index.ts"],
+      "@capture-bridge/core": ["./packages/core/src/index.ts"],
+      "@capture-bridge/storage": ["./packages/storage/src/index.ts"],
+      "@capture-bridge/capture": ["./packages/capture/src/index.ts"]
     }
   }
 }
@@ -299,7 +299,7 @@ export default [
 
 ```json
 {
-  "name": "@adhd-brain/<package>",
+  "name": "@capture-bridge/<package>",
   "version": "0.1.0",
   "type": "module",
   "exports": {
@@ -346,16 +346,16 @@ export default defineConfig({
 ```typescript
 // tools/scripts/doctor.ts
 const REQUIRED_PACKAGES = [
-  "@adhd-brain/foundation",
-  "@adhd-brain/core",
-  "@adhd-brain/storage",
-  "@adhd-brain/capture",
+  "@capture-bridge/foundation",
+  "@capture-bridge/core",
+  "@capture-bridge/storage",
+  "@capture-bridge/capture",
 ]
 
 const MAX_PACKAGES = 4
 
 function validatePackageCount() {
-  const packages = glob.sync("packages/@adhd-brain/*")
+  const packages = glob.sync("packages/@capture-bridge/*")
   if (packages.length > MAX_PACKAGES) {
     throw new Error(
       `Package count ${packages.length} exceeds maximum ${MAX_PACKAGES}`
@@ -411,10 +411,10 @@ Turbo executes builds in topological order:
 │  vitest run (root)                                 │
 │                                                    │
 │  Discovers projects:                               │
-│  - packages/@adhd-brain/foundation                 │
-│  - packages/@adhd-brain/core                       │
-│  - packages/@adhd-brain/storage                    │
-│  - packages/@adhd-brain/capture                    │
+│  - packages/@capture-bridge/foundation                 │
+│  - packages/@capture-bridge/core                       │
+│  - packages/@capture-bridge/storage                    │
+│  - packages/@capture-bridge/capture                    │
 └────────────────────────────────────────────────────┘
                       │
            ┌──────────┴──────────┐
@@ -744,7 +744,7 @@ wait
 **Validation:**
 
 ```bash
-time (git clone <repo> && cd adhd-brain && pnpm install && pnpm build)
+time (git clone <repo> && cd capture-bridge && pnpm install && pnpm build)
 # Must complete < 5 minutes
 ```
 
@@ -871,8 +871,8 @@ See [Master PRD Success Criteria](../master/prd-master.md#12-success-criteria) f
 
 ### Master Documents
 
-- [Master PRD v2.3.0-MPPP](/Users/nathanvale/code/adhd-brain/docs/master/prd-master.md)
-- [Roadmap v2.0.0-MPPP](/Users/nathanvale/code/adhd-brain/docs/master/roadmap.md)
+- [Master PRD v2.3.0-MPPP](/Users/nathanvale/code/capture-bridge/docs/master/prd-master.md)
+- [Roadmap v2.0.0-MPPP](/Users/nathanvale/code/capture-bridge/docs/master/roadmap.md)
 
 ### PRD Reference
 
@@ -885,9 +885,9 @@ See [Master PRD Success Criteria](../master/prd-master.md#12-success-criteria) f
 
 ### Supporting Guides
 
-- [TDD Applicability Guide](/Users/nathanvale/code/adhd-brain/docs/guides/tdd-applicability.md)
-- [Test Strategy](/Users/nathanvale/code/adhd-brain/docs/guides/test-strategy.md)
-- [TestKit Usage](/Users/nathanvale/code/adhd-brain/docs/guides/guide-testkit-usage.md)
+- [TDD Applicability Guide](/Users/nathanvale/code/capture-bridge/docs/guides/tdd-applicability.md)
+- [Test Strategy](/Users/nathanvale/code/capture-bridge/docs/guides/test-strategy.md)
+- [TestKit Usage](/Users/nathanvale/code/capture-bridge/docs/guides/guide-testkit-usage.md)
 
 ### Gold Standard Repository
 

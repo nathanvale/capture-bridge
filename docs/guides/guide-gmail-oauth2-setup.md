@@ -106,8 +106,8 @@ adhd capture email reset-cursor
 5. Download credentials:
    - Click "Download JSON" button
    - Save as `credentials.json`
-   - Move to `~/.config/adhd-brain/credentials.json`
-   - Set permissions: `chmod 600 ~/.config/adhd-brain/credentials.json`
+   - Move to `~/.config/capture-bridge/credentials.json`
+   - Set permissions: `chmod 600 ~/.config/capture-bridge/credentials.json`
 
 **Expected Output:** `credentials.json` file with structure:
 
@@ -138,7 +138,7 @@ adhd capture email init
 3. User grants permissions (scope: `gmail.readonly`)
 4. Google redirects with authorization code
 5. CLI exchanges code for tokens
-6. Tokens saved to `~/.config/adhd-brain/token.json` (mode 0600)
+6. Tokens saved to `~/.config/capture-bridge/token.json` (mode 0600)
 
 **Implementation:**
 
@@ -183,7 +183,7 @@ async function authenticate(): Promise<AuthResult> {
 Authorize this app by visiting: https://accounts.google.com/o/oauth2/v2/auth?...
 Enter the code from that page here: <user_input>
 ✓ Authentication successful
-Token saved to: ~/.config/adhd-brain/token.json
+Token saved to: ~/.config/capture-bridge/token.json
 ```
 
 ### Step 3: Bootstrap Polling Cursor
@@ -735,7 +735,7 @@ class ExponentialBackoff {
 **Solution:**
 
 ```bash
-chmod 600 ~/.config/adhd-brain/token.json
+chmod 600 ~/.config/capture-bridge/token.json
 ```
 
 **Implementation:**
@@ -768,13 +768,13 @@ async function writeTokenSecurely(
 ### Example 1: Complete OAuth2 Setup Flow
 
 ```typescript
-import { GmailAuthClient, GmailPollingClient } from "@adhd-brain/capture"
+import { GmailAuthClient, GmailPollingClient } from "@capture-bridge/capture"
 
 async function setupGmailCapture() {
   // Initialize auth client
   const authClient = new GmailAuthClient({
-    credentialsPath: "~/.config/adhd-brain/credentials.json",
-    tokenPath: "~/.config/adhd-brain/token.json",
+    credentialsPath: "~/.config/capture-bridge/credentials.json",
+    tokenPath: "~/.config/capture-bridge/token.json",
   })
 
   // Check if already authenticated

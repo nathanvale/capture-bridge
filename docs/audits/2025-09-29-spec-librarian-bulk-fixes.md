@@ -25,7 +25,7 @@ This document provides automated scripts to fix all identified documentation iss
 ```bash
 #!/bin/bash
 # ADHD Brain Documentation - Critical Link Fixes
-# Execute from repo root: /Users/nathanvale/code/adhd-brain
+# Execute from repo root: /Users/nathanvale/code/capture-bridge
 
 echo "🔧 Fixing critical documentation links..."
 
@@ -100,7 +100,7 @@ fi
 2. **Execute from repo root:**
 
    ```bash
-   cd /Users/nathanvale/code/adhd-brain
+   cd /Users/nathanvale/code/capture-bridge
    ./fix-documentation-links.sh
    ```
 

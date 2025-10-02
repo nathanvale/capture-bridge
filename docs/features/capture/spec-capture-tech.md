@@ -1759,7 +1759,7 @@ Ingestion state machines are like ADHD-friendly checklists—short, linear, and 
 
 Version: 0.3.0
 Last Updated: 2025-09-29
-Author: adhd-brain-planner (Nathan)
+Author: capture-bridge-planner (Nathan)
 Reviewers: (TBD)
 Change Log:
 

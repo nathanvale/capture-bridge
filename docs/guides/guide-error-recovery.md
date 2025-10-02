@@ -95,7 +95,7 @@ import {
   ErrorClassifier,
   ErrorType,
   OperationType,
-} from "@adhd-brain/foundation"
+} from "@capture-bridge/foundation"
 
 const errorClassifier = new ErrorClassifier()
 
@@ -123,7 +123,7 @@ try {
 Verify the operation hasn't exceeded max retry attempts:
 
 ```typescript
-import { RETRY_MATRIX } from "@adhd-brain/core"
+import { RETRY_MATRIX } from "@capture-bridge/core"
 
 const policy = RETRY_MATRIX[classification.errorType]
 
@@ -586,7 +586,7 @@ metrics.gauge("placeholder_rate_percent", (placeholders / totalCaptures) * 100)
 Before scheduling a retry, verify the circuit breaker isn't open:
 
 ```typescript
-import { CircuitBreaker } from "@adhd-brain/core"
+import { CircuitBreaker } from "@capture-bridge/core"
 
 const circuitBreaker = new CircuitBreaker()
 const breakerState = circuitBreaker.getState(classification.errorType)
@@ -930,10 +930,10 @@ await retryOperation()
 adhd capture doctor | grep "Active Retries"
 
 # Query DLQ depth
-sqlite3 .adhd-brain.db "SELECT COUNT(*) FROM errors_log WHERE dlq = 1"
+sqlite3 .capture-bridge.db "SELECT COUNT(*) FROM errors_log WHERE dlq = 1"
 
 # View retry attempts by error type
-sqlite3 .adhd-brain.db "SELECT error_type, COUNT(*) FROM errors_log GROUP BY error_type"
+sqlite3 .capture-bridge.db "SELECT error_type, COUNT(*) FROM errors_log GROUP BY error_type"
 ```
 
 ### Problem: Circuit breaker opens too frequently
@@ -983,7 +983,7 @@ const isDuplicate = await checkVoiceIdempotency(audioFingerprint);
 console.log(`Duplicate check result: ${isDuplicate}`);
 
 // Verify staging ledger constraints
-sqlite3 .adhd-brain.db "SELECT sql FROM sqlite_master WHERE name = 'captures'"
+sqlite3 .capture-bridge.db "SELECT sql FROM sqlite_master WHERE name = 'captures'"
 // Should show UNIQUE constraint on content_hash
 ```
 

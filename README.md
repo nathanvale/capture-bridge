@@ -1,6 +1,6 @@
-# ADHD Brain
+# Capture Bridge
 
-A TypeScript monorepo for ADHD-focused productivity tools and utilities.
+Zero-friction capture layer with durable staging ledger for Obsidian.
 
 ## Architecture
 
@@ -8,14 +8,14 @@ This monorepo follows modern TypeScript patterns with centralized tooling and co
 
 ### Packages
 
-- `@adhd-brain/foundation` - Core utilities and shared functionality
-- `@adhd-brain/storage` - Data persistence and storage abstractions
-- `@adhd-brain/capture` - Data capture and input processing
-- `@adhd-brain/cli` - Command-line interface tools
+- `@capture-bridge/foundation` - Core utilities and shared functionality
+- `@capture-bridge/storage` - Data persistence and storage abstractions
+- `@capture-bridge/capture` - Data capture and input processing
+- `@capture-bridge/cli` - Command-line interface tools
 
 ### Tooling
 
-- `@adhd-brain/build-config` - Centralized build configuration using TSUP
+- `@capture-bridge/build-config` - Centralized build configuration using TSUP
 - `tooling/tsconfig` - Shared TypeScript configurations
 
 ## Development
@@ -56,11 +56,11 @@ This project uses a **centralized build configuration** approach inspired by @or
 1. Create package directory in `packages/`
 2. Add `tsup.config.ts`:
    ```typescript
-   import { createDefinedTsupConfig } from '@adhd-brain/build-config'
+   import { createDefinedTsupConfig } from '@capture-bridge/build-config'
 
    export default createDefinedTsupConfig('src/index.ts')
    ```
-3. Add `@adhd-brain/build-config` as devDependency
+3. Add `@capture-bridge/build-config` as devDependency
 4. Follow standard package.json structure
 
 #### Build Configuration Features

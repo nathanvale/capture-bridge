@@ -40,10 +40,10 @@ All issues are straightforward path corrections. No structural changes needed.
 
 ```bash
 # Update Gmail OAuth2 references to point to capture tech spec section
-find /Users/nathanvale/code/adhd-brain/docs/guides -name "*.md" -exec sed -i '' 's|spec-capture-gmail-oauth2-tech.md|spec-capture-tech.md#gmail-oauth2|g' {} \;
+find /Users/nathanvale/code/capture-bridge/docs/guides -name "*.md" -exec sed -i '' 's|spec-capture-gmail-oauth2-tech.md|spec-capture-tech.md#gmail-oauth2|g' {} \;
 
 # Update Whisper runtime references to point to capture tech spec section
-find /Users/nathanvale/code/adhd-brain/docs/guides -name "*.md" -exec sed -i '' 's|spec-capture-whisper-runtime-tech.md|spec-capture-tech.md#whisper-transcription|g' {} \;
+find /Users/nathanvale/code/capture-bridge/docs/guides -name "*.md" -exec sed -i '' 's|spec-capture-whisper-runtime-tech.md|spec-capture-tech.md#whisper-transcription|g' {} \;
 ```
 
 ### 2. Missing CLI Doctor Tech Spec
@@ -63,7 +63,7 @@ find /Users/nathanvale/code/adhd-brain/docs/guides -name "*.md" -exec sed -i '' 
 
 ```bash
 # Update CLI doctor reference to point to main CLI tech spec section
-sed -i '' 's|spec-cli-doctor-tech.md|spec-cli-tech.md#doctor-command|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-health-command.md
+sed -i '' 's|spec-cli-doctor-tech.md|spec-cli-tech.md#doctor-command|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-health-command.md
 ```
 
 ### 3. Wrong CLI Spec Paths in Master PRD
@@ -84,7 +84,7 @@ sed -i '' 's|spec-cli-doctor-tech.md|spec-cli-tech.md#doctor-command|g' /Users/n
 
 ```bash
 # Update CLI spec paths to correct feature location
-sed -i '' 's|../cross-cutting/foundation/spec-cli-|../features/cli/spec-cli-|g' /Users/nathanvale/code/adhd-brain/docs/master/prd-master.md
+sed -i '' 's|../cross-cutting/foundation/spec-cli-|../features/cli/spec-cli-|g' /Users/nathanvale/code/capture-bridge/docs/master/prd-master.md
 ```
 
 ---
@@ -96,7 +96,7 @@ Execute this single script to fix all issues:
 ```bash
 #!/bin/bash
 # ADHD Brain Documentation - Critical Link Fixes
-# Execute from repo root: /Users/nathanvale/code/adhd-brain
+# Execute from repo root: /Users/nathanvale/code/capture-bridge
 
 echo "Fixing critical documentation links..."
 

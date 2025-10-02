@@ -117,7 +117,7 @@ Successfully standardized all specification documents to reference the central R
 - No implementation code added (planning phase only)
 - Pattern references are conceptual
 - No package dependencies introduced
-- Correctly avoids non-existent `@adhd-brain/resilience` package
+- Correctly avoids non-existent `@capture-bridge/resilience` package
 
 ### 4. Pattern Coverage
 

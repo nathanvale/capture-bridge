@@ -83,7 +83,7 @@ The monorepo foundation sits at the **infrastructure layer** of the system:
 
 ```text
 ┌────────────────────────────────────────────────┐
-│         @adhd-brain/foundation                 │
+│         @capture-bridge/foundation                 │
 │                                                │
 │  Types, Errors, Constants                     │
 │  - CaptureItem, CaptureSource                 │
@@ -347,7 +347,7 @@ async function validateNoCycles() {
 
 ```json
 {
-  "name": "@adhd-brain/<package>",
+  "name": "@capture-bridge/<package>",
   "version": "0.1.0",
   "type": "module",
   "exports": {
@@ -370,14 +370,14 @@ async function validateNoCycles() {
 **Dependency Constraints:**
 
 - `foundation`: No dependencies
-- `core`: `@adhd-brain/foundation` only
-- `storage`: `@adhd-brain/foundation` only
-- `capture`: `@adhd-brain/foundation`, `@adhd-brain/core`, `@adhd-brain/storage`
+- `core`: `@capture-bridge/foundation` only
+- `storage`: `@capture-bridge/foundation` only
+- `capture`: `@capture-bridge/foundation`, `@capture-bridge/core`, `@capture-bridge/storage`
 
 ### 3.2 Build Artifact Structure
 
 ```text
-packages/@adhd-brain/<package>/
+packages/@capture-bridge/<package>/
 ├── src/
 │   └── index.ts           # Public API
 ├── dist/                  # Build outputs (generated)
@@ -401,7 +401,7 @@ packages/@adhd-brain/<package>/
 **Root Configuration Files:**
 
 ```text
-adhd-brain/
+capture-bridge/
 ├── pnpm-workspace.yaml    # Workspace discovery
 ├── turbo.json             # Task orchestration
 ├── tsconfig.json          # TypeScript root config

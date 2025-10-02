@@ -82,7 +82,7 @@
 
 ✅ **Resilience Package Architecture** (guide-resilience-usage.md)
 
-- Complete domain-based exports (`@adhd-brain/resilience/backoff`, `/circuit-breaker`, etc.)
+- Complete domain-based exports (`@capture-bridge/resilience/backoff`, `/circuit-breaker`, etc.)
 - Presets for common scenarios (API_RATE_LIMITED, APFS_DATALESS, HTTP_API)
 - Integration patterns showing backoff + retry + circuit breaker composition
 - ADHD-friendly progress reporting and predictable timeout patterns

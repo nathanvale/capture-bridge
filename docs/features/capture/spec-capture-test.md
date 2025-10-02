@@ -406,23 +406,23 @@ All tests MUST use TestKit patterns per [TestKit Standardization Guide](../../gu
 
 ```typescript
 // Database testing
-import { createMemoryUrl, applyTestPragmas } from "@adhd-brain/testkit/sqlite"
+import { createMemoryUrl, applyTestPragmas } from "@capture-bridge/testkit/sqlite"
 
 // File system testing
 import {
   createTempDirectory,
   assertFileExists,
   createFaultInjector,
-} from "@adhd-brain/testkit/fs"
+} from "@capture-bridge/testkit/fs"
 
 // HTTP mocking
-import { setupMSW, http, HttpResponse } from "@adhd-brain/testkit/msw"
+import { setupMSW, http, HttpResponse } from "@capture-bridge/testkit/msw"
 
 // Fixtures
-import { loadFixture } from "@adhd-brain/testkit/fixtures"
+import { loadFixture } from "@capture-bridge/testkit/fixtures"
 
 // Test helpers
-import { setupStagingLedger, seedCaptures } from "@adhd-brain/testkit/helpers"
+import { setupStagingLedger, seedCaptures } from "@capture-bridge/testkit/helpers"
 ```
 
 **Custom Assertions:**
@@ -1430,7 +1430,7 @@ describe("Export Performance", () => {
 import {
   mockRetryCoordinator,
   mockCircuitBreaker,
-} from "@adhd-brain/testkit/retry"
+} from "@capture-bridge/testkit/retry"
 
 // Metrics test helpers
 import {
@@ -1439,20 +1439,20 @@ import {
   assertMetricCount,
   clearTestMetrics,
   readMetricsFile,
-} from "@adhd-brain/testkit/metrics"
+} from "@capture-bridge/testkit/metrics"
 
 // Error classifier mocking
-import { mockErrorClassifier } from "@adhd-brain/testkit/errors"
+import { mockErrorClassifier } from "@capture-bridge/testkit/errors"
 
 // File system test helpers (atomic writes)
 import {
   spyOnFileSystem,
   mockFsOperations,
   assertAtomicWrite,
-} from "@adhd-brain/testkit/fs"
+} from "@capture-bridge/testkit/fs"
 
 // Database test helpers (audit trail)
-import { testDb, assertAuditTrail } from "@adhd-brain/testkit/db"
+import { testDb, assertAuditTrail } from "@capture-bridge/testkit/db"
 ```
 
 **Custom assertions to add:**
@@ -1581,7 +1581,7 @@ describe("Voice File Sovereignty (P0)", () => {
     expect(capture.file_path).toBe(voiceMemoPath)
 
     // Verify no local copy exists
-    const localCopyPath = `~/.adhd-brain/voice-cache/${captureId}.m4a`
+    const localCopyPath = `~/.capture-bridge/voice-cache/${captureId}.m4a`
     expect(fs.existsSync(localCopyPath)).toBe(false)
   })
 
@@ -2564,7 +2564,7 @@ import {
   mockICloudFiles,
   mockWhisperAPI,
   mockGmailAPI,
-} from "@adhd-brain/test-utils"
+} from "@capture-bridge/test-utils"
 
 // File system integration
 import {
@@ -2692,9 +2692,9 @@ expect.extend({
 
 **When to extend TestKit:**
 
-1. **Missing mock for external service:** Add MSW handler to `@adhd-brain/testkit/msw`
-2. **Repeated assertion pattern:** Extract to custom matcher in `@adhd-brain/testkit/matchers`
-3. **Complex setup:** Create fixture helper in `@adhd-brain/testkit/fixtures`
+1. **Missing mock for external service:** Add MSW handler to `@capture-bridge/testkit/msw`
+2. **Repeated assertion pattern:** Extract to custom matcher in `@capture-bridge/testkit/matchers`
+3. **Complex setup:** Create fixture helper in `@capture-bridge/testkit/fixtures`
 
 **✅ CORRECT: Adding Gmail API Mock with MSW**
 
@@ -2754,8 +2754,8 @@ export function setupGmailAPI(handlers = createGmailHandlers()) {
 **Usage in tests:**
 
 ```typescript
-import { setupMSW } from "@adhd-brain/testkit/msw"
-import { createGmailHandlers } from "@adhd-brain/testkit/msw/gmail-handlers"
+import { setupMSW } from "@capture-bridge/testkit/msw"
+import { createGmailHandlers } from "@capture-bridge/testkit/msw/gmail-handlers"
 
 describe("Gmail Capture", () => {
   // Setup MSW with Gmail handlers

@@ -268,7 +268,7 @@ These indexes should be reconsidered if:
 
 ## References
 
-- [Capture Tech Spec - Performance Requirements](/Users/nathanvale/code/adhd-brain/docs/features/capture/spec-capture-tech.md)
-- [Capture Architecture Spec - Recovery Operations](/Users/nathanvale/code/adhd-brain/docs/features/capture/spec-capture-arch.md)
-- [Master PRD - Section 4.3 Performance Targets](/Users/nathanvale/code/adhd-brain/docs/master/prd-master.md)
+- [Capture Tech Spec - Performance Requirements](/Users/nathanvale/code/capture-bridge/docs/features/capture/spec-capture-tech.md)
+- [Capture Architecture Spec - Recovery Operations](/Users/nathanvale/code/capture-bridge/docs/features/capture/spec-capture-arch.md)
+- [Master PRD - Section 4.3 Performance Targets](/Users/nathanvale/code/capture-bridge/docs/master/prd-master.md)
 - [SQLite Index Documentation](https://www.sqlite.org/optoverview.html)

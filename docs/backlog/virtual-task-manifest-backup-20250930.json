@@ -19,7 +19,7 @@
       "acceptance_criteria": [
         {
           "id": "MONOREPO_STRUCTURE-AC01",
-          "text": "4 packages defined: @adhd-brain/foundation, @adhd-brain/storage, @adhd-brain/capture, @adhd-brain/cli"
+          "text": "4 packages defined: @capture-bridge/foundation, @capture-bridge/storage, @capture-bridge/capture, @capture-bridge/cli"
         },
         {
           "id": "MONOREPO_STRUCTURE-AC02",

@@ -319,7 +319,7 @@ import {
   createTempDir,
   cleanupTempDir,
   mockFileSystem,
-} from "@adhd-brain/testkit/fs"
+} from "@capture-bridge/testkit/fs"
 
 // Create isolated metrics directory for each test
 const tempDir = await createTempDir()
@@ -329,7 +329,7 @@ const metricsDir = path.join(tempDir, ".metrics")
 **Time Helpers:**
 
 ```typescript
-import { freezeTime, advanceTime, resetTime } from "@adhd-brain/testkit/time"
+import { freezeTime, advanceTime, resetTime } from "@capture-bridge/testkit/time"
 
 // Test rotation at midnight UTC
 freezeTime("2025-09-27T23:59:59.000Z")
@@ -341,7 +341,7 @@ await metrics.counter("after.rotation")
 **Async Helpers:**
 
 ```typescript
-import { waitForCondition, eventually } from "@adhd-brain/testkit/async"
+import { waitForCondition, eventually } from "@capture-bridge/testkit/async"
 
 // Wait for flush completion
 await waitForCondition(() => buffer.isEmpty(), { timeout: 5000 })
@@ -352,7 +352,7 @@ await waitForCondition(() => buffer.isEmpty(), { timeout: 5000 })
 **Metrics-Specific Helpers:**
 
 ```typescript
-// @adhd-brain/testkit/metrics
+// @capture-bridge/testkit/metrics
 export class MetricsTestHelper {
   private tempDir: string
   private client: MetricsClient
@@ -409,7 +409,7 @@ export class MetricsTestHelper {
 **NDJSON Test Utilities:**
 
 ```typescript
-// @adhd-brain/testkit/ndjson
+// @capture-bridge/testkit/ndjson
 export async function readNDJSONFile(filePath: string): Promise<string[]> {
   const content = await fs.readFile(filePath, "utf8")
   return content.trim().split("\n").filter(Boolean)
@@ -439,7 +439,7 @@ export function validateNDJSONFormat(content: string): void {
 **Canonical Metric Fixtures:**
 
 ```typescript
-// @adhd-brain/testkit/metrics-fixtures
+// @capture-bridge/testkit/metrics-fixtures
 export const CANONICAL_FIXTURES = {
   VOICE_STAGING: {
     timestamp: "2025-09-27T10:00:00.000Z",
@@ -789,7 +789,7 @@ describe("Error Recovery", () => {
 
 ```typescript
 // TestKit fs mocks
-import { mockFileSystem, createFaultInjector } from "@adhd-brain/testkit/fs"
+import { mockFileSystem, createFaultInjector } from "@capture-bridge/testkit/fs"
 
 beforeEach(() => {
   mockFileSystem({

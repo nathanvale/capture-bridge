@@ -1,9 +1,9 @@
 {
-  "name": "@adhd-brain/capture",
+  "name": "@capture-bridge/capture",
   "version": "0.1.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nathanvale/adhd-brain.git",
+    "url": "https://github.com/nathanvale/capture-bridge.git",
     "directory": "packages/capture"
   },
   "sideEffects": false,
@@ -34,11 +34,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@adhd-brain/foundation": "workspace:*",
-    "@adhd-brain/storage": "workspace:*"
+    "@capture-bridge/foundation": "workspace:*",
+    "@capture-bridge/storage": "workspace:*"
   },
   "devDependencies": {
-    "@adhd-brain/build-config": "workspace:*",
+    "@capture-bridge/build-config": "workspace:*",
     "@types/node": "^24.3.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.3",

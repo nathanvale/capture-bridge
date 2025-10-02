@@ -78,10 +78,10 @@ adhd capture stop --all
 adhd backup verify --file <backup-path>
 
 # Step 3: Create safety net (backup current database)
-cp ~/.adhd-brain.db ~/.adhd-brain.db.pre-restore-$(date +%Y%m%d-%H%M%S)
+cp ~/.capture-bridge.db ~/.capture-bridge.db.pre-restore-$(date +%Y%m%d-%H%M%S)
 
 # Step 4: Restore from backup
-cp <backup-path> ~/.adhd-brain.db
+cp <backup-path> ~/.capture-bridge.db
 
 # Step 5: Validate restoration
 adhd doctor --component=database
@@ -157,7 +157,7 @@ ps aux | grep adhd | grep capture
 adhd backup verify --file <backup-path>
 
 # Example:
-adhd backup verify --file ~/.obsidian-vault/.adhd-brain/.backups/ledger-20250928-14.sqlite
+adhd backup verify --file ~/.obsidian-vault/.capture-bridge/.backups/ledger-20250928-14.sqlite
 
 # Expected output:
 # ✅ Backup verified: ledger-20250928-14.sqlite
@@ -174,7 +174,7 @@ adhd backup verify --file ~/.obsidian-vault/.adhd-brain/.backups/ledger-20250928
 
 ```bash
 # List available backups (newest first)
-ls -lt ~/.obsidian-vault/.adhd-brain/.backups/ | head -10
+ls -lt ~/.obsidian-vault/.capture-bridge/.backups/ | head -10
 
 # Verify next most recent backup
 adhd backup verify --file <previous-backup>
@@ -188,14 +188,14 @@ adhd backup verify --file <previous-backup>
 
 ```bash
 # Backup current database with timestamp
-SAFETY_NET="$HOME/.adhd-brain.db.pre-restore-$(date +%Y%m%d-%H%M%S)"
-cp ~/.adhd-brain.db "${SAFETY_NET}"
+SAFETY_NET="$HOME/.capture-bridge.db.pre-restore-$(date +%Y%m%d-%H%M%S)"
+cp ~/.capture-bridge.db "${SAFETY_NET}"
 
 # Verify safety net created
 ls -lh "${SAFETY_NET}"
 
 # Expected output:
-# -rw-r--r--  1 user  staff   2.4M Sep 28 14:30 /Users/user/.adhd-brain.db.pre-restore-20250928-143045
+# -rw-r--r--  1 user  staff   2.4M Sep 28 14:30 /Users/user/.capture-bridge.db.pre-restore-20250928-143045
 ```
 
 **Critical:** Do not skip this step. It's your only rollback option if restore fails.
@@ -208,23 +208,23 @@ ls -lh "${SAFETY_NET}"
 
 ```bash
 # Restore backup to live database location
-cp <backup-path> ~/.adhd-brain.db
+cp <backup-path> ~/.capture-bridge.db
 
 # Example:
-cp ~/.obsidian-vault/.adhd-brain/.backups/ledger-20250928-14.sqlite ~/.adhd-brain.db
+cp ~/.obsidian-vault/.capture-bridge/.backups/ledger-20250928-14.sqlite ~/.capture-bridge.db
 
 # Verify file replaced
-ls -lh ~/.adhd-brain.db
+ls -lh ~/.capture-bridge.db
 
 # Expected output:
-# -rw-r--r--  1 user  staff   2.4M Sep 28 14:31 /Users/user/.adhd-brain.db
+# -rw-r--r--  1 user  staff   2.4M Sep 28 14:31 /Users/user/.capture-bridge.db
 ```
 
 **Verification:**
 
 ```bash
 # Verify database readable
-sqlite3 ~/.adhd-brain.db "SELECT COUNT(*) FROM captures;"
+sqlite3 ~/.capture-bridge.db "SELECT COUNT(*) FROM captures;"
 
 # Expected output: (integer count of captures)
 # Example: 1234
@@ -253,7 +253,7 @@ adhd doctor --component=database
 
 ```bash
 # Verify table counts
-sqlite3 ~/.adhd-brain.db <<EOF
+sqlite3 ~/.capture-bridge.db <<EOF
 SELECT 'captures', COUNT(*) FROM captures
 UNION ALL
 SELECT 'exports_audit', COUNT(*) FROM exports_audit
@@ -345,10 +345,10 @@ After restore completes, verify all items pass:
 ### Database Health
 
 - [ ] Health check passes: `adhd doctor --component=database` returns `HEALTHY`
-- [ ] Capture count matches expected: `sqlite3 ~/.adhd-brain.db "SELECT COUNT(*) FROM captures;"`
-- [ ] Export audit count matches captures: `sqlite3 ~/.adhd-brain.db "SELECT COUNT(*) FROM exports_audit;"`
+- [ ] Capture count matches expected: `sqlite3 ~/.capture-bridge.db "SELECT COUNT(*) FROM captures;"`
+- [ ] Export audit count matches captures: `sqlite3 ~/.capture-bridge.db "SELECT COUNT(*) FROM exports_audit;"`
 - [ ] No orphaned captures: `adhd capture orphans` returns empty
-- [ ] Foreign keys valid: `sqlite3 ~/.adhd-brain.db "PRAGMA foreign_key_check;"` returns empty
+- [ ] Foreign keys valid: `sqlite3 ~/.capture-bridge.db "PRAGMA foreign_key_check;"` returns empty
 
 ### Worker Health
 
@@ -368,14 +368,14 @@ After restore completes, verify all items pass:
 
 - [ ] Test capture succeeds: `echo "test" | adhd capture text --test`
 - [ ] Last export timestamp reasonable: `adhd export status`
-- [ ] Metrics emitting: `tail ~/.adhd-brain/.metrics/$(date +%Y-%m-%d).ndjson`
+- [ ] Metrics emitting: `tail ~/.capture-bridge/.metrics/$(date +%Y-%m-%d).ndjson`
 - [ ] No degraded status: `adhd doctor --json | jq '.overall_status'` returns `"healthy"`
 
 **If all items checked, restore is SUCCESSFUL. Remove safety net:**
 
 ```bash
 # Optional: Remove pre-restore backup after 24h validation period
-rm ~/.adhd-brain.db.pre-restore-*
+rm ~/.capture-bridge.db.pre-restore-*
 ```
 
 **If ANY item fails, proceed to Rollback Procedure.**
@@ -402,16 +402,16 @@ Rollback to pre-restore state if:
 adhd capture stop --all
 
 # Step 2: Identify safety net backup
-ls -lt ~/.adhd-brain.db.pre-restore-* | head -1
+ls -lt ~/.capture-bridge.db.pre-restore-* | head -1
 
 # Expected output:
-# -rw-r--r--  1 user  staff   2.4M Sep 28 14:30 /Users/user/.adhd-brain.db.pre-restore-20250928-143045
+# -rw-r--r--  1 user  staff   2.4M Sep 28 14:30 /Users/user/.capture-bridge.db.pre-restore-20250928-143045
 
 # Step 3: Remove failed restore
-rm ~/.adhd-brain.db
+rm ~/.capture-bridge.db
 
 # Step 4: Restore from safety net
-cp ~/.adhd-brain.db.pre-restore-* ~/.adhd-brain.db
+cp ~/.capture-bridge.db.pre-restore-* ~/.capture-bridge.db
 
 # Step 5: Validate rollback
 adhd doctor --component=database
@@ -457,7 +457,7 @@ adhd doctor --component=database
 adhd capture stop --all
 
 # Step 2: Identify last good backup (verify multiple backups)
-for backup in $(ls -t ~/.obsidian-vault/.adhd-brain/.backups/ledger-*.sqlite | head -5); do
+for backup in $(ls -t ~/.obsidian-vault/.capture-bridge/.backups/ledger-*.sqlite | head -5); do
   echo "Verifying: $backup"
   adhd backup verify --file "$backup"
 done
@@ -472,16 +472,16 @@ done
 
 ```bash
 # Step 1: Copy entire backup directory to new machine
-scp -r old-machine:~/.obsidian-vault/.adhd-brain/.backups/ ~/.obsidian-vault/.adhd-brain/
+scp -r old-machine:~/.obsidian-vault/.capture-bridge/.backups/ ~/.obsidian-vault/.capture-bridge/
 
 # Step 2: Identify most recent backup
-ls -lt ~/.obsidian-vault/.adhd-brain/.backups/ | head -1
+ls -lt ~/.obsidian-vault/.capture-bridge/.backups/ | head -1
 
 # Step 3: Verify backup
 adhd backup verify --file <backup-path>
 
 # Step 4: Restore (no safety net needed on new machine)
-cp <backup-path> ~/.adhd-brain.db
+cp <backup-path> ~/.capture-bridge.db
 
 # Step 5: Validate
 adhd doctor --component=database
@@ -496,7 +496,7 @@ adhd capture start
 
 ```bash
 # Example: Accidentally deleted all staged captures
-sqlite3 ~/.adhd-brain.db "DELETE FROM captures WHERE status = 'staged';"
+sqlite3 ~/.capture-bridge.db "DELETE FROM captures WHERE status = 'staged';"
 
 # Recovery:
 
@@ -505,7 +505,7 @@ adhd capture stop --all
 
 # Step 2: Find backup BEFORE deletion
 # (Use hourly backups, find one 1-2 hours before mistake)
-ls -lt ~/.obsidian-vault/.adhd-brain/.backups/ | grep "ledger-$(date +%Y%m%d)"
+ls -lt ~/.obsidian-vault/.capture-bridge/.backups/ | grep "ledger-$(date +%Y%m%d)"
 
 # Step 3: Verify backup has deleted data
 sqlite3 <backup-path> "SELECT COUNT(*) FROM captures WHERE status = 'staged';"
@@ -522,7 +522,7 @@ sqlite3 <backup-path> "SELECT COUNT(*) FROM captures WHERE status = 'staged';"
 
 ```bash
 # Restore to temporary database for validation
-RESTORE_TEST_DB="/tmp/adhd-brain-restore-test-$(date +%Y%m%d-%H%M%S).db"
+RESTORE_TEST_DB="/tmp/capture-bridge-restore-test-$(date +%Y%m%d-%H%M%S).db"
 
 # Step 1: Verify backup
 adhd backup verify --file <backup-path>
@@ -557,12 +557,12 @@ rm "${RESTORE_TEST_DB}"
 
 ```bash
 # Step 1: Check file permissions
-ls -l ~/.adhd-brain.db
+ls -l ~/.capture-bridge.db
 
 # Expected: -rw-r--r-- (user readable/writable)
 
 # Step 2: Fix permissions if needed
-chmod 644 ~/.adhd-brain.db
+chmod 644 ~/.capture-bridge.db
 
 # Step 3: Verify SQLite version compatibility
 sqlite3 --version
@@ -570,7 +570,7 @@ sqlite3 --version
 # Expected: 3.40+ (minimum supported version)
 
 # Step 4: Run detailed integrity check
-sqlite3 ~/.adhd-brain.db "PRAGMA integrity_check;"
+sqlite3 ~/.capture-bridge.db "PRAGMA integrity_check;"
 
 # If "ok" → permissions issue (fixed)
 # If errors → corrupt backup → ROLLBACK
@@ -599,7 +599,7 @@ ls -l <backup-path>
 # Example: If failure at 14:30, last backup at 14:00, expect ~1 hour missing
 
 # Step 3: Verify last capture timestamp in restored DB
-sqlite3 ~/.adhd-brain.db "SELECT MAX(created_at) FROM captures;"
+sqlite3 ~/.capture-bridge.db "SELECT MAX(created_at) FROM captures;"
 
 # Expected: Timestamp close to backup timestamp
 
@@ -629,7 +629,7 @@ adhd migrate status
 adhd migrate up
 
 # Step 3: Reset sync_state (clears poll cursors)
-sqlite3 ~/.adhd-brain.db "UPDATE sync_state SET cursor = NULL;"
+sqlite3 ~/.capture-bridge.db "UPDATE sync_state SET cursor = NULL;"
 
 # Step 4: Restart workers
 adhd capture start
@@ -658,7 +658,7 @@ adhd config get vault_path
 
 # Step 2: Count vault files vs. audit rows
 VAULT_FILES=$(ls ~/obsidian-vault/inbox/*.md | wc -l)
-AUDIT_ROWS=$(sqlite3 ~/.adhd-brain.db "SELECT COUNT(*) FROM exports_audit;")
+AUDIT_ROWS=$(sqlite3 ~/.capture-bridge.db "SELECT COUNT(*) FROM exports_audit;")
 
 echo "Vault files: ${VAULT_FILES}"
 echo "Audit rows: ${AUDIT_ROWS}"
@@ -686,11 +686,11 @@ Error: database disk image is malformed
 $ adhd capture stop --all
 ✅ All workers stopped
 
-$ adhd backup verify --file ~/.obsidian-vault/.adhd-brain/.backups/ledger-20250928-14.sqlite
+$ adhd backup verify --file ~/.obsidian-vault/.capture-bridge/.backups/ledger-20250928-14.sqlite
 ✅ Verification Status: SUCCESS
 
-$ cp ~/.adhd-brain.db ~/.adhd-brain.db.pre-restore-20250928-143045
-$ cp ~/.obsidian-vault/.adhd-brain/.backups/ledger-20250928-14.sqlite ~/.adhd-brain.db
+$ cp ~/.capture-bridge.db ~/.capture-bridge.db.pre-restore-20250928-143045
+$ cp ~/.obsidian-vault/.capture-bridge/.backups/ledger-20250928-14.sqlite ~/.capture-bridge.db
 
 $ adhd doctor --component=database
 ✅ Database Status: HEALTHY
@@ -712,10 +712,10 @@ Email Capture: RUNNING (last poll: 2025-09-28 14:32:18)
 
 $ RESTORE_TEST="/tmp/adhd-restore-drill-$(date +%Y%m%d).db"
 
-$ adhd backup verify --file ~/.obsidian-vault/.adhd-brain/.backups/ledger-20250928-14.sqlite
+$ adhd backup verify --file ~/.obsidian-vault/.capture-bridge/.backups/ledger-20250928-14.sqlite
 ✅ Verification Status: SUCCESS
 
-$ cp ~/.obsidian-vault/.adhd-brain/.backups/ledger-20250928-14.sqlite "${RESTORE_TEST}"
+$ cp ~/.obsidian-vault/.capture-bridge/.backups/ledger-20250928-14.sqlite "${RESTORE_TEST}"
 
 $ sqlite3 "${RESTORE_TEST}" "PRAGMA integrity_check;"
 ok

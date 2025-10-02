@@ -41,7 +41,7 @@ Use this guide when:
 
 - ADHD Brain system installed with SQLite staging ledger initialized
 - SQLite3 CLI tool available (`sqlite3` command)
-- Access to backup directory (default: `${VAULT_ROOT}/.adhd-brain/.backups/`)
+- Access to backup directory (default: `${VAULT_ROOT}/.capture-bridge/.backups/`)
 - Basic understanding of cron scheduling (for automation)
 
 **Recommended:**
@@ -62,7 +62,7 @@ adhd backup verify --last
 adhd backup verify --schedule daily
 
 # Verify specific backup file
-adhd backup verify --file ~/.obsidian-vault/.adhd-brain/.backups/ledger-20250928-14.sqlite
+adhd backup verify --file ~/.obsidian-vault/.capture-bridge/.backups/ledger-20250928-14.sqlite
 
 # Check verification status and history
 adhd backup verify --status
@@ -100,7 +100,7 @@ Ensure the backup directory exists and is writable:
 
 ```bash
 # Default backup location
-export BACKUP_DIR="${VAULT_ROOT}/.adhd-brain/.backups"
+export BACKUP_DIR="${VAULT_ROOT}/.capture-bridge/.backups"
 
 # Create backup directory if not exists
 mkdir -p "${BACKUP_DIR}"
@@ -164,7 +164,7 @@ Verification results are logged to metrics and system logs:
 
 ```bash
 # Check verification metrics (NDJSON format)
-cat ~/.adhd-brain/.metrics/$(date +%Y-%m-%d).ndjson | grep backup_verification
+cat ~/.capture-bridge/.metrics/$(date +%Y-%m-%d).ndjson | grep backup_verification
 
 # Expected output:
 # {"metric":"backup_verification_result","value":"success","timestamp":"2025-09-28T14:05:00Z"}
@@ -301,7 +301,7 @@ sqlite3 "${BACKUP_FILE}" "PRAGMA foreign_key_check;"
 ```bash
 # Compare SHA-256 checksums (backup vs live DB)
 BACKUP_HASH=$(shasum -a 256 "${BACKUP_FILE}" | awk '{print $1}')
-LIVE_HASH=$(shasum -a 256 ~/.adhd-brain.db | awk '{print $1}')
+LIVE_HASH=$(shasum -a 256 ~/.capture-bridge.db | awk '{print $1}')
 
 # Note: Hashes will differ if live DB has writes since backup
 # This check validates backup is not empty/truncated
@@ -314,7 +314,7 @@ LIVE_HASH=$(shasum -a 256 ~/.adhd-brain.db | awk '{print $1}')
 ```bash
 # Verify backup size within 10% of live database
 BACKUP_SIZE=$(stat -f%z "${BACKUP_FILE}")
-LIVE_SIZE=$(stat -f%z ~/.adhd-brain.db)
+LIVE_SIZE=$(stat -f%z ~/.capture-bridge.db)
 VARIANCE=$((100 * (BACKUP_SIZE - LIVE_SIZE) / LIVE_SIZE))
 
 # Expected: Variance between -10% and +10%
@@ -419,7 +419,7 @@ grep "backup" /var/log/adhd-capture.log
 adhd backup verify --force-backup
 
 # Verify backup directory permissions
-ls -la ~/.obsidian-vault/.adhd-brain/.backups/
+ls -la ~/.obsidian-vault/.capture-bridge/.backups/
 ```
 
 ### Problem: Integrity check fails
@@ -438,7 +438,7 @@ diskutil verifyVolume /
 adhd backup restore --file <previous-good-backup>
 
 # Step 3: If all backups corrupted, restore from daily snapshot
-ls -lt ~/.obsidian-vault/.adhd-brain/.backups/ | grep daily
+ls -lt ~/.obsidian-vault/.capture-bridge/.backups/ | grep daily
 
 # Step 4: Report issue and investigate root cause (disk failure?)
 ```
@@ -453,7 +453,7 @@ ls -lt ~/.obsidian-vault/.adhd-brain/.backups/ | grep daily
 
 ```bash
 # Verify live database schema
-sqlite3 ~/.adhd-brain.db ".schema"
+sqlite3 ~/.capture-bridge.db ".schema"
 
 # If live DB correct, retry backup
 adhd backup verify --force-backup
@@ -471,7 +471,7 @@ adhd migrate --up
 adhd init
 
 # Step 2: Verify backup directory created
-ls -la ~/.obsidian-vault/.adhd-brain/.backups/
+ls -la ~/.obsidian-vault/.capture-bridge/.backups/
 
 # Step 3: Run first manual verification
 adhd backup verify --force-backup

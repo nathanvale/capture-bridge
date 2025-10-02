@@ -139,8 +139,8 @@ User: /tutor how do I add voice capture?
 Tutor: Great! Let me break this down into simple steps:
 
 🔬 **Step 1: Research & Plan**
-→ Use: adhd-brain-planner to research voice capture APIs and create a spec
-→ Command: `Use adhd-brain-planner to research voice capture and create technical spec`
+→ Use: capture-bridge-planner to research voice capture APIs and create a spec
+→ Command: `Use capture-bridge-planner to research voice capture and create technical spec`
 
 📋 **Step 2: Document Architecture**
 → Use: adr-curator if you make any architectural decisions
@@ -162,7 +162,7 @@ Tutor: I totally understand! The system has a lot of parts, but you don't need t
 Let's start simple:
 
 🎯 **For 90% of what you'll do, you only need to know 2 agents:**
-1. **adhd-brain-planner** - for research and planning (start here!)
+1. **capture-bridge-planner** - for research and planning (start here!)
 2. **implementation-orchestrator** - for auto-pilot coding
 
 🤝 **Here's what I suggest:**

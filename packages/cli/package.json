@@ -1,9 +1,9 @@
 {
-  "name": "@adhd-brain/cli",
+  "name": "@capture-bridge/cli",
   "version": "0.1.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nathanvale/adhd-brain.git",
+    "url": "https://github.com/nathanvale/capture-bridge.git",
     "directory": "packages/cli"
   },
   "sideEffects": false,
@@ -34,12 +34,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@adhd-brain/foundation": "workspace:*",
-    "@adhd-brain/storage": "workspace:*",
-    "@adhd-brain/capture": "workspace:*"
+    "@capture-bridge/foundation": "workspace:*",
+    "@capture-bridge/storage": "workspace:*",
+    "@capture-bridge/capture": "workspace:*"
   },
   "devDependencies": {
-    "@adhd-brain/build-config": "workspace:*",
+    "@capture-bridge/build-config": "workspace:*",
     "@types/node": "^24.3.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.3",

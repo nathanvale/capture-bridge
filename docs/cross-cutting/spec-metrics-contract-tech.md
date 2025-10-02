@@ -165,7 +165,7 @@ interface AggregateResult {
 **Metrics Directory Structure:**
 
 ```
-~/.adhd-brain/
+~/.capture-bridge/
 └── .metrics/
     ├── 2025-09-27.ndjson         # Current day
     ├── 2025-09-26.ndjson         # Previous days
@@ -1283,7 +1283,7 @@ $ adhd capture doctor
 
 Metrics Collection:
 ✓ Status: Enabled (CAPTURE_METRICS=1)
-✓ Directory: /Users/nathan/.adhd-brain/.metrics
+✓ Directory: /Users/nathan/.capture-bridge/.metrics
 ✓ Current file: 2025-09-27.ndjson (2.3 MB)
 ✓ Buffer: 23 events (max 100)
 ✓ Emission rate: 12.5 events/sec (last 5 min)

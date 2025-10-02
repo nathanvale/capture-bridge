@@ -58,7 +58,7 @@ PRAGMA cache_size; -- Should return -64000
 **Application Integration:**
 
 - Set pragma immediately after database connection establishment
-- Apply to staging ledger database (`~/.adhd-brain/staging.db`)
+- Apply to staging ledger database (`~/.capture-bridge/staging.db`)
 - Document in database initialization scripts
 - Add cache size verification to health checks
 
@@ -180,7 +180,7 @@ This cache size should be reconsidered if:
 
 ## References
 
-- [Capture Tech Spec - Performance Requirements](/Users/nathanvale/code/adhd-brain/docs/features/capture/spec-capture-tech.md)
-- [Capture Architecture Spec - SQLite Integration](/Users/nathanvale/code/adhd-brain/docs/features/capture/spec-capture-arch.md)
-- [Master PRD - Section 4.3 Performance Targets](/Users/nathanvale/code/adhd-brain/docs/master/prd-master.md)
+- [Capture Tech Spec - Performance Requirements](/Users/nathanvale/code/capture-bridge/docs/features/capture/spec-capture-tech.md)
+- [Capture Architecture Spec - SQLite Integration](/Users/nathanvale/code/capture-bridge/docs/features/capture/spec-capture-arch.md)
+- [Master PRD - Section 4.3 Performance Targets](/Users/nathanvale/code/capture-bridge/docs/master/prd-master.md)
 - [SQLite Cache Size Documentation](https://www.sqlite.org/pragma.html#pragma_cache_size)

@@ -64,7 +64,7 @@ sed -i 's|../cross-cutting/foundation/spec-cli-test.md|../features/cli/spec-cli-
 sed -i 's|spec-testkit-tech.md|../guides/guide-testkit-usage.md|g' docs/cross-cutting/spec-metrics-contract-tech-test.md
 sed -i 's|spec-testkit-tech.md|../guides/guide-testkit-usage.md|g' docs/guides/guide-phase1-testing-patterns.md
 sed -i 's|spec-testkit-tech.md|../guides/guide-testkit-usage.md|g' docs/guides/guide-tdd-applicability.md
-sed -i 's|/Users/nathanvale/code/adhd-brain/docs/cross-cutting/spec-testkit-tech.md|../guides/guide-testkit-usage.md|g' docs/cross-cutting/prd-foundation-monorepo.md
+sed -i 's|/Users/nathanvale/code/capture-bridge/docs/cross-cutting/spec-testkit-tech.md|../guides/guide-testkit-usage.md|g' docs/cross-cutting/prd-foundation-monorepo.md
 ```
 
 ### 6. Error Recovery Spec vs Guide Reference ✅

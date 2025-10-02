@@ -704,7 +704,7 @@ const RECOMMENDATION_RULES: RecommendationRule[] = [
     priority: "critical",
     issue: "Obsidian vault path does not exist",
     action: 'Create vault directory: mkdir -p "${VAULT_PATH}"',
-    documentation_url: "https://docs.adhd-brain.dev/setup/vault-configuration",
+    documentation_url: "https://docs.capture-bridge.dev/setup/vault-configuration",
   },
   {
     checkId: "gmail_token_valid",
@@ -712,7 +712,7 @@ const RECOMMENDATION_RULES: RecommendationRule[] = [
     priority: "high",
     issue: "Gmail API token expired or invalid",
     action: "Run Gmail OAuth2 flow: adhd capture email init",
-    documentation_url: "https://docs.adhd-brain.dev/setup/gmail-oauth",
+    documentation_url: "https://docs.capture-bridge.dev/setup/gmail-oauth",
   },
   {
     checkId: "database_integrity",
@@ -721,7 +721,7 @@ const RECOMMENDATION_RULES: RecommendationRule[] = [
     issue: "SQLite database integrity check failed",
     action: "Restore from backup: adhd db restore --latest",
     documentation_url:
-      "https://docs.adhd-brain.dev/troubleshooting/database-recovery",
+      "https://docs.capture-bridge.dev/troubleshooting/database-recovery",
   },
   {
     checkId: "icloudctl_available",
@@ -730,7 +730,7 @@ const RECOMMENDATION_RULES: RecommendationRule[] = [
     issue: "icloudctl binary not found",
     action: "Install icloudctl: see docs/guides/voice-capture-setup.md",
     documentation_url:
-      "https://docs.adhd-brain.dev/setup/voice-capture-prerequisites",
+      "https://docs.capture-bridge.dev/setup/voice-capture-prerequisites",
   },
   {
     checkId: "vault_disk_space",

@@ -39,7 +39,7 @@ We will implement **local-only NDJSON metrics** with unified naming conventions 
 
 **Core Strategy:**
 
-- **Storage:** Newline-delimited JSON files in `~/.adhd-brain/.metrics/`
+- **Storage:** Newline-delimited JSON files in `~/.capture-bridge/.metrics/`
 - **Activation:** Opt-in via `CAPTURE_METRICS=1` environment variable
 - **Naming:** `domain.component.action.unit` convention (e.g., `capture.voice.staging_ms`)
 - **Rotation:** Daily files at midnight UTC (e.g., `2025-09-27.ndjson`)
@@ -164,7 +164,7 @@ This strategy should be reconsidered if:
 
 ## References
 
-- [Metrics Contract Tech Spec](/Users/nathanvale/code/adhd-brain/docs/cross-cutting/spec-metrics-contract-tech.md)
-- [Master PRD - Section 6.4 Telemetry](/Users/nathanvale/code/adhd-brain/docs/master/prd-master.md)
-- [Capture PRD - Section 9 Telemetry](/Users/nathanvale/code/adhd-brain/docs/features/capture/prd-capture.md)
-- [TDD Applicability Guide](/Users/nathanvale/code/adhd-brain/docs/guides/guide-tdd-applicability.md)
+- [Metrics Contract Tech Spec](/Users/nathanvale/code/capture-bridge/docs/cross-cutting/spec-metrics-contract-tech.md)
+- [Master PRD - Section 6.4 Telemetry](/Users/nathanvale/code/capture-bridge/docs/master/prd-master.md)
+- [Capture PRD - Section 9 Telemetry](/Users/nathanvale/code/capture-bridge/docs/features/capture/prd-capture.md)
+- [TDD Applicability Guide](/Users/nathanvale/code/capture-bridge/docs/guides/guide-tdd-applicability.md)

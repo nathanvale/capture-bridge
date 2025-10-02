@@ -64,10 +64,10 @@ User Input (CLI)
 
 **Domain Services:**
 
-- `@adhd-brain/capture-service` - Voice/text/email capture
-- `@adhd-brain/storage` - SQLite ledger access
-- `@adhd-brain/vault-connector` - Obsidian file operations
-- `@adhd-brain/core` - Shared types and errors
+- `@capture-bridge/capture-service` - Voice/text/email capture
+- `@capture-bridge/storage` - SQLite ledger access
+- `@capture-bridge/vault-connector` - Obsidian file operations
+- `@capture-bridge/core` - Shared types and errors
 
 **External Libraries:**
 

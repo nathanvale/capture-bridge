@@ -37,11 +37,11 @@
 
 ```bash
 # Update all references to point to existing capture tech spec sections
-sed -i 's|spec-cli-doctor-tech.md|spec-cli-tech.md#doctor-command|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-health-command.md
-sed -i 's|spec-capture-gmail-oauth2-tech.md|spec-capture-tech.md#gmail-oauth2|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-health-command.md
-sed -i 's|spec-capture-whisper-runtime-tech.md|spec-capture-tech.md#whisper-transcription|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-health-command.md
-sed -i 's|spec-capture-gmail-oauth2-tech.md|spec-capture-tech.md#gmail-oauth2|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-error-recovery.md
-sed -i 's|spec-capture-whisper-runtime-tech.md|spec-capture-tech.md#whisper-transcription|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-error-recovery.md
+sed -i 's|spec-cli-doctor-tech.md|spec-cli-tech.md#doctor-command|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-health-command.md
+sed -i 's|spec-capture-gmail-oauth2-tech.md|spec-capture-tech.md#gmail-oauth2|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-health-command.md
+sed -i 's|spec-capture-whisper-runtime-tech.md|spec-capture-tech.md#whisper-transcription|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-health-command.md
+sed -i 's|spec-capture-gmail-oauth2-tech.md|spec-capture-tech.md#gmail-oauth2|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-error-recovery.md
+sed -i 's|spec-capture-whisper-runtime-tech.md|spec-capture-tech.md#whisper-transcription|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-error-recovery.md
 ```
 
 ### 2. Wrong Cross-Reference Paths
@@ -58,8 +58,8 @@ sed -i 's|spec-capture-whisper-runtime-tech.md|spec-capture-tech.md#whisper-tran
 **Fix Commands:**
 
 ```bash
-sed -i 's|../cross-cutting/foundation/spec-cli-tech.md|../features/cli/spec-cli-tech.md|g' /Users/nathanvale/code/adhd-brain/docs/master/prd-master.md
-sed -i 's|../cross-cutting/foundation/spec-cli-test.md|../features/cli/spec-cli-test.md|g' /Users/nathanvale/code/adhd-brain/docs/master/prd-master.md
+sed -i 's|../cross-cutting/foundation/spec-cli-tech.md|../features/cli/spec-cli-tech.md|g' /Users/nathanvale/code/capture-bridge/docs/master/prd-master.md
+sed -i 's|../cross-cutting/foundation/spec-cli-test.md|../features/cli/spec-cli-test.md|g' /Users/nathanvale/code/capture-bridge/docs/master/prd-master.md
 ```
 
 ### 3. Reference to Non-Existent TestKit Spec
@@ -76,7 +76,7 @@ sed -i 's|../cross-cutting/foundation/spec-cli-test.md|../features/cli/spec-cli-
 
 ```bash
 # Remove reference to external TestKit - replace with guide reference
-sed -i 's|TestKit Tech Spec.*|TestKit Usage Guide](../guides/guide-testkit-usage.md) - External TestKit integration patterns|g' /Users/nathanvale/code/adhd-brain/docs/master/prd-master.md
+sed -i 's|TestKit Tech Spec.*|TestKit Usage Guide](../guides/guide-testkit-usage.md) - External TestKit integration patterns|g' /Users/nathanvale/code/capture-bridge/docs/master/prd-master.md
 ```
 
 ### 4. Broken Internal Metrics Reference
@@ -92,7 +92,7 @@ sed -i 's|TestKit Tech Spec.*|TestKit Usage Guide](../guides/guide-testkit-usage
 **Fix Command:**
 
 ```bash
-sed -i 's|./spec-error-recovery-tech.md|../guides/guide-error-recovery.md|g' /Users/nathanvale/code/adhd-brain/docs/cross-cutting/spec-metrics-contract-tech.md
+sed -i 's|./spec-error-recovery-tech.md|../guides/guide-error-recovery.md|g' /Users/nathanvale/code/capture-bridge/docs/cross-cutting/spec-metrics-contract-tech.md
 ```
 
 ### 5. ADR Cross-Reference Inconsistency
@@ -108,7 +108,7 @@ sed -i 's|./spec-error-recovery-tech.md|../guides/guide-error-recovery.md|g' /Us
 **Fix Command:**
 
 ```bash
-sed -i 's|ADR-0007: Sequential Processing Model|ADR-0008: Sequential Processing Model|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-error-recovery.md
+sed -i 's|ADR-0007: Sequential Processing Model|ADR-0008: Sequential Processing Model|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-error-recovery.md
 ```
 
 ---
@@ -178,24 +178,24 @@ docs/agents/ (13 files)
 
 ```bash
 # Fix missing spec references (point to existing sections)
-sed -i 's|spec-cli-doctor-tech.md|spec-cli-tech.md#doctor-command|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-health-command.md
-sed -i 's|spec-capture-gmail-oauth2-tech.md|spec-capture-tech.md#gmail-oauth2|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-health-command.md
-sed -i 's|spec-capture-whisper-runtime-tech.md|spec-capture-tech.md#whisper-transcription|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-health-command.md
-sed -i 's|spec-capture-gmail-oauth2-tech.md|spec-capture-tech.md#gmail-oauth2|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-error-recovery.md
-sed -i 's|spec-capture-whisper-runtime-tech.md|spec-capture-tech.md#whisper-transcription|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-error-recovery.md
+sed -i 's|spec-cli-doctor-tech.md|spec-cli-tech.md#doctor-command|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-health-command.md
+sed -i 's|spec-capture-gmail-oauth2-tech.md|spec-capture-tech.md#gmail-oauth2|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-health-command.md
+sed -i 's|spec-capture-whisper-runtime-tech.md|spec-capture-tech.md#whisper-transcription|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-health-command.md
+sed -i 's|spec-capture-gmail-oauth2-tech.md|spec-capture-tech.md#gmail-oauth2|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-error-recovery.md
+sed -i 's|spec-capture-whisper-runtime-tech.md|spec-capture-tech.md#whisper-transcription|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-error-recovery.md
 
 # Fix wrong paths (CLI is feature, not cross-cutting)
-sed -i 's|../cross-cutting/foundation/spec-cli-tech.md|../features/cli/spec-cli-tech.md|g' /Users/nathanvale/code/adhd-brain/docs/master/prd-master.md
-sed -i 's|../cross-cutting/foundation/spec-cli-test.md|../features/cli/spec-cli-test.md|g' /Users/nathanvale/code/adhd-brain/docs/master/prd-master.md
+sed -i 's|../cross-cutting/foundation/spec-cli-tech.md|../features/cli/spec-cli-tech.md|g' /Users/nathanvale/code/capture-bridge/docs/master/prd-master.md
+sed -i 's|../cross-cutting/foundation/spec-cli-test.md|../features/cli/spec-cli-test.md|g' /Users/nathanvale/code/capture-bridge/docs/master/prd-master.md
 
 # Fix external TestKit reference
-sed -i 's|TestKit Tech Spec.*|TestKit Usage Guide](../guides/guide-testkit-usage.md) - External TestKit integration patterns|g' /Users/nathanvale/code/adhd-brain/docs/master/prd-master.md
+sed -i 's|TestKit Tech Spec.*|TestKit Usage Guide](../guides/guide-testkit-usage.md) - External TestKit integration patterns|g' /Users/nathanvale/code/capture-bridge/docs/master/prd-master.md
 
 # Fix guide vs spec reference
-sed -i 's|./spec-error-recovery-tech.md|../guides/guide-error-recovery.md|g' /Users/nathanvale/code/adhd-brain/docs/cross-cutting/spec-metrics-contract-tech.md
+sed -i 's|./spec-error-recovery-tech.md|../guides/guide-error-recovery.md|g' /Users/nathanvale/code/capture-bridge/docs/cross-cutting/spec-metrics-contract-tech.md
 
 # Fix ADR number consistency
-sed -i 's|ADR-0007: Sequential Processing Model|ADR-0008: Sequential Processing Model|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-error-recovery.md
+sed -i 's|ADR-0007: Sequential Processing Model|ADR-0008: Sequential Processing Model|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-error-recovery.md
 ```
 
 ---

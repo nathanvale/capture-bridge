@@ -1,978 +1,1334 @@
 ---
-title: TestKit Developer Guide
-doc_type: guide
-status: living
+title: TestKit 2.0 Usage Guide
+status: approved
 owner: Nathan
 version: 2.0.0
-date: 2025-09-30
-master_prd_version: 2.3.0-MPPP
-roadmap_version: 2.0.0-MPPP
-testkit_version: 2.0.0
+date: 2025-10-01
+doc_type: guide
 ---
 
-# TestKit Developer Guide
+# TestKit 2.0 Usage Guide
 
-> **Complete NPM package reference for `@orchestr8/testkit` - Modular testing utilities with security validation, resource management, and concurrency control**
->
-> **Alignment**: Supports MPPP requirements for deterministic testing, sequential processing validation, and no-outbox architecture verification
->
-> **Cross-References**:
->
-> - Master PRD: [prd-master.md](../master/prd-master.md)
-> - Roadmap: [roadmap.md](../master/roadmap.md)
-> - TDD Applicability Guide: [tdd-applicability.md](./tdd-applicability.md)
-> - Test Strategy Guide: [test-strategy.md](./test-strategy.md)
+## Purpose
 
-## 📦 Package Overview
+This guide provides comprehensive documentation for using TestKit 2.0 to implement test-driven development (TDD) workflows in the ADHD Brain project. It serves as a practical reference for both human developers and AI agents, focusing on current usage patterns and best practices.
 
-**Package Name:** `@orchestr8/testkit`
-**Version:** 2.0.0
-**Purpose:** Comprehensive testing utilities with modular imports and optional dependencies
-**Architecture:** Lean core with modular sub-exports
-**Philosophy:** Test isolation, deterministic behavior, ADHD-friendly patterns
+**Target Audience:** Developers and AI agents writing tests in the monorepo.
 
-### 🎯 Modular Architecture
+**Key Goal:** Enable rapid, reliable TDD workflows with minimal setup overhead and maximum type safety.
 
-TestKit uses **modular sub-exports**:
-- **Main export** (`@orchestr8/testkit`) - Core utilities only (delay, retry, withTimeout, createMockFn)
-- **Sub-exports** - Feature-specific modules (env, fs, sqlite, msw, containers, etc.)
-- **No optional dependency bloat** - Install only what you need
-- **Tree-shakable** - Import exactly what you use
-- **Enhanced TypeScript support** - Full type safety across all modules
+## When to Use This Guide
 
-### ✨ Key Features
+Use this guide when:
 
-- **Security Validation** - Command injection prevention, path traversal protection, SQL injection guards
-- **Resource Management** - Automatic resource tracking, priority cleanup, leak detection
-- **Concurrency Control** - Operation-specific limits, batch processing, predefined managers
-- **Enhanced Environment Control** - Fake timers, deterministic randomness, crypto mocking
-- **SQLite Connection Pooling** - Advanced connection management, transaction adapters
-- **Naming Conventions** - Consistent `create*`, `setup*`, `use*`, `with*`, `get*` patterns
+- Writing new tests for any package
+- Setting up test infrastructure for a new feature
+- Implementing TDD workflows with TestKit utilities
+- Understanding which TestKit module to use for specific testing needs
+- Debugging test failures or performance issues
+- Ensuring consistent test patterns across the codebase
 
-## 🚀 Installation & Import
+## Prerequisites
+
+**Required Installation:**
 
 ```bash
-# Install core package
-pnpm add -D @orchestr8/testkit @vitest/ui vitest
+# Core testkit (required)
+pnpm add -D @orchestr8/testkit vitest
 
-# Install optional dependencies as needed
-pnpm add -D msw happy-dom                    # For MSW testing
-pnpm add -D better-sqlite3                    # For SQLite testing
-pnpm add -D testcontainers pg mysql2          # For container testing
-pnpm add -D convex-test                       # For Convex testing
+# Optional dependencies (install as needed)
+pnpm add -D better-sqlite3       # For SQLite testing
+pnpm add -D msw                  # For HTTP mocking
+pnpm add -D testcontainers       # For container testing
+pnpm add -D convex-test          # For Convex testing
 ```
 
-### Core Utilities (No Optional Dependencies)
+**Required Knowledge:**
+
+- Basic Vitest test structure
+- TypeScript fundamentals
+- Understanding of test doubles (mocks, stubs, fakes)
+
+**Related Documentation:**
+
+- [TDD Applicability Guide](./guide-tdd-applicability.md) - When to use TDD
+- [TestKit Standardization Guide](./guide-testkit-standardization.md) - Mandatory patterns
+- [Test Strategy Guide](./guide-test-strategy.md) - Overall testing approach
+
+## Quick Reference
+
+### Module Import Matrix
 
 ```typescript
-// Import from main export - requires only vitest
-import {
-  delay,           // Promise-based delay
-  retry,           // Retry with exponential/linear backoff
-  withTimeout,     // Timeout wrapper
-  createMockFn     // Vitest-compatible mock function with call tracking
-} from "@orchestr8/testkit"
-```
+// Core utilities (always available)
+import { delay, retry, withTimeout, createMockFn } from '@orchestr8/testkit'
 
-### Modular Sub-Exports (v2.0)
-
-```typescript
-// Environment utilities
-import {
-  getTestEnvironment,
-  setupTestEnv,
-  useFakeTime,           // NEW in v2.0 - replaces useFakeTimers
-  controlRandomness,
-  quickRandom,
-  quickCrypto
-} from "@orchestr8/testkit/env"
+// Environment control
+import { getTestEnvironment, setupTestEnv, useFakeTime } from '@orchestr8/testkit/env'
 
 // File system utilities
-import {
-  createTempDirectory,
-  createTempDirectoryWithResourceManager,  // NEW in v2.0
-  useTempDirectory,
-  withTempDirectoryScope
-} from "@orchestr8/testkit/fs"
+import { createTempDirectory, ensureDirectoryExists } from '@orchestr8/testkit/fs'
 
-// SQLite testing
-import {
-  createMemoryUrl,
-  createFileDatabase,
-  createSQLitePool,              // NEW in v2.0
-  withSQLiteTransaction,         // NEW in v2.0
-  migrateDatabase,               // NEW in v2.0
-  applyRecommendedPragmas        // NEW in v2.0
-} from "@orchestr8/testkit/sqlite"
+// SQLite testing (requires better-sqlite3)
+import { createMemoryUrl, createSQLitePool, withSQLiteTransaction } from '@orchestr8/testkit/sqlite'
 
-// MSW mock server (requires msw@^2.0.0)
-import {
-  setupMSW,
-  http,                          // MSW v2 - replaces 'rest'
-  HttpResponse,                  // MSW v2
-  createSuccessResponse,
-  createAuthHandlers
-} from "@orchestr8/testkit/msw"
+// HTTP mocking (requires msw)
+import { setupMSW, http, HttpResponse } from '@orchestr8/testkit/msw'
 
 // CLI process mocking
-import {
-  spawnUtils,
-  createProcessMock,
-  mockProcess
-} from "@orchestr8/testkit/cli"
+import { spawnUtils, createProcessMock } from '@orchestr8/testkit/cli'
 
 // Container testing (requires testcontainers)
-import {
-  createPostgresContext,
-  createMySQLContext
-} from "@orchestr8/testkit/containers"
+import { createPostgreSQLContext, createMySQLContext } from '@orchestr8/testkit/containers'
 
 // Convex testing (requires convex-test)
-import {
-  createConvexTestHarness,
-  withConvexTest
-} from "@orchestr8/testkit/convex"
+import { createConvexTestHarness } from '@orchestr8/testkit/convex'
 
 // Vitest configuration
-import {
-  createVitestConfig,            // NEW in v2.0 - single config function
-  defineVitestConfig
-} from "@orchestr8/testkit/config"
+import { createVitestConfig } from '@orchestr8/testkit/config'
 ```
 
-## 🎯 Core Domains & Features
-
-### 1. **MSW Domain** (Mock Service Worker)
-
-**Purpose:** API mocking for unit/integration tests
-**Maturity:** ✅ Stable (Production Ready)
-
-> ⚠️ **MSW Module Status**
-> Currently experiencing build issues. Use native MSW setup until fixed:
-> ```typescript
-> import { setupServer } from 'msw/node';
-> import { http, HttpResponse } from 'msw';
-> ```
-
-#### Server Lifecycle Functions
-
-- `setupMSW(handlers[])` - Vitest lifecycle hooks (beforeAll/afterEach/afterAll)
-- `quickSetupMSW(handlers[])` - Fire-and-forget startup
-- `setupMSWGlobal(handlers[])` - Global setup for vitest.globalSetup.ts
-- `setupMSWManual(handlers[])` - Imperative control
-- `setupMSWForEnvironment(handlers[], config?)` - Environment-aware setup
-- `createTestScopedMSW(handlers[])` - Suite-scoped isolation
-
-#### Handler Factories
-
-- `createSuccessResponse(data, status?)` - JSON success responses
-- `createErrorResponse(message, status?, code?)` - Standard error envelopes
-- `createDelayedResponse(data, delayMs?, status?)` - Latency simulation
-- `createUnreliableHandler(endpoint, data, failureRate?)` - Random failure injection
-- `createPaginatedHandler(endpoint, allData, pageSize?)` - Pagination metadata
-- `createAuthHandlers(baseUrl?)` - Complete auth flow (/login, /me, /logout)
-- `createCRUDHandlers<T>(resourceName, initialData?)` - In-memory REST resource
-- `createNetworkIssueHandler(endpoint, method?)` - Timeout/unavailable patterns
-
-#### Constants & Utilities
-
-- `HTTP_STATUS` - Common status codes (200, 404, 500, etc.)
-- `COMMON_HEADERS` - Header presets
-- Direct re-exports: `http`, `HttpResponse`, `delay` from MSW
+### Common TDD Patterns
 
 ```typescript
-// Example: Mock Ollama for ADHD Brain
-setupMSW([
-  http.post("http://localhost:11434/api/generate", () =>
-    createDelayedResponse({ response: "Mock transcription" }, 100)
-  ),
-  createUnreliableHandler(
-    "http://localhost:11434/api/embeddings",
-    { embedding: new Array(384).fill(0.1) },
-    0.1 // 10% failure rate
-  ),
+// ✅ Database testing
+const db = new Database(createMemoryUrl())
+applyRecommendedPragmas(db)
+
+// ✅ File system testing
+const tempDir = createTempDirectory({ prefix: 'test-' })
+
+// ✅ HTTP mocking
+const server = setupMSW([
+  http.get('/api/users', () => HttpResponse.json([]))
 ])
+
+// ✅ Time control
+const timeCtrl = useFakeTime()
+timeCtrl.advance(1000)
+
+// ✅ Environment variables
+const envRestore = setupTestEnv({ NODE_ENV: 'test' })
 ```
 
-### 2. **SQLite Domain**
+## Core Utilities
 
-**Purpose:** Database testing with SQLite (memory/file modes)
-**Maturity:** ✅ Stable (Production Ready)
+### Async Helpers
 
-#### Database Management
-
-- `createMemoryUrl(options?)` - In-memory SQLite URL generation
-- `createFileDatabase(name?, options?)` - Factory function for file-based DB with cleanup (returns { url, path, dir, cleanup })
-- `createInMemoryDatabase(options?)` - Memory DB wrapper
-- `withTransaction(db, fn)` - Transaction isolation wrapper
-
-#### Migration & Schema
-
-- `applyMigrations(db, options)` - Apply SQL migration files
-- `resetDatabase(db, options?)` - Drop all tables/indexes
-- `backupDatabase(db, backupPath)` - Create DB backup
-
-#### ORM Utilities
-
-- `prismaUrl(type, path?, options?)` - Prisma-compatible URLs
-- `drizzleUrl(type, path?, driver?)` - Drizzle-compatible URLs
-
-#### Pragmas & Optimization
-
-- `applyProductionPragmas(db)` - Production settings (WAL, synchronous, etc.)
-- `applyTestPragmas(db)` - Test optimizations (memory journal, etc.)
-- `applyRecommendedPragmas(db, options?)` - Smart pragma selection
-- `probeEnvironment(db, options?)` - Capability detection
+**Purpose:** Control timing and retry logic in tests.
 
 ```typescript
-// Example: Test with memory database
-const url = createMemoryUrl()
-const db = new Database(url)
-applyTestPragmas(db)
+import { delay, retry, withTimeout } from '@orchestr8/testkit'
 
-// Migration testing
-await applyMigrations(db, { dir: "./migrations" })
+// Wait for specific duration
+await delay(100) // 100ms pause
 
-// Transaction isolation
-await withTransaction(db, async (tx) => {
-  tx.prepare("INSERT INTO users (name) VALUES (?)").run("Test User")
-})
-```
-
-### 3. **CLI Domain**
-
-**Purpose:** Mock child_process commands (spawn, exec, fork, etc.)
-**Maturity:** ✅ Stable (Production Ready)
-
-#### Quick Mocks (Hexa-Register Pattern)
-
-- `quickMocks.success(command, output)` - Mock successful command
-- `quickMocks.failure(command, error, exitCode)` - Mock failed command
-- `quickMocks.throws(command, error)` - Mock command that throws
-- `quickMocks.slow(command, delay, output)` - Mock slow command
-- `quickMocks.batch(commands[])` - Mock multiple commands at once
-
-#### Process Helpers
-
-- `processHelpers.mockSuccess(command, stdout, exitCode?)`
-- `processHelpers.mockFailure(command, stderr, exitCode?)`
-- `processHelpers.mockError(command, error)`
-- `processHelpers.clear()` - Clear all mocks
-- `processHelpers.clearCalls()` - Clear call history
-
-#### Spawn Utilities
-
-- `mockSpawn(command)` → `SpawnMockBuilder` - Fluent builder pattern
-- `spawnUtils.mockCommandSuccess(command, stdout, stderr?, exitCode?)`
-- `spawnUtils.mockCommandFailure(command, stderr, exitCode?, stdout?)`
-
-**Note:** One registration works for all 6 child_process methods!
-
-```typescript
-// Example: Mock git commands
-quickMocks.success("git status", "nothing to commit\n")
-quickMocks.failure("npm install", "ENOENT", 1)
-
-// Works with spawn, exec, execSync, fork, execFile, execFileSync
-const result = execSync("git status") // Returns mocked output
-```
-
-### 4. **File System Domain**
-
-**Purpose:** Temp directory management and file operations
-**Maturity:** ✅ Stable (Production Ready)
-
-#### Async vs Sync Methods
-
-| Method | Returns | Usage |
-|--------|---------|-------|
-| createTempDirectory() | TempDirectory | Synchronous |
-| createNamedTempDirectory(prefix) | TempDirectory | Synchronous |
-| createMultipleTempDirectories(n) | Promise<TempDirectory[]> | Await required |
-| cleanupMultipleTempDirectories(dirs) | Promise<void> | Await required |
-
-> ⚠️ **Note:** Some functions shown in examples may not be available in current version.
-> Use createTempDirectory() and manual cleanup for now.
-
-#### Temp Directory Creation
-
-- `createTempDirectory(options?)` - Create temp dir with manual cleanup (synchronous, returns {path, cleanup})
-- `useTempDirectory(fn)` - Auto-cleanup temp dir in callback (not currently exported)
-- `createManagedTempDirectory(options?)` - Suite-managed temp dir (not currently exported)
-- `withTempDirectoryScope(fn)` - Scoped temp dir with auto-cleanup
-
-#### Directory Operations
-
-- `ensureDirectoryExists(path)` - Recursive mkdir
-- `cleanupDirectory(path)` - Recursive removal
-- `copyDirectory(src, dest, options?)` - Recursive copy
-- `getTempDirectoryCount()` - Debug helper for leak detection
-
-#### File Utilities
-
-- `assertFileExists(path)` - Throw if file missing
-- `assertDirectoryExists(path)` - Throw if directory missing
-- `watchFileChanges(path, callback)` - File watcher
-- `createFileSnapshot(path)` - Capture file state
-
-```typescript
-// Example: Test with temp directory
-const temp = await createTempDirectory({ prefix: "test-" })
-await temp.writeFile("config.json", JSON.stringify({ key: "value" }))
-await temp.createStructure({
-  src: {
-    "index.ts": "export const answer = 42",
-    lib: { "util.ts": "export const double = (n) => n * 2" },
+// Retry flaky operations
+const result = await retry(
+  async () => {
+    const response = await fetch('/api/data')
+    if (!response.ok) throw new Error('Failed')
+    return response.json()
   },
+  3,      // max attempts
+  1000    // base delay ms
+)
+
+// Add timeout to prevent hanging
+const data = await withTimeout(
+  fetchLargeDataset(),
+  5000  // 5 second timeout
+)
+```
+
+**When to use:**
+- `delay`: Waiting for async operations to settle
+- `retry`: Handling flaky external dependencies
+- `withTimeout`: Preventing tests from hanging indefinitely
+
+### Mock Functions
+
+**Purpose:** Framework-agnostic mock function creation.
+
+```typescript
+import { createMockFn } from '@orchestr8/testkit'
+
+// Create mock with implementation
+const mockFn = createMockFn((x: number) => x * 2)
+
+expect(mockFn(5)).toBe(10)
+expect(mockFn.calls).toHaveLength(1)
+expect(mockFn.calls[0]).toEqual([5])
+
+// Reset mock state
+mockFn.mockClear()
+```
+
+**Key features:**
+- Vitest-compatible interface
+- Call tracking
+- Framework-agnostic implementation
+- Full TypeScript support
+
+## Environment Control
+
+### Environment Detection
+
+**Purpose:** Adapt test behavior based on runtime environment.
+
+```typescript
+import { getTestEnvironment } from '@orchestr8/testkit/env'
+
+const env = getTestEnvironment()
+
+console.log({
+  runner: env.runner,     // 'vitest' | 'wallaby' | 'jest' | 'node'
+  isCI: env.isCI,         // boolean
+  isWallaby: env.isWallaby, // boolean
+  nodeVersion: env.nodeVersion // string
 })
-const content = await temp.readFile("config.json")
-await temp.cleanup()
-```
 
-### 5. **Environment Domain**
+// Conditional test behavior
+if (env.isCI) {
+  test.setTimeout(30000) // Longer timeout in CI
+}
 
-**Purpose:** Time control, randomness, and data generation
-**Maturity:** ✅ Stable (Production Ready)
-
-#### Test Environment
-
-- `getTestEnvironment()` - Returns environment flags
-  - Available properties: `isCI`, `isWallaby`, `isLocal`, `isDebug`, `isTurbo`
-  - Note: `isTest` property not available, use `process.env.NODE_ENV === 'test'`
-- `setupTestEnv(env)` - Sets environment variables, returns restore function directly (not object)
-  ```typescript
-  const restore = setupTestEnv({ VAR: 'value' });
-  restore(); // ✅ Correct - returns function directly
-  ```
-
-#### Time Control
-
-- `useFakeTimers(options?)` - Vitest fake timers wrapper
-- `setSystemTime(date)` - Set system clock
-- `advanceTimersByTime(ms)` - Advance timers
-- `withTimezone(tz, fn)` - Test in timezone
-- `TimerController` class - Advanced timer control
-
-#### Randomness Control
-
-- `controlRandomness(seed?)` - Deterministic Math.random
-- `quickRandom.predictable(seed?)` - Quick seeded random
-- `quickRandom.sequence(values[])` - Sequence of values
-- `quickRandom.fixed(value?)` - Fixed value (default 0.5)
-- `SeededRandom` class - Seeded random generator
-
-#### Crypto Mocking
-
-- `mockCryptoUUID(pattern)` - Mock crypto.randomUUID
-- `createSequentialUUID(prefix?)` - Sequential UUIDs
-- `createPredictableUUID(seed)` - Seeded UUIDs
-
-#### Data Generation
-
-- `DeterministicGenerator` class - Deterministic data
-- `generateName()`, `generateEmail()` - User data
-- `generatePhone()`, `generateSSN()` - Contact data
-- `createUserFactory()` - User factory
-- `FactoryRegistry` class - Factory management
-
-```typescript
-// Example: Control time and randomness
-useFakeTimers({ now: new Date("2024-01-01") })
-controlRandomness(12345)
-
-// Predictable UUIDs
-mockCryptoUUID("test-{n}") // test-1, test-2, test-3...
-
-// Advance time
-advanceTimersByTime(5000) // 5 seconds
-```
-
-### 6. **Container Domain**
-
-**Purpose:** Database containers for integration tests
-**Maturity:** 🔶 Beta (Use with caution)
-
-#### PostgreSQL
-
-- `createPostgresContainer(config?)` - Create Postgres container
-- `setupPostgresTest(options?)` - Complete test setup
-- `runMigrations(container, glob)` - Run SQL migrations
-- `seedDatabase(container, data)` - Seed with data
-
-#### MySQL
-
-- `createMySQLContainer(config?)` - Create MySQL container
-- `setupMySQLTest(options?)` - Complete test setup
-- `runMySQLMigrations(container, glob)` - Run migrations
-
-```typescript
-// Example: Postgres integration test
-const { db, cleanup } = await setupPostgresTest({
-  migrations: "./migrations/*.sql",
-  seed: { users: [{ name: "Test" }] },
-})
-// ... run tests
-await cleanup()
-```
-
-### 7. **Convex Domain**
-
-**Purpose:** Testing Convex applications
-**Maturity:** 🔶 Beta (Use with caution)
-
-#### Test Harness
-
-- `createConvexTestHarness(options)` - Create test harness
-- Database operations via `harness.db`
-- Auth management via `harness.auth`
-- Storage operations via `harness.storage`
-- Scheduler control via `harness.scheduler`
-
-```typescript
-// Example: Convex testing
-const harness = createConvexTestHarness({ schema })
-await harness.db.seed(async (ctx) => {
-  await ctx.db.insert("users", { name: "Test User" })
-})
-const result = await harness.auth
-  .withUser({ subject: "user123" })
-  .run(async (ctx) => ctx.db.query("users").collect())
-```
-
-### 8. **Configuration Domain**
-
-**Purpose:** Vitest configuration helpers
-**Maturity:** ✅ Stable
-
-**Available Exports:**
-```typescript
-export {
-  baseVitestConfig,        // Pre-configured object
-  createVitestBaseConfig,   // Function to create config (note: name is swapped from expected pattern)
-  createCIOptimizedConfig,  // CI-specific config
-  createWallabyOptimizedConfig, // Wallaby-specific config
-  defineVitestConfig,       // Wrapper for defineConfig
-  createVitestCoverage,     // Coverage configuration
-  createVitestEnvironmentConfig, // Environment setup
-  createVitestPoolOptions,  // Thread pool config
-  createVitestTimeouts,     // Timeout configuration
+if (env.isWallaby) {
+  test.skip('Skip slow test in Wallaby')
 }
 ```
 
-- `createVitestBaseConfig(overrides?)` - Base Vitest config (⚠️ Note: function name is swapped)
-- `createWorkspaceConfig(projects)` - Workspace config
-- `detectEnvironment()` - Environment detection
-- `getTestTimeouts()` - Timeout configuration
+### Temporary Environment Variables
 
-### 9. **Utils Domain**
-
-**Purpose:** General testing utilities
-**Maturity:** ✅ Stable
-
-- `delay(ms)` - Promise-based delay
-- `retry(fn, maxAttempts, delayMs)` - Retry with linear backoff (both parameters required)
-  ```typescript
-  // Note: Current implementation uses linear backoff
-  // Each retry waits delayMs (not exponential)
-  await retry(operation, 3, 100); // Retries at 100ms intervals
-  ```
-- `withTimeout(promise, timeoutMs)` - Timeout wrapper
-  ```typescript
-  try {
-    await withTimeout(slowOp, 1000);
-  } catch (error) {
-    // Error message: "Timeout after 1000ms"
-  }
-  ```
-- `createMockFn(implementation?)` - Basic mock function
-  ```typescript
-  const mockFn = createMockFn();
-  mockFn('test');
-  // Note: Returns basic function, not a vitest spy
-  // For spy functionality, use vi.fn() directly
-  ```
-
-## 🔄 Cross-Domain Patterns
-
-### TDD-First Testing
+**Purpose:** Isolate environment variable changes to specific tests.
 
 ```typescript
-// Memory DB for unit tests
-const memUrl = createMemoryUrl()
-// File DB for integration tests
-const fileDb = await createFileDatabase()
-// MSW for external services
-setupMSW([...handlers])
-// Control time and randomness
-useFakeTimers()
-controlRandomness(seed)
-```
+import { setupTestEnv } from '@orchestr8/testkit/env'
 
-### Anti-Flake Measures
+test('with custom environment', () => {
+  const envRestore = setupTestEnv({
+    NODE_ENV: 'production',
+    API_URL: 'https://staging.example.com',
+    DEBUG: 'true'
+  })
 
-1. **Deterministic outputs** - Seeded random, fixed time
-2. **Transaction isolation** - `withTransaction()` for DB tests
-3. **Handler reset** - MSW resets after each test
-4. **Temp cleanup** - Auto-cleanup temp directories
-5. **Mock registry** - Singleton pattern prevents conflicts
+  // Test with custom environment
+  expect(process.env.NODE_ENV).toBe('production')
+  expect(process.env.API_URL).toBe('https://staging.example.com')
 
-## 🎯 MPPP-Specific Testing Patterns
-
-### Sequential Processing Validation
-
-The MPPP architecture requires **sequential processing** with no outbox pattern. TestKit provides tools to validate these constraints:
-
-```typescript
-import { useFakeTimers, setSystemTime } from "@orchestr8/testkit/env"
-import { createMemoryUrl, withTransaction } from "@orchestr8/testkit/sqlite"
-
-// Test that operations are truly sequential (no concurrent writes)
-useFakeTimers()
-const db = new Database(createMemoryUrl())
-
-// Validate no outbox table exists
-const tables = db
-  .prepare("SELECT name FROM sqlite_master WHERE type='table'")
-  .all()
-expect(tables.find((t) => t.name.includes("outbox"))).toBeUndefined()
-
-// Test sequential staging writes
-await withTransaction(db, async (tx) => {
-  const before = Date.now()
-  tx.prepare("INSERT INTO staging (id, data) VALUES (?, ?)").run("1", "data1")
-  const after = Date.now()
-  expect(after - before).toBeLessThan(100) // Fast synchronous write
+  // Restore original environment
+  envRestore.restore()
 })
 ```
 
-### No-Outbox Architecture Testing
+**Best practices:**
+- Always call `restore()` in cleanup
+- Use in `beforeEach`/`afterEach` for isolation
+- Don't mutate `process.env` directly
+
+### Fake Timers
+
+**Purpose:** Control time for deterministic testing.
 
 ```typescript
-// Verify direct-to-Obsidian pattern (no intermediate queues)
-const obsidianPath = await createTempDirectory({ prefix: "vault-" })
+import { useFakeTime } from '@orchestr8/testkit/env'
 
-// Mock the file system watcher to verify writes are immediate
-const writes: string[] = []
-watchFileChanges(obsidianPath.path, (filename) => {
-  writes.push(filename)
+test('time-dependent behavior', () => {
+  const timeCtrl = useFakeTime(new Date('2023-01-01'))
+
+  expect(Date.now()).toBe(new Date('2023-01-01').getTime())
+
+  // Advance time
+  timeCtrl.advance(1000 * 60 * 60) // 1 hour
+
+  expect(Date.now()).toBe(new Date('2023-01-01T01:00:00').getTime())
+
+  // Restore real time
+  timeCtrl.restore()
 })
-
-// Execute capture → staging → Obsidian flow
-await captureVoice({ file: "test.m4a" })
-await exportToObsidian({ id: "1" })
-
-// Verify single-pass write (no queuing)
-expect(writes).toHaveLength(1)
-expect(writes[0]).toMatch(/inbox\/\d{8}-.*\.md/)
 ```
 
-### Deduplication Window Testing
+**Use cases:**
+- Testing timeouts
+- Retry logic with backoff
+- Scheduled operations
+- Time-based caching
+
+### Randomness Control
+
+**Purpose:** Deterministic random values for reproducible tests.
 
 ```typescript
-// Test 5-minute deduplication window with controlled time
-const DEDUP_WINDOW_MS = 5 * 60 * 1000
+import { controlRandomness, quickRandom } from '@orchestr8/testkit/env'
 
-setSystemTime("2024-01-01T10:00:00Z")
-const hash = "abc123"
+// Seeded randomness
+const randomCtrl = controlRandomness(12345)
+const value1 = Math.random() // Deterministic
+randomCtrl.reset() // Reset to same seed
+const value2 = Math.random()
+expect(value1).toBe(value2) // Same sequence
 
-db.prepare("INSERT INTO staging (hash, created_at) VALUES (?, ?)").run(
-  hash,
-  Date.now()
-)
+randomCtrl.restore() // Restore original Math.random
 
-// Attempt duplicate within window
-const duplicate1 = await attemptCapture({ hash })
-expect(duplicate1.status).toBe("duplicate")
-
-// Advance past dedup window
-advanceTimersByTime(DEDUP_WINDOW_MS + 1000)
-
-// Duplicate after window should succeed
-const duplicate2 = await attemptCapture({ hash })
-expect(duplicate2.status).toBe("captured")
-```
-
-### iCloud Polling Without Watchers
-
-```typescript
-// Test polling-based file discovery (no fs.watch in MPPP scope)
-import { quickMocks } from "@orchestr8/testkit/cli"
-
-quickMocks.batch([
-  { command: "ls", output: "file1.m4a\nfile2.m4a\n", exitCode: 0 },
-  { command: "brctl download", output: "Downloaded file1.m4a", exitCode: 0 },
-])
-
-const poller = new VoiceFilePoller({ interval: 1000 })
-await poller.tick() // Single poll cycle
-
-expect(poller.discoveredFiles).toEqual(["file1.m4a", "file2.m4a"])
-```
-
-## 📋 Common Recipes
-
-### Recipe: Testing with Gmail API Mock
-
-```typescript
-import { setupMSW, createDelayedResponse } from "@orchestr8/testkit/msw"
-
-setupMSW([
-  http.post("https://oauth2.googleapis.com/token", () => ({
-    access_token: "mock-token",
-    expires_in: 3600,
-  })),
-  http.get("https://gmail.googleapis.com/gmail/v1/users/me/messages", () =>
-    createDelayedResponse({ messages: [] }, 100)
-  ),
-])
-```
-
-### Recipe: ADHD-Friendly Capture Testing
-
-```typescript
-const db = new Database(createMemoryUrl())
-applyTestPragmas(db)
-
-// Control time for deduplication window
-setSystemTime("2024-01-01T10:00:00Z")
-db.prepare("INSERT INTO captures (hash, created_at) VALUES (?, ?)").run(
-  hash,
-  Date.now()
-)
-
-// Advance past dedup window
-advanceTimersByTime(5 * 60 * 1000) // 5 minutes
-```
-
-### Recipe: CLI Command Testing
-
-```typescript
-quickMocks.batch([
-  { command: "npm install", output: "installed", exitCode: 0 },
-  { command: "npm test", output: "tests passed", exitCode: 0 },
-  { command: "npm build", output: "built", exitCode: 0 },
-])
-
-// All child_process methods work
-const result = execSync("npm install") // Returns 'installed'
-```
-
-## 🚨 Important Notes for AI Agents
-
-### Package Philosophy (Updated with Lean Core)
-
-- **Lean core principle** - Main export contains only essential utilities
-- **Lazy loading** - Optional features load only when explicitly imported
-- **No dependency bloat** - Core utilities work without optional dependencies
-- **Subpath exports** - Optional features accessed via domain-specific paths
-- **Domain isolation** - Each domain is independent
-- **Tree-shakable** - Only import what you need
-- **Module resolution fixed** - Works correctly with vitest/vite/pnpm
-
-### Maturity Guidance
-
-- ✅ **Stable**: Use freely (MSW, SQLite, FS, CLI, Env, Utils)
-- 🔶 **Beta**: Test thoroughly (Containers, Convex)
-- 🚧 **Alpha**: Not available (ChromaDB, Network Guard)
-
-### MPPP Architecture Alignment
-
-TestKit directly supports MPPP constraints:
-
-1. **Sequential Processing**: Transaction isolation (`withTransaction`) validates no concurrent writes
-2. **No Outbox Pattern**: Schema validation helpers detect forbidden queue tables
-3. **Polling Over Watching**: CLI mocks support polling-based file discovery tests
-4. **Deterministic Dedup**: Time control (`setSystemTime`, `advanceTimersByTime`) validates 5-minute dedup windows
-5. **Direct File Writes**: Temp directory helpers validate single-pass Obsidian writes
-
-### YAGNI Deferrals
-
-Per Master PRD v2.3.0-MPPP scope reduction:
-
-- ChromaDB mocking - Deferred to Phase 3+ (RAG/semantic search)
-- Network deny guard - Optional safety net (low priority)
-- Policy metrics - Deferred monitoring infrastructure
-- Convex testing - Not applicable to MPPP (SQLite-only architecture)
-- Container testing - Only if integration tests require external services
-
-### Testing Best Practices
-
-1. Use memory DBs for unit tests (fast)
-2. Use file DBs for integration tests (realistic)
-3. Reset MSW handlers after each test
-4. Control time and randomness for determinism
-5. Clean up resources (temp dirs, containers)
-6. **MPPP-Specific**: Always validate no outbox tables in schema tests
-7. **MPPP-Specific**: Use transaction isolation to prove sequential writes
-
-## 🔗 Quick Reference
-
-```typescript
-// Core utilities from main export (always available, no optional deps)
-import {
-  delay,
-  retry,              // Requires both maxAttempts AND delayMs parameters
-  withTimeout,        // Error format: "Timeout after {ms}ms"
-  createMockFn        // Returns basic function, not vitest spy
-} from "@orchestr8/testkit"
-
-// Optional features from sub-exports (lazy loaded)
-// Note: MSW currently has build issues - use native MSW imports for now
-import { setupServer } from 'msw/node';  // Use this instead of @orchestr8/testkit/msw
-import { http, HttpResponse } from 'msw';
-
-import { createMemoryUrl, createFileDatabase, applyTestPragmas } from "@orchestr8/testkit/sqlite"
-import { quickMocks, processHelpers } from "@orchestr8/testkit/cli"
-import { createTempDirectory } from "@orchestr8/testkit/fs"  // useTempDirectory not exported
-import { useFakeTimers, controlRandomness, setSystemTime, getTestEnvironment, setupTestEnv } from "@orchestr8/testkit/env"
-import { createTestFixture } from "@orchestr8/testkit/utils"
-import { createVitestBaseConfig } from "@orchestr8/testkit/config/vitest"  // Note: function name is swapped
-```
-
-## 🔒 Security Validation
-
-```typescript
-import {
-  validateCommand,
-  sanitizeCommand,
-  validatePath,
-  sanitizeSqlIdentifier,
-  escapeShellArg,
-  validateShellExecution
-} from "@orchestr8/testkit"
-
-// Command injection prevention
-validateCommand('echo hello') // ✅ Safe
-validateCommand('rm -rf /') // ❌ Throws SecurityValidationError
-
-// Path traversal protection
-const safePath = validatePath('/tmp/test', 'file.txt') // ✅
-validatePath('/tmp/test', '../../../etc/passwd') // ❌ Throws
-
-// SQL injection prevention
-const tableName = sanitizeSqlIdentifier('user_table') // ✅
-
-// Shell argument escaping
-const escaped = escapeShellArg('hello world; rm -rf /')
-// Returns: "'hello world; rm -rf /'"
-```
-
-## 📊 Resource Management
-
-```typescript
-import {
-  registerResource,
-  cleanupAllResources,
-  getResourceStats,
-  detectResourceLeaks,
-  ResourceCategory,
-  ResourcePriority
-} from "@orchestr8/testkit"
-
-// Register resources for automatic cleanup
-registerResource('db-connection', () => db.close(), {
-  category: ResourceCategory.DATABASE,
-  priority: ResourcePriority.CRITICAL
-})
-
-// Get statistics
-const stats = getResourceStats()
-console.log(`Active: ${stats.active}, Total: ${stats.total}`)
-
-// Detect leaks
-const leaks = detectResourceLeaks()
-
-// Clean up all resources
-await cleanupAllResources({ timeout: 10000 })
-```
-
-## 🔄 Concurrency Control
-
-```typescript
-import {
-  limitConcurrency,
-  limitedPromiseAll,
-  ConcurrencyManager,
-  databaseOperationsManager
-} from "@orchestr8/testkit"
-
-// Limit concurrent operations
-const tasks = Array.from({ length: 10 }, (_, i) =>
-  limitConcurrency(() => processItem(i), 3)
-)
-await Promise.all(tasks) // Only 3 running at once
-
-// Batch processing with limits
-const results = await limitedPromiseAll(promises, { maxConcurrent: 5 })
-
-// Predefined managers
-await databaseOperationsManager.execute(() => db.query('SELECT * FROM users'))
-```
-
-## 🕐 Enhanced Environment Control
-
-```typescript
-import {
-  useFakeTime,
-  controlRandomness,
-  quickRandom,
-  quickCrypto
-} from "@orchestr8/testkit/env"
-
-// Time control
-const timeController = useFakeTime(new Date('2023-01-01'))
-timeController.advance(1000 * 60 * 60) // Advance 1 hour
-timeController.restore()
-
-// Deterministic randomness
-const randomController = controlRandomness(12345)
-expect(Math.random()).toBe(0.123456789)
-randomController.restore()
-
-// Quick random helpers
+// Quick patterns
 const restore = quickRandom.sequence([0.1, 0.5, 0.9])
 expect(Math.random()).toBe(0.1)
+expect(Math.random()).toBe(0.5)
 restore()
-
-// Quick crypto mocking
-const cryptoRestore = quickCrypto.uuid([
-  '550e8400-e29b-41d4-a716-446655440000'
-])
-expect(crypto.randomUUID()).toBe('550e8400-e29b-41d4-a716-446655440000')
-cryptoRestore()
 ```
 
-## 💾 SQLite Connection Pooling
+### Crypto Mocking
+
+**Purpose:** Deterministic crypto operations for testing.
 
 ```typescript
-import {
-  createSQLitePool,
-  createMemoryUrl,
-  withSQLiteTransaction,
-  migrateDatabase,
-  applyRecommendedPragmas
-} from "@orchestr8/testkit/sqlite"
-import { betterSqliteAdapter } from "@orchestr8/testkit/sqlite/adapters"
+import { quickCrypto } from '@orchestr8/testkit/env'
 
-// Connection pooling
+// Mock UUIDs
+const restore = quickCrypto.uuid([
+  '550e8400-e29b-41d4-a716-446655440000',
+  '550e8400-e29b-41d4-a716-446655440001'
+])
+
+expect(crypto.randomUUID()).toBe('550e8400-e29b-41d4-a716-446655440000')
+expect(crypto.randomUUID()).toBe('550e8400-e29b-41d4-a716-446655440001')
+
+restore()
+
+// Sequential UUIDs
+const restore2 = quickCrypto.sequential('test-')
+expect(crypto.randomUUID()).toBe('test-0')
+expect(crypto.randomUUID()).toBe('test-1')
+restore2()
+```
+
+## File System Utilities
+
+### Temporary Directories
+
+**Purpose:** Create isolated temporary directories with automatic cleanup.
+
+```typescript
+import { createTempDirectory } from '@orchestr8/testkit/fs'
+import * as fs from 'fs'
+import * as path from 'path'
+
+test('file operations', async () => {
+  const tempDir = createTempDirectory({ prefix: 'test-' })
+
+  console.log(tempDir.path) // e.g., '/tmp/test-abc123'
+
+  // Use directory for test
+  await fs.promises.writeFile(
+    path.join(tempDir.path, 'test.txt'),
+    'content'
+  )
+
+  // Automatic cleanup when test completes
+})
+```
+
+**With resource manager:**
+
+```typescript
+import { createTempDirectoryWithResourceManager } from '@orchestr8/testkit/fs'
+
+test('with resource tracking', async () => {
+  const tempDir = await createTempDirectoryWithResourceManager({
+    prefix: 'test-',
+    cleanup: true
+  })
+
+  // Automatically registered for cleanup
+  // Resources tracked and cleaned up in correct order
+})
+```
+
+### Safe Path Operations
+
+**Purpose:** Prevent path traversal attacks and ensure safe file operations.
+
+```typescript
+import { safePathJoin, validatePath } from '@orchestr8/testkit/fs'
+
+// Safe path joining
+const safePath = safePathJoin('/tmp', 'test', 'file.txt')
+// Returns: '/tmp/test/file.txt'
+
+// Path validation
+const validPath = validatePath('/tmp/test', 'subdir/file.txt')
+// Returns: '/tmp/test/subdir/file.txt'
+
+// Throws on traversal
+validatePath('/tmp/test', '../../../etc/passwd')
+// Throws SecurityValidationError
+```
+
+### Directory Management
+
+**Purpose:** Ensure directories exist before file operations.
+
+```typescript
+import { ensureDirectoryExists } from '@orchestr8/testkit/fs'
+
+// Create directory if it doesn't exist
+await ensureDirectoryExists('/tmp/test/subdir')
+
+// Now safe to write files
+await fs.promises.writeFile('/tmp/test/subdir/file.txt', 'content')
+```
+
+## SQLite Testing
+
+### In-Memory Databases
+
+**Purpose:** Fast, isolated database testing with real SQLite behavior.
+
+```typescript
+import { createMemoryUrl, applyRecommendedPragmas } from '@orchestr8/testkit/sqlite'
+import Database from 'better-sqlite3'
+
+describe('Database Operations', () => {
+  let db: Database.Database
+
+  beforeEach(() => {
+    // Create isolated in-memory database
+    db = new Database(createMemoryUrl('raw'))
+    applyRecommendedPragmas(db, {
+      journalMode: 'WAL',
+      foreignKeys: true
+    })
+
+    // Apply schema
+    db.exec(`
+      CREATE TABLE users (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT UNIQUE
+      )
+    `)
+  })
+
+  afterEach(() => {
+    db.close()
+  })
+
+  test('inserts user', () => {
+    const stmt = db.prepare('INSERT INTO users (name, email) VALUES (?, ?)')
+    const info = stmt.run('John', 'john@example.com')
+
+    expect(info.changes).toBe(1)
+  })
+})
+```
+
+**Memory URL options:**
+
+```typescript
+// Basic raw URL
+const url1 = createMemoryUrl('raw')
+// 'file::memory:?cache=shared'
+
+// Named database
+const url2 = createMemoryUrl('raw', {
+  identifier: 'test-db',
+  cache: 'shared'
+})
+// 'file:test-db:?mode=memory&cache=shared'
+
+// Absolute format
+const url3 = createMemoryUrl('absolute')
+// '/var/folders/.../test-db.sqlite'
+```
+
+### Connection Pooling
+
+**Purpose:** Manage multiple SQLite connections efficiently.
+
+```typescript
+import { createSQLitePool } from '@orchestr8/testkit/sqlite'
+
 const pool = createSQLitePool({
   databaseUrl: createMemoryUrl('raw'),
   maxConnections: 5,
   idleTimeoutMs: 30000
 })
 
+// Execute with connection from pool
 await pool.withConnection(async (db) => {
-  const result = await db.prepare('SELECT 1 as test').get()
+  const result = db.prepare('SELECT 1 as test').get()
   expect(result.test).toBe(1)
 })
 
-// Transactions with adapters
-await withSQLiteTransaction(db, betterSqliteAdapter, async (tx) => {
-  tx.run('INSERT INTO users (name) VALUES (?)', 'Alice')
-})
-
-// Migrations
-await migrateDatabase(db, './migrations')
-
-// Recommended pragmas
-await applyRecommendedPragmas(db, {
-  journalMode: 'WAL',
-  foreignKeys: true,
-  busyTimeoutMs: 5000
-})
+// Cleanup
+await pool.close()
 ```
 
-## 🌐 MSW v2 API
+### Transaction Management
+
+**Purpose:** Atomic database operations with automatic rollback on error.
 
 ```typescript
-import { http, HttpResponse } from '@orchestr8/testkit/msw'
+import { withSQLiteTransaction } from '@orchestr8/testkit/sqlite'
 
-// Define handlers using MSW v2 API
-http.get('/api/users', () => HttpResponse.json([
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' }
-]))
+test('atomic operations', async () => {
+  await withSQLiteTransaction(db, async (tx) => {
+    // All operations in this block are part of transaction
+    tx.run('INSERT INTO users (name, email) VALUES (?, ?)', 'Alice', 'alice@example.com')
+
+    const user = tx.get('SELECT * FROM users WHERE name = ?', 'Alice')
+    expect(user.name).toBe('Alice')
+
+    // Transaction commits automatically on success
+    // Rolls back automatically on error
+  })
+})
 ```
 
-## 📝 Naming Conventions
+### Database Seeding
 
-TestKit follows consistent naming patterns:
+**Purpose:** Populate test database with initial data.
 
-- **`create*`** - Factory functions returning new instances
-  - `createTempDirectory()`, `createSQLitePool()`, `createConvexTestHarness()`
+```typescript
+import { seedDatabase, migrateDatabase } from '@orchestr8/testkit/sqlite'
 
-- **`setup*`** - One-time initialization with side effects
-  - `setupMSW()`, `setupTestEnv()`, `setupCryptoControl()`
+beforeEach(async () => {
+  db = new Database(createMemoryUrl('raw'))
 
-- **`use*`** - Hook-style functions for test lifecycle
-  - `useTempDirectory()`, `useFakeTime()`, `usePrismaTestDatabase()`
+  // Apply migrations
+  await migrateDatabase(db, './migrations')
 
-- **`with*`** - Scoped operations with automatic cleanup
-  - `withTempDirectoryScope()`, `withSQLiteTransaction()`, `withFakeTimers()`
+  // Seed test data
+  await seedDatabase(db, './seeds/test-data.sql')
+})
+```
 
-- **`get*`** - Pure getter functions without side effects
-  - `getTestEnvironment()`, `getResourceStats()`, `getMSWServer()`
+## HTTP Mocking (MSW)
+
+### Basic Server Setup
+
+**Purpose:** Mock HTTP requests with automatic lifecycle management.
+
+```typescript
+import { setupMSW, http, HttpResponse } from '@orchestr8/testkit/msw'
+
+const server = setupMSW([
+  http.get('/api/users', () => {
+    return HttpResponse.json([
+      { id: 1, name: 'John' },
+      { id: 2, name: 'Jane' }
+    ])
+  }),
+
+  http.post('/api/users', async ({ request }) => {
+    const body = await request.json()
+    return HttpResponse.json(
+      { id: 3, ...body },
+      { status: 201 }
+    )
+  })
+])
+
+// Server automatically managed in test lifecycle
+```
+
+**Key features:**
+- Automatic start/stop lifecycle
+- Request handler reset between tests
+- Full MSW v2 API support
+- TypeScript type inference
+
+### Response Helpers
+
+**Purpose:** Create standardized HTTP responses.
+
+```typescript
+import { createSuccessResponse, createErrorResponse } from '@orchestr8/testkit/msw'
+
+// Success response
+http.get('/api/data', () => {
+  return createSuccessResponse({ data: 'value' }, { status: 200 })
+})
+
+// Error response
+http.post('/api/error', () => {
+  return createErrorResponse('Invalid data', 422)
+})
+```
+
+### Authentication Handlers
+
+**Purpose:** Mock common authentication patterns.
+
+```typescript
+import { setupMSW, createAuthHandlers } from '@orchestr8/testkit/msw'
+
+const server = setupMSW([
+  ...createAuthHandlers(),
+  // Provides:
+  // - POST /auth/login
+  // - POST /auth/logout
+  // - GET /auth/user
+  // - POST /auth/refresh
+
+  // Add your custom handlers
+  http.get('/api/protected', () => {
+    return HttpResponse.json({ data: 'protected' })
+  })
+])
+```
+
+### Pagination Handling
+
+**Purpose:** Mock paginated API endpoints.
+
+```typescript
+import { createPaginatedHandler } from '@orchestr8/testkit/msw'
+
+const posts = Array.from({ length: 50 }, (_, i) => ({
+  id: i + 1,
+  title: `Post ${i + 1}`
+}))
+
+const handler = createPaginatedHandler('/api/posts', posts, {
+  pageSize: 10,
+  pageParam: 'page',
+  limitParam: 'limit'
+})
+
+// GET /api/posts?page=1&limit=10
+// Returns first 10 posts with pagination metadata
+```
+
+### Test-Scoped Server
+
+**Purpose:** Isolated MSW server for individual tests.
+
+```typescript
+import { createTestScopedMSW } from '@orchestr8/testkit/msw'
+
+test('isolated server', () => {
+  const server = createTestScopedMSW([
+    http.get('/api/test', () => HttpResponse.json({ test: true }))
+  ])
+
+  // Server automatically cleaned up after this test
+  // Won't affect other tests
+})
+```
+
+## CLI Process Mocking
+
+### Quick Command Mocking
+
+**Purpose:** Mock command-line process execution.
+
+```typescript
+import { spawnUtils } from '@orchestr8/testkit/cli'
+import { execSync } from 'child_process'
+
+beforeEach(() => {
+  // Mock successful command
+  spawnUtils.mockCommandSuccess('git status', 'nothing to commit, working tree clean')
+
+  // Mock failed command
+  spawnUtils.mockCommandFailure('git push', 'Permission denied', 1)
+
+  // Mock long-running command
+  spawnUtils.mockLongRunningCommand('npm install', 500, 'packages installed', 0)
+})
+
+afterEach(() => {
+  spawnUtils.restore()
+})
+
+test('executes git commands', () => {
+  const result = execSync('git status').toString()
+  expect(result).toContain('nothing to commit')
+})
+```
+
+### Fluent Process Mocking
+
+**Purpose:** Build complex process mocks with fluent API.
+
+```typescript
+import { createProcessMock } from '@orchestr8/testkit/cli'
+
+const mock = createProcessMock('deploy')
+  .withStdout('Deploying...\nDone!')
+  .withStderr('Warning: deprecated flag')
+  .withExitCode(0)
+  .withDelay(500)
+  .register()
+
+// Execute mocked command
+const result = execSync('deploy').toString()
+expect(result).toContain('Deploying')
+```
+
+### Process Tracking
+
+**Purpose:** Verify process calls and arguments.
+
+```typescript
+import { mockProcess } from '@orchestr8/testkit/cli'
+
+const tracker = mockProcess()
+
+execSync('git add .')
+execSync('git commit -m "message"')
+
+const calls = tracker.getCalls()
+expect(calls).toHaveLength(2)
+expect(calls[0].command).toBe('git add .')
+expect(calls[1].command).toBe('git commit -m "message"')
+
+tracker.clear()
+```
+
+## Security Validation
+
+### Command Validation
+
+**Purpose:** Prevent command injection vulnerabilities.
+
+```typescript
+import { validateCommand, sanitizeCommand } from '@orchestr8/testkit'
+
+// Validate command is safe
+validateCommand('echo hello')  // ✅ OK
+validateCommand('rm -rf /')    // ❌ Throws SecurityValidationError
+
+// Sanitize command
+const safe = sanitizeCommand('echo "hello; rm -rf /"')
+// Returns: 'echo "hello\\; rm -rf /"'
+```
+
+### Path Validation
+
+**Purpose:** Prevent directory traversal attacks.
+
+```typescript
+import { validatePath } from '@orchestr8/testkit'
+
+// Safe path
+const safePath = validatePath('/tmp/test', 'file.txt')
+// Returns: '/tmp/test/file.txt'
+
+// Unsafe path
+validatePath('/tmp/test', '../../../etc/passwd')
+// Throws SecurityValidationError
+```
+
+### SQL Identifier Sanitization
+
+**Purpose:** Prevent SQL injection in dynamic queries.
+
+```typescript
+import { sanitizeSqlIdentifier } from '@orchestr8/testkit'
+
+const tableName = sanitizeSqlIdentifier('user_table')  // ✅ OK
+sanitizeSqlIdentifier('table; DROP TABLE users;')      // ❌ Throws
+
+// Safe dynamic query
+const table = sanitizeSqlIdentifier(userInput)
+const query = `SELECT * FROM ${table}`
+```
+
+### Shell Argument Escaping
+
+**Purpose:** Safely pass arguments to shell commands.
+
+```typescript
+import { escapeShellArg, validateShellExecution } from '@orchestr8/testkit'
+
+// Escape single argument
+const escaped = escapeShellArg('hello world; rm -rf /')
+// Returns: "'hello world; rm -rf /'"
+
+// Validate full command
+const result = validateShellExecution('echo', ['hello', 'world; rm -rf /'])
+// Returns: { command: 'echo', args: ['hello', "'world; rm -rf /'"] }
+```
+
+## Resource Management
+
+### Resource Registration
+
+**Purpose:** Track resources for automatic cleanup.
+
+```typescript
+import { registerResource, cleanupAllResources, ResourceCategory, ResourcePriority } from '@orchestr8/testkit'
+
+// Register resource
+registerResource('db-connection', () => db.close(), {
+  category: ResourceCategory.DATABASE,
+  priority: ResourcePriority.CRITICAL,
+  description: 'Main database connection'
+})
+
+// Cleanup all resources
+afterAll(async () => {
+  const result = await cleanupAllResources({
+    timeout: 10000,
+    stopOnFirstError: false
+  })
+
+  console.log(`Cleaned ${result.successful} resources`)
+})
+```
+
+### Resource Statistics
+
+**Purpose:** Monitor resource usage and detect leaks.
+
+```typescript
+import { getResourceStats, detectResourceLeaks } from '@orchestr8/testkit'
+
+// Get statistics
+const stats = getResourceStats()
+console.log({
+  active: stats.active,
+  total: stats.total,
+  byCategory: stats.byCategory
+})
+
+// Detect leaks
+const leaks = detectResourceLeaks()
+if (leaks.length > 0) {
+  console.warn('Potential leaks:', leaks)
+}
+```
+
+### Resource Manager
+
+**Purpose:** Advanced resource lifecycle management.
+
+```typescript
+import { ResourceManager, ResourceCategory } from '@orchestr8/testkit'
+
+const manager = new ResourceManager({
+  defaultTimeout: 5000,
+  enableLogging: true
+})
+
+// Register resources
+manager.register('connection', () => connection.close(), {
+  category: ResourceCategory.DATABASE
+})
+
+// Listen to events
+manager.on('cleanup:start', (resources) => {
+  console.log(`Cleaning up ${resources.length} resources`)
+})
+
+// Cleanup by category
+await manager.cleanupByCategory(ResourceCategory.DATABASE)
+```
+
+## Concurrency Control
+
+### Limit Concurrent Operations
+
+**Purpose:** Prevent resource exhaustion from parallel operations.
+
+```typescript
+import { limitConcurrency } from '@orchestr8/testkit'
+
+const tasks = Array.from({ length: 10 }, (_, i) =>
+  limitConcurrency(
+    () => processItem(i),
+    3  // Max 3 concurrent
+  )
+)
+
+await Promise.all(tasks) // Only 3 running at once
+```
+
+### Batch Processing
+
+**Purpose:** Process arrays with concurrency limits.
+
+```typescript
+import { limitedPromiseAll } from '@orchestr8/testkit'
+
+const items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+const promises = items.map(item => processItem(item))
+
+const results = await limitedPromiseAll(promises, {
+  maxConcurrent: 3,
+  timeout: 5000,
+  stopOnFirstError: false
+})
+```
+
+### Concurrency Managers
+
+**Purpose:** Manage concurrency for specific operation types.
+
+```typescript
+import { databaseOperationsManager, fileOperationsManager } from '@orchestr8/testkit'
+
+// Database operations (limit: 3)
+await databaseOperationsManager.execute(() =>
+  db.query('SELECT * FROM users')
+)
+
+// File operations (limit: 10)
+await fileOperationsManager.execute(() =>
+  fs.promises.writeFile('file.txt', 'content')
+)
+```
+
+**Custom manager:**
+
+```typescript
+import { ConcurrencyManager } from '@orchestr8/testkit'
+
+const apiManager = new ConcurrencyManager({
+  maxConcurrent: 5,
+  timeout: 10000
+})
+
+const result = await apiManager.execute(async () => {
+  return await fetch('/api/data')
+})
+
+// Get statistics
+const stats = apiManager.getStats()
+console.log({
+  active: stats.active,
+  queued: stats.queued,
+  total: stats.total
+})
+```
+
+## Container Testing
+
+### PostgreSQL Containers
+
+**Purpose:** Integration testing with real PostgreSQL database.
+
+```typescript
+import { createPostgreSQLContext, PostgreSQLPresets } from '@orchestr8/testkit/containers'
+
+test('postgres integration', async () => {
+  const context = await createPostgreSQLContext({
+    preset: PostgreSQLPresets.postgres15(),
+    database: 'test_db'
+  })
+
+  const client = context.getClient()
+  await client.query('CREATE TABLE users (id serial PRIMARY KEY, name text)')
+
+  const result = await client.query('SELECT * FROM users')
+  expect(result.rows).toEqual([])
+
+  await context.cleanup()
+}, 60000) // Containers need longer timeout
+```
+
+### MySQL Containers
+
+**Purpose:** Integration testing with real MySQL database.
+
+```typescript
+import { createMySQLContext, MySQLPresets } from '@orchestr8/testkit/containers'
+
+test('mysql integration', async () => {
+  const context = await createMySQLContext({
+    preset: MySQLPresets.mysql8(),
+    database: 'test_db'
+  })
+
+  const connection = await context.getConnection()
+  await connection.execute('CREATE TABLE users (id int PRIMARY KEY, name varchar(255))')
+
+  const [rows] = await connection.execute('SELECT * FROM users')
+  expect(rows).toEqual([])
+
+  await context.cleanup()
+}, 60000)
+```
+
+## Convex Testing
+
+### Test Harness
+
+**Purpose:** Test Convex functions in isolation.
+
+```typescript
+import { createConvexTestHarness } from '@orchestr8/testkit/convex'
+import schema from './schema'
+import { api } from './_generated/api'
+
+describe('Convex Functions', () => {
+  let harness: ConvexTestHarness
+
+  beforeEach(() => {
+    harness = createConvexTestHarness(schema)
+  })
+
+  test('queries users', async () => {
+    // Insert test data
+    await harness.run(async (ctx) => {
+      await ctx.db.insert('users', { name: 'Alice' })
+      await ctx.db.insert('users', { name: 'Bob' })
+    })
+
+    // Test query
+    const users = await harness.query(api.users.list)
+    expect(users).toHaveLength(2)
+  })
+
+  test('with authentication', async () => {
+    const asUser = harness.auth.withUser({ subject: 'user123' })
+    const result = await asUser.query(api.users.me)
+    expect(result.id).toBe('user123')
+  })
+})
+```
+
+### Scoped Execution
+
+**Purpose:** Execute functions with Convex test context.
+
+```typescript
+import { withConvexTest } from '@orchestr8/testkit/convex'
+
+const result = await withConvexTest(schema, async (harness) => {
+  await harness.run(async (ctx) => {
+    await ctx.db.insert('users', { name: 'Charlie' })
+  })
+
+  return await harness.query(api.users.count)
+})
+
+expect(result).toBe(1)
+```
+
+## Vitest Configuration
+
+### Standard Configuration
+
+**Purpose:** Consistent Vitest setup with testkit optimizations.
+
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config'
+import { createVitestConfig } from '@orchestr8/testkit/config'
+
+export default defineConfig(
+  createVitestConfig({
+    test: {
+      globals: true,
+      environment: 'node',
+      setupFiles: ['@orchestr8/testkit/register'],
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'json', 'html'],
+        exclude: [
+          'node_modules/**',
+          'dist/**',
+          '**/*.test.ts',
+          '**/*.spec.ts'
+        ]
+      }
+    }
+  })
+)
+```
+
+## Common TDD Workflows
+
+### Database-Backed Feature
+
+```typescript
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { createMemoryUrl, applyRecommendedPragmas } from '@orchestr8/testkit/sqlite'
+import Database from 'better-sqlite3'
+
+describe('UserRepository', () => {
+  let db: Database.Database
+
+  beforeEach(() => {
+    // RED: Create isolated database
+    db = new Database(createMemoryUrl('raw'))
+    applyRecommendedPragmas(db)
+
+    db.exec(`
+      CREATE TABLE users (
+        id INTEGER PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL
+      )
+    `)
+  })
+
+  afterEach(() => {
+    db.close()
+  })
+
+  it('creates user with unique email', () => {
+    // RED: Write failing test
+    const repo = new UserRepository(db)
+
+    // GREEN: Implement minimal code
+    const user = repo.create({
+      email: 'alice@example.com',
+      name: 'Alice'
+    })
+
+    expect(user.id).toBeDefined()
+    expect(user.email).toBe('alice@example.com')
+
+    // REFACTOR: Verify constraints
+    expect(() => {
+      repo.create({
+        email: 'alice@example.com',
+        name: 'Alice Again'
+      })
+    }).toThrow('UNIQUE constraint failed')
+  })
+})
+```
+
+### HTTP Integration
+
+```typescript
+import { setupMSW, http, HttpResponse } from '@orchestr8/testkit/msw'
+
+const server = setupMSW([
+  http.get('https://api.example.com/users', () => {
+    return HttpResponse.json([
+      { id: 1, name: 'Alice' }
+    ])
+  })
+])
+
+describe('UserService', () => {
+  it('fetches users from API', async () => {
+    const service = new UserService('https://api.example.com')
+
+    const users = await service.getUsers()
+
+    expect(users).toHaveLength(1)
+    expect(users[0].name).toBe('Alice')
+  })
+})
+```
+
+### File System Operations
+
+```typescript
+import { createTempDirectory } from '@orchestr8/testkit/fs'
+import * as fs from 'fs/promises'
+import * as path from 'path'
+
+describe('ConfigManager', () => {
+  let tempDir: ReturnType<typeof createTempDirectory>
+
+  beforeEach(() => {
+    tempDir = createTempDirectory({ prefix: 'config-test-' })
+  })
+
+  it('saves configuration to file', async () => {
+    const manager = new ConfigManager(tempDir.path)
+
+    await manager.save({ theme: 'dark' })
+
+    const configPath = path.join(tempDir.path, 'config.json')
+    const content = await fs.readFile(configPath, 'utf-8')
+    const config = JSON.parse(content)
+
+    expect(config.theme).toBe('dark')
+  })
+})
+```
+
+### Time-Dependent Logic
+
+```typescript
+import { useFakeTime } from '@orchestr8/testkit/env'
+
+describe('CacheService', () => {
+  it('expires cached values after TTL', () => {
+    const timeCtrl = useFakeTime()
+    const cache = new CacheService({ ttl: 5000 })
+
+    // Cache value
+    cache.set('key', 'value')
+    expect(cache.get('key')).toBe('value')
+
+    // Advance past TTL
+    timeCtrl.advance(6000)
+
+    // Value should be expired
+    expect(cache.get('key')).toBeUndefined()
+
+    timeCtrl.restore()
+  })
+})
+```
+
+## Troubleshooting
+
+### "Module not found" errors
+
+**Problem:** Import fails for TestKit sub-exports
+
+**Solution:** Install optional dependencies
+
+```bash
+# For SQLite
+pnpm add -D better-sqlite3
+
+# For MSW
+pnpm add -D msw
+
+# For containers
+pnpm add -D testcontainers
+```
+
+### Tests hang indefinitely
+
+**Problem:** Async operations never complete
+
+**Solution:** Use `withTimeout` wrapper
+
+```typescript
+const result = await withTimeout(
+  longRunningOperation(),
+  5000  // 5 second timeout
+)
+```
+
+### Database locked errors
+
+**Problem:** SQLite `SQLITE_BUSY` errors
+
+**Solution:** Use memory URLs and ensure cleanup
+
+```typescript
+beforeEach(() => {
+  db = new Database(createMemoryUrl('raw'))  // Isolated
+})
+
+afterEach(() => {
+  db.close()  // Always cleanup
+})
+```
+
+### MSW handlers not working
+
+**Problem:** HTTP requests not intercepted
+
+**Solution:** Ensure server lifecycle is correct
+
+```typescript
+const server = setupMSW([...handlers])
+
+beforeAll(() => server.listen())
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
+```
+
+### Resource leaks detected
+
+**Problem:** Resources not cleaned up properly
+
+**Solution:** Use resource manager
+
+```typescript
+import { cleanupAllResources } from '@orchestr8/testkit'
+
+afterAll(async () => {
+  await cleanupAllResources()
+})
+```
+
+## Best Practices
+
+### DO:
+
+✅ Use in-memory databases for unit tests
+✅ Isolate tests with `beforeEach`/`afterEach`
+✅ Clean up resources in `afterEach`/`afterAll`
+✅ Use fake timers for time-dependent code
+✅ Mock external HTTP calls with MSW
+✅ Validate inputs with security utilities
+✅ Use TypeScript for better type safety
+
+### DON'T:
+
+❌ Share database instances between tests
+❌ Use real time in tests (use fake timers)
+❌ Skip cleanup (causes leaks)
+❌ Mock low-level APIs when higher-level alternatives exist
+❌ Mutate global state without restore
+❌ Use `setTimeout` in tests (use fake timers)
+❌ Ignore security validation warnings
+
+## Performance Tips
+
+1. **Use memory databases:** 100x faster than file-based SQLite
+2. **Limit concurrency:** Prevent resource exhaustion with managers
+3. **Batch operations:** Use `limitedPromiseAll` for parallel processing
+4. **Fake timers:** Eliminate real delays in tests
+5. **Test-scoped servers:** Isolate MSW handlers to specific tests
+6. **Resource cleanup:** Always clean up in `afterEach`/`afterAll`
 
 ## Related Documentation
 
-**PRDs (Product Requirements):**
+### TestKit Documentation
 
-- [Master PRD v2.3.0-MPPP](../master/prd-master.md) - System-wide testing requirements
-- [Monorepo Foundation PRD](../cross-cutting/prd-foundation-monorepo.md) - Monorepo testing infrastructure
+- [TestKit API Reference](/Users/nathanvale/code/@orchestr8/packages/testkit/API.md)
+- [TestKit README](/Users/nathanvale/code/@orchestr8/packages/testkit/README.md)
+- [TestKit Standardization Guide](./guide-testkit-standardization.md)
 
-**Cross-Cutting Specifications:**
+### Testing Strategy
 
-- [Monorepo Technical Spec](../cross-cutting/spec-foundation-monorepo-tech.md) - Test infrastructure architecture
-- [Capture Test Spec](../features/capture/spec-capture-test.md) - Capture testing patterns
-- [Staging Ledger Test Spec](../features/staging-ledger/spec-staging-test.md) - Database testing patterns
-- [Obsidian Bridge Test Spec](../features/obsidian-bridge/spec-obsidian-test.md) - File system testing patterns
-- [CLI Test Spec](../features/cli/spec-cli-test.md) - CLI testing patterns
+- [TDD Applicability Guide](./guide-tdd-applicability.md)
+- [Test Strategy Guide](./guide-test-strategy.md)
+- [Wallaby TDD Integration Guide](./guide-wallaby-tdd-integration.md)
 
-**Guides (How-To):**
+### Project Documentation
 
-- [TestKit Standardization Guide](./guide-testkit-standardization.md) - Mandatory patterns for TestKit usage
-- [TDD Applicability Guide](./guide-tdd-applicability.md) - When to apply TDD with TestKit
-- [Test Strategy Guide](./guide-test-strategy.md) - Overall testing approach
-- [Phase 1 Testing Patterns](./guide-phase1-testing-patterns.md) - MPPP-specific testing patterns
-- [Error Recovery Guide](./guide-error-recovery.md) - Testing error scenarios
-- [Fault Injection Registry](./guide-fault-injection-registry.md) - Using TestKit for fault injection
-- [Crash Matrix Test Plan](./guide-crash-matrix-test-plan.md) - Advanced TestKit patterns
-
-**ADRs (Architecture Decisions):**
-
-- [ADR-0012: TDD Required for High-Risk Paths](../adr/0012-tdd-required-high-risk.md) - When TestKit is mandatory
-- [ADR-0007: Sequential Processing Model](../adr/0007-sequential-processing-model.md) - Testing sequential constraints
-- [ADR-0001: Voice File Sovereignty](../adr/0001-voice-file-sovereignty.md) - Testing file handling
-
-**External Resources:**
-
-- [Vitest Documentation](https://vitest.dev/) - Test runner
-- [MSW Documentation](https://mswjs.io/) - API mocking
-- [better-sqlite3 Documentation](https://github.com/WiseLibs/better-sqlite3/wiki) - SQLite driver
+- [Master PRD](../master/prd-master.md)
+- [Agent Workflow Guide](./guide-agent-workflow.md)
 
 ## Maintenance Notes
 
-**When to Update:**
+### When to Update This Guide
 
-- New TestKit domains added (e.g., ChromaDB mocking in Phase 3+)
-- MPPP architecture changes (sequential processing, dedup windows)
-- Vitest or MSW major version updates
-- New testing patterns discovered in implementation
+Update this guide when:
 
-**Known Limitations:**
+- New TestKit utilities are added
+- API changes occur in TestKit
+- New usage patterns are discovered
+- Common pitfalls are identified
+- Integration patterns evolve
 
-- Container domain is beta quality (use with caution)
-- Convex domain not applicable to MPPP architecture
-- ChromaDB mocking deferred to Phase 3+ (RAG/semantic search)
-- Network deny guard not implemented (optional safety net)
+### Version Compatibility
 
-**Gaps:**
-
-- E2E testing patterns (deferred to Phase 2+)
-- Performance testing patterns (deferred to Phase 2+)
-- Visual regression testing (not in MPPP scope)
-- Multi-device coordination testing (Phase 5+)
+- TestKit 2.0.0+
+- Vitest 3.2.0+
+- MSW 2.0.0+ (breaking changes from v1)
+- Better-sqlite3 12.0.0+
 
 ---
 
-_The test kit thinks faster than your ADHD brain switches tabs—and that's measured in microseconds. Use it wisely, test early, and keep your capture ingestion pipeline bulletproof._
+**Summary: TestKit 2.0 provides comprehensive testing utilities for TDD workflows**
+
+1. **Core utilities** for timing, retries, and mocking
+2. **Environment control** for deterministic tests
+3. **Database testing** with real SQLite behavior
+4. **HTTP mocking** with MSW v2
+5. **Security validation** to prevent vulnerabilities
+6. **Resource management** for leak prevention
+7. **Container testing** for integration tests
+
+TestKit enables fast, reliable TDD cycles with minimal setup overhead and maximum type safety. Use this guide as your reference for implementing tests that are both comprehensive and maintainable.
+
+_Testing should feel like having a conversation with your code—you ask a question (write a test), the code responds (passes or fails), and you learn something new with each exchange._

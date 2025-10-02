@@ -89,7 +89,7 @@ quickMocks.success('git status', 'clean')
 Set up Vitest configuration to use TestKit's register hook:
 
 ```typescript
-// packages/@adhd-brain/staging-ledger/vitest.config.ts
+// packages/@capture-bridge/staging-ledger/vitest.config.ts
 import { defineConfig } from "vitest/config"
 
 export default defineConfig({
@@ -115,7 +115,7 @@ export default defineConfig({
 Use TestKit's SQLite utilities for isolated database testing:
 
 ```typescript
-// packages/@adhd-brain/staging-ledger/tests/deduplication.test.ts
+// packages/@capture-bridge/staging-ledger/tests/deduplication.test.ts
 import Database from "better-sqlite3"
 import { createMemoryUrl, applyTestPragmas } from "@orchestr8/testkit/sqlite"
 
@@ -170,7 +170,7 @@ describe("Deduplication", () => {
 Use TestKit's MSW utilities for HTTP mocking with automatic cleanup:
 
 ```typescript
-// packages/@adhd-brain/voice-poller/tests/whisper.test.ts
+// packages/@capture-bridge/voice-poller/tests/whisper.test.ts
 import { setupMSW, http, createDelayedResponse } from "@orchestr8/testkit/msw"
 
 // TestKit's setupMSW handles cleanup automatically
@@ -202,7 +202,7 @@ describe("Whisper Integration", () => {
 Use TestKit's CLI mocking for shell command tests:
 
 ```typescript
-// packages/@adhd-brain/cli/tests/capture.test.ts
+// packages/@capture-bridge/cli/tests/capture.test.ts
 import { quickMocks } from "@orchestr8/testkit/cli"
 import { execSync } from "child_process"
 
@@ -233,7 +233,7 @@ describe("CLI Capture", () => {
 Share common test setup code across packages:
 
 ```typescript
-// packages/@adhd-brain/test-utils/src/fixtures.ts
+// packages/@capture-bridge/test-utils/src/fixtures.ts
 import Database from "better-sqlite3"
 import { createMemoryUrl } from "@orchestr8/testkit/sqlite"
 
@@ -267,8 +267,8 @@ export function seedCaptures(db: Database, count: number) {
 **Usage in tests:**
 
 ```typescript
-// packages/@adhd-brain/capture-service/tests/staging.test.ts
-import { createTestDB, seedCaptures } from "@adhd-brain/test-utils"
+// packages/@capture-bridge/capture-service/tests/staging.test.ts
+import { createTestDB, seedCaptures } from "@capture-bridge/test-utils"
 
 describe("Capture Service", () => {
   test("processes staged captures", () => {
@@ -493,7 +493,7 @@ describe("Example", () => {
 ### Real-World Example: Staging Ledger Tests
 
 ```typescript
-// packages/@adhd-brain/staging-ledger/tests/deduplication.test.ts
+// packages/@capture-bridge/staging-ledger/tests/deduplication.test.ts
 import Database from "better-sqlite3"
 import { createMemoryUrl, applyTestPragmas } from "@orchestr8/testkit/sqlite"
 
@@ -519,7 +519,7 @@ describe("Deduplication", () => {
 ### Real-World Example: Voice Poller Integration Tests
 
 ```typescript
-// packages/@adhd-brain/voice-poller/tests/whisper.test.ts
+// packages/@capture-bridge/voice-poller/tests/whisper.test.ts
 import { setupMSW, http, createDelayedResponse } from "@orchestr8/testkit/msw"
 
 setupMSW([
@@ -538,7 +538,7 @@ describe("Whisper Integration", () => {
 ### Real-World Example: CLI Tests
 
 ```typescript
-// packages/@adhd-brain/cli/tests/capture.test.ts
+// packages/@capture-bridge/cli/tests/capture.test.ts
 import { quickMocks } from "@orchestr8/testkit/cli"
 
 describe("CLI Capture", () => {

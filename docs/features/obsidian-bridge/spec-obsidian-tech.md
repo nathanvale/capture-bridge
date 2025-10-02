@@ -631,7 +631,7 @@ async function writeAtomic(
 
 ### 6.2 Metrics & Counters
 
-**Logged Metrics** (NDJSON to `~/.adhd-brain/metrics/`):
+**Logged Metrics** (NDJSON to `~/.capture-bridge/metrics/`):
 
 ```json
 {

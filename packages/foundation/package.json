@@ -1,9 +1,9 @@
 {
-  "name": "@adhd-brain/foundation",
+  "name": "@capture-bridge/foundation",
   "version": "0.1.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nathanvale/adhd-brain.git",
+    "url": "https://github.com/nathanvale/capture-bridge.git",
     "directory": "packages/foundation"
   },
   "sideEffects": false,
@@ -34,7 +34,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@adhd-brain/build-config": "workspace:*",
+    "@capture-bridge/build-config": "workspace:*",
     "@orchestr8/testkit": "file:/Users/nathanvale/code/@orchestr8/packages/testkit",
     "@types/node": "^24.3.0",
     "better-sqlite3": "^12.4.1",

@@ -27,7 +27,7 @@ Use this guide when you need to:
 - Debug polling failures or sync state corruption
 - Implement optional continuous polling mode
 
-**Related Features:** Capture package (`@adhd-brain/capture`), voice capture, email capture, CLI commands
+**Related Features:** Capture package (`@capture-bridge/capture`), voice capture, email capture, CLI commands
 
 **MPPP Constraints:** This guide enforces sequential processing only (no background workers, no concurrency, no separate apps/).
 
@@ -52,7 +52,7 @@ Use this guide when you need to:
 
 **Required Setup:**
 
-- Monorepo packages: `@adhd-brain/foundation`, `@adhd-brain/core`, `@adhd-brain/storage`, `@adhd-brain/capture`
+- Monorepo packages: `@capture-bridge/foundation`, `@capture-bridge/core`, `@capture-bridge/storage`, `@capture-bridge/capture`
 - Environment variables: `VOICE_MEMOS_FOLDER`, `GMAIL_CREDENTIALS`, `DB_PATH`, `OBSIDIAN_VAULT`
 
 ## Quick Reference
@@ -75,7 +75,7 @@ adhd capture stop            # Stop all polling loops
 **Package Structure:**
 
 ```
-packages/@adhd-brain/capture/
+packages/@capture-bridge/capture/
 ├── src/
 │   ├── pollers/
 │   │   ├── voice-poller.ts          # Voice polling logic
@@ -96,10 +96,10 @@ packages/@adhd-brain/capture/
 **Goal:** Create single-cycle voice polling with iCloud file discovery
 
 ```typescript
-// packages/@adhd-brain/capture/src/pollers/voice-poller.ts
-import { CaptureItem } from "@adhd-brain/foundation"
-import { DatabaseClient } from "@adhd-brain/storage"
-import { DeduplicationService } from "@adhd-brain/core"
+// packages/@capture-bridge/capture/src/pollers/voice-poller.ts
+import { CaptureItem } from "@capture-bridge/foundation"
+import { DatabaseClient } from "@capture-bridge/storage"
+import { DeduplicationService } from "@capture-bridge/core"
 
 export interface VoicePollerConfig {
   folderPath: string // iCloud Voice Memos folder
@@ -211,10 +211,10 @@ export class VoicePoller {
 **Goal:** Create single-cycle email polling with Gmail history API
 
 ```typescript
-// packages/@adhd-brain/capture/src/pollers/email-poller.ts
+// packages/@capture-bridge/capture/src/pollers/email-poller.ts
 import { google } from "googleapis"
-import { DatabaseClient } from "@adhd-brain/storage"
-import { DeduplicationService } from "@adhd-brain/core"
+import { DatabaseClient } from "@capture-bridge/storage"
+import { DeduplicationService } from "@capture-bridge/core"
 
 export interface EmailPollerConfig {
   gmailCredentialsPath: string
@@ -314,9 +314,9 @@ export class EmailPoller {
 **Goal:** Coordinate sequential execution of multiple pollers
 
 ```typescript
-// packages/@adhd-brain/capture/src/pollers/polling-orchestrator.ts
+// packages/@capture-bridge/capture/src/pollers/polling-orchestrator.ts
 import { VoicePoller, EmailPoller } from "./index"
-import { metricsCollector } from "@adhd-brain/foundation"
+import { metricsCollector } from "@capture-bridge/foundation"
 
 export class PollingOrchestrator {
   constructor(
@@ -367,14 +367,14 @@ export class PollingOrchestrator {
 **Goal:** Wire polling logic to CLI interface
 
 ```typescript
-// packages/@adhd-brain/cli/src/commands/capture.ts
+// packages/@capture-bridge/cli/src/commands/capture.ts
 import {
   VoicePoller,
   EmailPoller,
   PollingOrchestrator,
-} from "@adhd-brain/capture"
-import { DatabaseClient } from "@adhd-brain/storage"
-import { DeduplicationService } from "@adhd-brain/core"
+} from "@capture-bridge/capture"
+import { DatabaseClient } from "@capture-bridge/storage"
+import { DeduplicationService } from "@capture-bridge/core"
 
 export async function captureVoiceCommand() {
   const db = new DatabaseClient(process.env.DB_PATH)
@@ -560,13 +560,13 @@ async function processVoiceFile(filePath: string): Promise<void> {
 
 ```typescript
 // ❌ WRONG: Separate worker package
-import { VoicePoller } from "@adhd-brain/workers" // Package doesn't exist!
+import { VoicePoller } from "@capture-bridge/workers" // Package doesn't exist!
 
 // ❌ WRONG: LaunchAgent/systemd background service
 // No background daemons in MPPP!
 
 // ✅ CORRECT: CLI-triggered polling in capture package
-import { VoicePoller } from "@adhd-brain/capture"
+import { VoicePoller } from "@capture-bridge/capture"
 await voicePoller.pollOnce() // Single cycle, exits
 ```
 
@@ -671,12 +671,12 @@ async function stop(): Promise<void> {
 ### Example 1: Complete Voice Polling Flow
 
 ```typescript
-import { VoicePoller } from "@adhd-brain/capture"
-import { DatabaseClient } from "@adhd-brain/storage"
-import { DeduplicationService } from "@adhd-brain/core"
+import { VoicePoller } from "@capture-bridge/capture"
+import { DatabaseClient } from "@capture-bridge/storage"
+import { DeduplicationService } from "@capture-bridge/core"
 
 async function runVoicePolling() {
-  const db = new DatabaseClient("/Users/nathan/.adhd-brain/ledger.sqlite")
+  const db = new DatabaseClient("/Users/nathan/.capture-bridge/ledger.sqlite")
   const dedup = new DeduplicationService(db)
 
   const voicePoller = new VoicePoller(db, dedup, {
@@ -709,11 +709,11 @@ runVoicePolling().catch(console.error)
 ### Example 2: Email Polling with Error Recovery
 
 ```typescript
-import { EmailPoller } from "@adhd-brain/capture"
+import { EmailPoller } from "@capture-bridge/capture"
 
 async function runEmailPollingWithRetry() {
   const emailPoller = new EmailPoller(db, dedup, {
-    gmailCredentialsPath: "~/.config/adhd-brain/credentials.json",
+    gmailCredentialsPath: "~/.config/capture-bridge/credentials.json",
     sequential: true,
   })
 

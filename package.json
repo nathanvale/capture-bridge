@@ -1,11 +1,11 @@
 {
-  "name": "adhd-brain",
+  "name": "capture-bridge",
   "version": "0.1.0",
   "private": true,
-  "description": "ADHD-optimized voice and email capture system for Obsidian",
+  "description": "Zero-friction capture layer with durable staging ledger for Obsidian",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nathanvale/adhd-brain.git"
+    "url": "https://github.com/nathanvale/capture-bridge.git"
   },
   "sideEffects": false,
   "type": "module",

@@ -1,4 +1,4 @@
-# @adhd-brain/build-config
+# @capture-bridge/build-config
 
 Centralized build configuration for all packages in the ADHD Brain monorepo.
 
@@ -42,7 +42,7 @@ For most packages, simply use the default configuration:
 
 ```typescript
 // tsup.config.ts
-import { createDefinedTsupConfig } from '@adhd-brain/build-config'
+import { createDefinedTsupConfig } from '@capture-bridge/build-config'
 
 export default createDefinedTsupConfig('src/index.ts')
 ```
@@ -53,7 +53,7 @@ For packages with multiple entry points:
 
 ```typescript
 // tsup.config.ts
-import { createDefinedTsupConfig } from '@adhd-brain/build-config'
+import { createDefinedTsupConfig } from '@capture-bridge/build-config'
 
 export default createDefinedTsupConfig([
   'src/index.ts',
@@ -68,7 +68,7 @@ For packages that need custom configuration:
 
 ```typescript
 // tsup.config.ts
-import { createDefinedTsupConfig } from '@adhd-brain/build-config'
+import { createDefinedTsupConfig } from '@capture-bridge/build-config'
 
 export default createDefinedTsupConfig('src/index.ts', {
   minify: true,             // Enable minification for CLI tools
@@ -84,7 +84,7 @@ For complex scenarios, you can import the base config directly:
 ```typescript
 // tsup.config.ts
 import { defineConfig } from 'tsup'
-import { baseTsupConfig } from '@adhd-brain/build-config'
+import { baseTsupConfig } from '@capture-bridge/build-config'
 
 export default defineConfig({
   ...baseTsupConfig,
@@ -154,7 +154,7 @@ export default defineConfig({
 **After:**
 ```typescript
 // packages/*/tsup.config.ts
-import { createDefinedTsupConfig } from '@adhd-brain/build-config'
+import { createDefinedTsupConfig } from '@capture-bridge/build-config'
 
 export default createDefinedTsupConfig('src/index.ts')
 ```

@@ -45,7 +45,7 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@adhd-brain/*": ["packages/*/src"]
+      "@capture-bridge/*": ["packages/*/src"]
     },
     "types": []
   },

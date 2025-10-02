@@ -91,7 +91,7 @@ async function configureDatabase(db: Database) {
 
 **Scope:**
 
-- **Target:** Staging ledger database only (`~/.adhd-brain/staging.db`)
+- **Target:** Staging ledger database only (`~/.capture-bridge/staging.db`)
 - **Operations:** All database operations benefit (reads primarily, writes secondarily)
 - **Size Limit:** 256MB mapping size covers expected MPPP database growth
 - **Compatibility:** Works with existing WAL mode, cache optimization, and indexes
@@ -282,5 +282,5 @@ This memory mapping configuration should be reconsidered if:
 
 - [SQLite Memory Mapping Documentation](https://www.sqlite.org/mmap.html)
 - [SQLite I/O and Memory Usage](https://www.sqlite.org/tempfiles.html)
-- [Capture Tech Spec - Performance Requirements](/Users/nathanvale/code/adhd-brain/docs/features/capture/spec-capture-tech.md)
-- [Master PRD - Section 4.3 Performance Targets](/Users/nathanvale/code/adhd-brain/docs/master/prd-master.md)
+- [Capture Tech Spec - Performance Requirements](/Users/nathanvale/code/capture-bridge/docs/features/capture/spec-capture-tech.md)
+- [Master PRD - Section 4.3 Performance Targets](/Users/nathanvale/code/capture-bridge/docs/master/prd-master.md)

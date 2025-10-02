@@ -145,8 +145,8 @@ cli (all packages) ← commands, entry point
 
 ```bash
 # Step 1: Clone repository
-git clone https://github.com/nathanvale/adhd-brain.git
-cd adhd-brain
+git clone https://github.com/nathanvale/capture-bridge.git
+cd capture-bridge
 
 # Step 2: Install dependencies (pnpm@9.15.4)
 pnpm install
@@ -170,7 +170,7 @@ pnpm doctor
 pnpm dev
 
 # Terminal 2: Run specific tests
-pnpm test --filter=@adhd-brain/core
+pnpm test --filter=@capture-bridge/core
 
 # Terminal 3: Type checking
 pnpm typecheck
@@ -188,8 +188,8 @@ pnpm lint && pnpm test
 pnpm doctor
 
 # 2. Create package structure
-mkdir -p packages/@adhd-brain/new-package/src
-cd packages/@adhd-brain/new-package
+mkdir -p packages/@capture-bridge/new-package/src
+cd packages/@capture-bridge/new-package
 
 # 3. Copy package.json template
 # 4. Update pnpm-workspace.yaml (auto-discovered via glob)
@@ -693,10 +693,10 @@ packages:
 
     "baseUrl": ".",
     "paths": {
-      "@adhd-brain/foundation": ["./packages/foundation/src/index.ts"],
-      "@adhd-brain/core": ["./packages/core/src/index.ts"],
-      "@adhd-brain/storage": ["./packages/storage/src/index.ts"],
-      "@adhd-brain/capture": ["./packages/capture/src/index.ts"],
+      "@capture-bridge/foundation": ["./packages/foundation/src/index.ts"],
+      "@capture-bridge/core": ["./packages/core/src/index.ts"],
+      "@capture-bridge/storage": ["./packages/storage/src/index.ts"],
+      "@capture-bridge/capture": ["./packages/capture/src/index.ts"],
       "@orchestr8/testkit": [
         "./node_modules/@orchestr8/testkit/dist/index.d.ts"
       ]
@@ -785,7 +785,7 @@ import { createBaseVitestConfig } from "@orchestr8/testkit/vitest-config"
 export default defineConfig(
   createBaseVitestConfig({
     test: {
-      name: "adhd-brain",
+      name: "capture-bridge",
       environment: "node",
       globals: true,
       coverage: {
@@ -1360,8 +1360,8 @@ pnpm doctor
 
 ### Master Documents
 
-- [Master PRD v2.3.0-MPPP](/Users/nathanvale/code/adhd-brain/docs/master/prd-master.md) - Overall system requirements
-- [Roadmap v2.0.0-MPPP](/Users/nathanvale/code/adhd-brain/docs/master/roadmap.md) - Dependency-ordered delivery plan
+- [Master PRD v2.3.0-MPPP](/Users/nathanvale/code/capture-bridge/docs/master/prd-master.md) - Overall system requirements
+- [Roadmap v2.0.0-MPPP](/Users/nathanvale/code/capture-bridge/docs/master/roadmap.md) - Dependency-ordered delivery plan
 
 ### Cross-Cutting Specs
 
@@ -1371,8 +1371,8 @@ pnpm doctor
 
 ### Supporting Guides
 
-- [TDD Applicability Guide](/Users/nathanvale/code/adhd-brain/docs/guides/tdd-applicability.md) - When to apply TDD
-- [Test Strategy](/Users/nathanvale/code/adhd-brain/docs/guides/test-strategy.md) - Test patterns and coverage
+- [TDD Applicability Guide](/Users/nathanvale/code/capture-bridge/docs/guides/tdd-applicability.md) - When to apply TDD
+- [Test Strategy](/Users/nathanvale/code/capture-bridge/docs/guides/test-strategy.md) - Test patterns and coverage
 
 ### Gold Standard Repository
 

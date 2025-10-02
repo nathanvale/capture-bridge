@@ -58,7 +58,7 @@ Use this guide when:
 
 **TL;DR - Key Facts:**
 
-- **4 packages maximum** in the `@adhd-brain` namespace
+- **4 packages maximum** in the `@capture-bridge` namespace
 - **Sequential processing only** (no background services or queues)
 - **External TestKit** (`@orchestr8/testkit`) for test infrastructure
 - **pnpm workspaces + Turbo** for build orchestration
@@ -94,8 +94,8 @@ Clone the repository and install dependencies:
 
 ```bash
 # Clone repository
-git clone https://github.com/your-org/adhd-brain.git
-cd adhd-brain
+git clone https://github.com/your-org/capture-bridge.git
+cd capture-bridge
 
 # Install all dependencies (uses pnpm workspaces)
 pnpm install
@@ -117,11 +117,11 @@ Navigate the monorepo to understand package organization:
 # View package structure
 tree -L 3 -I 'node_modules|dist'
 
-adhd-brain/
+capture-bridge/
 ├── apps/
 │   └── cli/                      # CLI application
 ├── packages/
-│   └── @adhd-brain/
+│   └── @capture-bridge/
 │       ├── foundation/           # Shared types, errors, constants
 │       ├── core/                 # Business logic (pure functions)
 │       ├── storage/              # SQLite operations
@@ -138,7 +138,7 @@ Create a new package following the monorepo conventions:
 
 ```bash
 # Navigate to packages directory
-cd packages/@adhd-brain
+cd packages/@capture-bridge
 
 # Create new package directory
 mkdir new-package
@@ -147,7 +147,7 @@ cd new-package
 # Initialize package.json
 cat > package.json << 'EOF'
 {
-  "name": "@adhd-brain/new-package",
+  "name": "@capture-bridge/new-package",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -164,7 +164,7 @@ cat > package.json << 'EOF'
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@adhd-brain/foundation": "workspace:*"
+    "@capture-bridge/foundation": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
@@ -217,7 +217,7 @@ cat pnpm-workspace.yaml
 
 packages:
   - 'apps/*'
-  - 'packages/@adhd-brain/*'
+  - 'packages/@capture-bridge/*'
 
 # Install dependencies and link packages
 pnpm install
@@ -264,9 +264,9 @@ cat turbo.json
 Import from other packages using workspace protocol:
 
 ```typescript
-// In packages/@adhd-brain/core/src/deduplication.ts
-import { CaptureItem, CaptureSource } from "@adhd-brain/foundation"
-import { DatabaseClient } from "@adhd-brain/storage"
+// In packages/@capture-bridge/core/src/deduplication.ts
+import { CaptureItem, CaptureSource } from "@capture-bridge/foundation"
+import { DatabaseClient } from "@capture-bridge/storage"
 
 export class DeduplicationService {
   constructor(private db: DatabaseClient) {}
@@ -306,7 +306,7 @@ describe("MyFeature", () => {
 Define package-specific constants in foundation:
 
 ```typescript
-// In packages/@adhd-brain/foundation/src/constants.ts
+// In packages/@capture-bridge/foundation/src/constants.ts
 export const LIMITS = {
   MAX_CAPTURE_SIZE_MB: 50,
   MAX_VOICE_DURATION_MIN: 30,
@@ -315,7 +315,7 @@ export const LIMITS = {
 } as const
 
 export const PATHS = {
-  DATABASE: ".adhd-brain.db",
+  DATABASE: ".capture-bridge.db",
   METRICS: "./.metrics",
   LOGS: "./.logs",
 } as const
@@ -328,7 +328,7 @@ export const PATHS = {
 Define error types in foundation, throw in other packages:
 
 ```typescript
-// In packages/@adhd-brain/foundation/src/errors/capture.ts
+// In packages/@capture-bridge/foundation/src/errors/capture.ts
 export class CaptureError extends Error {
   constructor(
     message: string,
@@ -345,8 +345,8 @@ export class ValidationError extends CaptureError {
   }
 }
 
-// In packages/@adhd-brain/core/src/validation.ts
-import { ValidationError } from "@adhd-brain/foundation"
+// In packages/@capture-bridge/core/src/validation.ts
+import { ValidationError } from "@capture-bridge/foundation"
 
 export function validateCapture(capture: CaptureInput): void {
   if (!capture.content || capture.content.trim() === "") {
@@ -364,10 +364,10 @@ export function validateCapture(capture: CaptureInput): void {
 ```typescript
 // BAD - circular dependency
 // In core/index.ts
-import { processCapture } from "@adhd-brain/capture"
+import { processCapture } from "@capture-bridge/capture"
 
 // In capture/index.ts
-import { validateCapture } from "@adhd-brain/core"
+import { validateCapture } from "@capture-bridge/core"
 ```
 
 **✅ Do: Keep dependencies unidirectional**
@@ -375,17 +375,17 @@ import { validateCapture } from "@adhd-brain/core"
 ```typescript
 // GOOD - unidirectional dependency
 // In core/index.ts
-import { CaptureItem } from "@adhd-brain/foundation"
+import { CaptureItem } from "@capture-bridge/foundation"
 
 // In capture/index.ts
-import { validateCapture } from "@adhd-brain/core" // OK - capture depends on core
+import { validateCapture } from "@capture-bridge/core" // OK - capture depends on core
 ```
 
 **❌ Don't: Exceed 4 packages in MPPP scope**
 
 ```text
 # BAD - too many packages for MPPP
-packages/@adhd-brain/
+packages/@capture-bridge/
   ├── foundation/
   ├── core/
   ├── storage/
@@ -398,7 +398,7 @@ packages/@adhd-brain/
 
 ```text
 # GOOD - MPPP scope only
-packages/@adhd-brain/
+packages/@capture-bridge/
   ├── foundation/
   ├── core/
   ├── storage/
@@ -428,7 +428,7 @@ import { createTestFixture } from "@orchestr8/testkit"
 **Symptoms:**
 
 ```
-Error: Cannot find module '@adhd-brain/foundation'
+Error: Cannot find module '@capture-bridge/foundation'
 ```
 
 **Solutions:**
@@ -444,11 +444,11 @@ pnpm install
 
 # 3. Verify workspace configuration
 cat pnpm-workspace.yaml
-# Should include 'packages/@adhd-brain/*'
+# Should include 'packages/@capture-bridge/*'
 
 # 4. Check package.json dependencies use workspace protocol
-grep "workspace:" packages/@adhd-brain/*/package.json
-# Should see: "@adhd-brain/foundation": "workspace:*"
+grep "workspace:" packages/@capture-bridge/*/package.json
+# Should see: "@capture-bridge/foundation": "workspace:*"
 ```
 
 ### Problem: Build order issues
@@ -470,7 +470,7 @@ pnpm clean
 pnpm build
 
 # 4. Build specific package with dependencies
-cd packages/@adhd-brain/capture
+cd packages/@capture-bridge/capture
 pnpm build
 ```
 
@@ -509,7 +509,7 @@ npx madge --image graph.png packages/
 pnpm dev
 
 # 2. Check if tsc --watch is running for package
-cd packages/@adhd-brain/core
+cd packages/@capture-bridge/core
 pnpm dev
 
 # 3. Restart dev mode
@@ -536,11 +536,11 @@ pnpm test
 pnpm test --no-cache
 
 # 3. Check package.json test script
-cat packages/@adhd-brain/core/package.json
+cat packages/@capture-bridge/core/package.json
 # Verify "test": "vitest" script exists
 
 # 4. Run tests for specific package
-cd packages/@adhd-brain/core
+cd packages/@capture-bridge/core
 pnpm test
 ```
 
@@ -561,7 +561,7 @@ if [ -z "$PACKAGE_NAME" ]; then
   exit 1
 fi
 
-PACKAGE_DIR="packages/@adhd-brain/$PACKAGE_NAME"
+PACKAGE_DIR="packages/@capture-bridge/$PACKAGE_NAME"
 
 # Create directory structure
 mkdir -p "$PACKAGE_DIR/src"
@@ -569,7 +569,7 @@ mkdir -p "$PACKAGE_DIR/src"
 # Create package.json
 cat > "$PACKAGE_DIR/package.json" << EOF
 {
-  "name": "@adhd-brain/$PACKAGE_NAME",
+  "name": "@capture-bridge/$PACKAGE_NAME",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -588,7 +588,7 @@ cat > "$PACKAGE_DIR/package.json" << EOF
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@adhd-brain/foundation": "workspace:*"
+    "@capture-bridge/foundation": "workspace:*"
   },
   "devDependencies": {
     "@orchestr8/testkit": "^1.0.0",
@@ -646,7 +646,7 @@ Implement a feature spanning multiple packages:
 
 ```typescript
 // 1. Define types in foundation
-// packages/@adhd-brain/foundation/src/types/capture.ts
+// packages/@capture-bridge/foundation/src/types/capture.ts
 export interface CaptureItem {
   id: string
   source: CaptureSource
@@ -661,8 +661,8 @@ export type CaptureSource = "voice" | "email"
 export type CaptureStatus = "staged" | "transcribed" | "exported"
 
 // 2. Implement business logic in core
-// packages/@adhd-brain/core/src/deduplication.ts
-import { CaptureItem } from "@adhd-brain/foundation"
+// packages/@capture-bridge/core/src/deduplication.ts
+import { CaptureItem } from "@capture-bridge/foundation"
 
 export class DeduplicationService {
   isDuplicate(newCapture: CaptureItem, existing: CaptureItem[]): boolean {
@@ -680,8 +680,8 @@ export class DeduplicationService {
 }
 
 // 3. Implement storage in storage package
-// packages/@adhd-brain/storage/src/repositories/capture.ts
-import { CaptureItem } from "@adhd-brain/foundation"
+// packages/@capture-bridge/storage/src/repositories/capture.ts
+import { CaptureItem } from "@capture-bridge/foundation"
 import { DatabaseClient } from "../database"
 
 export class CaptureRepository {
@@ -713,10 +713,10 @@ export class CaptureRepository {
 }
 
 // 4. Orchestrate in capture package
-// packages/@adhd-brain/capture/src/voice-processor.ts
-import { CaptureItem, CaptureSource } from "@adhd-brain/foundation"
-import { DeduplicationService } from "@adhd-brain/core"
-import { CaptureRepository } from "@adhd-brain/storage"
+// packages/@capture-bridge/capture/src/voice-processor.ts
+import { CaptureItem, CaptureSource } from "@capture-bridge/foundation"
+import { DeduplicationService } from "@capture-bridge/core"
+import { CaptureRepository } from "@capture-bridge/storage"
 
 export class VoiceProcessor {
   constructor(
@@ -763,7 +763,7 @@ export class VoiceProcessor {
 
 // 5. Expose via CLI
 // apps/cli/src/commands/capture-voice.ts
-import { VoiceProcessor } from "@adhd-brain/capture"
+import { VoiceProcessor } from "@capture-bridge/capture"
 
 export async function captureVoiceCommand(audioPath: string): Promise<void> {
   const processor = new VoiceProcessor(dedup, captureRepo)

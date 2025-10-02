@@ -69,7 +69,7 @@ export default [
           },
           pathGroups: [
             {
-              pattern: '@adhd-brain/**',
+              pattern: '@capture-bridge/**',
               group: 'internal',
               position: 'before',
             },

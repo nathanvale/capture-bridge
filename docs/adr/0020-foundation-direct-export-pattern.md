@@ -118,7 +118,7 @@ This pattern should be reconsidered if:
 
 ## References
 
-- [Direct Export Tech Spec](/Users/nathanvale/code/adhd-brain/docs/cross-cutting/spec-direct-export-tech.md)
-- [Obsidian Bridge PRD](/Users/nathanvale/code/adhd-brain/docs/features/obsidian-bridge/prd-obsidian.md)
-- [Obsidian Bridge Tech Spec](/Users/nathanvale/code/adhd-brain/docs/features/obsidian-bridge/spec-obsidian-tech.md)
-- [Capture Architecture Spec](/Users/nathanvale/code/adhd-brain/docs/features/capture/spec-capture-arch.md)
+- [Direct Export Tech Spec](/Users/nathanvale/code/capture-bridge/docs/cross-cutting/spec-direct-export-tech.md)
+- [Obsidian Bridge PRD](/Users/nathanvale/code/capture-bridge/docs/features/obsidian-bridge/prd-obsidian.md)
+- [Obsidian Bridge Tech Spec](/Users/nathanvale/code/capture-bridge/docs/features/obsidian-bridge/spec-obsidian-tech.md)
+- [Capture Architecture Spec](/Users/nathanvale/code/capture-bridge/docs/features/capture/spec-capture-arch.md)

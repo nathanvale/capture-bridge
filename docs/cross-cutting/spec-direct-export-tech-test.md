@@ -360,10 +360,10 @@ node --inspect --max-old-space-size=128 vitest run tests/integration/performance
 
 ### 6.1 Required TestKit Modules
 
-#### Filesystem TestKit (`@adhd-brain/testkit/fs`)
+#### Filesystem TestKit (`@capture-bridge/testkit/fs`)
 
 ```typescript
-import { MockFileSystem, TempVaultSetup } from "@adhd-brain/testkit/fs"
+import { MockFileSystem, TempVaultSetup } from "@capture-bridge/testkit/fs"
 
 // Deterministic filesystem mocking
 const mockFs = new MockFileSystem()
@@ -374,10 +374,10 @@ const tempVault = await TempVaultSetup.create()
 // Auto-cleanup after test completion
 ```
 
-#### Capture TestKit (`@adhd-brain/testkit/capture`)
+#### Capture TestKit (`@capture-bridge/testkit/capture`)
 
 ```typescript
-import { CaptureFactory } from "@adhd-brain/testkit/capture"
+import { CaptureFactory } from "@capture-bridge/testkit/capture"
 
 // Generate deterministic test captures
 const voiceCapture = CaptureFactory.voice({
@@ -391,10 +391,10 @@ const emailCapture = CaptureFactory.email({
 })
 ```
 
-#### SQLite TestKit (`@adhd-brain/testkit/db`)
+#### SQLite TestKit (`@capture-bridge/testkit/db`)
 
 ```typescript
-import { TestDatabase } from "@adhd-brain/testkit/db"
+import { TestDatabase } from "@capture-bridge/testkit/db"
 
 // In-memory SQLite with schema setup
 const testDb = await TestDatabase.create()
@@ -445,8 +445,8 @@ await expectWithinLatency(
 **Crash Simulation Helper:**
 
 ```typescript
-// @adhd-brain/testkit/crash - NEW MODULE NEEDED
-import { CrashSimulator } from "@adhd-brain/testkit/crash"
+// @capture-bridge/testkit/crash - NEW MODULE NEEDED
+import { CrashSimulator } from "@capture-bridge/testkit/crash"
 
 const crashSim = new CrashSimulator()
 await crashSim.simulatePowerLoss("during_fsync")
@@ -456,8 +456,8 @@ await crashSim.simulateProcessKill("during_rename")
 **Filesystem Corruption Helper:**
 
 ```typescript
-// @adhd-brain/testkit/fs-corruption - NEW MODULE NEEDED
-import { CorruptionSimulator } from "@adhd-brain/testkit/fs-corruption"
+// @capture-bridge/testkit/fs-corruption - NEW MODULE NEEDED
+import { CorruptionSimulator } from "@capture-bridge/testkit/fs-corruption"
 
 const corruptSim = new CorruptionSimulator()
 await corruptSim.corruptTempFile("partial_write")
@@ -467,8 +467,8 @@ await corruptSim.simulateRenameFailure("cross_filesystem")
 **Concurrent Export Helper:**
 
 ```typescript
-// @adhd-brain/testkit/concurrency - NEW MODULE NEEDED (Phase 2)
-import { ConcurrencyTester } from "@adhd-brain/testkit/concurrency"
+// @capture-bridge/testkit/concurrency - NEW MODULE NEEDED (Phase 2)
+import { ConcurrencyTester } from "@capture-bridge/testkit/concurrency"
 
 const concurrency = new ConcurrencyTester()
 await concurrency.raceCondition([export1, export2], "same_ulid")
@@ -633,7 +633,7 @@ test("10KB capture → export within latency budget", async () => {
 
 ```typescript
 // Use TestKit filesystem mocks for deterministic unit tests
-import { createFaultInjector } from "@adhd-brain/testkit/fs"
+import { createFaultInjector } from "@capture-bridge/testkit/fs"
 
 const faultInjector = createFaultInjector()
 // Mock atomic write sequence
@@ -657,12 +657,12 @@ faultInjector.injectFileSystemError("ENOSPC", {
 
 ```typescript
 // Use TestKit database mocks for unit tests
-import { createMockDatabase } from "@adhd-brain/testkit/sqlite"
+import { createMockDatabase } from "@capture-bridge/testkit/sqlite"
 
 const mockDb = createMockDatabase()
 
 // Use TestKit ULID generator for predictable IDs
-import { createDeterministicUlid } from "@adhd-brain/testkit/ulid"
+import { createDeterministicUlid } from "@capture-bridge/testkit/ulid"
 const deterministicUlid = createDeterministicUlid("01HZVM8YWRQT5J3M3K7YPTX9RZ")
 ```
 
@@ -709,11 +709,11 @@ const auditRecord = await testDb.get(
 
 ```typescript
 // Leverage existing filesystem mocks
-import { createFaultInjector } from "@adhd-brain/testkit/fs"
+import { createFaultInjector } from "@capture-bridge/testkit/fs"
 const faultInjector = createFaultInjector()
 
 // Leverage existing database mocks
-import { createMockDatabase } from "@adhd-brain/testkit/sqlite"
+import { createMockDatabase } from "@capture-bridge/testkit/sqlite"
 const mockDb = createMockDatabase()
 ```
 
@@ -724,14 +724,14 @@ const mockDb = createMockDatabase()
 For gaps in TestKit coverage, propose new helpers instead of custom implementations:
 
 ```typescript
-// PROPOSE: @adhd-brain/testkit/vault
+// PROPOSE: @capture-bridge/testkit/vault
 export class VaultMock {
   mockExistingFile(ulid: string, contentHash: string): void
   mockCollision(ulid: string, differentHash: string): void
   mockPermissionDenied(path: string): void
 }
 
-// PROPOSE: @adhd-brain/testkit/timing
+// PROPOSE: @capture-bridge/testkit/timing
 export class TimingMock {
   measureLatency<T>(
     operation: () => Promise<T>

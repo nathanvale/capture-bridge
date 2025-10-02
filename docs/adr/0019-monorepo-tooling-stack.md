@@ -105,8 +105,8 @@ We will use **pnpm + Turbo + TSUP** as our monorepo tooling stack with external 
 
 ## References
 
-- [Foundation Monorepo PRD](/Users/nathanvale/code/adhd-brain/docs/cross-cutting/prd-foundation-monorepo.md)
-- [Foundation Monorepo Tech Spec](/Users/nathanvale/code/adhd-brain/docs/cross-cutting/spec-foundation-monorepo-tech.md)
-- [Foundation Monorepo Arch Spec](/Users/nathanvale/code/adhd-brain/docs/cross-cutting/spec-foundation-monorepo-arch.md)
-- [Foundation Monorepo Test Spec](/Users/nathanvale/code/adhd-brain/docs/cross-cutting/spec-foundation-monorepo-test.md)
+- [Foundation Monorepo PRD](/Users/nathanvale/code/capture-bridge/docs/cross-cutting/prd-foundation-monorepo.md)
+- [Foundation Monorepo Tech Spec](/Users/nathanvale/code/capture-bridge/docs/cross-cutting/spec-foundation-monorepo-tech.md)
+- [Foundation Monorepo Arch Spec](/Users/nathanvale/code/capture-bridge/docs/cross-cutting/spec-foundation-monorepo-arch.md)
+- [Foundation Monorepo Test Spec](/Users/nathanvale/code/capture-bridge/docs/cross-cutting/spec-foundation-monorepo-test.md)
 - Gold Standard Repository: `/Users/nathanvale/code/bun-changesets-template/`

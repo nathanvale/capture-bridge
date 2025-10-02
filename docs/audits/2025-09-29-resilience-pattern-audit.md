@@ -73,7 +73,7 @@ Comprehensive audit of all specification documents for custom retry logic, hardc
 
 #### Critical Finding: Non-existent Package References
 
-- **Multiple specs would reference `@adhd-brain/resilience`** - This package does not exist!
+- **Multiple specs would reference `@capture-bridge/resilience`** - This package does not exist!
 - Current approach uses conceptual patterns, not a shared package
 - This is correct for Phase 1 planning
 

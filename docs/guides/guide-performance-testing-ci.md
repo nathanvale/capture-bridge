@@ -140,8 +140,8 @@ jobs:
       - name: Setup test environment
         run: |
           # Create isolated temp directories
-          mkdir -p /tmp/adhd-brain-test-{capture,vault,staging}
-          chmod 755 /tmp/adhd-brain-test-*
+          mkdir -p /tmp/capture-bridge-test-{capture,vault,staging}
+          chmod 755 /tmp/capture-bridge-test-*
 
           # Set consistent timezone for timestamp tests
           export TZ=UTC
@@ -657,7 +657,7 @@ _Solutions:_
 
 ```bash
 # Enable detailed timing and resource usage
-export DEBUG=adhd-brain:performance,adhd-brain:load-test
+export DEBUG=capture-bridge:performance,capture-bridge:load-test
 export NODE_ENV=test
 export PERFORMANCE_DEBUG=true
 

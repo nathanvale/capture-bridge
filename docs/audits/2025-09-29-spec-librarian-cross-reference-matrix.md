@@ -205,7 +205,7 @@ docs/master/ → ../features/ : 88.2% success ⚠️
 **Examples:**
 
 ```
-❌ /Users/nathanvale/code/adhd-brain/docs/cross-cutting/prd-foundation-monorepo.md
+❌ /Users/nathanvale/code/capture-bridge/docs/cross-cutting/prd-foundation-monorepo.md
 ✅ ../cross-cutting/prd-foundation-monorepo.md
 ```
 
@@ -339,22 +339,22 @@ Monorepo Guide → Foundation (3 references)
 
 ```bash
 # Fix missing spec references (point to existing sections)
-sed -i 's|spec-cli-doctor-tech.md|spec-cli-tech.md#doctor-command|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-health-command.md
-sed -i 's|spec-capture-gmail-oauth2-tech.md|spec-capture-tech.md#gmail-oauth2|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-health-command.md
-sed -i 's|spec-capture-whisper-runtime-tech.md|spec-capture-tech.md#whisper-transcription|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-health-command.md
+sed -i 's|spec-cli-doctor-tech.md|spec-cli-tech.md#doctor-command|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-health-command.md
+sed -i 's|spec-capture-gmail-oauth2-tech.md|spec-capture-tech.md#gmail-oauth2|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-health-command.md
+sed -i 's|spec-capture-whisper-runtime-tech.md|spec-capture-tech.md#whisper-transcription|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-health-command.md
 
 # Fix wrong classification paths
-sed -i 's|../cross-cutting/foundation/spec-cli-tech.md|../features/cli/spec-cli-tech.md|g' /Users/nathanvale/code/adhd-brain/docs/master/prd-master.md
-sed -i 's|../cross-cutting/foundation/spec-cli-test.md|../features/cli/spec-cli-test.md|g' /Users/nathanvale/code/adhd-brain/docs/master/prd-master.md
+sed -i 's|../cross-cutting/foundation/spec-cli-tech.md|../features/cli/spec-cli-tech.md|g' /Users/nathanvale/code/capture-bridge/docs/master/prd-master.md
+sed -i 's|../cross-cutting/foundation/spec-cli-test.md|../features/cli/spec-cli-test.md|g' /Users/nathanvale/code/capture-bridge/docs/master/prd-master.md
 
 # Fix external TestKit reference
-sed -i 's|TestKit Tech Spec.*|TestKit Usage Guide](../guides/guide-testkit-usage.md) - External TestKit integration patterns|g' /Users/nathanvale/code/adhd-brain/docs/master/prd-master.md
+sed -i 's|TestKit Tech Spec.*|TestKit Usage Guide](../guides/guide-testkit-usage.md) - External TestKit integration patterns|g' /Users/nathanvale/code/capture-bridge/docs/master/prd-master.md
 
 # Fix guide vs spec reference
-sed -i 's|./spec-error-recovery-tech.md|../guides/guide-error-recovery.md|g' /Users/nathanvale/code/adhd-brain/docs/cross-cutting/spec-metrics-contract-tech.md
+sed -i 's|./spec-error-recovery-tech.md|../guides/guide-error-recovery.md|g' /Users/nathanvale/code/capture-bridge/docs/cross-cutting/spec-metrics-contract-tech.md
 
 # Fix ADR number consistency
-sed -i 's|ADR-0007: Sequential Processing Model|ADR-0008: Sequential Processing Model|g' /Users/nathanvale/code/adhd-brain/docs/guides/guide-error-recovery.md
+sed -i 's|ADR-0007: Sequential Processing Model|ADR-0008: Sequential Processing Model|g' /Users/nathanvale/code/capture-bridge/docs/guides/guide-error-recovery.md
 ```
 
 ### Path Standardization (P1)
@@ -362,7 +362,7 @@ sed -i 's|ADR-0007: Sequential Processing Model|ADR-0008: Sequential Processing 
 ```bash
 # Fix hardcoded absolute paths in ADR files
 for file in docs/adr/0019-monorepo-tooling-stack.md docs/adr/0020-foundation-direct-export-pattern.md docs/adr/0021-local-metrics-ndjson-strategy.md; do
-  sed -i 's|/Users/nathanvale/code/adhd-brain/docs/|../|g' "$file"
+  sed -i 's|/Users/nathanvale/code/capture-bridge/docs/|../|g' "$file"
 done
 ```
 

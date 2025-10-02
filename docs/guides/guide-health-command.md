@@ -388,7 +388,7 @@ fi
 
 1. Initialize Gmail authentication: `adhd capture email init`
 2. Follow OAuth2 browser prompts
-3. Verify token created: `ls ~/.adhd-brain/gmail-token.json`
+3. Verify token created: `ls ~/.capture-bridge/gmail-token.json`
 4. Re-run health check: `adhd capture doctor --category=credentials`
 
 ### Common Warning: "Disk space low"
@@ -470,7 +470,7 @@ echo $ADHD_VAULT_PATH
 ls -ld "$(adhd config get vault_path)"
 
 # Check database path
-ls -lh ~/.adhd-brain/ledger.sqlite
+ls -lh ~/.capture-bridge/ledger.sqlite
 ```
 
 ## Examples
@@ -558,7 +558,7 @@ Health Check Results
   ✅ Vault Path Writable
   ❌ SQLite Database Connectivity
       SQLite connection failed: ENOENT: no such file
-      → Check database file exists and is readable: ls -lh "~/.adhd-brain/ledger.sqlite"
+      → Check database file exists and is readable: ls -lh "~/.capture-bridge/ledger.sqlite"
   ✅ Disk Space Available (45.2 GB available, 65% used)
 
 ❌ Credentials (2/3 passed, 1 critical)

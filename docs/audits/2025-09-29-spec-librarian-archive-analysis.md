@@ -17,7 +17,7 @@ The `resilience-implementation-details` archive contains 6 documents that were a
 | `README.md`                            | 1.77 KB  | Archive Documentation   | Explains archival reason and replacement docs         |
 | `guide-external-service-resilience.md` | 28.31 KB | Implementation Guide    | Gmail/iCloud/Whisper specific retry configs           |
 | `guide-mppp-sequential-resilience.md`  | 36.95 KB | Implementation Guide    | Sequential processing resilience patterns             |
-| `guide-resilience-usage.md`            | 22.62 KB | Package Documentation   | API docs for fictional @adhd-brain/resilience package |
+| `guide-resilience-usage.md`            | 22.62 KB | Package Documentation   | API docs for fictional @capture-bridge/resilience package |
 | `spec-circuit-breaker-configs.md`      | 16.89 KB | Technical Specification | Service-specific circuit breaker configurations       |
 | `spec-resilience-testing.md`           | 25.94 KB | Test Specification      | Comprehensive resilience testing strategies           |
 
@@ -69,7 +69,7 @@ The `resilience-implementation-details` archive contains 6 documents that were a
 
 **Content**:
 
-- API documentation for `@adhd-brain/resilience` package
+- API documentation for `@capture-bridge/resilience` package
 - Package imports and usage examples
 - Subpath exports and domain organization
 - Implementation recipes
@@ -141,7 +141,7 @@ The archived content has been **successfully replaced** by:
 
 1. **Specific Configurations**: Timeout values, retry counts, error codes
 2. **Implementation Code**: TypeScript examples, package APIs, test suites
-3. **Fictional Packages**: @adhd-brain/resilience package that was never built
+3. **Fictional Packages**: @capture-bridge/resilience package that was never built
 4. **Premature Optimization**: Detailed performance tuning before basic implementation
 
 ### What Could Be Valuable Later 💡
@@ -175,7 +175,7 @@ However, this content should be **re-researched during implementation** rather t
 
 ```bash
 # Remove entire archive directory
-rm -rf /Users/nathanvale/code/adhd-brain/docs/archive/resilience-implementation-details/
+rm -rf /Users/nathanvale/code/capture-bridge/docs/archive/resilience-implementation-details/
 ```
 
 ### 2. Verify No References

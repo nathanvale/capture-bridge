@@ -8,7 +8,7 @@ Example invocations:
 - "Run all parallel-safe tasks in current slice with task-batch-coordinator"
 
 Do NOT use this agent for: single task execution (use task-implementer), sequential task chains (use implementation-orchestrator), or issue-based work (use parallel-worker).
-model: opus
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Task, Bash
 ---
 

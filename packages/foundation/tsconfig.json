@@ -5,7 +5,7 @@
     "rootDir": "./src",
     "composite": true,
     "paths": {
-      "@adhd-brain/*": ["../*/src"]
+      "@capture-bridge/*": ["../*/src"]
     }
   },
   "include": ["src/**/*.ts"],

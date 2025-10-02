@@ -873,7 +873,7 @@ Target: **< 50ms p95** for 1KB markdown file
 
 ### 7.2 Metrics Collection
 
-**Logged Metrics (NDJSON to `~/.adhd-brain/metrics/`):**
+**Logged Metrics (NDJSON to `~/.capture-bridge/metrics/`):**
 
 ```json
 {

@@ -71,7 +71,7 @@ Replace @orchestr8/resilience with a curated stack of production-ready, speciali
 **Package Distribution Strategy:**
 
 - Embed resilience patterns within existing 4-package monorepo structure
-- No new @adhd-brain/resilience package (maintains Phase 1 constraints)
+- No new @capture-bridge/resilience package (maintains Phase 1 constraints)
 - Co-locate resilience logic with the features that use it
 
 **Library Responsibilities:**

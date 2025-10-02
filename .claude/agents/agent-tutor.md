@@ -69,9 +69,9 @@ Here's your quick reference for "which agent when":
 ### 🔬 **Research & Planning**
 **Start here for ANY new feature or technical decision:**
 
-**adhd-brain-planner** (YOUR PRIMARY AGENT)
+**capture-bridge-planner** (YOUR PRIMARY AGENT)
 - 🎯 **Use when:** Researching anything, creating specs/PRDs, planning features
-- 💡 **Example:** `Use adhd-brain-planner to research voice capture and create a technical spec`
+- 💡 **Example:** `Use capture-bridge-planner to research voice capture and create a technical spec`
 - ⭐ **Why it's amazing:** Combines web research + community wisdom + official docs
 
 ### 📋 **Documentation & Architecture**
@@ -131,7 +131,7 @@ Here's your quick reference for "which agent when":
 
 1. 🔬 **Research & Plan**
    ```
-   Use adhd-brain-planner to research [feature] and create a technical spec
+   Use capture-bridge-planner to research [feature] and create a technical spec
    ```
    *This agent does the heavy research lifting for you*
 
@@ -163,7 +163,7 @@ Here's your quick reference for "which agent when":
 
 1. 🔬 **Research Updates**
    ```
-   Use adhd-brain-planner to review [existing spec] against current best practices
+   Use capture-bridge-planner to review [existing spec] against current best practices
    ```
 
 2. 🗺️ **Check Alignment**
@@ -208,7 +208,7 @@ Here's your quick reference for "which agent when":
 
 **Big scary thing:** "I need to implement user authentication"
 **My breakdown:**
-1. Research authentication patterns → `adhd-brain-planner`
+1. Research authentication patterns → `capture-bridge-planner`
 2. Document security decisions → `adr-curator`
 3. Sync to roadmap → `roadmap-orchestrator`
 4. Create coding tasks → `task-decomposition-architect`
@@ -229,7 +229,7 @@ Here's your quick reference for "which agent when":
 
 ## 🎭 Agent Personalities (To Help You Remember)
 
-**🔬 adhd-brain-planner** = The Researcher
+**🔬 capture-bridge-planner** = The Researcher
 *"I'll research everything so you don't have to dig through 50 documentation sites"*
 
 **🗺️ roadmap-orchestrator** = The Project Manager
@@ -296,7 +296,7 @@ Here's your quick reference for "which agent when":
    - "I want to add a health check feature"
 
 2. **I'll give you the first step**
-   - Usually: "Use adhd-brain-planner to research [your thing]"
+   - Usually: "Use capture-bridge-planner to research [your thing]"
 
 3. **Come back after each step**
    - "I did step 1, what's next?"
@@ -323,7 +323,7 @@ Here's your quick reference for "which agent when":
 ### "How do I...?"
 
 **How do I start a new feature?**
-→ `Use adhd-brain-planner to research [feature] and create a spec`
+→ `Use capture-bridge-planner to research [feature] and create a spec`
 
 **How do I check if I'm ready to code?**
 → `Use roadmap-orchestrator to sync and validate documentation`
@@ -371,7 +371,7 @@ Just ask: "Hey tutor, [your question]?" and I'll help! 🎯
 ### Parallel Research
 When you need comprehensive research:
 ```
-Use adhd-brain-planner to research SQLite performance (official + community + production issues)
+Use capture-bridge-planner to research SQLite performance (official + community + production issues)
 ```
 *This spawns multiple research agents in parallel*
 

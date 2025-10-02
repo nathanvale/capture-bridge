@@ -57,13 +57,13 @@
 
 ```bash
 # Add to main capture debugging guide
-echo "- [Voice Capture Debugging](./guide-voice-capture-debugging.md) - Specific voice memo troubleshooting procedures" >> /Users/nathanvale/code/adhd-brain/docs/guides/guide-capture-debugging.md
+echo "- [Voice Capture Debugging](./guide-voice-capture-debugging.md) - Specific voice memo troubleshooting procedures" >> /Users/nathanvale/code/capture-bridge/docs/guides/guide-capture-debugging.md
 
 # Add to capture test spec troubleshooting section
-sed -i '/## Troubleshooting/a - [Voice Capture Debugging Guide](../../guides/guide-voice-capture-debugging.md) - Voice-specific debugging procedures' /Users/nathanvale/code/adhd-brain/docs/features/capture/spec-capture-test.md
+sed -i '/## Troubleshooting/a - [Voice Capture Debugging Guide](../../guides/guide-voice-capture-debugging.md) - Voice-specific debugging procedures' /Users/nathanvale/code/capture-bridge/docs/features/capture/spec-capture-test.md
 
 # Add to master index guides section
-sed -i '/guide-capture-debugging.md/a - **[guide-voice-capture-debugging.md](../guides/guide-voice-capture-debugging.md)** - Voice memo specific debugging and troubleshooting' /Users/nathanvale/code/adhd-brain/docs/master/index.md
+sed -i '/guide-capture-debugging.md/a - **[guide-voice-capture-debugging.md](../guides/guide-voice-capture-debugging.md)** - Voice memo specific debugging and troubleshooting' /Users/nathanvale/code/capture-bridge/docs/master/index.md
 ```
 
 ---
@@ -150,7 +150,7 @@ sed -i '/guide-capture-debugging.md/a - **[guide-voice-capture-debugging.md](../
 ```bash
 # Add to all tech specs lacking TDD section references
 for spec in spec-direct-export-tech.md spec-metrics-contract-tech.md spec-foundation-monorepo-tech.md; do
-  echo "See [TDD Applicability Guide](../../guides/guide-tdd-applicability.md) for risk-based testing decisions." >> "/Users/nathanvale/code/adhd-brain/docs/cross-cutting/$spec"
+  echo "See [TDD Applicability Guide](../../guides/guide-tdd-applicability.md) for risk-based testing decisions." >> "/Users/nathanvale/code/capture-bridge/docs/cross-cutting/$spec"
 done
 ```
 
@@ -173,7 +173,7 @@ done
 
 ```bash
 # Ensure all test specs reference TestKit guide
-grep -L "guide-testkit-usage.md" /Users/nathanvale/code/adhd-brain/docs/features/*/spec-*-test.md | while read file; do
+grep -L "guide-testkit-usage.md" /Users/nathanvale/code/capture-bridge/docs/features/*/spec-*-test.md | while read file; do
   echo "See [TestKit Usage Guide](../../guides/guide-testkit-usage.md) for test patterns and examples." >> "$file"
 done
 ```

@@ -12,14 +12,14 @@ This guide explains how to use the ADHD Brain agent system to go from planning d
 
 | File                                      | Purpose                             | Modified By                                    |
 | ----------------------------------------- | ----------------------------------- | ---------------------------------------------- |
-| `docs/master/prd-master.md`               | Master product requirements         | adhd-brain-planner + roadmap-orchestrator      |
+| `docs/master/prd-master.md`               | Master product requirements         | capture-bridge-planner + roadmap-orchestrator      |
 | `docs/master/roadmap.md`                  | Capability breakdown by phase/slice | roadmap-orchestrator                           |
-| `docs/features/*/prd-*.md`                | Feature-specific requirements       | adhd-brain-planner + roadmap-orchestrator      |
-| `docs/features/*/spec-*.md`               | Technical specifications            | adhd-brain-planner + spec-librarian            |
+| `docs/features/*/prd-*.md`                | Feature-specific requirements       | capture-bridge-planner + roadmap-orchestrator      |
+| `docs/features/*/spec-*.md`               | Technical specifications            | capture-bridge-planner + spec-librarian            |
 | `docs/backlog/virtual-task-manifest.json` | Decomposed task list (68 tasks)     | task-decomposition-architect                   |
 | `docs/backlog/task-state.json`            | Execution progress tracking         | task-implementer + implementation-orchestrator |
 | `docs/adr/*.md`                           | Architectural decisions             | adr-curator                                    |
-| `docs/guides/*.md`                        | Implementation patterns             | adhd-brain-planner + spec-librarian            |
+| `docs/guides/*.md`                        | Implementation patterns             | capture-bridge-planner + spec-librarian            |
 
 ## The Agent Pipeline
 
@@ -28,7 +28,7 @@ This guide explains how to use the ADHD Brain agent system to go from planning d
 │ PLANNING PHASE (Research → Documents → Capabilities → Tasks)   │
 └─────────────────────────────────────────────────────────────────┘
 
-1. adhd-brain-planner: Research and create PRDs/specs with full context
+1. capture-bridge-planner: Research and create PRDs/specs with full context
    ↓
 2. adr-curator: Capture architectural decisions as ADRs
    ↓
@@ -59,7 +59,7 @@ This guide explains how to use the ADHD Brain agent system to go from planning d
 **PRIMARY AGENT:**
 
 ```
-Use adhd-brain-planner to research and create [PRD/spec/evaluation] for [feature]
+Use capture-bridge-planner to research and create [PRD/spec/evaluation] for [feature]
 ```
 
 **What it does:**
@@ -79,18 +79,18 @@ Use adhd-brain-planner to research and create [PRD/spec/evaluation] for [feature
 
 ```
 # Creating new specs with research
-Use adhd-brain-planner to research Gmail API limits and create polling spec
-Use adhd-brain-planner to evaluate TDD approach for backup/restore feature
-Use adhd-brain-planner to research APFS handling and update voice capture spec
+Use capture-bridge-planner to research Gmail API limits and create polling spec
+Use capture-bridge-planner to evaluate TDD approach for backup/restore feature
+Use capture-bridge-planner to research APFS handling and update voice capture spec
 
 # Reviewing existing specs with research
-Use adhd-brain-planner to review staging ledger spec against current best practices
-Use adhd-brain-planner to research updates to Gmail API since our spec was written
-Use adhd-brain-planner to identify outdated patterns in our capture specs
+Use capture-bridge-planner to review staging ledger spec against current best practices
+Use capture-bridge-planner to research updates to Gmail API since our spec was written
+Use capture-bridge-planner to identify outdated patterns in our capture specs
 
 # Parallel research for complex topics
-Use adhd-brain-planner to research SQLite performance (official + community + production)
-Use adhd-brain-planner to find Gmail API gotchas across Stack Overflow and GitHub issues
+Use capture-bridge-planner to research SQLite performance (official + community + production)
+Use capture-bridge-planner to find Gmail API gotchas across Stack Overflow and GitHub issues
 ```
 
 **Output includes:**
@@ -664,7 +664,7 @@ vim docs/features/capture/prd-capture.md
 
 ```
 Need to research/plan/review ANY feature or technical decision?
-  → Use adhd-brain-planner (PRIMARY - always start here!)
+  → Use capture-bridge-planner (PRIMARY - always start here!)
 
 Need to sync docs/roadmap?
   → Use roadmap-orchestrator
@@ -807,8 +807,8 @@ cat docs/backlog/task-state.json | jq '.tasks[] | select(.status=="in-progress")
 
 | Goal                        | Command                                                                                          |
 | --------------------------- | ------------------------------------------------------------------------------------------------ |
-| Research & plan ANY feature | `Use adhd-brain-planner to research and create [spec/PRD]`                                       |
-| Review existing specs       | `Use adhd-brain-planner to review [spec] against best practices`                                 |
+| Research & plan ANY feature | `Use capture-bridge-planner to research and create [spec/PRD]`                                       |
+| Review existing specs       | `Use capture-bridge-planner to review [spec] against best practices`                                 |
 | Document decisions          | `Use adr-curator to document [decision]`                                                         |
 | Sync docs → roadmap         | `Use roadmap-orchestrator to sync and validate`                                                  |
 | Fix doc issues              | `Use spec-librarian to fix [issue]`                                                              |
@@ -891,7 +891,7 @@ Use risk-yagni-enforcer to review Phase 2 specs for scope creep
 
 After reading this guide:
 
-1. 🔬 Research & plan features: `adhd-brain-planner` (PRIMARY - start here!)
+1. 🔬 Research & plan features: `capture-bridge-planner` (PRIMARY - start here!)
 2. ✅ Validate your roadmap: `roadmap-orchestrator assessment`
 3. ✅ Generate VTM: `task-decomposition-architect`
 4. ✅ Start implementing: Choose orchestrator (auto) or task-implementer (manual)

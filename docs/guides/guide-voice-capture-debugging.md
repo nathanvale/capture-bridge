@@ -47,7 +47,7 @@ Use this guide when encountering:
 **Required Access:**
 
 - Voice Memos folder: `~/Library/Group Containers/group.com.apple.VoiceMemos.shared/`
-- SQLite database: `./.adhd-brain/ledger.sqlite`
+- SQLite database: `./.capture-bridge/ledger.sqlite`
 - Logs directory: `./.metrics/`
 - iCloud status via `brctl` (Requires SIP disabled for full access)
 
@@ -70,10 +70,10 @@ xattr -l ~/Library/Group\ Containers/group.com.apple.VoiceMemos.shared/Recording
 sudo fs_usage -w -f filesystem | grep VoiceMemos
 
 # Check capture status in database
-sqlite3 ./.adhd-brain/ledger.sqlite "SELECT status, COUNT(*) FROM captures WHERE source_type='voice' GROUP BY status;"
+sqlite3 ./.capture-bridge/ledger.sqlite "SELECT status, COUNT(*) FROM captures WHERE source_type='voice' GROUP BY status;"
 
 # View recent errors
-sqlite3 ./.adhd-brain/ledger.sqlite "SELECT * FROM errors_log WHERE operation='voice_capture' ORDER BY created_at DESC LIMIT 10;"
+sqlite3 ./.capture-bridge/ledger.sqlite "SELECT * FROM errors_log WHERE operation='voice_capture' ORDER BY created_at DESC LIMIT 10;"
 ```
 
 ## Common Issues and Solutions
@@ -200,11 +200,11 @@ icloudctl download "~/Library/Group Containers/.../Recording.m4a" --timeout 60
 
 ```bash
 # Check model file exists
-ls -lh ~/.adhd-brain/models/whisper-medium.pt
+ls -lh ~/.capture-bridge/models/whisper-medium.pt
 # Expected: ~1.5GB file
 
 # Verify model checksum
-shasum -a 256 ~/.adhd-brain/models/whisper-medium.pt
+shasum -a 256 ~/.capture-bridge/models/whisper-medium.pt
 
 # Re-download if corrupted
 pnpm whisper-download medium
@@ -289,7 +289,7 @@ HAVING count > 1;
 head -c 4194304 [voice_memo.m4a] | shasum -a 256
 
 # Compare with database
-sqlite3 ./.adhd-brain/ledger.sqlite \
+sqlite3 ./.capture-bridge/ledger.sqlite \
   "SELECT external_fingerprint FROM captures WHERE external_ref LIKE '%[filename]%'"
 ```
 
@@ -466,7 +466,7 @@ async function voiceCaptureHealthCheck(): Promise<HealthReport> {
   }
 
   // Check Whisper model
-  const modelPath = "~/.adhd-brain/models/whisper-medium.pt"
+  const modelPath = "~/.capture-bridge/models/whisper-medium.pt"
   checks.whisperModelReady = await fs
     .access(modelPath)
     .then(() => true)
@@ -620,7 +620,7 @@ echo "Found $DATALESS dataless files"
 
 # Test 4: Database check
 echo -n "4. Checking database... "
-if sqlite3 ./.adhd-brain/ledger.sqlite "SELECT COUNT(*) FROM captures WHERE source_type='voice';" > /dev/null 2>&1; then
+if sqlite3 ./.capture-bridge/ledger.sqlite "SELECT COUNT(*) FROM captures WHERE source_type='voice';" > /dev/null 2>&1; then
   echo "✓"
 else
   echo "✗ Database error"
@@ -629,8 +629,8 @@ fi
 
 # Test 5: Whisper model
 echo -n "5. Checking Whisper model... "
-if [ -f "$HOME/.adhd-brain/models/whisper-medium.pt" ]; then
-  SIZE=$(du -h "$HOME/.adhd-brain/models/whisper-medium.pt" | cut -f1)
+if [ -f "$HOME/.capture-bridge/models/whisper-medium.pt" ]; then
+  SIZE=$(du -h "$HOME/.capture-bridge/models/whisper-medium.pt" | cut -f1)
   echo "✓ ($SIZE)"
 else
   echo "✗ Model not found"
@@ -646,16 +646,16 @@ echo "Test complete!"
 
 ```bash
 # Backup current database
-cp ./.adhd-brain/ledger.sqlite ./.adhd-brain/ledger.sqlite.backup
+cp ./.capture-bridge/ledger.sqlite ./.capture-bridge/ledger.sqlite.backup
 
 # Check integrity
-sqlite3 ./.adhd-brain/ledger.sqlite "PRAGMA integrity_check;"
+sqlite3 ./.capture-bridge/ledger.sqlite "PRAGMA integrity_check;"
 
 # If corrupted, recover what's possible
-sqlite3 ./.adhd-brain/ledger.sqlite ".dump" | sqlite3 ./.adhd-brain/ledger_recovered.sqlite
+sqlite3 ./.capture-bridge/ledger.sqlite ".dump" | sqlite3 ./.capture-bridge/ledger_recovered.sqlite
 
 # Rebuild indexes
-sqlite3 ./.adhd-brain/ledger_recovered.sqlite "REINDEX;"
+sqlite3 ./.capture-bridge/ledger_recovered.sqlite "REINDEX;"
 ```
 
 ### Reset Voice Capture State

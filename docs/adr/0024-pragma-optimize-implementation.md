@@ -93,7 +93,7 @@ PRAGMA optimize(0x10002); -- Update all statistics only
 
 **Scope:**
 
-- **Target Database:** Staging ledger (`~/.adhd-brain/staging.db`) only
+- **Target Database:** Staging ledger (`~/.capture-bridge/staging.db`) only
 - **Tables Covered:** captures, exports_audit, errors_log, sync_state (all 4 tables per hard cap)
 - **Index Coverage:** All indexes including new composite indexes from ADR-0023
 - **Statistics:** Table and index statistics for query optimizer
@@ -282,5 +282,5 @@ This optimization strategy should be reconsidered if:
 
 - [SQLite PRAGMA optimize Documentation](https://www.sqlite.org/pragma.html#pragma_optimize)
 - [SQLite Query Planner Documentation](https://www.sqlite.org/optoverview.html)
-- [Capture Tech Spec - Performance Requirements](/Users/nathanvale/code/adhd-brain/docs/features/capture/spec-capture-tech.md)
-- [Master PRD - Section 4.3 Performance Targets](/Users/nathanvale/code/adhd-brain/docs/master/prd-master.md)
+- [Capture Tech Spec - Performance Requirements](/Users/nathanvale/code/capture-bridge/docs/features/capture/spec-capture-tech.md)
+- [Master PRD - Section 4.3 Performance Targets](/Users/nathanvale/code/capture-bridge/docs/master/prd-master.md)

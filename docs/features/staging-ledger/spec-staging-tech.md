@@ -15,7 +15,7 @@ roadmap_version: 2.0.0-MPPP
 
 ### 1.1 Module Boundary
 
-**Package:** `@adhd-brain/staging-ledger`
+**Package:** `@capture-bridge/staging-ledger`
 
 **Responsibility:** Durable capture staging with content-hash deduplication, crash recovery, and audit transparency
 
@@ -391,15 +391,15 @@ UPDATE sync_state SET value = '2' WHERE key = 'schema_version';
 
 ### 2.4 Database File Location
 
-**Path:** `${VAULT_ROOT}/.adhd-brain/ledger.sqlite`
+**Path:** `${VAULT_ROOT}/.capture-bridge/ledger.sqlite`
 
 **Rationale:**
 
 - Co-located with vault (same filesystem guarantees)
-- Hidden folder (`.adhd-brain`) avoids Obsidian indexing
+- Hidden folder (`.capture-bridge`) avoids Obsidian indexing
 - Portable with vault (manual backup includes ledger)
 
-**Backup Path:** `${VAULT_ROOT}/.adhd-brain/.backups/ledger-YYYYMMDD-HH.sqlite`
+**Backup Path:** `${VAULT_ROOT}/.capture-bridge/.backups/ledger-YYYYMMDD-HH.sqlite`
 
 ---
 
@@ -999,15 +999,15 @@ describe('Crash Recovery (Fault Injection)', () => {
 
 **Internal Packages:**
 
-- `@adhd-brain/shared-config` - TypeScript, ESLint configs
-- `@adhd-brain/testkit` - Test fixtures, in-memory DB, mocks
+- `@capture-bridge/shared-config` - TypeScript, ESLint configs
+- `@capture-bridge/testkit` - Test fixtures, in-memory DB, mocks
 
 ### 5.2 Downstream Consumers
 
 **Voice Capture Package:**
 
 ```typescript
-import { StagingLedger } from "@adhd-brain/staging-ledger"
+import { StagingLedger } from "@capture-bridge/staging-ledger"
 
 const ledger = new StagingLedger(vaultPath)
 
@@ -1027,7 +1027,7 @@ await ledger.insertCapture({
 **Email Capture Package:**
 
 ```typescript
-import { StagingLedger } from "@adhd-brain/staging-ledger"
+import { StagingLedger } from "@capture-bridge/staging-ledger"
 
 const ledger = new StagingLedger(vaultPath)
 
@@ -1050,7 +1050,7 @@ await ledger.insertCapture({
 **Transcription Worker:**
 
 ```typescript
-import { StagingLedger } from "@adhd-brain/staging-ledger"
+import { StagingLedger } from "@capture-bridge/staging-ledger"
 
 const ledger = new StagingLedger(vaultPath)
 
@@ -1068,7 +1068,7 @@ await ledger.markTranscriptionFailed(captureId, "Whisper timeout exceeded")
 **Export Worker:**
 
 ```typescript
-import { StagingLedger } from "@adhd-brain/staging-ledger"
+import { StagingLedger } from "@capture-bridge/staging-ledger"
 
 const ledger = new StagingLedger(vaultPath)
 
@@ -1092,9 +1092,9 @@ await ledger.recordExport(captureId, {
 
 **File System:**
 
-- Database file: `.adhd-brain/ledger.sqlite`
-- Backup directory: `.adhd-brain/.backups/`
-- Metrics directory: `.adhd-brain/.metrics/`
+- Database file: `.capture-bridge/ledger.sqlite`
+- Backup directory: `.capture-bridge/.backups/`
+- Metrics directory: `.capture-bridge/.metrics/`
 
 ---
 
@@ -1135,7 +1135,7 @@ await ledger.recordExport(captureId, {
 
 ### 7.1 Metrics Emission
 
-**Storage:** `./.adhd-brain/.metrics/YYYY-MM-DD.ndjson`
+**Storage:** `./.capture-bridge/.metrics/YYYY-MM-DD.ndjson`
 
 **Activation:** `CAPTURE_METRICS=1` environment variable
 
@@ -1259,7 +1259,7 @@ class StagingLedger {
   private db: Database
 
   constructor(vaultPath: string) {
-    const dbPath = path.join(vaultPath, ".adhd-brain", "ledger.sqlite")
+    const dbPath = path.join(vaultPath, ".capture-bridge", "ledger.sqlite")
     this.db = new Database(dbPath)
 
     // Initialize PRAGMAs
@@ -1321,7 +1321,7 @@ async getCapture(id: string): Promise<Capture | null> {
 
 ## 9. Nerdy Joke Corner
 
-This tech spec is like SQLite's documentation—comprehensive, slightly intimidating, and full of PRAGMAs you'll cargo-cult without fully understanding. But unlike your brain's working memory, this ledger actually persists state across crashes. Also, "better-sqlite3" is a better name than "adhd-brain" because at least it promises what it delivers: synchronous, fast, and no callbacks to forget about. 🧠💾
+This tech spec is like SQLite's documentation—comprehensive, slightly intimidating, and full of PRAGMAs you'll cargo-cult without fully understanding. But unlike your brain's working memory, this ledger actually persists state across crashes. Also, "better-sqlite3" is a better name than "capture-bridge" because at least it promises what it delivers: synchronous, fast, and no callbacks to forget about. 🧠💾
 
 ---
 
@@ -1349,7 +1349,7 @@ This tech spec is like SQLite's documentation—comprehensive, slightly intimida
 
 1. Review with architecture team
 2. Create [Staging Ledger Test Spec](./spec-staging-test.md)
-3. Implement `@adhd-brain/staging-ledger` package
+3. Implement `@capture-bridge/staging-ledger` package
 4. Write TDD test suite (unit + integration + contract)
 5. Validate with 50+ real captures
 

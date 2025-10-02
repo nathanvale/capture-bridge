@@ -1199,7 +1199,7 @@ export default defineConfig({
 **Database Fixtures:**
 
 ```typescript
-import { createInMemoryDB } from "@adhd-brain/testkit"
+import { createInMemoryDB } from "@capture-bridge/testkit"
 
 function createTestLedger(): StagingLedger {
   const db = createInMemoryDB()
@@ -1210,7 +1210,7 @@ function createTestLedger(): StagingLedger {
 **Cleanup Helpers:**
 
 ```typescript
-import { cleanupTempFiles, createFaultInjector } from "@adhd-brain/testkit"
+import { cleanupTempFiles, createFaultInjector } from "@capture-bridge/testkit"
 
 afterEach(() => {
   cleanupTempFiles()
@@ -1220,7 +1220,7 @@ afterEach(() => {
 **Assertion Helpers:**
 
 ```typescript
-import { expectCaptureStatus, expectHashEquals } from "@adhd-brain/testkit"
+import { expectCaptureStatus, expectHashEquals } from "@capture-bridge/testkit"
 
 // Usage
 await expectCaptureStatus(ledger, captureId, "exported")
@@ -1382,7 +1382,7 @@ This test spec is longer than your average ADHD attention span but shorter than 
 
 1. Review with architecture team
 2. Implement TDD test suite (unit → integration → contract)
-3. Implement `@adhd-brain/staging-ledger` package (TDD-driven)
+3. Implement `@capture-bridge/staging-ledger` package (TDD-driven)
 4. Validate with 50+ real captures
 5. Add fault injection tests in Phase 2
 
@@ -2177,7 +2177,7 @@ import {
   formatVoiceMarkdown,
   formatEmailMarkdown,
   formatPlaceholderMarkdown,
-} from "@adhd-brain/test-utils"
+} from "@capture-bridge/test-utils"
 
 // File system integration
 import {

@@ -970,7 +970,7 @@ async function setupStagingLedgerSchema(db: Database): Promise<void> {
 
 ```typescript
 // ✅ CORRECT: TestKit fault injection
-import { createFaultInjector } from "@adhd-brain/testkit/fault-injection"
+import { createFaultInjector } from "@capture-bridge/testkit/fault-injection"
 
 describe("Filesystem Error Handling", () => {
   let faultInjector: FaultInjector
@@ -1750,8 +1750,8 @@ describe("Multi-Source Export Pipeline", () => {
 
 ```typescript
 // Cross-feature integration utilities
-import { createTestLedger } from "@adhd-brain/staging-ledger/test-utils"
-import { ObsidianAtomicWriter } from "@adhd-brain/obsidian-bridge"
+import { createTestLedger } from "@capture-bridge/staging-ledger/test-utils"
+import { ObsidianAtomicWriter } from "@capture-bridge/obsidian-bridge"
 import { createTempDirectory, assertFileExists } from "@orchestr8/testkit/fs"
 import { useFakeTimers, controlRandomness } from "@orchestr8/testkit/env"
 

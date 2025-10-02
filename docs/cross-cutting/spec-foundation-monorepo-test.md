@@ -378,17 +378,17 @@ describe("Build Pipeline", () => {
     const buildLog = await runTurboBuild()
     const foundationBuildTime = extractBuildTime(
       buildLog,
-      "@adhd-brain/foundation"
+      "@capture-bridge/foundation"
     )
-    const coreBuildTime = extractBuildTime(buildLog, "@adhd-brain/core")
+    const coreBuildTime = extractBuildTime(buildLog, "@capture-bridge/core")
 
     expect(foundationBuildTime.end).toBeLessThanOrEqual(coreBuildTime.start)
   })
 
   test("builds core and storage in parallel", async () => {
     const buildLog = await runTurboBuild()
-    const coreStart = extractBuildTime(buildLog, "@adhd-brain/core").start
-    const storageStart = extractBuildTime(buildLog, "@adhd-brain/storage").start
+    const coreStart = extractBuildTime(buildLog, "@capture-bridge/core").start
+    const storageStart = extractBuildTime(buildLog, "@capture-bridge/storage").start
 
     // Parallel builds should start within 100ms of each other
     expect(Math.abs(coreStart - storageStart)).toBeLessThan(100)
@@ -396,9 +396,9 @@ describe("Build Pipeline", () => {
 
   test("builds capture after core and storage complete", async () => {
     const buildLog = await runTurboBuild()
-    const coreEnd = extractBuildTime(buildLog, "@adhd-brain/core").end
-    const storageEnd = extractBuildTime(buildLog, "@adhd-brain/storage").end
-    const captureStart = extractBuildTime(buildLog, "@adhd-brain/capture").start
+    const coreEnd = extractBuildTime(buildLog, "@capture-bridge/core").end
+    const storageEnd = extractBuildTime(buildLog, "@capture-bridge/storage").end
+    const captureStart = extractBuildTime(buildLog, "@capture-bridge/capture").start
 
     expect(Math.max(coreEnd, storageEnd)).toBeLessThanOrEqual(captureStart)
   })
@@ -460,10 +460,10 @@ describe("Build Pipeline", () => {
 describe("Test Isolation", () => {
   test("runs all package tests in parallel without conflicts", async () => {
     const results = await Promise.all([
-      runPackageTests("@adhd-brain/foundation"),
-      runPackageTests("@adhd-brain/core"),
-      runPackageTests("@adhd-brain/storage"),
-      runPackageTests("@adhd-brain/capture"),
+      runPackageTests("@capture-bridge/foundation"),
+      runPackageTests("@capture-bridge/core"),
+      runPackageTests("@capture-bridge/storage"),
+      runPackageTests("@capture-bridge/capture"),
     ])
 
     results.forEach((result) => {
@@ -564,38 +564,38 @@ describe("Test Isolation", () => {
 ```typescript
 describe("Package Boundaries", () => {
   test("foundation has zero dependencies", () => {
-    const pkg = loadPackageJson("@adhd-brain/foundation")
+    const pkg = loadPackageJson("@capture-bridge/foundation")
     expect(Object.keys(pkg.dependencies || {})).toHaveLength(0)
   })
 
   test("core only depends on foundation", () => {
-    const pkg = loadPackageJson("@adhd-brain/core")
+    const pkg = loadPackageJson("@capture-bridge/core")
     const deps = Object.keys(pkg.dependencies || {})
-    const internalDeps = deps.filter((d) => d.startsWith("@adhd-brain/"))
+    const internalDeps = deps.filter((d) => d.startsWith("@capture-bridge/"))
 
-    expect(internalDeps).toEqual(["@adhd-brain/foundation"])
+    expect(internalDeps).toEqual(["@capture-bridge/foundation"])
   })
 
   test("storage only depends on foundation", () => {
-    const pkg = loadPackageJson("@adhd-brain/storage")
+    const pkg = loadPackageJson("@capture-bridge/storage")
     const deps = Object.keys(pkg.dependencies || {})
-    const internalDeps = deps.filter((d) => d.startsWith("@adhd-brain/"))
+    const internalDeps = deps.filter((d) => d.startsWith("@capture-bridge/"))
 
-    expect(internalDeps).toEqual(["@adhd-brain/foundation"])
+    expect(internalDeps).toEqual(["@capture-bridge/foundation"])
   })
 
   test("capture depends on foundation + core + storage", () => {
-    const pkg = loadPackageJson("@adhd-brain/capture")
+    const pkg = loadPackageJson("@capture-bridge/capture")
     const deps = Object.keys(pkg.dependencies || {})
-    const internalDeps = deps.filter((d) => d.startsWith("@adhd-brain/"))
+    const internalDeps = deps.filter((d) => d.startsWith("@capture-bridge/"))
 
-    expect(internalDeps).toContain("@adhd-brain/foundation")
-    expect(internalDeps).toContain("@adhd-brain/core")
-    expect(internalDeps).toContain("@adhd-brain/storage")
+    expect(internalDeps).toContain("@capture-bridge/foundation")
+    expect(internalDeps).toContain("@capture-bridge/core")
+    expect(internalDeps).toContain("@capture-bridge/storage")
   })
 
   test("prevents core from importing storage (FORBIDDEN)", async () => {
-    const lintResult = await runESLint("packages/@adhd-brain/core")
+    const lintResult = await runESLint("packages/@capture-bridge/core")
     const violations = lintResult.results
       .flatMap((r) => r.messages)
       .filter((m) => m.message.includes("storage"))
@@ -604,12 +604,12 @@ describe("Package Boundaries", () => {
   })
 
   test("package count enforced (max 4 for MPPP)", () => {
-    const packages = glob.sync("packages/@adhd-brain/*")
+    const packages = glob.sync("packages/@capture-bridge/*")
     expect(packages.length).toBeLessThanOrEqual(4)
   })
 
   test("validates package naming convention", () => {
-    const packages = glob.sync("packages/@adhd-brain/*")
+    const packages = glob.sync("packages/@capture-bridge/*")
     packages.forEach((pkg) => {
       const name = path.basename(pkg)
       expect(name).toMatch(/^[a-z-]+$/) // kebab-case only
@@ -619,7 +619,7 @@ describe("Package Boundaries", () => {
   test("validates package export structure", () => {
     const pkgs = ["foundation", "core", "storage", "capture"]
     pkgs.forEach((name) => {
-      const pkg = loadPackageJson(`@adhd-brain/${name}`)
+      const pkg = loadPackageJson(`@capture-bridge/${name}`)
       expect(pkg.exports).toHaveProperty(".")
       expect(pkg.exports["."].import).toMatch(/\.js$/)
       expect(pkg.exports["."].types).toMatch(/\.d\.ts$/)
@@ -649,7 +649,7 @@ describe("Package Boundaries", () => {
 
     for (const pkg of packages) {
       // Get all exports from package
-      const exports = await getPackageExports(`@adhd-brain/${pkg}`)
+      const exports = await getPackageExports(`@capture-bridge/${pkg}`)
 
       // Verify all exports come from index.ts
       exports.forEach((exp) => {
@@ -658,7 +658,7 @@ describe("Package Boundaries", () => {
 
       // Verify internal modules are not exported
       const internalImports = await findImportsToInternalModules(
-        `@adhd-brain/${pkg}`
+        `@capture-bridge/${pkg}`
       )
       expect(internalImports).toEqual([])
     }
@@ -674,21 +674,21 @@ describe("Package Boundaries", () => {
       // Feature packages should NOT import from other features
       const crossFeatureImports = imports.filter(
         (imp) =>
-          imp.startsWith("@adhd-brain/") &&
-          !imp.startsWith("@adhd-brain/foundation") &&
-          !imp.startsWith("@adhd-brain/testkit") &&
-          !imp.startsWith(`@adhd-brain/${pkg}`)
+          imp.startsWith("@capture-bridge/") &&
+          !imp.startsWith("@capture-bridge/foundation") &&
+          !imp.startsWith("@capture-bridge/testkit") &&
+          !imp.startsWith(`@capture-bridge/${pkg}`)
       )
 
       expect(crossFeatureImports).toEqual([])
     }
 
-    // Only @adhd-brain/foundation is allowed as shared dependency
+    // Only @capture-bridge/foundation is allowed as shared dependency
     const foundationImports = await analyzeImports("packages/foundation")
     const externalImports = foundationImports.filter((imp) =>
-      imp.startsWith("@adhd-brain/")
+      imp.startsWith("@capture-bridge/")
     )
-    expect(externalImports).toEqual([]) // Foundation imports nothing from adhd-brain
+    expect(externalImports).toEqual([]) // Foundation imports nothing from capture-bridge
   })
 
   test("prevents dependency version drift", async () => {
@@ -735,7 +735,7 @@ describe("Package Boundaries", () => {
 
       // All internal dependencies must use workspace: protocol
       Object.keys(deps).forEach((depName) => {
-        if (depName.startsWith("@adhd-brain/")) {
+        if (depName.startsWith("@capture-bridge/")) {
           expect(deps[depName]).toMatch(/^workspace:/)
         }
       })
@@ -752,7 +752,7 @@ describe("Package Boundaries", () => {
         const content = await fs.readFile(file, "utf-8")
 
         // Look for deep imports (bypassing index.ts)
-        const deepImportPattern = /@adhd-brain\/[^/]+\/(?!src\/index)[^'"]+/g
+        const deepImportPattern = /@capture-bridge\/[^/]+\/(?!src\/index)[^'"]+/g
         const deepImports = content.match(deepImportPattern) || []
 
         if (deepImports.length > 0) {
@@ -769,10 +769,10 @@ describe("Package Boundaries", () => {
     const paths = tsConfig.compilerOptions?.paths || {}
 
     const expectedPaths = {
-      "@adhd-brain/foundation": ["./packages/foundation/src/index.ts"],
-      "@adhd-brain/core": ["./packages/core/src/index.ts"],
-      "@adhd-brain/storage": ["./packages/storage/src/index.ts"],
-      "@adhd-brain/capture": ["./packages/capture/src/index.ts"],
+      "@capture-bridge/foundation": ["./packages/foundation/src/index.ts"],
+      "@capture-bridge/core": ["./packages/core/src/index.ts"],
+      "@capture-bridge/storage": ["./packages/storage/src/index.ts"],
+      "@capture-bridge/capture": ["./packages/capture/src/index.ts"],
     }
 
     Object.entries(expectedPaths).forEach(([alias, expectedPath]) => {
@@ -978,28 +978,28 @@ describe("Doctor Command", () => {
   })
 
   test("detects package count > 4", async () => {
-    await createPackage("packages/@adhd-brain/extra")
+    await createPackage("packages/@capture-bridge/extra")
 
     const result = await execAsync("pnpm doctor")
     expect(result.stderr).toContain("Package count 5 exceeds maximum 4")
     expect(result.exitCode).toBe(1)
 
-    await removePackage("packages/@adhd-brain/extra")
+    await removePackage("packages/@capture-bridge/extra")
   })
 
   test("detects circular dependencies", async () => {
     // Temporarily inject circular dep
-    const corePkg = await readPackageJson("@adhd-brain/core")
-    corePkg.dependencies["@adhd-brain/storage"] = "workspace:*"
-    await writePackageJson("@adhd-brain/core", corePkg)
+    const corePkg = await readPackageJson("@capture-bridge/core")
+    corePkg.dependencies["@capture-bridge/storage"] = "workspace:*"
+    await writePackageJson("@capture-bridge/core", corePkg)
 
     const result = await execAsync("pnpm doctor")
     expect(result.stderr).toContain("Circular dependencies detected")
     expect(result.exitCode).toBe(1)
 
     // Restore
-    delete corePkg.dependencies["@adhd-brain/storage"]
-    await writePackageJson("@adhd-brain/core", corePkg)
+    delete corePkg.dependencies["@capture-bridge/storage"]
+    await writePackageJson("@capture-bridge/core", corePkg)
   })
 
   test("detects invalid TypeScript config", async () => {
@@ -1194,7 +1194,7 @@ describe("TestKit Vitest Configuration", () => {
           {
             test: {
               name: "foundation",
-              include: ["packages/@adhd-brain/foundation/**/*.test.ts"],
+              include: ["packages/@capture-bridge/foundation/**/*.test.ts"],
             },
           },
         ],
@@ -1259,9 +1259,9 @@ import {
 describe("Monorepo Dependency Patterns", () => {
   test("validates foundation package has zero internal dependencies", () => {
     const graph = buildPackageDependencyGraph()
-    const foundationDeps = graph.get("@adhd-brain/foundation") || []
+    const foundationDeps = graph.get("@capture-bridge/foundation") || []
     const internalDeps = foundationDeps.filter((dep) =>
-      dep.startsWith("@adhd-brain/")
+      dep.startsWith("@capture-bridge/")
     )
 
     expect(internalDeps).toHaveLength(0)
@@ -1271,34 +1271,34 @@ describe("Monorepo Dependency Patterns", () => {
     const graph = buildPackageDependencyGraph()
 
     // Core and Storage should NOT depend on each other
-    const coreDeps = graph.get("@adhd-brain/core") || []
-    const storageDeps = graph.get("@adhd-brain/storage") || []
+    const coreDeps = graph.get("@capture-bridge/core") || []
+    const storageDeps = graph.get("@capture-bridge/storage") || []
 
-    expect(coreDeps).not.toContain("@adhd-brain/storage")
-    expect(storageDeps).not.toContain("@adhd-brain/core")
+    expect(coreDeps).not.toContain("@capture-bridge/storage")
+    expect(storageDeps).not.toContain("@capture-bridge/core")
   })
 
   test("validates capture package properly aggregates dependencies", () => {
     const graph = buildPackageDependencyGraph()
-    const captureDeps = graph.get("@adhd-brain/capture") || []
+    const captureDeps = graph.get("@capture-bridge/capture") || []
 
-    expect(captureDeps).toContain("@adhd-brain/foundation")
-    expect(captureDeps).toContain("@adhd-brain/core")
-    expect(captureDeps).toContain("@adhd-brain/storage")
+    expect(captureDeps).toContain("@capture-bridge/foundation")
+    expect(captureDeps).toContain("@capture-bridge/core")
+    expect(captureDeps).toContain("@capture-bridge/storage")
   })
 
   test("detects transitive circular dependencies", () => {
     // Test with synthetic circular dependency
     const syntheticGraph = new Map([
-      ["@adhd-brain/core", ["@adhd-brain/foundation", "@adhd-brain/storage"]],
-      ["@adhd-brain/storage", ["@adhd-brain/foundation", "@adhd-brain/core"]],
+      ["@capture-bridge/core", ["@capture-bridge/foundation", "@capture-bridge/storage"]],
+      ["@capture-bridge/storage", ["@capture-bridge/foundation", "@capture-bridge/core"]],
     ])
 
     const cycles = detectCircularDependencies(syntheticGraph)
     expect(cycles).toContainEqual([
-      "@adhd-brain/core",
-      "@adhd-brain/storage",
-      "@adhd-brain/core",
+      "@capture-bridge/core",
+      "@capture-bridge/storage",
+      "@capture-bridge/core",
     ])
   })
 })
@@ -1313,7 +1313,7 @@ describe('Package Export Patterns', () => {
     const packages = ['foundation', 'core', 'storage', 'capture']
 
     packages.forEach(pkg => {
-      const packageJson = loadPackageJson(`@adhd-brain/${pkg}`)
+      const packageJson = loadPackageJson(`@capture-bridge/${pkg}`)
 
       expect(packageJson.exports).toHaveProperty('.')
       expect(packageJson.exports['.']).toHaveProperty('import')
@@ -1331,7 +1331,7 @@ describe('Package Export Patterns', () => {
     const packages = ['foundation', 'core', 'storage', 'capture']
 
     packages.forEach(pkg => {
-      const distPath = `packages/@adhd-brain/${pkg}/dist`
+      const distPath = `packages/@capture-bridge/${pkg}/dist`
 
       expect(fs.existsSync(`${distPath}/index.js`)).toBe(true)
       expect(fs.existsSync(`${distPath}/index.d.ts`)).toBe(true)
@@ -1342,7 +1342,7 @@ describe('Package Export Patterns', () => {
   test('validates type-only imports work correctly', () => {
     // Test that type imports don't create runtime dependencies
     const typeOnlyImport = `
-      import type { CaptureItem } from '@adhd-brain/foundation'
+      import type { CaptureItem } from '@capture-bridge/foundation'
 
       export function processCaptureTypes(item: CaptureItem): void {
         // This should compile but not create runtime dependency
@@ -1371,10 +1371,10 @@ describe("Workspace Configuration", () => {
     const discoveredPackages = glob.sync(workspaceConfig.packages)
 
     const expectedPackages = [
-      "packages/@adhd-brain/foundation",
-      "packages/@adhd-brain/core",
-      "packages/@adhd-brain/storage",
-      "packages/@adhd-brain/capture",
+      "packages/@capture-bridge/foundation",
+      "packages/@capture-bridge/core",
+      "packages/@capture-bridge/storage",
+      "packages/@capture-bridge/capture",
     ]
 
     expectedPackages.forEach((pkg) => {
@@ -1390,11 +1390,11 @@ describe("Workspace Configuration", () => {
     const packages = ["core", "storage", "capture"]
 
     packages.forEach((pkg) => {
-      const packageJson = loadPackageJson(`@adhd-brain/${pkg}`)
+      const packageJson = loadPackageJson(`@capture-bridge/${pkg}`)
       const deps = packageJson.dependencies || {}
 
       Object.keys(deps).forEach((depName) => {
-        if (depName.startsWith("@adhd-brain/")) {
+        if (depName.startsWith("@capture-bridge/")) {
           expect(deps[depName]).toMatch(/^workspace:/)
         }
       })
@@ -1614,7 +1614,7 @@ import { createBaseVitestConfig } from "@orchestr8/testkit/vitest-config"
 export default defineConfig(
   createBaseVitestConfig({
     test: {
-      name: "adhd-brain-foundation",
+      name: "capture-bridge-foundation",
       environment: "node",
       globals: true,
       coverage: {
@@ -1632,25 +1632,25 @@ export default defineConfig(
         {
           test: {
             name: "foundation",
-            include: ["packages/@adhd-brain/foundation/**/*.test.ts"],
+            include: ["packages/@capture-bridge/foundation/**/*.test.ts"],
           },
         },
         {
           test: {
             name: "core",
-            include: ["packages/@adhd-brain/core/**/*.test.ts"],
+            include: ["packages/@capture-bridge/core/**/*.test.ts"],
           },
         },
         {
           test: {
             name: "storage",
-            include: ["packages/@adhd-brain/storage/**/*.test.ts"],
+            include: ["packages/@capture-bridge/storage/**/*.test.ts"],
           },
         },
         {
           test: {
             name: "capture",
-            include: ["packages/@adhd-brain/capture/**/*.test.ts"],
+            include: ["packages/@capture-bridge/capture/**/*.test.ts"],
           },
         },
       ],
@@ -1700,17 +1700,17 @@ module.exports = {
     {
       name: "foundation-has-no-deps",
       severity: "error",
-      from: { path: "packages/@adhd-brain/foundation" },
+      from: { path: "packages/@capture-bridge/foundation" },
       to: {
-        path: "packages/@adhd-brain/",
-        pathNot: "^packages/@adhd-brain/foundation",
+        path: "packages/@capture-bridge/",
+        pathNot: "^packages/@capture-bridge/foundation",
       },
     },
     {
       name: "core-no-storage",
       severity: "error",
-      from: { path: "packages/@adhd-brain/core" },
-      to: { path: "packages/@adhd-brain/storage" },
+      from: { path: "packages/@capture-bridge/core" },
+      to: { path: "packages/@capture-bridge/storage" },
     },
   ],
 }
@@ -1828,8 +1828,8 @@ describe("Setup Workflow", () => {
     // Verify outputs
     const packages = ["foundation", "core", "storage", "capture"]
     for (const pkg of packages) {
-      await temp.assertFileExists(`packages/@adhd-brain/${pkg}/dist/index.js`)
-      await temp.assertFileExists(`packages/@adhd-brain/${pkg}/dist/index.d.ts`)
+      await temp.assertFileExists(`packages/@capture-bridge/${pkg}/dist/index.js`)
+      await temp.assertFileExists(`packages/@capture-bridge/${pkg}/dist/index.d.ts`)
     }
 
     await temp.cleanup()
@@ -1862,7 +1862,7 @@ export function loadPackageJson(packageName: string) {
   const pkgPath = path.join(
     process.cwd(),
     "packages",
-    packageName.replace("@adhd-brain/", ""),
+    packageName.replace("@capture-bridge/", ""),
     "package.json"
   )
   return JSON.parse(fs.readFileSync(pkgPath, "utf-8"))
@@ -1872,7 +1872,7 @@ export function writePackageJson(packageName: string, data: object) {
   const pkgPath = path.join(
     process.cwd(),
     "packages",
-    packageName.replace("@adhd-brain/", ""),
+    packageName.replace("@capture-bridge/", ""),
     "package.json"
   )
   fs.writeFileSync(pkgPath, JSON.stringify(data, null, 2))
@@ -2122,7 +2122,7 @@ jobs:
 pnpm test:unit
 
 # Specific package
-pnpm test --filter=@adhd-brain/foundation
+pnpm test --filter=@capture-bridge/foundation
 ```
 
 **Mode 2: Comprehensive (< 60s)**
@@ -2152,7 +2152,7 @@ pnpm test:e2e
 pnpm test:watch
 
 # Watch specific package
-pnpm test:watch --filter=@adhd-brain/core
+pnpm test:watch --filter=@capture-bridge/core
 ```
 
 ---
@@ -2170,28 +2170,28 @@ export default defineConfig({
     coverage: {
       thresholds: {
         // Foundation (highest risk - shared types)
-        "packages/@adhd-brain/foundation/**": {
+        "packages/@capture-bridge/foundation/**": {
           statements: 90,
           branches: 85,
           functions: 90,
           lines: 90,
         },
         // Core (high risk - business logic)
-        "packages/@adhd-brain/core/**": {
+        "packages/@capture-bridge/core/**": {
           statements: 85,
           branches: 80,
           functions: 85,
           lines: 85,
         },
         // Storage (high risk - data integrity)
-        "packages/@adhd-brain/storage/**": {
+        "packages/@capture-bridge/storage/**": {
           statements: 80,
           branches: 75,
           functions: 80,
           lines: 80,
         },
         // Capture (medium risk - orchestration)
-        "packages/@adhd-brain/capture/**": {
+        "packages/@capture-bridge/capture/**": {
           statements: 80,
           branches: 75,
           functions: 80,
@@ -2221,7 +2221,7 @@ open coverage/index.html
 **Coverage Badge (README):**
 
 ```markdown
-[![Coverage](https://codecov.io/gh/nathanvale/adhd-brain/branch/main/graph/badge.svg)](https://codecov.io/gh/nathanvale/adhd-brain)
+[![Coverage](https://codecov.io/gh/nathanvale/capture-bridge/branch/main/graph/badge.svg)](https://codecov.io/gh/nathanvale/capture-bridge)
 ```
 
 ### 8.3 Uncovered Code Analysis
@@ -2304,20 +2304,20 @@ strategy:
 
 ### Foundation Documents
 
-- [Master PRD v2.3.0-MPPP](/Users/nathanvale/code/adhd-brain/docs/master/prd-master.md) - Overall system requirements
-- [Roadmap v2.0.0-MPPP](/Users/nathanvale/code/adhd-brain/docs/master/roadmap.md) - Dependency-ordered delivery plan
+- [Master PRD v2.3.0-MPPP](/Users/nathanvale/code/capture-bridge/docs/master/prd-master.md) - Overall system requirements
+- [Roadmap v2.0.0-MPPP](/Users/nathanvale/code/capture-bridge/docs/master/roadmap.md) - Dependency-ordered delivery plan
 
 ### Feature Specifications
 
-- [Foundation Monorepo PRD](/Users/nathanvale/code/adhd-brain/docs/cross-cutting/prd-foundation-monorepo.md) - Product requirements
-- [Foundation Monorepo Tech Spec](/Users/nathanvale/code/adhd-brain/docs/cross-cutting/spec-foundation-monorepo-tech.md) - Technical contracts
+- [Foundation Monorepo PRD](/Users/nathanvale/code/capture-bridge/docs/cross-cutting/prd-foundation-monorepo.md) - Product requirements
+- [Foundation Monorepo Tech Spec](/Users/nathanvale/code/capture-bridge/docs/cross-cutting/spec-foundation-monorepo-tech.md) - Technical contracts
 
 ### Testing Guides
 
-- [TDD Applicability Guide](/Users/nathanvale/code/adhd-brain/docs/guides/guide-tdd-applicability.md) - When to apply TDD
-- [TestKit Usage Guide](/Users/nathanvale/code/adhd-brain/docs/guides/guide-testkit-usage.md) - Testing patterns
-- [Test Strategy Guide](/Users/nathanvale/code/adhd-brain/docs/guides/guide-test-strategy.md) - Overall testing approach
-- [Phase 1 Testing Patterns](/Users/nathanvale/code/adhd-brain/docs/guides/guide-phase1-testing-patterns.md) - MPPP-specific patterns
+- [TDD Applicability Guide](/Users/nathanvale/code/capture-bridge/docs/guides/guide-tdd-applicability.md) - When to apply TDD
+- [TestKit Usage Guide](/Users/nathanvale/code/capture-bridge/docs/guides/guide-testkit-usage.md) - Testing patterns
+- [Test Strategy Guide](/Users/nathanvale/code/capture-bridge/docs/guides/guide-test-strategy.md) - Overall testing approach
+- [Phase 1 Testing Patterns](/Users/nathanvale/code/capture-bridge/docs/guides/guide-phase1-testing-patterns.md) - MPPP-specific patterns
 
 ### Gold Standard Repository
 

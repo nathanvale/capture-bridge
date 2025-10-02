@@ -1,4 +1,4 @@
-# Master PRD v2.3.0-MPPP: ADHD Capture Bridge for Obsidian
+# Master PRD v2.3.0-MPPP: Capture Bridge for Obsidian
 
 _Status: source of truth • Directionality: one-way (staging → Obsidian)_
 
@@ -353,7 +353,7 @@ All exports use ULID filenames (`01HQW3P7XKZM2YJVT8YFGQSZ4M.md`), which are glob
 **Backup Schedule:**
 
 - **Frequency:** Hourly automated backups using SQLite `.backup` command
-- **Location:** `${VAULT_ROOT}/.adhd-brain/.backups/ledger-YYYYMMDD-HH.sqlite`
+- **Location:** `${VAULT_ROOT}/.capture-bridge/.backups/ledger-YYYYMMDD-HH.sqlite`
 - **Retention:** 24 hourly snapshots + 7 daily snapshots (oldest hourly pruned after 24h)
 
 **Verification Protocol:**

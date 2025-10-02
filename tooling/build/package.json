@@ -1,5 +1,5 @@
 {
-  "name": "@adhd-brain/build-config",
+  "name": "@capture-bridge/build-config",
   "version": "0.1.0",
   "private": true,
   "type": "module",

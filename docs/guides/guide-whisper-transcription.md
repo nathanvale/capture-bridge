@@ -53,7 +53,7 @@ Use this guide when you need to:
 
 **Required Setup:**
 
-- Whisper model file: `~/.adhd-brain/models/whisper-medium.pt`
+- Whisper model file: `~/.capture-bridge/models/whisper-medium.pt`
 - Capture package with job queue infrastructure
 - Environment variables: `DB_PATH`, `CAPTURE_METRICS`, `WHISPER_MODEL_PATH`
 - Minimum 4GB RAM available for transcription
@@ -101,14 +101,14 @@ pnpm add whisper-node
 pnpm whisper-download medium
 
 # Verify installation
-ls -lh ~/.adhd-brain/models/whisper-medium.pt
+ls -lh ~/.capture-bridge/models/whisper-medium.pt
 # Expected: ~1.5GB file
 ```
 
 **Directory Structure:**
 
 ```
-~/.adhd-brain/
+~/.capture-bridge/
 ├── models/
 │   └── whisper-medium.pt  # 1.5GB model file
 ├── ledger.sqlite           # Captures database
@@ -121,7 +121,7 @@ ls -lh ~/.adhd-brain/models/whisper-medium.pt
 import { Whisper } from "whisper-node"
 
 async function validateWhisperSetup(): Promise<void> {
-  const modelPath = "~/.adhd-brain/models/whisper-medium.pt"
+  const modelPath = "~/.capture-bridge/models/whisper-medium.pt"
 
   // Check model file exists
   const exists = await fs
@@ -147,7 +147,7 @@ async function validateWhisperSetup(): Promise<void> {
 **Goal:** Create sequential job processing with concurrency=1
 
 ```typescript
-// packages/@adhd-brain/capture/src/transcription/queue.ts
+// packages/@capture-bridge/capture/src/transcription/queue.ts
 interface TranscriptionJob {
   captureId: string
   audioPath: string
@@ -443,7 +443,7 @@ class WhisperModel {
     try {
       const startTime = performance.now()
       this.model = await loadWhisperModel({
-        modelPath: "~/.adhd-brain/models/whisper-medium.pt",
+        modelPath: "~/.capture-bridge/models/whisper-medium.pt",
         device: "auto", // Use Metal on macOS if available
       })
 
@@ -557,7 +557,7 @@ interface WhisperModelContract {
 }
 
 interface ModelLoadConfig {
-  modelPath: string // ~/.adhd-brain/models/whisper-medium.pt
+  modelPath: string // ~/.capture-bridge/models/whisper-medium.pt
   device: "auto" | "cpu" | "gpu" // Prefer Metal on macOS
   maxMemoryMb: number // 2000 (2GB ceiling)
   timeoutMs: number // 30000 (30s load timeout)
@@ -964,13 +964,13 @@ metrics.gauge("transcription_failure_rate_percent", failureRate)
 
 ```bash
 # Remove corrupted model
-rm ~/.adhd-brain/models/whisper-medium.pt
+rm ~/.capture-bridge/models/whisper-medium.pt
 
 # Re-download
 pnpm whisper-download medium
 
 # Verify file size (~1.5GB)
-ls -lh ~/.adhd-brain/models/whisper-medium.pt
+ls -lh ~/.capture-bridge/models/whisper-medium.pt
 ```
 
 ### Error: Transcription Timeout
@@ -1052,12 +1052,12 @@ async function validateAudioFormat(filePath: string): Promise<void> {
 
 ```typescript
 import { Whisper } from "whisper-node"
-import { TranscriptionQueue } from "@adhd-brain/capture"
+import { TranscriptionQueue } from "@capture-bridge/capture"
 
 async function setupTranscription() {
   // Initialize Whisper model
   const whisper = new Whisper({
-    modelPath: "~/.adhd-brain/models/whisper-medium.pt",
+    modelPath: "~/.capture-bridge/models/whisper-medium.pt",
     device: "auto",
   })
 
@@ -1088,7 +1088,7 @@ async function setupTranscription() {
 async function getTranscriptionHealth(): Promise<HealthReport> {
   const status = transcriptionQueue.getStatus();
   const metrics = await queryMetrics('transcription_*', '24h');
-  const modelPath = '~/.adhd-brain/models/whisper-medium.pt';
+  const modelPath = '~/.capture-bridge/models/whisper-medium.pt';
 
   return {
     status: status.isProcessing ? 'processing' : 'idle',
