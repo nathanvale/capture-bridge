@@ -1,475 +1,97 @@
-name: ADHD CI
+name: CI
+
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
-    branches:
-      - '**'  # Run on all PRs including changeset-release/*
   push:
-    branches: [main, develop, 'changeset-release/**']  # Also trigger on changeset branches
+    branches: [main, develop]
   workflow_dispatch:
-    inputs:
-      debug_enabled:
-        type: boolean
-        description: 'Enable debug logging'
-        required: false
-        default: false
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: "20.18.1"
+  NODE_VERSION: "20.18.0"
   PNPM_VERSION: "9.15.4"
   NODE_OPTIONS: "--max-old-space-size=4096"
-  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-  TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
-  TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.event.pull_request.base.ref) || 'origin/main' }}
-  # Enable debug logging when manually triggered with debug_enabled
-  ACTIONS_STEP_DEBUG: ${{ inputs.debug_enabled == 'true' && 'true' || '' }}
-  ACTIONS_RUNNER_DEBUG: ${{ inputs.debug_enabled == 'true' && 'true' || '' }}
 
 permissions:
   contents: read
-  actions: read
   checks: write
 
 jobs:
-  quick-tests:
-    name: ⚡ Quick Tests
+  # Single job - Turborepo orchestrates everything
+  validate:
+    name: Validate
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    env:
-      VITEST_SILENT: 'true'
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup PNPM with Caching
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for turbo --filter
+
+      - name: Setup PNPM
         uses: ./.github/actions/setup-pnpm
         with:
           node-version: ${{ env.NODE_VERSION }}
           pnpm-version: ${{ env.PNPM_VERSION }}
-      - name: Run Smoke Tests (with JUnit, low-noise)
+
+      # PR: Only validate affected packages
+      - name: Validate affected packages (PR)
+        if: github.event_name == 'pull_request'
         run: |
-          mkdir -p test-results
-          pnpm run test:smoke -- --reporter=dot --reporter=junit --outputFile=./test-results/junit-smoke.xml
-      - name: Upload JUnit (Smoke)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: junit-smoke-${{ github.run_number }}
-          path: test-results/junit-smoke.xml
-          retention-days: 14
+          turbo run build lint typecheck test \
+            --filter="...[origin/${{ github.event.pull_request.base.ref }}]" \
+            --output-logs=errors-only
 
-  focused-tests:
-    name: 🎯 Focused Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    env:
-      VITEST_SILENT: 'true'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Setup PNPM with Caching
-        uses: ./.github/actions/setup-pnpm
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          pnpm-version: ${{ env.PNPM_VERSION }}
-      - name: Run Focused Tests
+      # Push to main/develop: Validate everything
+      - name: Validate all packages (Push)
+        if: github.event_name == 'push'
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            DEFAULT_BASE="origin/${{ github.event.pull_request.base.ref }}"
-          elif [[ "${{ github.ref_name }}" == "develop" ]]; then
-            DEFAULT_BASE="origin/develop"
-          else
-            DEFAULT_BASE="origin/main"
-          fi
-          BASE_SHA=$(git merge-base HEAD "$DEFAULT_BASE" 2>/dev/null || echo "$DEFAULT_BASE")
-          echo "Using base: $BASE_SHA (from $DEFAULT_BASE)"
-          mkdir -p test-results
-          CHANGED_FILES=$(pnpm exec vitest list --changed "$BASE_SHA" --filesOnly || true)
-          if [[ -z "$CHANGED_FILES" ]]; then
-            echo "ℹ️  No changed tests detected. Skipping focused test run."
-            echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?><testsuites/>" > ./test-results/junit-focused.xml
-          else
-            echo "$CHANGED_FILES" | tee ./test-results/changed-tests.txt
-            pnpm exec vitest run --changed "$BASE_SHA" --no-coverage --bail=1 \
-              --reporter=dot --reporter=junit --outputFile=./test-results/junit-focused.xml
-          fi
-      - name: Upload JUnit (Focused)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: junit-focused-${{ github.run_number }}
-          path: test-results/junit-focused.xml
-          retention-days: 14
+          turbo run build lint typecheck test \
+            --output-logs=errors-only
 
-  lint-quality:
-    name: 🧹 Lint & Format Check
-    runs-on: ubuntu-latest
-    if: ${{ !cancelled() }}
-    timeout-minutes: 4
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup PNPM with Caching
-        uses: ./.github/actions/setup-pnpm
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          pnpm-version: ${{ env.PNPM_VERSION }}
-      - name: Lint & Format (no typecheck)
-        run: turbo run lint "//#format:check:root" --output-logs=errors-only
-
-  typecheck:
-    name: 🔡 Type Check
-    runs-on: ubuntu-latest
-    if: ${{ !cancelled() }}
-    timeout-minutes: 8
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup PNPM with Caching
-        uses: ./.github/actions/setup-pnpm
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          pnpm-version: ${{ env.PNPM_VERSION }}
-      - name: TypeScript Type Check
-        run: turbo run typecheck --output-logs=errors-only
-
-  unit-tests:
-    name: 🧪 Unit Tests (Full)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      VITEST_SILENT: 'true'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup PNPM with Caching
-        uses: ./.github/actions/setup-pnpm
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          pnpm-version: ${{ env.PNPM_VERSION }}
-      - name: Run Full Unit Test Suite (JUnit + no coverage for speed)
+      # Manual trigger: Validate everything
+      - name: Validate all packages (Manual)
+        if: github.event_name == 'workflow_dispatch'
         run: |
-          mkdir -p test-results
-          pnpm test -- --reporter=dot --reporter=junit --outputFile=./test-results/junit-unit.xml --no-coverage
-      - name: Upload JUnit (Unit)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: junit-unit-${{ github.run_number }}
-          path: test-results/junit-unit.xml
-          retention-days: 14
+          turbo run build lint typecheck test \
+            --output-logs=errors-only
 
-  build:
-    name: 🏗️ Build
-    runs-on: ubuntu-latest
-    needs: [quick-tests, lint-quality, typecheck, unit-tests]
-    if: ${{ !cancelled() && needs.quick-tests.result == 'success' && needs.lint-quality.result == 'success' && needs.typecheck.result == 'success' && needs.unit-tests.result == 'success' }}
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup PNPM with Caching
-        uses: ./.github/actions/setup-pnpm
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          pnpm-version: ${{ env.PNPM_VERSION }}
-      - name: Build packages
-        run: |
-          # Capture Turbo cache statistics
-          pnpm build 2>&1 | tee build.log
-
-          # Extract cache hit rate
-          CACHE_SUMMARY=$(grep -E "(Remote|Local) cache hit|cache miss" build.log || echo "No cache info available")
-          echo "### 📊 Turbo Cache Statistics" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "$CACHE_SUMMARY" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-          # Save metrics
-          echo "$CACHE_SUMMARY" > turbo-cache-metrics.txt
-      - name: Upload Turbo Metrics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: turbo-metrics-build-${{ github.run_number }}
-          path: turbo-cache-metrics.txt
-          retention-days: 7
-
-  integration-tests:
-    name: 🔬 Integration Tests
-    runs-on: ubuntu-latest
-    needs: [quick-tests, lint-quality, typecheck, unit-tests, build]
-    timeout-minutes: 8
-    if: ${{ !cancelled() && needs.quick-tests.result == 'success' && needs.lint-quality.result == 'success' && needs.typecheck.result == 'success' && needs.unit-tests.result == 'success' && needs.build.result == 'success' }}
-    env:
-      VITEST_SILENT: 'true'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup PNPM with Caching
-        uses: ./.github/actions/setup-pnpm
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          pnpm-version: ${{ env.PNPM_VERSION }}
-      - name: Run Integration Tests with Fast Fail (low-noise)
-        run: |
-          mkdir -p test-results
-          TEST_MODE=integration pnpm exec vitest run --bail=1 --no-coverage \
-            --reporter=dot --reporter=junit --outputFile=./test-results/junit-integration.xml
-      - name: Upload JUnit (Integration)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: junit-integration-${{ github.run_number }}
-          path: test-results/junit-integration.xml
-          retention-days: 14
-
-  commit-lint:
-    name: ⚧ Commit Lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Setup PNPM with Caching
-        uses: ./.github/actions/setup-pnpm
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          pnpm-version: ${{ env.PNPM_VERSION }}
-      - run: |
-          # Use commitlint's from/to range checking which respects ignores config
-          # This will automatically skip merge commits based on commitlint.config.js
-          pnpm commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
-
+  # Only run on push to main - informational only
   coverage:
-    name: 📊 Code Coverage
+    name: Coverage Report
     runs-on: ubuntu-latest
     timeout-minutes: 15
     if: github.event_name == 'push' && github.ref_name == 'main'
-    env:
-      VITEST_SILENT: 'true'
     steps:
       - uses: actions/checkout@v4
-      - name: Setup PNPM with Caching
-        uses: ./.github/actions/setup-pnpm
+
+      - uses: ./.github/actions/setup-pnpm
         with:
           node-version: ${{ env.NODE_VERSION }}
           pnpm-version: ${{ env.PNPM_VERSION }}
-      - name: Run Tests with Coverage
-        run: |
-          mkdir -p coverage-reports
-          pnpm test:coverage -- --reporter=dot
-      - name: Upload Coverage Report
+
+      - name: Run tests with coverage
+        run: pnpm test:coverage
+
+      - name: Upload coverage
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report-${{ github.run_number }}
+          name: coverage-${{ github.sha }}
           path: coverage
           retention-days: 30
-      - name: Generate Coverage Summary
+
+      - name: Coverage summary
         run: |
           echo "## 📊 Coverage Report" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          # Extract coverage summary from the coverage output
           if [ -f coverage/coverage-summary.json ]; then
             node -e "
-              const coverage = require('./coverage/coverage-summary.json');
-              const total = coverage.total;
-              console.log('Lines:       ' + total.lines.pct + '%');
-              console.log('Statements:  ' + total.statements.pct + '%');
-              console.log('Functions:   ' + total.functions.pct + '%');
-              console.log('Branches:    ' + total.branches.pct + '%');
-            " >> $GITHUB_STEP_SUMMARY
-          else
-            echo "Coverage report not found" >> $GITHUB_STEP_SUMMARY
+              const c = require('./coverage/coverage-summary.json').total;
+              console.log('Lines: ' + c.lines.pct + '%');
+              console.log('Statements: ' + c.statements.pct + '%');
+              console.log('Functions: ' + c.functions.pct + '%');
+              console.log('Branches: ' + c.branches.pct + '%');
+            " | tee -a $GITHUB_STEP_SUMMARY
           fi
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-  ci-status:
-    name: 📊 CI Status
-    runs-on: ubuntu-latest
-    needs: [quick-tests, focused-tests, unit-tests, integration-tests, lint-quality, typecheck, build, commit-lint]
-    if: always()
-    steps:
-      - name: Download all JUnit artifacts
-        if: always()
-        uses: actions/download-artifact@v4
-        with:
-          pattern: junit-*
-          merge-multiple: true
-          path: aggregated-junit
-
-      - name: Publish JUnit Test Report (Dashboard)
-        if: always()
-        uses: mikepenz/action-junit-report@v4
-        with:
-          report_paths: 'aggregated-junit/**/*.xml'
-          check_name: 'Test Report'
-          detailed_summary: true
-          include_passed: false
-          require_tests: false
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Generate HTML Test Report
-        if: always()
-        run: |
-          # Check if aggregated-junit exists and has files
-          if [ -d aggregated-junit ] && [ "$(ls -A aggregated-junit 2>/dev/null)" ]; then
-            mkdir -p test-report
-            npx --yes junit-viewer@4 --results=aggregated-junit --save=test-report/index.html --minify
-            echo "HTML report generated at test-report/index.html"
-          else
-            echo "No JUnit files found, creating placeholder report"
-            mkdir -p test-report
-            echo '<!DOCTYPE html><html><head><title>No Test Results</title></head><body><h1>No test results available</h1></body></html>' > test-report/index.html
-          fi
-      - name: Upload HTML Test Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-report-html-${{ github.run_number }}
-          path: test-report
-          retention-days: 14
-
-      - name: Upload Aggregated JUnit
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: junit-all-${{ github.run_number }}
-          path: aggregated-junit
-          retention-days: 14
-
-      - name: Generate Enhanced Status Report
-        run: |
-          # Generate status for both console logs and GitHub Step Summary
-          STATUS_CONTENT=$(cat << EOF
-          # 🎯 ADHD-Optimized CI Pipeline Status
-
-          ## 📊 Pipeline Results
-
-          | Job | Status | Result |
-          |-----|--------|---------|
-          | ⚡ Quick Tests | $([[ "${{ needs.quick-tests.result }}" == "success" ]] && echo "✅" || echo "❌") | ${{ needs.quick-tests.result }} |
-          | 🎯 Focused Tests | $([[ "${{ needs.focused-tests.result }}" == "success" ]] && echo "✅" || echo "❌") | ${{ needs.focused-tests.result }} |
-          | 🧪 Unit Tests (Full) | $([[ "${{ needs.unit-tests.result }}" == "success" ]] && echo "✅" || echo "❌") | ${{ needs.unit-tests.result }} |
-          | 🔬 Integration Tests | $([[ "${{ needs.integration-tests.result }}" == "success" ]] && echo "✅" || [[ "${{ needs.integration-tests.result }}" == "skipped" ]] && echo "⏭️" || echo "❌") | ${{ needs.integration-tests.result }} |
-          | 🧹 Lint & Format | $([[ "${{ needs.lint-quality.result }}" == "success" ]] && echo "✅" || echo "❌") | ${{ needs.lint-quality.result }} |
-          | 🔡 Type Check | $([[ "${{ needs.typecheck.result }}" == "success" ]] && echo "✅" || echo "❌") | ${{ needs.typecheck.result }} |
-          | 🏠 Build | $([[ "${{ needs.build.result }}" == "success" ]] && echo "✅" || echo "❌") | ${{ needs.build.result }} |
-          | ⚧ Commit Lint | $([[ "${{ needs.commit-lint.result }}" == "success" ]] && echo "✅" || [[ "${{ needs.commit-lint.result }}" == "skipped" ]] && echo "⏭️" || echo "❌") | ${{ needs.commit-lint.result }} |
-
-          ## 🧭 Pipeline Flow
-          Setup → Quick/Focused/Lint+Format/TypeCheck/Full Unit (parallel) → Build → Integration → Status
-
-          ## 🔧 Available Fix Commands
-          - **Lint**: \`pnpm lint:fix\`
-          - **Format**: \`pnpm format\`
-          - **Types**: \`pnpm typecheck\`
-          - **Tests**: \`pnpm test\`
-          - **Integration**: \`pnpm test:integration\`
-          
-          ## 📦 Test Results
-          - Check: "Test Report" in GitHub Checks (below) for detailed test results
-          - Artifacts: junit-all-${GITHUB_RUN_NUMBER} (downloadable XML files)
-          - HTML Report: test-report-html-${GITHUB_RUN_NUMBER} (downloadable)
-          EOF
-          )
-
-          # Output to both console and GitHub Step Summary
-          echo "$STATUS_CONTENT"
-          echo "$STATUS_CONTENT" >> $GITHUB_STEP_SUMMARY
-
-          # Failure check
-          if [[ "${{ needs.quick-tests.result }}" == "failure" || "${{ needs.focused-tests.result }}" == "failure" || "${{ needs.unit-tests.result }}" == "failure" || "${{ needs.integration-tests.result }}" == "failure" || "${{ needs.lint-quality.result }}" == "failure" || "${{ needs.typecheck.result }}" == "failure" || "${{ needs.build.result }}" == "failure" || "${{ needs.commit-lint.result }}" == "failure" ]]; then
-            echo "❌ CI Pipeline failed" | tee -a $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-          echo "✅ All CI checks passed!" | tee -a $GITHUB_STEP_SUMMARY
-
-  publish-test-report:
-    name: 🚀 Publish Test Report (Pages)
-    if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
-    needs: [ci-status]
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-      - name: Setup PNPM with Caching
-        uses: ./.github/actions/setup-pnpm
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          pnpm-version: ${{ env.PNPM_VERSION }}
-      - name: Download Aggregated JUnit
-        uses: actions/download-artifact@v4
-        with:
-          name: junit-all-${{ github.run_number }}
-          path: aggregated-junit
-      - name: Generate HTML Test Report
-        run: |
-          # Prepare report directory
-          mkdir -p test-report/junit
-          # Copy raw XML for agents
-          find aggregated-junit -type f -name '*.xml' -exec cp {} test-report/junit/ \;
-          # Create a simple index for XML files
-          (
-            echo '<!doctype html><meta charset="utf-8"><title>JUnit XML</title><h1>JUnit XML Files</h1><ul>'
-            for f in $(ls test-report/junit/*.xml 2>/dev/null | xargs -n1 basename); do
-              echo "<li><a href=\"$f\">$f</a></li>"
-            done
-            echo '</ul>'
-          ) > test-report/junit/index.html
-          # Create machine-readable JSON index of XML files
-          (
-            echo '{'
-            echo '  "version": 1,'
-            echo '  "generatedAt": "'"$(date -u +%FT%TZ)"'",'
-            echo '  "run": {'
-            echo '    "runId": '"${GITHUB_RUN_ID}"','
-            echo '    "runNumber": '"${GITHUB_RUN_NUMBER}"','
-            echo '    "repo": '"\"${GITHUB_REPOSITORY}\""','
-            echo '    "ref": '"\"${GITHUB_REF}\""','
-            echo '    "sha": '"\"${GITHUB_SHA}\""''
-            echo '  },'
-            echo '  "urls": {'
-            echo '    "html": "index.html",'
-            echo '    "xmlZip": "junit.zip",'
-            echo '    "xmlIndex": "junit/index.html"'
-            echo '  },'
-            echo '  "files": ['
-            first=1
-            for f in test-report/junit/*.xml; do
-              [ -f "$f" ] || continue
-              name=$(basename "$f")
-              size=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo 0)
-              sha=$(sha256sum "$f" 2>/dev/null | cut -d' ' -f1)
-              if [ -z "$sha" ]; then sha=$(shasum -a 256 "$f" | awk '{print $1}'); fi
-              if [ $first -eq 0 ]; then echo ','; else first=0; fi
-              echo '    {"path": '"\"junit/$name\""', "size": '"$size"', "sha256": '"\"$sha\""'}'
-            done
-            echo '  ]'
-            echo '}'
-          ) > test-report/index.json
-          # Create HTML dashboard
-          npx --yes junit-viewer@4 --results=aggregated-junit --save=test-report/index.html --minify
-          # Zip raw XML for easy download
-          (cd test-report && zip -q -r junit.zip junit/*.xml || true)
-      - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: test-report
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-      - name: Add URL to Job Summary
-        run: |
-          echo "# 🌐 Live Test Report" >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "## 🤖 Raw XML (for agents)" >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.deployment.outputs.page_url }}junit.zip" >> $GITHUB_STEP_SUMMARY
-          echo "## 📄 JSON Index" >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.deployment.outputs.page_url }}index.json" >> $GITHUB_STEP_SUMMARY
-

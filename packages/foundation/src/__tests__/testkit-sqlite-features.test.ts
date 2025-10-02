@@ -63,11 +63,11 @@ describe('Testkit SQLite Features', () => {
     });
 
     it('should create file-based SQLite database', async () => {
-      const { createFileDatabase, createTempDirectory } = await import('@orchestr8/testkit/sqlite');
-      const { createTempDirectory: createTempDir } = await import('@orchestr8/testkit/fs');
+      const { createFileDatabase } = await import('@orchestr8/testkit/sqlite');
+      const { createTempDirectory } = await import('@orchestr8/testkit/fs');
 
       // Create temp directory for database file
-      const tempDir = createTempDir();
+      const tempDir = createTempDirectory();
       const dbPath = `${tempDir.path}/test.db`;
 
       // Create file database
