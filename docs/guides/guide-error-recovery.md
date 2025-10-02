@@ -1288,7 +1288,7 @@ For testing patterns and utilities, see:
 - [Polling Implementation Guide](./guide-polling-implementation.md) - Sequential processing errors
 - [Fault Injection Hook Registry](./guide-fault-injection-registry.md) - Crash testing error recovery paths
 - [Crash Matrix Test Plan](./guide-crash-matrix-test-plan.md) - Systematic resilience testing
-- [TestKit Usage Guide](./guide-testkit-usage.md) - Testing error scenarios with TestKit
+- [TestKit Usage Guide](./guide-testkit.md) - Testing error scenarios with TestKit
 - [TDD Applicability Guide](./guide-tdd-applicability.md) - Testing error handling
 - [Test Strategy Guide](./guide-test-strategy.md) - Error scenario coverage
 - [Capture Debugging Guide](./guide-capture-debugging.md) - Debugging retry failures

@@ -102,6 +102,29 @@ Instead, you ALWAYS:
 - Receive test results from wallaby-tdd-agent
 - Update state based on wallaby-tdd-agent reports
 
+## Testing Pattern Selection Guide
+
+When preparing context for wallaby-tdd-agent, identify the appropriate testing pattern:
+
+| AC Requirement Type | Testing Pattern | TestKit API | Example Reference |
+|---------------------|-----------------|-------------|-------------------|
+| File operations with retry | Retry Logic Testing | `retry()` | `testkit-core-utilities.test.ts:48-110` |
+| Database transactions | Transaction Testing | `withTransaction()` | `testkit-sqlite-features.test.ts:274-316` |
+| API/HTTP calls | HTTP Mocking | `createMSWServer()` | `testkit-msw-features.test.ts:96-197` |
+| Temporary files | File System Testing | `useTempDirectory()` | `testkit-core-utilities.test.ts:325-347` |
+| Timeout handling | Timeout Testing | `withTimeout()` | `testkit-core-utilities.test.ts:113-148` |
+| CLI commands | Process Mocking | `mockSpawn()` | `testkit-cli-utilities.test.ts:17-120` |
+| Async delays | Async Testing | `delay()` | `testkit-core-utilities.test.ts:22-45` |
+| Rate limiting | Concurrency Testing | `limitConcurrency()` | `testkit-utils-advanced.test.ts:169-197` |
+| Input validation | Security Testing | `validateCommand()` | `testkit-utils-advanced.test.ts:279-341` |
+| Resource cleanup | Resource Leak Testing | `registerResource()` | `testkit-utils-advanced.test.ts:250-275` |
+
+**Pattern Selection Workflow**:
+1. Read AC text and identify requirement type
+2. Match to testing pattern from table above
+3. Include pattern name, TestKit API, and example reference in wallaby-tdd-agent context
+4. Reference full pattern details at `docs/guides/guide-tdd-testing-patterns.md`
+
 ## Operational Protocol
 
 ### Phase 1: Readiness Gate
@@ -127,26 +150,39 @@ Before starting any task:
 **STRICT REQUIREMENT: All TDD work MUST be delegated to wallaby-tdd-agent**
 
 For each acceptance criterion, delegate to wallaby-tdd-agent:
-1. Prepare context package for wallaby-tdd-agent:
+1. **Identify Testing Pattern** (from `guide-tdd-testing-patterns.md`):
+   - Analyze AC requirement type (file ops, database, API, etc.)
+   - Match to appropriate testing pattern using pattern selection guide
+   - Identify exact TestKit API feature needed
+   - Locate working test example from foundation tests
+
+2. Prepare context package for wallaby-tdd-agent:
    - Task ID and capability context
    - Current acceptance criterion (ID + text)
    - Risk level (High/Medium/Low)
+   - **Testing Pattern Information**:
+     - Pattern name (e.g., "Retry Logic Testing")
+     - TestKit API to use (e.g., `retry(operation, maxRetries, delayMs)`)
+     - Test example reference (e.g., `testkit-core-utilities.test.ts:48-110`)
+     - API documentation link (`guide-testkit.md` section)
    - Related specs, ADRs, and guides content
-   - TestKit patterns to follow
    - Expected test structure from test_verification paths
-2. Invoke wallaby-tdd-agent with full context:
+
+3. Invoke wallaby-tdd-agent with full context:
    ```
    Task wallaby-tdd-agent:
    "Execute TDD cycle for [TASK_ID] - [AC_ID]:
    - AC Text: [acceptance criterion text]
    - Risk Level: [High/Medium/Low]
+   - Testing Pattern: [Pattern name from guide-tdd-testing-patterns.md]
+   - TestKit API: [Specific API with signature]
+   - Test Example: [File path and line numbers from foundation tests]
    - Context: [relevant specs/ADRs/guides summary]
-   - TestKit Patterns: [applicable patterns]
-   - Create failing tests first, then minimal implementation"
+   - Create failing tests first using the pattern, then minimal implementation"
    ```
-3. Receive TDD completion report from wallaby-tdd-agent
-4. Validate that AC is satisfied with passing tests
-5. Update task state based on wallaby-tdd-agent's report
+4. Receive TDD completion report from wallaby-tdd-agent
+5. Validate that AC is satisfied with passing tests
+6. Update task state based on wallaby-tdd-agent's report
 
 ### Phase 3: Incremental Implementation (COORDINATED WITH wallaby-tdd-agent)
 Execute through wallaby-tdd-agent delegation:
@@ -307,10 +343,15 @@ emitEvent(taskId, 'gap_flagged', {
 
 When implementing task CAPTURE-VOICE-POLLING--T01 with AC "Polls Voice Memos folder every 60 seconds":
 
-**CORRECT approach (delegation):**
+**CORRECT approach (delegation with testing pattern):**
 ```
 1. Read all context (specs, ADRs, guides)
-2. Package context for wallaby-tdd-agent:
+2. Identify testing pattern:
+   - AC requires: Polling implementation (periodic async operation)
+   - Pattern: Async Testing + Timeout Testing
+   - TestKit APIs: delay() and withTimeout()
+   - Examples: testkit-core-utilities.test.ts:22-45, :113-148
+3. Package context for wallaby-tdd-agent:
 
    Task wallaby-tdd-agent:
    "Execute TDD cycle for CAPTURE-VOICE-POLLING--T01 - AC01:

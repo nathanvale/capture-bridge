@@ -35,7 +35,7 @@ _Just like your ADHD brain benefits from clear structure, our test suite benefit
 
 - **[TDD Applicability Guide](./guide-tdd-applicability.md)** - Risk-based framework for deciding when to apply TDD (required/optional/skip). Defines high/medium/low risk criteria and provides module-specific guidance for all features.
 
-- **[TestKit Usage Guide](./guide-testkit-usage.md)** - Complete NPM package reference for `@template/testkit` with domain-specific examples, MPPP-specific testing patterns, and API reference for all test utilities.
+- **[TestKit Usage Guide](./guide-testkit.md)** - Complete NPM package reference for `@template/testkit` with domain-specific examples, MPPP-specific testing patterns, and API reference for all test utilities.
 
 ## When to Use Which Guide
 
@@ -49,7 +49,7 @@ _Just like your ADHD brain benefits from clear structure, our test suite benefit
 
 ### Understanding TestKit APIs
 
-� Start with **[TestKit Usage Guide](./guide-testkit-usage.md)**
+� Start with **[TestKit Usage Guide](./guide-testkit.md)**
 
 ### Planning Technical Specifications
 
@@ -88,7 +88,7 @@ _Just like your ADHD brain benefits from clear structure, our test suite benefit
 
 - [Phase 1 Testing Patterns Guide](./guide-phase1-testing-patterns.md) - REQUIRED reading for all Phase 1 development
 - [TDD Applicability Guide](./guide-tdd-applicability.md) - Risk-based TDD decision framework
-- [TestKit Usage Guide](./guide-testkit-usage.md) - Complete TestKit API reference
+- [TestKit Usage Guide](./guide-testkit.md) - Complete TestKit API reference
 
 **Project Context:**
 
@@ -132,6 +132,6 @@ This guide intentionally serves as a signpost rather than comprehensive document
 
 - **How to test Phase 1 features?** � [Phase 1 Testing Patterns Guide](./guide-phase1-testing-patterns.md)
 - **When to apply TDD?** � [TDD Applicability Guide](./guide-tdd-applicability.md)
-- **What TestKit APIs exist?** � [TestKit Usage Guide](./guide-testkit-usage.md)
+- **What TestKit APIs exist?** � [TestKit Usage Guide](./guide-testkit.md)
 
 This guide serves as your testing documentation hub. Start with the comprehensive guide that best matches your current need.

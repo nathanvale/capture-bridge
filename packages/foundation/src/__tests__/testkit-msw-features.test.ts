@@ -55,10 +55,10 @@ describe('Testkit MSW Features', () => {
     });
 
     it('should setup MSW with default handlers', async () => {
-      const { setupMSW, defaultHandlers } = await import('@orchestr8/testkit/msw');
+      const { createMSWServer, defaultHandlers } = await import('@orchestr8/testkit/msw');
 
-      // Setup with default handlers
-      server = setupMSW(defaultHandlers());
+      // Setup with default handlers (it's an array, not a function)
+      server = createMSWServer(defaultHandlers);
 
       // Start listening
       server.listen({ onUnhandledRequest: 'bypass' });
@@ -96,10 +96,10 @@ describe('Testkit MSW Features', () => {
   describe('Request Handlers', () => {
     beforeAll(async () => {
       const { http, HttpResponse } = await import('msw');
-      const { setupMSW } = await import('@orchestr8/testkit/msw');
+      const { createMSWServer } = await import('@orchestr8/testkit/msw');
 
       // Setup server with test handlers
-      server = setupMSW([
+      server = createMSWServer([
         http.get('/api/users', () => {
           return HttpResponse.json([
             { id: 1, name: 'Alice' },
@@ -201,13 +201,13 @@ describe('Testkit MSW Features', () => {
     beforeAll(async () => {
       const { http } = await import('msw');
       const {
-        setupMSW,
+        createMSWServer,
         createSuccessResponse,
         createErrorResponse,
         createDelayedResponse
       } = await import('@orchestr8/testkit/msw');
 
-      server = setupMSW([
+      server = createMSWServer([
         http.get('/api/success', () => createSuccessResponse({ data: 'success' })),
         http.get('/api/error', () => createErrorResponse('Something went wrong', 500)),
         http.get('/api/delayed', () => createDelayedResponse({ data: 'delayed' }, 100))
@@ -256,10 +256,10 @@ describe('Testkit MSW Features', () => {
 
   describe('Authentication Handlers', () => {
     beforeAll(async () => {
-      const { setupMSW, createAuthHandlers } = await import('@orchestr8/testkit/msw');
+      const { createMSWServer, createAuthHandlers } = await import('@orchestr8/testkit/msw');
 
       // Setup server with auth handlers
-      server = setupMSW(createAuthHandlers({
+      server = createMSWServer(createAuthHandlers({
         validCredentials: {
           username: 'testuser',
           password: 'testpass'
@@ -325,10 +325,10 @@ describe('Testkit MSW Features', () => {
 
   describe('CRUD Operation Handlers', () => {
     beforeAll(async () => {
-      const { setupMSW, createCRUDHandlers } = await import('@orchestr8/testkit/msw');
+      const { createMSWServer, createCRUDHandlers } = await import('@orchestr8/testkit/msw');
 
       // Setup server with CRUD handlers
-      server = setupMSW(createCRUDHandlers({
+      server = createMSWServer(createCRUDHandlers({
         resource: 'posts',
         idField: 'id',
         initialData: [
@@ -416,12 +416,12 @@ describe('Testkit MSW Features', () => {
     beforeAll(async () => {
       const { http } = await import('msw');
       const {
-        setupMSW,
+        createMSWServer,
         createNetworkIssueHandler,
         createUnreliableHandler
       } = await import('@orchestr8/testkit/msw');
 
-      server = setupMSW([
+      server = createMSWServer([
         createNetworkIssueHandler('/api/network-error'),
         createUnreliableHandler('/api/unreliable', {
           failureRate: 0.5,
@@ -477,7 +477,7 @@ describe('Testkit MSW Features', () => {
 
   describe('Pagination Support', () => {
     beforeAll(async () => {
-      const { setupMSW, createPaginatedHandler } = await import('@orchestr8/testkit/msw');
+      const { createMSWServer, createPaginatedHandler } = await import('@orchestr8/testkit/msw');
 
       // Create test data
       const items = Array.from({ length: 25 }, (_, i) => ({
@@ -485,7 +485,7 @@ describe('Testkit MSW Features', () => {
         name: `Item ${i + 1}`
       }));
 
-      server = setupMSW([
+      server = createMSWServer([
         createPaginatedHandler('/api/items', items, {
           pageSize: 10,
           pageParam: 'page',

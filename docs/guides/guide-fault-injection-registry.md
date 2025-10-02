@@ -1127,7 +1127,7 @@ _(None yet - hooks will be moved here when recovery behavior changes make them o
 
 ### Related Guides
 
-- [TestKit Usage Guide](./guide-testkit-usage.md) - TestKit fault injection utilities and patterns
+- [TestKit Usage Guide](./guide-testkit.md) - TestKit fault injection utilities and patterns
 - [Health Command Guide](./guide-health-command.md) - Post-crash health validation
 - [Capture Debugging Guide](./guide-capture-debugging.md) - Worker troubleshooting and log analysis
 - [Test Strategy Guide](./guide-test-strategy.md) - Overall testing philosophy

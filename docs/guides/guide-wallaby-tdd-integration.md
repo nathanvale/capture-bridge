@@ -45,12 +45,12 @@ Use this guide when:
 
 - Basic TDD principles (red-green-refactor)
 - Understanding of risk classifications (P0/P1/P2)
-- Familiarity with TestKit patterns from [TestKit Usage Guide](./guide-testkit-usage.md)
+- Familiarity with TestKit patterns from [TestKit Usage Guide](./guide-testkit.md)
 
 **Required Reading:**
 
 - [TDD Applicability Guide](./guide-tdd-applicability.md)
-- [TestKit Usage Guide](./guide-testkit-usage.md)
+- [TestKit Usage Guide](./guide-testkit.md)
 - [Agent Workflow Guide](./guide-agent-workflow.md)
 
 ## Quick Reference
@@ -560,7 +560,7 @@ module.exports = function () {
 ### Testing Infrastructure
 
 - [TDD Applicability Guide](./guide-tdd-applicability.md)
-- [TestKit Usage Guide](./guide-testkit-usage.md)
+- [TestKit Usage Guide](./guide-testkit.md)
 - [Test Strategy Guide](./guide-test-strategy.md)
 - [Agent Workflow Guide](./guide-agent-workflow.md)
 

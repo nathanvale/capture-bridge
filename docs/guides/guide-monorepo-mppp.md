@@ -796,7 +796,7 @@ export async function captureVoiceCommand(audioPath: string): Promise<void> {
 - [TDD Applicability Guide](./guide-tdd-applicability.md) - Testing strategy
 - [Test Strategy Guide](./guide-test-strategy.md) - Testing approach
 - [Phase 1 Testing Patterns](./guide-phase1-testing-patterns.md) - Monorepo testing patterns
-- [TestKit Usage Guide](./guide-testkit-usage.md) - Test infrastructure
+- [TestKit Usage Guide](./guide-testkit.md) - Test infrastructure
 - [Polling Implementation Guide](./guide-polling-implementation.md) - Sequential processing patterns
 
 **External Resources:**

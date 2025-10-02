@@ -906,7 +906,7 @@ For testing patterns and utilities, see:
 
 - [TDD Applicability Guide](./guide-tdd-applicability.md) - Risk-based testing framework
 - [Test Strategy Guide](./guide-test-strategy.md) - Testing approach
-- [TestKit Usage Guide](./guide-testkit-usage.md) - Testing utilities
+- [TestKit Usage Guide](./guide-testkit.md) - Testing utilities
 
 ## Related Documentation
 

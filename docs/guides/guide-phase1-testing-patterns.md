@@ -50,7 +50,7 @@ Use this guide when:
 
 **Related documentation:**
 
-- [TestKit Tech Spec](../cross-cutting/../guides/guide-testkit-usage.md) - TestKit capabilities
+- [TestKit Tech Spec](../cross-cutting/../guides/guide-testkit.md) - TestKit capabilities
 - [Test Strategy Guide](./test-strategy.md) - Overall testing approach
 - [TDD Applicability Framework](./tdd-applicability.md) - When to write tests first
 
@@ -559,13 +559,13 @@ describe("CLI Capture", () => {
 
 - [Master PRD v2.3.0-MPPP](../master/prd-master.md) - Phase 1 scope and success criteria
 - [Roadmap v2.0-MPPP](../master/roadmap.md) - Phase 1 delivery slices
-- [TestKit Tech Spec](../cross-cutting/../guides/guide-testkit-usage.md) - TestKit capabilities
+- [TestKit Tech Spec](../cross-cutting/../guides/guide-testkit.md) - TestKit capabilities
 
 **Testing strategy:**
 
 - [Test Strategy Guide](./test-strategy.md) - Overall testing approach
 - [TDD Applicability Framework](./tdd-applicability.md) - When to write tests first
-- [TestKit Usage Guide](./guide-testkit-usage.md) - Complete TestKit API reference and patterns
+- [TestKit Usage Guide](./guide-testkit.md) - Complete TestKit API reference and patterns
 
 **Feature-specific specs:**
 

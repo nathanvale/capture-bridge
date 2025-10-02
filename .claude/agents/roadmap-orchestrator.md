@@ -326,7 +326,7 @@ To strengthen downstream task decomposition quality, the orchestrator MUST:
 
 1. Maintain a canonical allowlist of foundational guides with semantic roles:
    - Reliability: `guide-error-recovery.md`, `guide-backup-verification.md`, `guide-fault-injection-registry.md`, `guide-crash-matrix-test-plan.md`
-   - Testing Discipline: `guide-tdd-applicability.md`, `guide-test-strategy.md`, `guide-phase1-testing-patterns.md`, `guide-testkit-usage.md`
+   - Testing Discipline: `guide-tdd-applicability.md`, `guide-test-strategy.md`, `guide-phase1-testing-patterns.md`, `guide-testkit.md`, `guide-tdd-testing-patterns.md`
    - Operational Health: `guide-health-command.md`, `guide-polling-implementation.md`
    - Channel Specific: `guide-whisper-transcription.md`, `guide-gmail-oauth2-setup.md`, `guide-capture-debugging.md`
    - Structural/Monorepo: `guide-monorepo-mppp.md`

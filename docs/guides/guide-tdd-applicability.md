@@ -43,8 +43,8 @@ This guide applies to all features and cross-cutting infrastructure across the A
 
 **Required Reading:**
 
-- [TestKit Usage Guide](./guide-testkit-usage.md) - for implementation patterns
-- [TestKit Technical Specification](../cross-cutting/../guides/guide-testkit-usage.md) - for tooling details
+- [TestKit Usage Guide](./guide-testkit.md) - for implementation patterns
+- [TestKit Technical Specification](../cross-cutting/../guides/guide-testkit.md) - for tooling details
 
 ## Quick Reference
 
@@ -193,7 +193,7 @@ Add the required TDD Applicability section to your technical specification:
 ### Step 5: Implement Tests
 
 1. Follow TDD red-green-refactor cycle for required components
-2. Use [TestKit](./guide-testkit-usage.md) patterns and utilities
+2. Use [TestKit](./guide-testkit.md) patterns and utilities
 3. Focus on behavior, not implementation details
 4. Keep tests fast and deterministic
 
@@ -446,8 +446,8 @@ A: Unit for pure logic, integration for boundaries (DB, API, file system). When 
 
 ### Testing Infrastructure
 
-- [TestKit Technical Specification](../cross-cutting/../guides/guide-testkit-usage.md) - Testing tools and utilities
-- [TestKit Usage Guide](./guide-testkit-usage.md) - Practical testing patterns
+- [TestKit Technical Specification](../cross-cutting/../guides/guide-testkit.md) - Testing tools and utilities
+- [TestKit Usage Guide](./guide-testkit.md) - Practical testing patterns
 - [Test Strategy Guide](./test-strategy.md) - Overall testing approach
 - [Phase 1 Testing Patterns](./phase1-testing-patterns.md) - MPPP-specific patterns
 

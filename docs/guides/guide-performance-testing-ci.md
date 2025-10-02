@@ -683,7 +683,7 @@ beforeEach(() => {
 
 - [Master PRD v2.3.0-MPPP](../master/prd-master.md) - Overall project vision and scope
 - [TDD Applicability Guide](./guide-tdd-applicability.md) - When to apply performance testing
-- [TestKit Usage Guide](./guide-testkit-usage.md) - Testing infrastructure patterns
+- [TestKit Usage Guide](./guide-testkit.md) - Testing infrastructure patterns
 
 ### Feature Test Specifications
 

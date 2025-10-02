@@ -40,15 +40,15 @@ describe('Testkit SQLite Features', () => {
   describe('Database Creation', () => {
     it('should create in-memory SQLite database', async () => {
       try {
-        const { createMemoryUrl, FileDatabase } = await import('@orchestr8/testkit/sqlite');
+        const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite');
+        const Database = (await import('better-sqlite3')).default;
 
         // Create in-memory database URL
         const memoryUrl = createMemoryUrl();
         expect(memoryUrl).toContain(':memory:');
 
-        // Create database instance
-        const fileDb = new FileDatabase(memoryUrl);
-        db = fileDb.getDatabase();
+        // Create database instance directly with better-sqlite3
+        db = new Database(':memory:');
         databases.push(db);
 
         // Verify database works
@@ -64,15 +64,13 @@ describe('Testkit SQLite Features', () => {
 
     it('should create file-based SQLite database', async () => {
       const { createFileDatabase } = await import('@orchestr8/testkit/sqlite');
-      const { createTempDirectory } = await import('@orchestr8/testkit/fs');
+      const Database = (await import('better-sqlite3')).default;
 
-      // Create temp directory for database file
-      const tempDir = createTempDirectory();
-      const dbPath = `${tempDir.path}/test.db`;
+      // Create file database (returns object with path info)
+      const fileDb = await createFileDatabase('test.db');
 
-      // Create file database
-      const fileDb = createFileDatabase(dbPath);
-      db = fileDb.getDatabase();
+      // Create actual database connection
+      db = new Database(fileDb.path);
       databases.push(db);
 
       // Create a table and insert data
@@ -94,11 +92,11 @@ describe('Testkit SQLite Features', () => {
     });
 
     it('should handle database with WAL mode and pragmas', async () => {
-      const { createMemoryUrl, FileDatabase, applyRecommendedPragmas } = await import('@orchestr8/testkit/sqlite');
+      const { createMemoryUrl, applyRecommendedPragmas } = await import('@orchestr8/testkit/sqlite');
+      const Database = (await import('better-sqlite3')).default;
 
       const memoryUrl = createMemoryUrl({ mode: 'wal' });
-      const fileDb = new FileDatabase(memoryUrl);
-      db = fileDb.getDatabase();
+      db = new Database(':memory:');
       databases.push(db);
 
       // Apply recommended pragmas for testing
@@ -116,13 +114,12 @@ describe('Testkit SQLite Features', () => {
     it('should run database migrations', async () => {
       const {
         createMemoryUrl,
-        FileDatabase,
         applyMigrations,
         resetDatabase
       } = await import('@orchestr8/testkit/sqlite');
+      const Database = (await import('better-sqlite3')).default;
 
-      const fileDb = new FileDatabase(createMemoryUrl());
-      db = fileDb.getDatabase();
+      db = new Database(':memory:');
       databases.push(db);
 
       // Define test migrations
@@ -168,10 +165,10 @@ describe('Testkit SQLite Features', () => {
     });
 
     it('should reset database to clean state', async () => {
-      const { createMemoryUrl, FileDatabase, resetDatabase } = await import('@orchestr8/testkit/sqlite');
+      const { resetDatabase } = await import('@orchestr8/testkit/sqlite');
+      const Database = (await import('better-sqlite3')).default;
 
-      const fileDb = new FileDatabase(createMemoryUrl());
-      db = fileDb.getDatabase();
+      db = new Database(':memory:');
       databases.push(db);
 
       // Create initial schema
@@ -205,10 +202,10 @@ describe('Testkit SQLite Features', () => {
 
   describe('Seeding Utilities', () => {
     it('should seed database with SQL statements', async () => {
-      const { createMemoryUrl, FileDatabase, seedWithSql } = await import('@orchestr8/testkit/sqlite');
+      const { seedWithSql } = await import('@orchestr8/testkit/sqlite');
+      const Database = (await import('better-sqlite3')).default;
 
-      const fileDb = new FileDatabase(createMemoryUrl());
-      db = fileDb.getDatabase();
+      db = new Database(':memory:');
       databases.push(db);
 
       // Create schema
@@ -238,10 +235,10 @@ describe('Testkit SQLite Features', () => {
     });
 
     it('should seed database with batch operations', async () => {
-      const { createMemoryUrl, FileDatabase, seedWithBatch } = await import('@orchestr8/testkit/sqlite');
+      const { seedWithBatch } = await import('@orchestr8/testkit/sqlite');
+      const Database = (await import('better-sqlite3')).default;
 
-      const fileDb = new FileDatabase(createMemoryUrl());
-      db = fileDb.getDatabase();
+      db = new Database(':memory:');
       databases.push(db);
 
       // Create schema
@@ -276,10 +273,10 @@ describe('Testkit SQLite Features', () => {
 
   describe('Transaction Management', () => {
     it('should handle transactions with rollback on error', async () => {
-      const { createMemoryUrl, FileDatabase, withTransaction } = await import('@orchestr8/testkit/sqlite');
+      const { withTransaction } = await import('@orchestr8/testkit/sqlite');
+      const Database = (await import('better-sqlite3')).default;
 
-      const fileDb = new FileDatabase(createMemoryUrl());
-      db = fileDb.getDatabase();
+      db = new Database(':memory:');
       databases.push(db);
 
       // Create schema
@@ -319,10 +316,10 @@ describe('Testkit SQLite Features', () => {
     });
 
     it('should commit successful transactions', async () => {
-      const { createMemoryUrl, FileDatabase, withTransaction } = await import('@orchestr8/testkit/sqlite');
+      const { withTransaction } = await import('@orchestr8/testkit/sqlite');
+      const Database = (await import('better-sqlite3')).default;
 
-      const fileDb = new FileDatabase(createMemoryUrl());
-      db = fileDb.getDatabase();
+      db = new Database(':memory:');
       databases.push(db);
 
       // Create schema
@@ -352,24 +349,23 @@ describe('Testkit SQLite Features', () => {
   describe('Cleanup Utilities', () => {
     it('should register and cleanup databases', async () => {
       const {
-        createMemoryUrl,
-        FileDatabase,
         registerDatabaseCleanup,
         executeDatabaseCleanup,
         getCleanupCount
       } = await import('@orchestr8/testkit/sqlite');
+      const Database = (await import('better-sqlite3')).default;
 
       // Create multiple databases
-      const db1 = new FileDatabase(createMemoryUrl());
-      const db2 = new FileDatabase(createMemoryUrl());
-      const db3 = new FileDatabase(createMemoryUrl());
+      const db1 = new Database(':memory:');
+      const db2 = new Database(':memory:');
+      const db3 = new Database(':memory:');
 
-      databases.push(db1.getDatabase(), db2.getDatabase(), db3.getDatabase());
+      databases.push(db1, db2, db3);
 
       // Register for cleanup
-      const cleanup1 = registerDatabaseCleanup(db1.getDatabase());
-      const cleanup2 = registerDatabaseCleanup(db2.getDatabase());
-      const cleanup3 = registerDatabaseCleanup(db3.getDatabase());
+      const cleanup1 = registerDatabaseCleanup(db1);
+      const cleanup2 = registerDatabaseCleanup(db2);
+      const cleanup3 = registerDatabaseCleanup(db3);
 
       // Check cleanup count
       const count = getCleanupCount();

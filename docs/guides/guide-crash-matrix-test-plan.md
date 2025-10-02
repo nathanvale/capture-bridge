@@ -451,7 +451,7 @@ Each added hook requires full matrix re-run to validate comprehensive coverage.
 
 - [Fault Injection Hook Registry](./guide-fault-injection-registry.md) - Authoritative hook catalog with implementation patterns
 - [Error Recovery Guide](./guide-error-recovery.md) - Error classification and retry orchestration
-- [TestKit Usage Guide](./guide-testkit-usage.md) - TestKit utilities for crash testing
+- [TestKit Usage Guide](./guide-testkit.md) - TestKit utilities for crash testing
 - [Phase 1 Testing Patterns](./guide-phase1-testing-patterns.md)
 - [Test Strategy](./guide-test-strategy.md)
 - [Capture Debugging](./guide-capture-debugging.md)

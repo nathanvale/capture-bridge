@@ -21,8 +21,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       '@orchestr8/testkit':
-        specifier: ^1.0.7
-        version: 1.0.7(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
+        specifier: ^1.0.9
+        version: 1.0.9(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
       '@types/node':
         specifier: ^24.3.0
         version: 24.5.2
@@ -152,8 +152,8 @@ importers:
         specifier: workspace:*
         version: link:../../tooling/build
       '@orchestr8/testkit':
-        specifier: file:/Users/nathanvale/code/@orchestr8/packages/testkit
-        version: file:../@orchestr8/packages/testkit(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
+        specifier: ^1.0.9
+        version: 1.0.9(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
       '@types/node':
         specifier: ^24.3.0
         version: 24.5.2
@@ -643,37 +643,8 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-  '@orchestr8/testkit@1.0.7':
-    resolution: {integrity: sha512-uTffb8q2Ljf0r/DY3k0qwNdA7NbMtnefvsRP7sAi8YyLlGVS1Iv4jBDZwAE+JNHnvufRAF6wQvbjW2TTVoKuSA==}
-    hasBin: true
-    peerDependencies:
-      '@vitest/ui': ^3.2.4
-      better-sqlite3: ^12.0.0
-      convex-test: ^0.0.38
-      happy-dom: ^18.0.0
-      msw: ^2.0.0
-      mysql2: ^3.0.0
-      pg: ^8.0.0
-      testcontainers: ^10.0.0
-      vitest: ^3.2.4
-    peerDependenciesMeta:
-      better-sqlite3:
-        optional: true
-      convex-test:
-        optional: true
-      happy-dom:
-        optional: true
-      msw:
-        optional: true
-      mysql2:
-        optional: true
-      pg:
-        optional: true
-      testcontainers:
-        optional: true
-
-  '@orchestr8/testkit@file:../@orchestr8/packages/testkit':
-    resolution: {directory: ../@orchestr8/packages/testkit, type: directory}
+  '@orchestr8/testkit@1.0.9':
+    resolution: {integrity: sha512-uf1iX8UYO6vs3rYPhyNF4B4PVg1kS5Fwa69BKyePxUDvkaPqR0h+HZQWgVAoht3h1U+ChTGr3Aa2HN1iicr2pw==}
     hasBin: true
     peerDependencies:
       '@vitest/ui': ^3.2.4
@@ -3704,16 +3675,7 @@ snapshots:
       - jiti
       - supports-color
 
-  '@orchestr8/testkit@1.0.7(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)':
-    dependencies:
-      '@vitest/ui': 3.2.4(vitest@3.2.4)
-      vitest: 3.2.4(@types/node@24.5.2)(@vitest/ui@3.2.4)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(tsx@4.20.6)
-    optionalDependencies:
-      better-sqlite3: 12.4.1
-      happy-dom: 18.0.1
-      msw: 2.11.3(@types/node@24.5.2)(typescript@5.9.2)
-
-  '@orchestr8/testkit@file:../@orchestr8/packages/testkit(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)':
+  '@orchestr8/testkit@1.0.9(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)':
     dependencies:
       '@vitest/ui': 3.2.4(vitest@3.2.4)
       vitest: 3.2.4(@types/node@24.5.2)(@vitest/ui@3.2.4)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(tsx@4.20.6)
