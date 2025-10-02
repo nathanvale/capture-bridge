@@ -324,7 +324,7 @@ describe('Testkit Core Utilities', () => {
     });
 
     it('should use managed temporary directory', async () => {
-      const { useTempDirectory, createManagedTempDirectory } = await import('@orchestr8/testkit');
+      const { useTempDirectory, createManagedTempDirectory } = await import('@orchestr8/testkit/fs');
       const fs = await import('fs/promises');
       const path = await import('path');
 

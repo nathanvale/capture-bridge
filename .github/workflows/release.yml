@@ -1,6 +1,5 @@
 name: Release
 
-# Automatic release workflow triggered on push to main
 on:
   push:
     branches: [main]
@@ -9,29 +8,16 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  issues: write
-  id-token: write # Required for npm provenance
-  packages: write
 
 env:
-  NODE_VERSION: "20.18.1"
+  NODE_VERSION: "20.18.0"
   PNPM_VERSION: "9.15.4"
-  NPM_CONFIG_PROVENANCE: true
-  FORCE_COLOR: 3
-  # Vercel Remote Cache for faster builds during release
-  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-  TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
-  TURBO_SCM_BASE: origin/main
 
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    outputs:
-      published: ${{ steps.changesets.outputs.published }}
-      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,100 +25,26 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup PNPM with Caching
+      - name: Setup PNPM
         uses: ./.github/actions/setup-pnpm
         with:
           node-version: ${{ env.NODE_VERSION }}
           pnpm-version: ${{ env.PNPM_VERSION }}
-      - name: Set npm registry for provenance
-        run: npm config set registry https://registry.npmjs.org
 
-      - name: Build
-        run: pnpm run build
-
-      - name: Run Unit Tests
-        run: pnpm run test -- --bail=1
-
-      - name: Run Integration Tests
-        run: NODE_OPTIONS='--max-old-space-size=4096' TEST_MODE=integration pnpm exec vitest run --no-coverage --bail=1
-
-      - name: Verify Release Configuration
-        run: |
-          echo "🔍 Verifying release configuration..."
-          if [ -z "$NPM_TOKEN" ]; then
-            echo "❌ NPM_TOKEN is not set"
-            exit 1
-          fi
-          echo "✅ NPM_TOKEN is configured"
-
-          # Check changeset status
-          pnpm changeset status
-          echo "✅ Changeset status verified"
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Generate SBOM
-        run: |
-          pnpx @cyclonedx/cdxgen@11 -o sbom.json -t js .
-          echo "SBOM generated with $(jq '.components | length' sbom.json) components"
-
-      - name: Create Release PR or Publish
+      - name: Create Release PR or Tag
         id: changesets
         uses: changesets/action@v1
         with:
-          version: pnpm run release:version
-          publish: pnpm run release:publish
-          commit: "chore(release): version packages 🚀 [skip ci]"
-          title: "chore(release): version packages 🚀"
-          createGithubReleases: true
+          version: pnpm changeset version
+          commit: "chore: version packages"
+          title: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Upload SBOM
-        if: steps.changesets.outputs.published == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: sbom-${{ github.sha }}
-          path: sbom.json
-          retention-days: 90
-
-      - name: Create GitHub Release Assets
-        if: steps.changesets.outputs.published == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const packages = JSON.parse('${{ steps.changesets.outputs.publishedPackages }}');
-
-            for (const pkg of packages) {
-              const tagName = `${pkg.name}@${pkg.version}`;
-
-              try {
-                const release = await github.rest.repos.getReleaseByTag({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  tag: tagName
-                });
-
-                // Read SBOM file
-                const sbomContent = fs.readFileSync('sbom.json');
-                const sbomFileName = `sbom-${pkg.name.replace('@', '').replace('/', '-')}-${pkg.version}.json`;
-
-                // Upload SBOM to release with proper headers
-                await github.rest.repos.uploadReleaseAsset({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  release_id: release.data.id,
-                  name: sbomFileName,
-                  data: sbomContent,
-                  headers: {
-                    'content-type': 'application/json',
-                    'content-length': sbomContent.length
-                  }
-                });
-              } catch (error) {
-                console.error(`Failed to upload assets for ${tagName}:`, error);
-              }
-            }
+      - name: Version summary
+        if: steps.changesets.outputs.hasChangesets == 'true'
+        run: |
+          echo "## 📦 Version Updates" >> $GITHUB_STEP_SUMMARY
+          echo "Version PR created or updated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Note: Packages are private and will NOT be published to npm" >> $GITHUB_STEP_SUMMARY
