@@ -130,6 +130,7 @@ test-*.ts
 !**/tests/**/*.ts
 !**/*.test.ts
 !**/*.spec.ts
+!**/test-setup.ts
 
 # Package files
 *.tgz

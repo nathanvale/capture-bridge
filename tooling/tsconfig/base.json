@@ -46,6 +46,6 @@
     "paths": {
       "@capture-bridge/*": ["../../packages/*/src"]
     },
-    "types": []
+    "types": ["vitest/globals", "node"]
   }
 }

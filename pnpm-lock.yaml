@@ -21,8 +21,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       '@orchestr8/testkit':
-        specifier: ^1.0.9
-        version: 1.0.9(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
+        specifier: ^2.0.0
+        version: 2.0.0(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
       '@types/node':
         specifier: ^24.3.0
         version: 24.5.2
@@ -33,6 +33,9 @@ importers:
         specifier: ^8.44.1
         version: 8.44.1(eslint@9.36.0)(typescript@5.9.2)
       '@vitest/coverage-v8':
+        specifier: ^3.2.4
+        version: 3.2.4(vitest@3.2.4)
+      '@vitest/ui':
         specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4)
       eslint:
@@ -105,6 +108,9 @@ importers:
       '@capture-bridge/build-config':
         specifier: workspace:*
         version: link:../../tooling/build
+      '@orchestr8/testkit':
+        specifier: ^2.0.0
+        version: 2.0.0(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
       '@types/node':
         specifier: ^24.3.0
         version: 24.5.2
@@ -133,6 +139,9 @@ importers:
       '@capture-bridge/build-config':
         specifier: workspace:*
         version: link:../../tooling/build
+      '@orchestr8/testkit':
+        specifier: ^2.0.0
+        version: 2.0.0(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
       '@types/node':
         specifier: ^24.3.0
         version: 24.5.2
@@ -152,8 +161,8 @@ importers:
         specifier: workspace:*
         version: link:../../tooling/build
       '@orchestr8/testkit':
-        specifier: ^1.0.9
-        version: 1.0.9(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
+        specifier: ^2.0.0
+        version: 2.0.0(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
       '@types/node':
         specifier: ^24.3.0
         version: 24.5.2
@@ -185,6 +194,9 @@ importers:
       '@capture-bridge/build-config':
         specifier: workspace:*
         version: link:../../tooling/build
+      '@orchestr8/testkit':
+        specifier: ^2.0.0
+        version: 2.0.0(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
       '@types/node':
         specifier: ^24.3.0
         version: 24.5.2
@@ -643,8 +655,8 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-  '@orchestr8/testkit@1.0.9':
-    resolution: {integrity: sha512-uf1iX8UYO6vs3rYPhyNF4B4PVg1kS5Fwa69BKyePxUDvkaPqR0h+HZQWgVAoht3h1U+ChTGr3Aa2HN1iicr2pw==}
+  '@orchestr8/testkit@2.0.0':
+    resolution: {integrity: sha512-fPD24W0lWqkv8A/vmKKK3N+4xBlrHTRZDQIe59NVi9ZtVwa6V66dvTJRB2nYYendzRzy4nUTwlqtX27CusHUXg==}
     hasBin: true
     peerDependencies:
       '@vitest/ui': ^3.2.4
@@ -3675,7 +3687,7 @@ snapshots:
       - jiti
       - supports-color
 
-  '@orchestr8/testkit@1.0.9(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)':
+  '@orchestr8/testkit@2.0.0(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)':
     dependencies:
       '@vitest/ui': 3.2.4(vitest@3.2.4)
       vitest: 3.2.4(@types/node@24.5.2)(@vitest/ui@3.2.4)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(tsx@4.20.6)
