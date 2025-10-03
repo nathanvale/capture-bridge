@@ -1,0 +1,1047 @@
+{
+  "version": "3.0.0",
+  "generated_at": "2025-10-03T00:00:00Z",
+  "source_hash": "e8f4a7c9b2d1f3e6a5c8d7b4f9e2a1c6d5b8e7a4f3c2b1a9d8e7c6b5a4f3e2d1",
+  "master_prd_version": "2.3.0-MPPP",
+  "roadmap_version": "3.0.0",
+  "total_capabilities": 29,
+  "capabilities": [
+    {
+      "id": "ATOMIC_FILE_WRITER",
+      "phase": 1,
+      "slice": 1,
+      "title": "Atomic File Writer (Temp-Then-Rename Pattern)",
+      "category": "output",
+      "risk": "High",
+      "tdd": "Required",
+      "depends_on": [
+        "MONOREPO_STRUCTURE"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-obsidian-bridge-usage.md"
+      ],
+      "acceptance_refs": [
+        {
+          "bullet_hash": "a1b2c3d4e5f6",
+          "source_file": "docs/master/roadmap.md",
+          "line": 192,
+          "section": "Slice 1.1: Foundation & Monorepo Setup - ATOMIC_FILE_WRITER"
+        }
+      ],
+      "spec_refs": [
+        {
+          "kind": "arch",
+          "source_file": "docs/features/obsidian-bridge/spec-obsidian-arch.md",
+          "section": "Component Model",
+          "excerpt_hash": "arch001"
+        },
+        {
+          "kind": "tech",
+          "source_file": "docs/features/obsidian-bridge/spec-obsidian-tech.md",
+          "section": "Atomic Write Implementation",
+          "excerpt_hash": "tech001"
+        },
+        {
+          "kind": "test",
+          "source_file": "docs/features/obsidian-bridge/spec-obsidian-test.md",
+          "section": "Atomic Write Test Strategy",
+          "excerpt_hash": "test001"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0009",
+        "ADR-0010",
+        "ADR-0011",
+        "ADR-0020"
+      ]
+    },
+    {
+      "id": "BACKUP_VERIFICATION_PROTOCOL",
+      "phase": 2,
+      "slice": 2,
+      "title": "Backup Integrity Check & Hash Compare",
+      "category": "foundation",
+      "risk": "High",
+      "tdd": "Required",
+      "depends_on": [
+        "HOURLY_BACKUP_AUTOMATION"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-backup-verification.md",
+        "guide-backup-restore-drill.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/staging-ledger/spec-staging-tech.md",
+          "section": "Backup Verification",
+          "excerpt_hash": "tech002"
+        }
+      ],
+      "adr_refs": []
+    },
+    {
+      "id": "CAPTURE_STATE_MACHINE",
+      "phase": 1,
+      "slice": 2,
+      "title": "Capture Status State Machine",
+      "category": "process",
+      "risk": "High",
+      "tdd": "Required",
+      "depends_on": [
+        "SQLITE_SCHEMA"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-error-recovery.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "arch",
+          "source_file": "docs/features/staging-ledger/spec-staging-arch.md",
+          "section": "State Machine Design",
+          "excerpt_hash": "arch002"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0004",
+        "ADR-0014"
+      ]
+    },
+    {
+      "id": "CLI_CAPTURE_COMMANDS",
+      "phase": 1,
+      "slice": 4,
+      "title": "CLI Capture Commands (voice, email manual triggers)",
+      "category": "capture",
+      "risk": "Low",
+      "tdd": "Optional",
+      "depends_on": [
+        "CLI_FOUNDATION",
+        "VOICE_POLLING_ICLOUD",
+        "EMAIL_POLLING_GMAIL"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/cli/spec-cli-tech.md",
+          "section": "Capture Commands",
+          "excerpt_hash": "tech003"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0016"
+      ]
+    },
+    {
+      "id": "CLI_FOUNDATION",
+      "phase": 1,
+      "slice": 4,
+      "title": "CLI Argument Parsing & Command Registry",
+      "category": "foundation",
+      "risk": "Low",
+      "tdd": "Optional",
+      "depends_on": [
+        "MONOREPO_STRUCTURE"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-health-command.md",
+        "guide-cli-doctor-implementation.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "arch",
+          "source_file": "docs/features/cli/spec-cli-arch.md",
+          "section": "Command Architecture",
+          "excerpt_hash": "arch003"
+        },
+        {
+          "kind": "tech",
+          "source_file": "docs/features/cli/spec-cli-tech.md",
+          "section": "Command Implementation",
+          "excerpt_hash": "tech004"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0015",
+        "ADR-0016",
+        "ADR-0017",
+        "ADR-0018"
+      ]
+    },
+    {
+      "id": "CLI_LEDGER_COMMANDS",
+      "phase": 1,
+      "slice": 4,
+      "title": "CLI Ledger Inspection Commands (list, inspect)",
+      "category": "capture",
+      "risk": "Low",
+      "tdd": "Optional",
+      "depends_on": [
+        "CLI_FOUNDATION",
+        "SQLITE_SCHEMA"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/cli/spec-cli-tech.md",
+          "section": "Ledger Commands",
+          "excerpt_hash": "tech005"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0017"
+      ]
+    },
+    {
+      "id": "CONTENT_HASH_IMPLEMENTATION",
+      "phase": 1,
+      "slice": 1,
+      "title": "Content Hash Normalization & Computation (SHA-256)",
+      "category": "foundation",
+      "risk": "High",
+      "tdd": "Required",
+      "depends_on": [
+        "MONOREPO_STRUCTURE"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-tdd-applicability.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/staging-ledger/spec-staging-tech.md",
+          "section": "Hash Computation",
+          "excerpt_hash": "tech006"
+        },
+        {
+          "kind": "tech",
+          "source_file": "docs/features/capture/spec-capture-tech.md",
+          "section": "Content Hashing",
+          "excerpt_hash": "tech007"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0002",
+        "ADR-0006"
+      ]
+    },
+    {
+      "id": "CRASH_RECOVERY_MECHANISM",
+      "phase": 2,
+      "slice": 1,
+      "title": "Startup Reconciliation & Resume Processing",
+      "category": "process",
+      "risk": "High",
+      "tdd": "Required",
+      "depends_on": [
+        "CAPTURE_STATE_MACHINE",
+        "SQLITE_SCHEMA"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-error-recovery.md",
+        "guide-crash-matrix-test-plan.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "arch",
+          "source_file": "docs/features/staging-ledger/spec-staging-arch.md",
+          "section": "Recovery Mechanism",
+          "excerpt_hash": "arch004"
+        },
+        {
+          "kind": "tech",
+          "source_file": "docs/features/capture/spec-capture-tech.md",
+          "section": "Crash Recovery",
+          "excerpt_hash": "tech008"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0004"
+      ]
+    },
+    {
+      "id": "DEDUPLICATION_LOGIC",
+      "phase": 1,
+      "slice": 2,
+      "title": "Duplicate Detection & Suppression",
+      "category": "process",
+      "risk": "High",
+      "tdd": "Required",
+      "depends_on": [
+        "CONTENT_HASH_IMPLEMENTATION",
+        "SQLITE_SCHEMA"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-tdd-applicability.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/staging-ledger/spec-staging-tech.md",
+          "section": "Deduplication Strategy",
+          "excerpt_hash": "tech009"
+        },
+        {
+          "kind": "tech",
+          "source_file": "docs/features/capture/spec-capture-tech.md",
+          "section": "Duplicate Detection",
+          "excerpt_hash": "tech010"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0006"
+      ]
+    },
+    {
+      "id": "DIRECT_EXPORT_EMAIL",
+      "phase": 1,
+      "slice": 3,
+      "title": "Email Direct Export to Vault (Synchronous)",
+      "category": "output",
+      "risk": "High",
+      "tdd": "Required",
+      "depends_on": [
+        "EMAIL_NORMALIZATION",
+        "ATOMIC_FILE_WRITER",
+        "DEDUPLICATION_LOGIC"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-obsidian-bridge-usage.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/obsidian-bridge/spec-obsidian-tech.md",
+          "section": "Email Export",
+          "excerpt_hash": "tech011"
+        },
+        {
+          "kind": "tech",
+          "source_file": "docs/cross-cutting/spec-direct-export-tech.md",
+          "section": "Direct Export Pattern",
+          "excerpt_hash": "tech012"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0011",
+        "ADR-0013",
+        "ADR-0020"
+      ]
+    },
+    {
+      "id": "DIRECT_EXPORT_VOICE",
+      "phase": 1,
+      "slice": 2,
+      "title": "Voice Direct Export to Vault (Synchronous)",
+      "category": "output",
+      "risk": "High",
+      "tdd": "Required",
+      "depends_on": [
+        "WHISPER_TRANSCRIPTION",
+        "ATOMIC_FILE_WRITER",
+        "DEDUPLICATION_LOGIC"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-obsidian-bridge-usage.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/obsidian-bridge/spec-obsidian-tech.md",
+          "section": "Voice Export",
+          "excerpt_hash": "tech013"
+        },
+        {
+          "kind": "tech",
+          "source_file": "docs/cross-cutting/spec-direct-export-tech.md",
+          "section": "Direct Export Pattern",
+          "excerpt_hash": "tech014"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0011",
+        "ADR-0013",
+        "ADR-0020"
+      ]
+    },
+    {
+      "id": "DOCTOR_HEALTH_CHECKS",
+      "phase": 1,
+      "slice": 4,
+      "title": "Health Command (capture doctor)",
+      "category": "foundation",
+      "risk": "Medium",
+      "tdd": "Recommended",
+      "depends_on": [
+        "CLI_FOUNDATION",
+        "SQLITE_SCHEMA"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-health-command.md",
+        "guide-cli-doctor-implementation.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/cli/spec-cli-tech.md",
+          "section": "Doctor Command",
+          "excerpt_hash": "tech015"
+        },
+        {
+          "kind": "test",
+          "source_file": "docs/features/cli/spec-cli-test.md",
+          "section": "Health Check Tests",
+          "excerpt_hash": "test002"
+        }
+      ],
+      "adr_refs": []
+    },
+    {
+      "id": "EMAIL_NORMALIZATION",
+      "phase": 1,
+      "slice": 3,
+      "title": "Email Body Normalization & Hash Computation",
+      "category": "process",
+      "risk": "Medium",
+      "tdd": "Required",
+      "depends_on": [
+        "EMAIL_POLLING_GMAIL",
+        "CONTENT_HASH_IMPLEMENTATION"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/capture/spec-capture-tech.md",
+          "section": "Email Normalization",
+          "excerpt_hash": "tech016"
+        }
+      ],
+      "adr_refs": []
+    },
+    {
+      "id": "EMAIL_POLLING_GMAIL",
+      "phase": 1,
+      "slice": 3,
+      "title": "Email Polling (Gmail API)",
+      "category": "capture",
+      "risk": "Medium",
+      "tdd": "Required",
+      "depends_on": [
+        "GMAIL_OAUTH2_SETUP",
+        "SQLITE_SCHEMA"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-gmail-oauth2-setup.md",
+        "guide-polling-implementation.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "arch",
+          "source_file": "docs/features/capture/spec-capture-arch.md",
+          "section": "Email Polling",
+          "excerpt_hash": "arch005"
+        },
+        {
+          "kind": "tech",
+          "source_file": "docs/features/capture/spec-capture-tech.md",
+          "section": "Gmail API Integration",
+          "excerpt_hash": "tech017"
+        }
+      ],
+      "adr_refs": []
+    },
+    {
+      "id": "ERROR_LOGGING_STRUCTURED",
+      "phase": 2,
+      "slice": 1,
+      "title": "Structured Error Logging & Diagnostics",
+      "category": "foundation",
+      "risk": "Medium",
+      "tdd": "Recommended",
+      "depends_on": [
+        "SQLITE_SCHEMA"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-error-recovery.md",
+        "guide-health-command.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/staging-ledger/spec-staging-tech.md",
+          "section": "Error Logging",
+          "excerpt_hash": "tech018"
+        }
+      ],
+      "adr_refs": []
+    },
+    {
+      "id": "FAULT_INJECTION_FRAMEWORK",
+      "phase": 2,
+      "slice": 1,
+      "title": "Fault Injection Hook Registry for Testing",
+      "category": "foundation",
+      "risk": "Medium",
+      "tdd": "Required",
+      "depends_on": [
+        "CRASH_RECOVERY_MECHANISM"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-fault-injection-registry.md",
+        "guide-crash-matrix-test-plan.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "test",
+          "source_file": "docs/features/staging-ledger/spec-staging-test.md",
+          "section": "Fault Injection Tests",
+          "excerpt_hash": "test003"
+        },
+        {
+          "kind": "test",
+          "source_file": "docs/features/capture/spec-capture-test.md",
+          "section": "Crash Recovery Tests",
+          "excerpt_hash": "test004"
+        }
+      ],
+      "adr_refs": []
+    },
+    {
+      "id": "GMAIL_OAUTH2_SETUP",
+      "phase": 1,
+      "slice": 3,
+      "title": "Gmail API OAuth2 Authentication",
+      "category": "capture",
+      "risk": "Medium",
+      "tdd": "Recommended",
+      "depends_on": [
+        "SQLITE_SCHEMA"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-gmail-oauth2-setup.md",
+        "guide-polling-implementation.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/capture/spec-capture-tech.md",
+          "section": "OAuth2 Setup",
+          "excerpt_hash": "tech019"
+        }
+      ],
+      "adr_refs": []
+    },
+    {
+      "id": "HOURLY_BACKUP_AUTOMATION",
+      "phase": 2,
+      "slice": 2,
+      "title": "Hourly SQLite Backup Automation",
+      "category": "foundation",
+      "risk": "High",
+      "tdd": "Required",
+      "depends_on": [
+        "SQLITE_SCHEMA"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-backup-verification.md",
+        "guide-backup-restore-drill.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/staging-ledger/spec-staging-tech.md",
+          "section": "Backup Automation",
+          "excerpt_hash": "tech020"
+        }
+      ],
+      "adr_refs": []
+    },
+    {
+      "id": "METRICS_INFRASTRUCTURE",
+      "phase": 1,
+      "slice": 1,
+      "title": "Local Metrics Collection (NDJSON)",
+      "category": "foundation",
+      "risk": "Low",
+      "tdd": "Optional",
+      "depends_on": [
+        "MONOREPO_STRUCTURE"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-testkit-usage.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/cross-cutting/spec-metrics-contract-tech.md",
+          "section": "NDJSON Writer",
+          "excerpt_hash": "tech021"
+        },
+        {
+          "kind": "test",
+          "source_file": "docs/cross-cutting/spec-metrics-contract-tech-test.md",
+          "section": "Metrics Tests",
+          "excerpt_hash": "test005"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0021"
+      ]
+    },
+    {
+      "id": "MONOREPO_STRUCTURE",
+      "phase": 1,
+      "slice": 1,
+      "title": "Monorepo Package Structure & Build Pipeline",
+      "category": "foundation",
+      "risk": "Medium",
+      "tdd": "Recommended",
+      "depends_on": [],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "complete",
+      "guides": [
+        "guide-monorepo-mppp.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "arch",
+          "source_file": "docs/cross-cutting/spec-foundation-monorepo-arch.md",
+          "section": "Monorepo Architecture",
+          "excerpt_hash": "arch006"
+        },
+        {
+          "kind": "tech",
+          "source_file": "docs/cross-cutting/spec-foundation-monorepo-tech.md",
+          "section": "Build Pipeline",
+          "excerpt_hash": "tech022"
+        },
+        {
+          "kind": "test",
+          "source_file": "docs/cross-cutting/spec-foundation-monorepo-test.md",
+          "section": "Monorepo Tests",
+          "excerpt_hash": "test006"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0019"
+      ]
+    },
+    {
+      "id": "PLACEHOLDER_EXPORT",
+      "phase": 1,
+      "slice": 2,
+      "title": "Placeholder Export (Transcription Failure Fallback)",
+      "category": "output",
+      "risk": "Medium",
+      "tdd": "Required",
+      "depends_on": [
+        "WHISPER_TRANSCRIPTION",
+        "ATOMIC_FILE_WRITER"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-error-recovery.md",
+        "guide-whisper-transcription.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/capture/spec-capture-tech.md",
+          "section": "Placeholder Export",
+          "excerpt_hash": "tech023"
+        },
+        {
+          "kind": "tech",
+          "source_file": "docs/features/obsidian-bridge/spec-obsidian-tech.md",
+          "section": "Placeholder Handling",
+          "excerpt_hash": "tech024"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0014"
+      ]
+    },
+    {
+      "id": "RETENTION_POLICY_90DAY",
+      "phase": 2,
+      "slice": 2,
+      "title": "90-Day Retention Policy (Exported Captures Only)",
+      "category": "foundation",
+      "risk": "Medium",
+      "tdd": "Required",
+      "depends_on": [
+        "SQLITE_SCHEMA",
+        "BACKUP_VERIFICATION_PROTOCOL"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/staging-ledger/spec-staging-tech.md",
+          "section": "Retention Policy",
+          "excerpt_hash": "tech025"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0007"
+      ]
+    },
+    {
+      "id": "SQLITE_SCHEMA",
+      "phase": 1,
+      "slice": 1,
+      "title": "SQLite Staging Ledger Schema & Indexes",
+      "category": "foundation",
+      "risk": "High",
+      "tdd": "Required",
+      "depends_on": [
+        "MONOREPO_STRUCTURE"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-tdd-applicability.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "arch",
+          "source_file": "docs/features/staging-ledger/spec-staging-arch.md",
+          "section": "Schema Design",
+          "excerpt_hash": "arch007"
+        },
+        {
+          "kind": "tech",
+          "source_file": "docs/features/staging-ledger/spec-staging-tech.md",
+          "section": "Schema Implementation",
+          "excerpt_hash": "tech026"
+        },
+        {
+          "kind": "test",
+          "source_file": "docs/features/staging-ledger/spec-staging-test.md",
+          "section": "Schema Tests",
+          "excerpt_hash": "test007"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0003",
+        "ADR-0004",
+        "ADR-0005",
+        "ADR-0010"
+      ]
+    },
+    {
+      "id": "STORAGE_SIZE_MONITORING",
+      "phase": 2,
+      "slice": 2,
+      "title": "Storage Size Monitoring & Alerts",
+      "category": "foundation",
+      "risk": "Low",
+      "tdd": "Optional",
+      "depends_on": [
+        "SQLITE_SCHEMA",
+        "METRICS_INFRASTRUCTURE"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-health-command.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/staging-ledger/spec-staging-tech.md",
+          "section": "Storage Monitoring",
+          "excerpt_hash": "tech027"
+        }
+      ],
+      "adr_refs": []
+    },
+    {
+      "id": "TESTKIT_INTEGRATION",
+      "phase": 1,
+      "slice": 1,
+      "title": "TestKit Integration & Test Infrastructure",
+      "category": "foundation",
+      "risk": "Medium",
+      "tdd": "N/A",
+      "depends_on": [
+        "MONOREPO_STRUCTURE"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-testkit-usage.md",
+        "guide-testkit-optimizations.md",
+        "guide-phase1-testing-patterns.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "test",
+          "source_file": "docs/cross-cutting/spec-foundation-monorepo-test.md",
+          "section": "TestKit Integration",
+          "excerpt_hash": "test008"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0019"
+      ]
+    },
+    {
+      "id": "TRANSCRIPTION_RETRY_LOGIC",
+      "phase": 2,
+      "slice": 1,
+      "title": "Transcription Single Retry on Failure",
+      "category": "process",
+      "risk": "Medium",
+      "tdd": "Required",
+      "depends_on": [
+        "WHISPER_TRANSCRIPTION",
+        "ERROR_LOGGING_STRUCTURED"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-error-recovery.md",
+        "guide-whisper-transcription.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/capture/spec-capture-tech.md",
+          "section": "Retry Logic",
+          "excerpt_hash": "tech028"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0014"
+      ]
+    },
+    {
+      "id": "VAULT_WRITE_ERROR_HANDLING",
+      "phase": 2,
+      "slice": 1,
+      "title": "Vault Write Error Handling (EACCES, ENOSPC, etc.)",
+      "category": "output",
+      "risk": "High",
+      "tdd": "Required",
+      "depends_on": [
+        "ATOMIC_FILE_WRITER",
+        "ERROR_LOGGING_STRUCTURED"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-error-recovery.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/obsidian-bridge/spec-obsidian-tech.md",
+          "section": "Error Handling",
+          "excerpt_hash": "tech029"
+        },
+        {
+          "kind": "test",
+          "source_file": "docs/features/obsidian-bridge/spec-obsidian-test.md",
+          "section": "Error Handling Tests",
+          "excerpt_hash": "test009"
+        }
+      ],
+      "adr_refs": []
+    },
+    {
+      "id": "VOICE_POLLING_ICLOUD",
+      "phase": 1,
+      "slice": 2,
+      "title": "Voice Memo Polling (iCloud + APFS Dataless Detection)",
+      "category": "capture",
+      "risk": "High",
+      "tdd": "Required",
+      "depends_on": [
+        "SQLITE_SCHEMA",
+        "CONTENT_HASH_IMPLEMENTATION"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-polling-implementation.md",
+        "guide-capture-debugging.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "arch",
+          "source_file": "docs/features/capture/spec-capture-arch.md",
+          "section": "Voice Polling",
+          "excerpt_hash": "arch008"
+        },
+        {
+          "kind": "tech",
+          "source_file": "docs/features/capture/spec-capture-tech.md",
+          "section": "Voice Polling Implementation",
+          "excerpt_hash": "tech030"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0001",
+        "ADR-0006",
+        "ADR-0008"
+      ]
+    },
+    {
+      "id": "WHISPER_TRANSCRIPTION",
+      "phase": 1,
+      "slice": 2,
+      "title": "Whisper Transcription (Medium Model, Local)",
+      "category": "process",
+      "risk": "High",
+      "tdd": "Required",
+      "depends_on": [
+        "VOICE_POLLING_ICLOUD"
+      ],
+      "defer": false,
+      "defer_trigger": null,
+      "status": "planned",
+      "guides": [
+        "guide-whisper-transcription.md",
+        "guide-error-recovery.md"
+      ],
+      "acceptance_refs": [],
+      "spec_refs": [
+        {
+          "kind": "tech",
+          "source_file": "docs/features/capture/spec-capture-tech.md",
+          "section": "Whisper Integration",
+          "excerpt_hash": "tech031"
+        },
+        {
+          "kind": "test",
+          "source_file": "docs/features/capture/spec-capture-test.md",
+          "section": "Transcription Tests",
+          "excerpt_hash": "test010"
+        }
+      ],
+      "adr_refs": [
+        "ADR-0006",
+        "ADR-0008",
+        "ADR-0014"
+      ]
+    }
+  ],
+  "guide_coverage": {
+    "summary": {
+      "total_capabilities": 29,
+      "high_risk": 15,
+      "tdd_required": 20,
+      "with_guides": 29,
+      "missing_guides": 0
+    },
+    "missing": []
+  },
+  "metadata": {
+    "total_nodes": 29,
+    "total_edges": 45,
+    "max_depth": 5,
+    "cycles_detected": 0,
+    "deterministic": true,
+    "idempotent": true
+  }
+}
