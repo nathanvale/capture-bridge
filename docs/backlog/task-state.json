@@ -1,6 +1,6 @@
 {
-  "manifest_hash": "PLACEHOLDER",
-  "last_updated": "2025-09-28T20:18:45Z",
+  "manifest_hash": "d18c2638898a4a5d1e0cfbece98dfdd889490bfc5d257e65cce7cdfe58bb6691",
+  "last_updated": "2025-10-03T08:00:00Z",
   "tasks": {
     "MONOREPO_STRUCTURE--T01": {
       "status": "completed",
@@ -14,6 +14,18 @@
       ],
       "acs_remaining": [],
       "notes": "Completed monorepo structure with 4 packages (foundation, storage, capture, cli), Turbo pipeline (build, test, lint), shared configs (tsconfig, eslint, prettier), and zero circular dependencies verified. All 20 tests passing."
+    },
+    "SQLITE_SCHEMA--T01": {
+      "status": "in-progress",
+      "started_at": "2025-10-03T08:00:00Z",
+      "completed_at": null,
+      "acs_completed": [],
+      "acs_remaining": [
+        "SQLITE_SCHEMA-AC01",
+        "SQLITE_SCHEMA-AC02",
+        "SQLITE_SCHEMA-AC03"
+      ],
+      "notes": "Starting SQLite schema implementation with TDD through wallaby-tdd-agent delegation"
     }
   }
 }

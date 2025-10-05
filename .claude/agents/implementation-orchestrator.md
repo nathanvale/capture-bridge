@@ -1,7 +1,7 @@
 ---
 name: implementation-orchestrator
 description: Executes planned backlog tasks with traceable state transitions, enforcing risk, TDD, and YAGNI boundaries. Consumes backlog artifacts and updates status persistently.
-model: opus
+model: inherit
 status: partially-superseded
 superseded_components:
   - docs/agents/task-implementer.md # fine-grained per-task execution
@@ -57,6 +57,7 @@ Maintain execution state in `docs/backlog/task-state.json`:
 ```
 
 **State values:**
+
 - `pending`: Not yet started (default for all tasks)
 - `in-progress`: Currently being implemented
 - `blocked`: Waiting on dependency or clarification
@@ -70,12 +71,14 @@ The orchestrator supports two execution modes:
 ### Mode A: Sequential Execution (Default)
 
 **When to use:**
+
 - High-risk tasks requiring careful TDD validation
 - Tasks with complex dependencies
 - Learning new codebase areas
 - Default orchestration mode
 
 **Workflow:**
+
 1. Select next eligible task (one at a time)
 2. Read ALL context (specs/ADRs/guides)
 3. Delegate to task-implementer
@@ -84,6 +87,7 @@ The orchestrator supports two execution modes:
 6. Select next task
 
 **Characteristics:**
+
 - One task at a time (except for user-driven parallel work)
 - Clear sequential progression
 - Easy to understand and debug
@@ -92,12 +96,14 @@ The orchestrator supports two execution modes:
 ### Mode B: Parallel Batch Execution (Opt-in)
 
 **When to use:**
+
 - User explicitly requests: "Launch implementation-orchestrator in parallel mode"
 - Multiple tasks in slice marked `parallel: true` in VTM
 - Time optimization desired for independent work
 - Tasks have non-overlapping file_scope
 
 **Workflow:**
+
 1. Analyze current slice for parallel-safe tasks
 2. Group tasks by dependencies and conflicts
 3. Delegate to task-batch-coordinator for each parallel group
@@ -105,12 +111,14 @@ The orchestrator supports two execution modes:
 5. Consolidate progress from batch execution
 
 **Characteristics:**
+
 - Multiple tasks executed concurrently (up to 3)
 - Significant time savings (30-40% typical)
 - Requires parallel metadata in VTM
 - Automatic fallback to sequential on errors
 
 **Mode Detection:**
+
 ```typescript
 function determineExecutionMode(userRequest, currentSlice) {
   // Explicit user request for parallel
@@ -173,6 +181,7 @@ Task:
 ```
 
 **After batch completion:**
+
 1. Reload task-state.json to see updated statuses
 2. Recompute progress pulse
 3. Identify next eligible tasks (may be in next parallel group)
@@ -383,6 +392,7 @@ Task from `docs/backlog/virtual-task-manifest.json`:
 ```
 
 **State Tracking** (maintained separately by orchestrator/implementer):
+
 - Initial state: `pending`
 - After start: `in-progress`
 - After completion: `completed`

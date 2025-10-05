@@ -72,10 +72,10 @@ KEY IMPROVEMENTS:
 
     // Test sub-exports that should now work
     const subExports = [
-      { path: '@orchestr8/testkit/utils', expectedExports: ['createTestFixture'] },
+      { path: '@orchestr8/testkit/utils', expectedExports: ['delay', 'retry', 'withTimeout', 'createMockFn'] },
       { path: '@orchestr8/testkit/config/vitest', expectedExports: ['createBaseVitestConfig'] },
       { path: '@orchestr8/testkit/msw', expectedExports: ['setupMSW', 'http'] },
-      { path: '@orchestr8/testkit/env', expectedExports: ['useFakeTimers', 'setSystemTime'] },
+      { path: '@orchestr8/testkit/env', expectedExports: ['useFakeTimers', 'timeHelpers'] },
       { path: '@orchestr8/testkit/fs', expectedExports: ['createTempDirectory'] }
     ]
 
@@ -107,9 +107,11 @@ LEAN CORE BENEFITS:
 ✅ Clear separation of concerns
     `)
 
-    // With the fix, we expect most/all sub-exports to work
+    // With the fix, we expect ALL sub-exports to work
     const workingExports = results.filter(r => r.includes('✅')).length
-    expect(workingExports).toBeGreaterThan(0)
+    const failures = results.filter(r => r.includes('❌'))
+    expect(workingExports).toBe(subExports.length)
+    expect(failures).toEqual([])
   })
 
   it('should document migration path', () => {

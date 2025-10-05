@@ -9,6 +9,7 @@ import reactPlugin from 'eslint-plugin-react'
 import reactHooksPlugin from 'eslint-plugin-react-hooks'
 import jsxA11yPlugin from 'eslint-plugin-jsx-a11y'
 import turboPlugin from 'eslint-plugin-turbo'
+import vitestPlugin from 'eslint-plugin-vitest'
 import prettierConfig from 'eslint-config-prettier'
 
 export default [
@@ -23,6 +24,8 @@ export default [
       '**/turbo.json',
       '**/tsconfig.json',
       '**/tsconfig.*.json',
+      '**/test-hook.ts',
+      '**/test-prettier.ts',
     ],
   },
   // Base configuration for all files
@@ -51,7 +54,7 @@ export default [
       'import/resolver': {
         typescript: {
           alwaysTryTypes: true,
-          project: ['./tsconfig.json', './packages/*/tsconfig.json'],
+          project: ['./tsconfig.json', './packages/*/tsconfig.json', './tooling/*/tsconfig.json'],
         },
         node: true,
       },
@@ -278,9 +281,25 @@ export default [
 
   // Test files configuration
   {
-    files: ['**/*.test.{js,ts,jsx,tsx}', '**/*.spec.{js,ts,jsx,tsx}'],
+    files: ['**/*.test.{js,ts,jsx,tsx}', '**/*.spec.{js,ts,jsx,tsx}', '**/__tests__/**/*.{js,ts,jsx,tsx}'],
+    plugins: {
+      vitest: vitestPlugin,
+    },
     rules: {
-      'no-console': 'off',
+      ...vitestPlugin.configs.recommended.rules,
+
+      // Vitest-specific rules
+      'vitest/expect-expect': 'error',
+      'vitest/no-disabled-tests': 'warn',
+      'vitest/no-focused-tests': 'error',
+      'vitest/no-identical-title': 'error',
+      'vitest/prefer-to-be': 'warn',
+      'vitest/prefer-to-have-length': 'warn',
+      'vitest/valid-expect': 'error',
+      'vitest/consistent-test-it': ['error', { fn: 'it' }],
+
+      // Test file overrides
+      'no-console': 'error',
       '@typescript-eslint/no-explicit-any': 'off',
       'unicorn/no-null': 'off',
       'prefer-arrow/prefer-arrow-functions': 'off',

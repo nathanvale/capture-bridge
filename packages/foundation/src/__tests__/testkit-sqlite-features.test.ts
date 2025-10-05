@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+
 import type { Database } from 'better-sqlite3';
 
 /**
@@ -24,7 +25,7 @@ describe('Testkit SQLite Features', () => {
 
   afterEach(() => {
     // Clean up all databases after each test
-    databases.forEach(database => {
+    for (const database of databases) {
       try {
         if (!database.readonly) {
           database.close();
@@ -32,7 +33,7 @@ describe('Testkit SQLite Features', () => {
       } catch (error) {
         // Ignore close errors
       }
-    });
+    }
     databases.length = 0;
     db = null;
   });
@@ -62,6 +63,73 @@ describe('Testkit SQLite Features', () => {
       }
     });
 
+    it('should create memory URL with auto-generated identifier', async () => {
+      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite');
+
+      // Create URL with auto-generated identifier
+      const url = createMemoryUrl('raw', { autoGenerate: true });
+
+      expect(url).toContain('mem-');
+      expect(url).toContain('mode=memory');
+      expect(url).toContain('cache=shared');
+
+      console.log('✅ Auto-generated memory URL:', url);
+    });
+
+    it('should create memory URL with different isolation modes', async () => {
+      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite');
+
+      // Shared cache (default)
+      const sharedUrl = createMemoryUrl('raw', {
+        identifier: 'test-shared',
+        isolation: 'shared'
+      });
+      expect(sharedUrl).toContain('cache=shared');
+
+      // Private cache
+      const privateUrl = createMemoryUrl('raw', {
+        identifier: 'test-private',
+        isolation: 'private'
+      });
+      expect(privateUrl).toContain('cache=private');
+
+      console.log('✅ Isolation modes tested:', { shared: sharedUrl, private: privateUrl });
+    });
+
+    it('should create memory URL with custom parameters', async () => {
+      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite');
+
+      // Create URL with custom parameters
+      const url = createMemoryUrl('raw', {
+        identifier: 'test-params',
+        params: {
+          connection_limit: 5,
+          timeout: 10000
+        }
+      });
+
+      expect(url).toContain('connection_limit=5');
+      expect(url).toContain('timeout=10000');
+
+      console.log('✅ Memory URL with custom params:', url);
+    });
+
+    it('should create memory URL for different targets', async () => {
+      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite');
+
+      const rawUrl = createMemoryUrl('raw');
+      const prismaUrl = createMemoryUrl('prisma', { identifier: 'test-prisma' });
+      const kyselyUrl = createMemoryUrl('kysely');
+      const drizzleUrl = createMemoryUrl('drizzle-better-sqlite3');
+
+      expect(rawUrl).toBeDefined();
+      expect(prismaUrl).toBeDefined();
+      expect(kyselyUrl).toBeDefined();
+      expect(drizzleUrl).toBe(':memory:'); // Simple format for drizzle-better-sqlite3
+
+      console.log('✅ All target URLs created:', { rawUrl, prismaUrl, kyselyUrl, drizzleUrl });
+    });
+
     it('should create file-based SQLite database', async () => {
       const { createFileDatabase } = await import('@orchestr8/testkit/sqlite');
       const Database = (await import('better-sqlite3')).default;
@@ -88,115 +156,194 @@ describe('Testkit SQLite Features', () => {
       expect(user).toBeDefined();
       expect(user.name).toBe('John Doe');
 
-      console.log('✅ File-based SQLite database created at:', dbPath);
+      console.log('✅ File-based SQLite database created at:', fileDb.path);
+    });
+
+    it('should create file database with connection pool', async () => {
+      const { createFileDBWithPool } = await import('@orchestr8/testkit/sqlite');
+
+      // Create file database with pool
+      const fileDb = await createFileDBWithPool('test-pool.db', {
+        maxConnections: 5,
+        minConnections: 1,
+        idleTimeout: 30000
+      });
+
+      expect(fileDb.pool).toBeDefined();
+      expect(fileDb.path).toBeDefined();
+      expect(fileDb.url).toBeDefined();
+
+      // Acquire connection from pool
+      const conn1 = await fileDb.pool!.acquire();
+      databases.push(conn1);
+
+      // Use connection
+      conn1.exec('CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)');
+      conn1.prepare('INSERT INTO test (name) VALUES (?)').run('Test User');
+
+      // Release connection back to pool
+      await fileDb.pool!.release(conn1);
+
+      // Acquire another connection and verify data persists
+      const conn2 = await fileDb.pool!.acquire();
+      databases.push(conn2);
+
+      const result = conn2.prepare('SELECT * FROM test WHERE name = ?').get('Test User') as any;
+      expect(result).toBeDefined();
+      expect(result.name).toBe('Test User');
+
+      await fileDb.pool!.release(conn2);
+
+      // Get pool stats
+      const stats = fileDb.pool!.getStats();
+      expect(stats).toHaveProperty('totalConnections');
+      expect(stats).toHaveProperty('connectionsInUse');
+      expect(stats).toHaveProperty('idleConnections');
+
+      console.log('✅ File database with connection pool created, stats:', stats);
+
+      // Cleanup pool
+      await fileDb.pool!.drain();
+      await fileDb.cleanup();
     });
 
     it('should handle database with WAL mode and pragmas', async () => {
       const { createMemoryUrl, applyRecommendedPragmas } = await import('@orchestr8/testkit/sqlite');
       const Database = (await import('better-sqlite3')).default;
 
-      const memoryUrl = createMemoryUrl({ mode: 'wal' });
+      const memoryUrl = createMemoryUrl('raw'); // WAL mode will be applied via applyRecommendedPragmas
       db = new Database(':memory:');
       databases.push(db);
 
       // Apply recommended pragmas for testing
-      const applied = applyRecommendedPragmas(db);
+      const applied = await applyRecommendedPragmas(db);
 
       expect(applied).toHaveProperty('journal_mode');
-      expect(applied).toHaveProperty('synchronous');
-      expect(applied).toHaveProperty('temp_store');
+      expect(applied).toHaveProperty('foreign_keys');
+      expect(applied).toHaveProperty('busy_timeout');
 
       console.log('✅ Applied pragmas:', Object.keys(applied).join(', '));
     });
-  });
 
-  describe('Migration Support', () => {
-    it('should run database migrations', async () => {
-      const {
-        createMemoryUrl,
-        applyMigrations,
-        resetDatabase
-      } = await import('@orchestr8/testkit/sqlite');
+    it('should probe SQLite environment capabilities', async () => {
+      const { probeEnvironment } = await import('@orchestr8/testkit/sqlite');
       const Database = (await import('better-sqlite3')).default;
 
       db = new Database(':memory:');
       databases.push(db);
 
-      // Define test migrations
-      const migrations = [
-        {
-          version: 1,
-          up: `CREATE TABLE users (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL
-          )`
-        },
-        {
-          version: 2,
-          up: `ALTER TABLE users ADD COLUMN email TEXT`
-        },
-        {
-          version: 3,
-          up: `CREATE INDEX idx_users_email ON users(email)`
-        }
-      ];
+      // Probe environment with capability checks
+      const result = await probeEnvironment(db, {
+        logLevel: 'silent',
+        required: ['foreign_keys', 'json1']
+      });
 
-      // Apply migrations
-      const migrationDb = {
-        exec: (sql: string) => db!.exec(sql),
-        prepare: (sql: string) => db!.prepare(sql),
-        pragma: (pragma: string) => db!.pragma(pragma),
-        close: () => db!.close()
-      };
+      // Verify result structure
+      expect(result).toHaveProperty('pragmas');
+      expect(result).toHaveProperty('capabilities');
 
-      for (const migration of migrations) {
-        migrationDb.exec(migration.up);
+      // Verify capabilities
+      expect(result.capabilities).toHaveProperty('wal');
+      expect(result.capabilities).toHaveProperty('foreign_keys');
+      expect(result.capabilities).toHaveProperty('json1');
+      expect(result.capabilities).toHaveProperty('fts5');
+
+      // Verify required capabilities are available
+      expect(result.capabilities.foreign_keys).toBe(true);
+      expect(result.capabilities.json1).toBe(true);
+
+      console.log('✅ Environment probed successfully:', result.capabilities);
+    });
+  });
+
+  describe('Migration Support', () => {
+    it('should apply migrations using applyMigrations', async () => {
+      const { applyMigrations } = await import('@orchestr8/testkit/sqlite');
+      const Database = (await import('better-sqlite3')).default;
+      const fs = await import('node:fs/promises');
+      const path = await import('node:path');
+      const os = await import('node:os');
+
+      db = new Database(':memory:');
+      databases.push(db);
+
+      // Create temp directory for migrations
+      const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'migrations-'));
+
+      try {
+        // Write migration files
+        await fs.writeFile(
+          path.join(tmpDir, '001_create_users.sql'),
+          'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL);'
+        );
+        await fs.writeFile(
+          path.join(tmpDir, '002_add_email.sql'),
+          'ALTER TABLE users ADD COLUMN email TEXT;'
+        );
+        await fs.writeFile(
+          path.join(tmpDir, '003_create_index.sql'),
+          'CREATE INDEX idx_users_email ON users(email);'
+        );
+
+        // Apply migrations using actual applyMigrations function
+        await applyMigrations(db, { dir: tmpDir });
+
+        // Verify migrations applied
+        const tableInfo = db.prepare("PRAGMA table_info('users')").all();
+        const columns = (tableInfo as any[]).map(col => col.name);
+
+        expect(columns).toContain('id');
+        expect(columns).toContain('name');
+        expect(columns).toContain('email');
+
+        // Verify index was created
+        const indexes = db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_users_email'").all();
+        expect(indexes).toHaveLength(1);
+
+        console.log('✅ Migrations applied successfully using applyMigrations');
+      } finally {
+        // Cleanup temp directory
+        await fs.rm(tmpDir, { recursive: true, force: true });
       }
-
-      // Verify migrations applied
-      const tableInfo = db.prepare("PRAGMA table_info('users')").all();
-      const columns = (tableInfo as any[]).map(col => col.name);
-
-      expect(columns).toContain('id');
-      expect(columns).toContain('name');
-      expect(columns).toContain('email');
-
-      console.log('✅ Migrations applied successfully');
     });
 
-    it('should reset database to clean state', async () => {
+    it('should reset database using resetDatabase', async () => {
       const { resetDatabase } = await import('@orchestr8/testkit/sqlite');
       const Database = (await import('better-sqlite3')).default;
 
       db = new Database(':memory:');
       databases.push(db);
 
-      // Create initial schema
+      // Create initial schema with multiple object types
       db.exec(`
         CREATE TABLE test_table (id INTEGER PRIMARY KEY);
+        CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT);
+        CREATE INDEX idx_users ON users(name);
+        CREATE VIEW user_view AS SELECT * FROM users;
         INSERT INTO test_table (id) VALUES (1), (2), (3);
       `);
 
       // Verify data exists
-      let count = db.prepare('SELECT COUNT(*) as count FROM test_table').get() as { count: number };
+      const count = db.prepare('SELECT COUNT(*) as count FROM test_table').get() as { count: number };
       expect(count.count).toBe(3);
 
-      // Reset database
-      await resetDatabase({
-        exec: (sql: string) => db!.exec(sql),
-        prepare: (sql: string) => db!.prepare(sql),
-        pragma: (pragma: string) => db!.pragma(pragma),
-        close: () => {}
-      });
+      // Create a database adapter with all() method for resetDatabase
+      const dbAdapter = {
+        exec: (sql: string) => db.exec(sql),
+        all: (sql: string) => db.prepare(sql).all()
+      };
 
-      // Verify tables are gone
-      const tables = db.prepare(
-        "SELECT name FROM sqlite_master WHERE type='table'"
+      // Reset database using actual resetDatabase function with allowReset flag
+      await resetDatabase(dbAdapter, { allowReset: true });
+
+      // Verify all user objects are gone
+      const remainingObjects = db.prepare(
+        "SELECT name, type FROM sqlite_master WHERE type IN ('table', 'index', 'view') AND name NOT LIKE 'sqlite_%'"
       ).all();
 
-      expect(tables).toHaveLength(0);
+      expect(remainingObjects).toHaveLength(0);
 
-      console.log('✅ Database reset successfully');
+      console.log('✅ Database reset successfully using resetDatabase');
     });
   });
 
@@ -250,24 +397,83 @@ describe('Testkit SQLite Features', () => {
         )
       `);
 
-      // Seed with batch
+      // Seed with batch - seedWithBatch expects (db, operations[], options)
       const users = [
         { name: 'Alice', age: 30 },
         { name: 'Bob', age: 25 },
         { name: 'Charlie', age: 35 }
       ];
 
-      await seedWithBatch(db, {
-        table: 'users',
-        data: users,
-        chunkSize: 2
-      });
+      // Create operations array for seedWithBatch
+      const operations = users.map(user => ({
+        sql: `INSERT INTO users (name, age) VALUES ('${user.name}', ${user.age})`,
+        label: `Insert user ${user.name}`
+      }));
+
+      await seedWithBatch(db, operations, { maxBatchSize: 2 });
 
       // Verify seeded data
       const allUsers = db.prepare('SELECT * FROM users').all();
       expect(allUsers).toHaveLength(3);
 
       console.log('✅ Batch seeded', allUsers.length, 'users');
+    });
+
+    it('should seed database with files using seedWithFiles', async () => {
+      const { seedWithFiles } = await import('@orchestr8/testkit/sqlite');
+      const Database = (await import('better-sqlite3')).default;
+      const fs = await import('node:fs/promises');
+      const path = await import('node:path');
+      const os = await import('node:os');
+
+      db = new Database(':memory:');
+      databases.push(db);
+
+      // Create schema
+      db.exec(`
+        CREATE TABLE products (
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL,
+          price REAL NOT NULL
+        );
+        CREATE TABLE categories (
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL
+        );
+      `);
+
+      // Create temp directory for seed files
+      const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'seeds-'));
+
+      try {
+        // Write seed files
+        await fs.writeFile(
+          path.join(tmpDir, '001_categories.sql'),
+          `INSERT INTO categories (name) VALUES ('Electronics'), ('Books'), ('Clothing');`
+        );
+        await fs.writeFile(
+          path.join(tmpDir, '002_products.sql'),
+          `INSERT INTO products (name, price) VALUES
+            ('Laptop', 999.99),
+            ('Mouse', 29.99),
+            ('Keyboard', 79.99);`
+        );
+
+        // Seed using actual seedWithFiles function
+        await seedWithFiles(db, { dir: tmpDir });
+
+        // Verify seeded data
+        const categories = db.prepare('SELECT * FROM categories').all();
+        const products = db.prepare('SELECT * FROM products').all();
+
+        expect(categories).toHaveLength(3);
+        expect(products).toHaveLength(3);
+
+        console.log('✅ Database seeded with files using seedWithFiles');
+      } finally {
+        // Cleanup temp directory
+        await fs.rm(tmpDir, { recursive: true, force: true });
+      }
     });
   });
 
@@ -291,9 +497,16 @@ describe('Testkit SQLite Features', () => {
       db.prepare('INSERT INTO accounts (id, balance) VALUES (1, 100.0)').run();
       db.prepare('INSERT INTO accounts (id, balance) VALUES (2, 50.0)').run();
 
+      // Create adapter for better-sqlite3
+      const adapter = {
+        begin: async (database: typeof db) => { database.exec('BEGIN'); return database; },
+        commit: async (database: typeof db) => database.exec('COMMIT'),
+        rollback: async (database: typeof db) => database.exec('ROLLBACK')
+      };
+
       // Try transaction that should rollback
       try {
-        await withTransaction(db, async (tx) => {
+        await withTransaction(db, adapter, async (tx) => {
           // Transfer money
           tx.prepare('UPDATE accounts SET balance = balance - 30 WHERE id = 1').run();
           tx.prepare('UPDATE accounts SET balance = balance + 30 WHERE id = 2').run();
@@ -331,8 +544,15 @@ describe('Testkit SQLite Features', () => {
         )
       `);
 
+      // Create adapter for better-sqlite3
+      const adapter = {
+        begin: async (database: typeof db) => { database.exec('BEGIN'); return database; },
+        commit: async (database: typeof db) => database.exec('COMMIT'),
+        rollback: async (database: typeof db) => database.exec('ROLLBACK')
+      };
+
       // Successful transaction
-      await withTransaction(db, async (tx) => {
+      await withTransaction(db, adapter, async (tx) => {
         tx.prepare('INSERT INTO inventory (item, quantity) VALUES (?, ?)').run('Apples', 10);
         tx.prepare('INSERT INTO inventory (item, quantity) VALUES (?, ?)').run('Oranges', 15);
         tx.prepare('INSERT INTO inventory (item, quantity) VALUES (?, ?)').run('Bananas', 20);
@@ -350,35 +570,265 @@ describe('Testkit SQLite Features', () => {
     it('should register and cleanup databases', async () => {
       const {
         registerDatabaseCleanup,
-        executeDatabaseCleanup,
+        cleanupAllSqlite,
         getCleanupCount
       } = await import('@orchestr8/testkit/sqlite');
       const Database = (await import('better-sqlite3')).default;
 
       // Create multiple databases
-      const db1 = new Database(':memory:');
-      const db2 = new Database(':memory:');
-      const db3 = new Database(':memory:');
+      const rawDb1 = new Database(':memory:');
+      const rawDb2 = new Database(':memory:');
+      const rawDb3 = new Database(':memory:');
 
-      databases.push(db1, db2, db3);
+      databases.push(rawDb1, rawDb2, rawDb3);
+
+      // Wrap databases with cleanup method for DatabaseLike interface
+      const db1 = {
+        db: rawDb1,
+        cleanup: () => {
+          if (!rawDb1.readonly && rawDb1.open) {
+            rawDb1.close();
+          }
+        }
+      };
+      const db2 = {
+        db: rawDb2,
+        cleanup: () => {
+          if (!rawDb2.readonly && rawDb2.open) {
+            rawDb2.close();
+          }
+        }
+      };
+      const db3 = {
+        db: rawDb3,
+        cleanup: () => {
+          if (!rawDb3.readonly && rawDb3.open) {
+            rawDb3.close();
+          }
+        }
+      };
 
       // Register for cleanup
-      const cleanup1 = registerDatabaseCleanup(db1);
-      const cleanup2 = registerDatabaseCleanup(db2);
-      const cleanup3 = registerDatabaseCleanup(db3);
+      registerDatabaseCleanup(db1);
+      registerDatabaseCleanup(db2);
+      registerDatabaseCleanup(db3);
 
       // Check cleanup count
       const count = getCleanupCount();
       expect(count).toBeGreaterThanOrEqual(3);
 
       // Execute cleanup
-      await executeDatabaseCleanup();
+      await cleanupAllSqlite();
 
       // Verify cleanup
       const countAfter = getCleanupCount();
       expect(countAfter).toBe(0);
 
       console.log('✅ Cleaned up', count, 'databases');
+    });
+
+    it('should register and execute cleanup functions', async () => {
+      const {
+        registerCleanup,
+        executeCleanup,
+        unregisterCleanup,
+        getCleanupCount
+      } = await import('@orchestr8/testkit/sqlite');
+
+      let cleanupCalled = false;
+      const cleanupFn = async () => {
+        cleanupCalled = true;
+      };
+
+      // Register cleanup function
+      registerCleanup(cleanupFn);
+      expect(getCleanupCount()).toBeGreaterThan(0);
+
+      // Execute specific cleanup
+      const executed = await executeCleanup(cleanupFn);
+      expect(executed).toBe(true);
+      expect(cleanupCalled).toBe(true);
+
+      // Verify cleanup was removed from registry
+      const executedAgain = await executeCleanup(cleanupFn);
+      expect(executedAgain).toBe(false);
+
+      console.log('✅ Cleanup function registered and executed');
+    });
+
+    it('should unregister cleanup without executing', async () => {
+      const {
+        registerCleanup,
+        unregisterCleanup
+      } = await import('@orchestr8/testkit/sqlite');
+
+      let cleanupCalled = false;
+      const cleanupFn = () => {
+        cleanupCalled = true;
+      };
+
+      // Register and unregister
+      registerCleanup(cleanupFn);
+      const removed = unregisterCleanup(cleanupFn);
+
+      expect(removed).toBe(true);
+      expect(cleanupCalled).toBe(false);
+
+      // Try to remove again
+      const removedAgain = unregisterCleanup(cleanupFn);
+      expect(removedAgain).toBe(false);
+
+      console.log('✅ Cleanup unregistered without execution');
+    });
+
+    it('should get detailed cleanup counts', async () => {
+      const {
+        registerCleanup,
+        registerDatabaseCleanup,
+        getDetailedCleanupCount,
+        cleanupAllSqlite
+      } = await import('@orchestr8/testkit/sqlite');
+      const Database = (await import('better-sqlite3')).default;
+
+      // Register both functions and databases
+      registerCleanup(() => {});
+      registerCleanup(() => {});
+
+      const rawDb = new Database(':memory:');
+      databases.push(rawDb);
+
+      const dbCleanable = {
+        cleanup: () => {
+          if (!rawDb.readonly && rawDb.open) {
+            rawDb.close();
+          }
+        }
+      };
+
+      registerDatabaseCleanup(dbCleanable);
+
+      const counts = getDetailedCleanupCount();
+      expect(counts).toHaveProperty('functions');
+      expect(counts).toHaveProperty('databases');
+      expect(counts).toHaveProperty('total');
+      expect(counts.total).toBeGreaterThanOrEqual(3);
+
+      console.log('✅ Detailed cleanup counts:', counts);
+
+      await cleanupAllSqlite();
+    });
+
+    it('should use useSqliteCleanup hook for automatic cleanup', async () => {
+      const {
+        useSqliteCleanup,
+        createFileDatabase,
+        getCleanupCount
+      } = await import('@orchestr8/testkit/sqlite');
+
+      // Create a wrapped database creator
+      const useDatabase = useSqliteCleanup(async () => createFileDatabase('hook-test.db'));
+
+      const initialCount = getCleanupCount();
+
+      // Create database - should auto-register for cleanup
+      const fileDb = await useDatabase();
+
+      expect(fileDb).toBeDefined();
+      expect(fileDb.path).toBeDefined();
+      expect(getCleanupCount()).toBeGreaterThan(initialCount);
+
+      console.log('✅ Database auto-registered with useSqliteCleanup hook');
+
+      await fileDb.cleanup();
+    });
+
+    it('should use withSqliteCleanupScope for scoped cleanup', async () => {
+      const {
+        withSqliteCleanupScope,
+        registerCleanup,
+        getCleanupCount
+      } = await import('@orchestr8/testkit/sqlite');
+
+      let scopeCleanupCalled = false;
+      const initialCount = getCleanupCount();
+
+      // Execute within cleanup scope
+      const result = await withSqliteCleanupScope(async () => {
+        registerCleanup(() => {
+          scopeCleanupCalled = true;
+        });
+
+        // Cleanup count should increase within scope
+        expect(getCleanupCount()).toBeGreaterThan(initialCount);
+
+        return 'scope-result';
+      });
+
+      // Verify result returned
+      expect(result).toBe('scope-result');
+
+      // Verify scoped cleanup was executed
+      expect(scopeCleanupCalled).toBe(true);
+
+      // Cleanup count should return to initial after scope
+      expect(getCleanupCount()).toBeLessThanOrEqual(initialCount + 1);
+
+      console.log('✅ Scoped cleanup executed successfully');
+    });
+
+    it('should create cleanable file database', async () => {
+      const {
+        createCleanableFileDatabase,
+        createFileDatabase,
+        getCleanupCount
+      } = await import('@orchestr8/testkit/sqlite');
+
+      const initialCount = getCleanupCount();
+
+      // Create cleanable database
+      const fileDb = await createCleanableFileDatabase(() => createFileDatabase('cleanable.db'));
+
+      expect(fileDb).toBeDefined();
+      expect(fileDb.path).toBeDefined();
+      expect(getCleanupCount()).toBeGreaterThan(initialCount);
+
+      console.log('✅ Cleanable file database created and registered');
+
+      await fileDb.cleanup();
+    });
+
+    it('should unregister database cleanup without executing', async () => {
+      const {
+        registerDatabaseCleanup,
+        unregisterDatabaseCleanup
+      } = await import('@orchestr8/testkit/sqlite');
+      const Database = (await import('better-sqlite3')).default;
+
+      const rawDb = new Database(':memory:');
+      databases.push(rawDb);
+
+      let cleanupCalled = false;
+      const dbCleanable = {
+        cleanup: () => {
+          cleanupCalled = true;
+          if (!rawDb.readonly && rawDb.open) {
+            rawDb.close();
+          }
+        }
+      };
+
+      // Register and unregister
+      registerDatabaseCleanup(dbCleanable);
+      const removed = unregisterDatabaseCleanup(dbCleanable);
+
+      expect(removed).toBe(true);
+      expect(cleanupCalled).toBe(false);
+
+      // Try to remove again
+      const removedAgain = unregisterDatabaseCleanup(dbCleanable);
+      expect(removedAgain).toBe(false);
+
+      console.log('✅ Database cleanup unregistered without execution');
     });
   });
 
@@ -387,22 +837,27 @@ describe('Testkit SQLite Features', () => {
       const { prismaUrl, drizzleUrl } = await import('@orchestr8/testkit/sqlite');
 
       // Test Prisma URL generation
-      const prismaMemoryUrl = prismaUrl(':memory:');
+      const prismaMemoryUrl = prismaUrl('memory');
       expect(prismaMemoryUrl).toContain('file:');
+      expect(prismaMemoryUrl).toContain('memory');
 
-      const prismaFileUrl = prismaUrl('/path/to/db.sqlite');
+      const prismaFileUrl = prismaUrl('file', '/path/to/db.sqlite');
       expect(prismaFileUrl).toContain('file:');
+      expect(prismaFileUrl).toContain('/path/to/db.sqlite');
 
       // Test Drizzle URL generation
-      const drizzleMemoryUrl = drizzleUrl(':memory:');
+      const drizzleMemoryUrl = drizzleUrl('memory');
       expect(drizzleMemoryUrl).toBeDefined();
 
-      const drizzleFileUrl = drizzleUrl('/path/to/db.sqlite');
+      const drizzleFileUrl = drizzleUrl('file', '/path/to/db.sqlite');
       expect(drizzleFileUrl).toBeDefined();
+      expect(drizzleFileUrl).toContain('/path/to/db.sqlite');
 
       console.log('✅ Generated ORM URLs:');
-      console.log('  Prisma:', prismaMemoryUrl);
-      console.log('  Drizzle:', drizzleMemoryUrl);
+      console.log('  Prisma memory:', prismaMemoryUrl);
+      console.log('  Prisma file:', prismaFileUrl);
+      console.log('  Drizzle memory:', drizzleMemoryUrl);
+      console.log('  Drizzle file:', drizzleFileUrl);
     });
   });
 });

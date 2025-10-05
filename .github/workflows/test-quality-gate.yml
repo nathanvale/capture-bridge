@@ -1,0 +1,122 @@
+name: Test Quality Gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  NODE_VERSION: "20.18.0"
+  PNPM_VERSION: "9.15.4"
+  NODE_OPTIONS: "--max-old-space-size=4096"
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  test-quality:
+    name: Test Quality Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PNPM
+        uses: ./.github/actions/setup-pnpm
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          pnpm-version: ${{ env.PNPM_VERSION }}
+
+      - name: Run tests with coverage
+        run: pnpm --filter @capture-bridge/foundation test:coverage
+
+      - name: Enforce 80% coverage threshold
+        run: |
+          echo "## 📊 Coverage Quality Gate" >> $GITHUB_STEP_SUMMARY
+
+          # Check if coverage summary exists
+          if [ ! -f packages/foundation/coverage/coverage-summary.json ]; then
+            echo "❌ Coverage report not found" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          # Extract coverage percentages using Node.js
+          node -e "
+            const fs = require('fs');
+            const coverage = JSON.parse(fs.readFileSync('packages/foundation/coverage/coverage-summary.json', 'utf8')).total;
+
+            const metrics = {
+              'Lines': { pct: coverage.lines.pct, threshold: 80 },
+              'Functions': { pct: coverage.functions.pct, threshold: 80 },
+              'Branches': { pct: coverage.branches.pct, threshold: 75 },
+              'Statements': { pct: coverage.statements.pct, threshold: 80 }
+            };
+
+            let failed = false;
+            console.log('\\n### Coverage Results\\n');
+
+            for (const [name, data] of Object.entries(metrics)) {
+              const status = data.pct >= data.threshold ? '✅' : '❌';
+              const message = \`\${status} \${name}: \${data.pct}% (threshold: \${data.threshold}%)\`;
+              console.log(message);
+
+              if (data.pct < data.threshold) {
+                failed = true;
+              }
+            }
+
+            if (failed) {
+              console.log('\\n❌ Coverage thresholds not met');
+              process.exit(1);
+            } else {
+              console.log('\\n✅ All coverage thresholds met');
+            }
+          " | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Check behavioral test ratio (70%)
+        run: |
+          echo "## 🧪 Behavioral Test Ratio Check" >> $GITHUB_STEP_SUMMARY
+
+          # Count total test files
+          TOTAL_TESTS=$(find packages/foundation/src/__tests__ -name "*.test.ts" -type f | wc -l)
+
+          # Count behavioral test files (files with 'behavioral' in name or integration/e2e tests)
+          BEHAVIORAL_TESTS=$(find packages/foundation/src/__tests__ -name "*behavioral*.test.ts" -o -name "*integration*.test.ts" -o -name "*e2e*.test.ts" | wc -l)
+
+          # Calculate ratio
+          if [ "$TOTAL_TESTS" -eq 0 ]; then
+            echo "❌ No test files found" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          RATIO=$(awk "BEGIN {printf \"%.2f\", $BEHAVIORAL_TESTS / $TOTAL_TESTS}")
+          PERCENTAGE=$(awk "BEGIN {printf \"%.0f\", $RATIO * 100}")
+
+          echo "Total test files: $TOTAL_TESTS" >> $GITHUB_STEP_SUMMARY
+          echo "Behavioral test files: $BEHAVIORAL_TESTS" >> $GITHUB_STEP_SUMMARY
+          echo "Ratio: $RATIO ($PERCENTAGE%)" >> $GITHUB_STEP_SUMMARY
+
+          # Check if ratio meets 70% threshold
+          THRESHOLD=0.7
+          THRESHOLD_PCT=70
+
+          if (( $(echo "$RATIO >= $THRESHOLD" | bc -l) )); then
+            echo "✅ Behavioral test ratio ($PERCENTAGE%) meets threshold ($THRESHOLD_PCT%)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Behavioral test ratio ($PERCENTAGE%) below threshold ($THRESHOLD_PCT%)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "💡 **Action Required:** Add more behavioral tests to meet the 70% ratio." >> $GITHUB_STEP_SUMMARY
+            echo "   - Behavioral tests focus on user-facing behavior and integration scenarios" >> $GITHUB_STEP_SUMMARY
+            echo "   - Name files with \`*behavioral*.test.ts\`, \`*integration*.test.ts\`, or \`*e2e*.test.ts\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.sha }}
+          path: packages/foundation/coverage
+          retention-days: 30

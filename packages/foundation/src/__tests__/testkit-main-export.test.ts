@@ -1,35 +1,46 @@
 import { describe, it, expect } from 'vitest';
 
 /**
- * Testkit Lean Core Main Export Test
+ * @orchestr8/testkit Integration Test (External Dependency Validation)
  *
- * Verifies that the @orchestr8/testkit package's lean core implementation
- * works correctly, providing core utilities without requiring optional dependencies.
+ * PURPOSE: This test validates that the external @orchestr8/testkit package
+ * works correctly in our environment. It is NOT testing @capture-bridge/foundation.
  *
- * LEAN CORE PRINCIPLES:
+ * CONTEXT:
+ * - @orchestr8/testkit is an external npm package (v2.0.0)
+ * - This is an integration/smoke test for our testing infrastructure
+ * - Tests the lean core implementation pattern of the external testkit
+ *
+ * LEAN CORE PRINCIPLES (from @orchestr8/testkit):
  * - Main export contains ONLY core utilities
  * - No optional dependencies required
  * - Sub-exports for optional features
  * - Lazy loading pattern
+ *
+ * NOTE: This test is located in foundation package as it validates
+ * the root-level testing infrastructure that all packages depend on.
  */
-describe('Testkit Lean Core Main Export', () => {
+describe('@orchestr8/testkit - External Dependency Integration', () => {
   it('should import core utilities from lean main export', async () => {
     const testkit = await import('@orchestr8/testkit');
 
     console.log('✅ Lean Core Main Export Verification');
     console.log('==========================================');
-    console.log('Available core utilities:', Object.keys(testkit).join(', '));
 
-    // Verify main export loaded successfully
-    expect(testkit).toBeDefined();
-    expect(Object.keys(testkit).length).toBeGreaterThan(0);
+    const allExports = Object.keys(testkit);
+    console.log(`Total exports: ${allExports.length}`);
 
-    // Core utilities that should be in main export (no optional deps)
+    // Core utilities that MUST be in main export
     const coreUtilities = [
-      'createMockFn',
       'delay',
       'retry',
-      'withTimeout'
+      'withTimeout',
+      // File system utilities (part of core)
+      'createTempDirectory',
+      'createNamedTempDirectory',
+      // Config utilities (part of core)
+      'createBaseVitestConfig',
+      'createVitestCoverage',
     ];
 
     // Verify all core utilities are present
@@ -38,25 +49,24 @@ describe('Testkit Lean Core Main Export', () => {
       expect(typeof testkit[utility]).toBe('function');
     }
 
-    // Optional utilities should NOT be in main export (moved to sub-exports)
+    // Optional utilities that should NOT be in main export
     const optionalUtilities = [
-      'setupMSW',           // Now in @orchestr8/testkit/msw
-      'createMemoryUrl',    // Now in @orchestr8/testkit/sqlite
-      'createTempDirectory' // Now in @orchestr8/testkit/fs
+      'setupMSW',           // Should be in @orchestr8/testkit/msw
+      'createMemoryUrl',    // Should be in @orchestr8/testkit/sqlite
     ];
 
-    // Verify optional utilities are NOT in main export (lean core principle)
+    // Verify optional utilities are correctly excluded
     for (const utility of optionalUtilities) {
       expect(testkit[utility]).toBeUndefined();
     }
 
-    console.log('✅ Core utilities available:', coreUtilities.join(', '));
-    console.log('✅ Optional utilities correctly excluded from main export');
-    console.log('✅ Lean core implementation confirmed!');
+    console.log('✅ Core utilities verified:', coreUtilities.length);
+    console.log('✅ Optional utilities correctly excluded:', optionalUtilities.length);
+    console.log('ℹ️  Note: Main export includes fs/core and config utilities as part of core');
   });
 
   it('should use core utilities without optional dependencies', async () => {
-    const { delay, createMockFn, retry, withTimeout } = await import('@orchestr8/testkit');
+    const { delay, retry, withTimeout } = await import('@orchestr8/testkit');
 
     console.log('\n🧑 Core Utility Tests');
     console.log('========================');
@@ -67,12 +77,6 @@ describe('Testkit Lean Core Main Export', () => {
     const elapsed = Date.now() - start;
     expect(elapsed).toBeGreaterThanOrEqual(40); // Allow some variance
     console.log('✅ delay() works');
-
-    // Test createMockFn utility
-    const mockFn = createMockFn();
-    mockFn('test');
-    expect(mockFn).toHaveBeenCalledWith('test');
-    console.log('✅ createMockFn() works');
 
     // Test retry utility
     let attempts = 0;
