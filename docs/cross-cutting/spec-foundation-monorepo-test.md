@@ -388,7 +388,10 @@ describe("Build Pipeline", () => {
   test("builds core and storage in parallel", async () => {
     const buildLog = await runTurboBuild()
     const coreStart = extractBuildTime(buildLog, "@capture-bridge/core").start
-    const storageStart = extractBuildTime(buildLog, "@capture-bridge/storage").start
+    const storageStart = extractBuildTime(
+      buildLog,
+      "@capture-bridge/storage"
+    ).start
 
     // Parallel builds should start within 100ms of each other
     expect(Math.abs(coreStart - storageStart)).toBeLessThan(100)
@@ -398,7 +401,10 @@ describe("Build Pipeline", () => {
     const buildLog = await runTurboBuild()
     const coreEnd = extractBuildTime(buildLog, "@capture-bridge/core").end
     const storageEnd = extractBuildTime(buildLog, "@capture-bridge/storage").end
-    const captureStart = extractBuildTime(buildLog, "@capture-bridge/capture").start
+    const captureStart = extractBuildTime(
+      buildLog,
+      "@capture-bridge/capture"
+    ).start
 
     expect(Math.max(coreEnd, storageEnd)).toBeLessThanOrEqual(captureStart)
   })
@@ -752,7 +758,8 @@ describe("Package Boundaries", () => {
         const content = await fs.readFile(file, "utf-8")
 
         // Look for deep imports (bypassing index.ts)
-        const deepImportPattern = /@capture-bridge\/[^/]+\/(?!src\/index)[^'"]+/g
+        const deepImportPattern =
+          /@capture-bridge\/[^/]+\/(?!src\/index)[^'"]+/g
         const deepImports = content.match(deepImportPattern) || []
 
         if (deepImports.length > 0) {
@@ -1290,8 +1297,14 @@ describe("Monorepo Dependency Patterns", () => {
   test("detects transitive circular dependencies", () => {
     // Test with synthetic circular dependency
     const syntheticGraph = new Map([
-      ["@capture-bridge/core", ["@capture-bridge/foundation", "@capture-bridge/storage"]],
-      ["@capture-bridge/storage", ["@capture-bridge/foundation", "@capture-bridge/core"]],
+      [
+        "@capture-bridge/core",
+        ["@capture-bridge/foundation", "@capture-bridge/storage"],
+      ],
+      [
+        "@capture-bridge/storage",
+        ["@capture-bridge/foundation", "@capture-bridge/core"],
+      ],
     ])
 
     const cycles = detectCircularDependencies(syntheticGraph)
@@ -1828,8 +1841,12 @@ describe("Setup Workflow", () => {
     // Verify outputs
     const packages = ["foundation", "core", "storage", "capture"]
     for (const pkg of packages) {
-      await temp.assertFileExists(`packages/@capture-bridge/${pkg}/dist/index.js`)
-      await temp.assertFileExists(`packages/@capture-bridge/${pkg}/dist/index.d.ts`)
+      await temp.assertFileExists(
+        `packages/@capture-bridge/${pkg}/dist/index.js`
+      )
+      await temp.assertFileExists(
+        `packages/@capture-bridge/${pkg}/dist/index.d.ts`
+      )
     }
 
     await temp.cleanup()

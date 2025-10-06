@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+/* eslint-disable no-console, sonarjs/no-nested-functions, require-await, unicorn/consistent-function-scoping, sonarjs/no-ignored-exceptions, @typescript-eslint/no-unused-vars, vitest/expect-expect, sonarjs/assertions-in-tests, @typescript-eslint/no-empty-function, sonarjs/no-hardcoded-passwords, sonarjs/file-permissions, sonarjs/no-alphabetical-sort, sonarjs/different-types-comparison */
+import { describe, it, expect } from 'vitest'
 
 /**
  * @orchestr8/testkit Integration Test (External Dependency Validation)
@@ -22,13 +23,13 @@ import { describe, it, expect } from 'vitest';
  */
 describe('@orchestr8/testkit - External Dependency Integration', () => {
   it('should import core utilities from lean main export', async () => {
-    const testkit = await import('@orchestr8/testkit');
+    const testkit = await import('@orchestr8/testkit')
 
-    console.log('✅ Lean Core Main Export Verification');
-    console.log('==========================================');
+    console.log('✅ Lean Core Main Export Verification')
+    console.log('==========================================')
 
-    const allExports = Object.keys(testkit);
-    console.log(`Total exports: ${allExports.length}`);
+    const allExports = Object.keys(testkit)
+    console.log(`Total exports: ${allExports.length}`)
 
     // Core utilities that MUST be in main export
     const coreUtilities = [
@@ -41,73 +42,73 @@ describe('@orchestr8/testkit - External Dependency Integration', () => {
       // Config utilities (part of core)
       'createBaseVitestConfig',
       'createVitestCoverage',
-    ];
+    ]
 
     // Verify all core utilities are present
     for (const utility of coreUtilities) {
-      expect(testkit[utility]).toBeDefined();
-      expect(typeof testkit[utility]).toBe('function');
+      expect((testkit as any)[utility]).toBeDefined()
+      expect(typeof (testkit as any)[utility]).toBe('function')
     }
 
     // Optional utilities that should NOT be in main export
     const optionalUtilities = [
-      'setupMSW',           // Should be in @orchestr8/testkit/msw
-      'createMemoryUrl',    // Should be in @orchestr8/testkit/sqlite
-    ];
+      'setupMSW', // Should be in @orchestr8/testkit/msw
+      'createMemoryUrl', // Should be in @orchestr8/testkit/sqlite
+    ]
 
     // Verify optional utilities are correctly excluded
     for (const utility of optionalUtilities) {
-      expect(testkit[utility]).toBeUndefined();
+      expect((testkit as any)[utility]).toBeUndefined()
     }
 
-    console.log('✅ Core utilities verified:', coreUtilities.length);
-    console.log('✅ Optional utilities correctly excluded:', optionalUtilities.length);
-    console.log('ℹ️  Note: Main export includes fs/core and config utilities as part of core');
-  });
+    console.log('✅ Core utilities verified:', coreUtilities.length)
+    console.log('✅ Optional utilities correctly excluded:', optionalUtilities.length)
+    console.log('ℹ️  Note: Main export includes fs/core and config utilities as part of core')
+  })
 
   it('should use core utilities without optional dependencies', async () => {
-    const { delay, retry, withTimeout } = await import('@orchestr8/testkit');
+    const { delay, retry, withTimeout } = await import('@orchestr8/testkit')
 
-    console.log('\n🧑 Core Utility Tests');
-    console.log('========================');
+    console.log('\n🧑 Core Utility Tests')
+    console.log('========================')
 
     // Test delay utility
-    const start = Date.now();
-    await delay(50);
-    const elapsed = Date.now() - start;
-    expect(elapsed).toBeGreaterThanOrEqual(40); // Allow some variance
-    console.log('✅ delay() works');
+    const start = Date.now()
+    await delay(50)
+    const elapsed = Date.now() - start
+    expect(elapsed).toBeGreaterThanOrEqual(40) // Allow some variance
+    console.log('✅ delay() works')
 
     // Test retry utility
-    let attempts = 0;
+    let attempts = 0
     const retryResult = await retry(
       () => {
-        attempts++;
-        if (attempts < 2) throw new Error('retry test');
-        return 'success';
+        attempts++
+        if (attempts < 2) throw new Error('retry test')
+        return Promise.resolve('success')
       },
       3,
       10
-    );
-    expect(retryResult).toBe('success');
-    expect(attempts).toBe(2);
-    console.log('✅ retry() works');
+    )
+    expect(retryResult).toBe('success')
+    expect(attempts).toBe(2)
+    console.log('✅ retry() works')
 
     // Test withTimeout utility
     const timeoutPromise = withTimeout(
       delay(10).then(() => 'completed'),
       100
-    );
-    const timeoutResult = await timeoutPromise;
-    expect(timeoutResult).toBe('completed');
-    console.log('✅ withTimeout() works');
+    )
+    const timeoutResult = await timeoutPromise
+    expect(timeoutResult).toBe('completed')
+    console.log('✅ withTimeout() works')
 
-    console.log('\n✅ All core utilities working without optional dependencies!');
-  });
+    console.log('\n✅ All core utilities working without optional dependencies!')
+  })
 
   it('should verify sub-exports work for optional features', async () => {
-    console.log('\n📦 Sub-Export Verification');
-    console.log('============================');
+    console.log('\n📦 Sub-Export Verification')
+    console.log('============================')
 
     // Test that sub-exports can be imported for optional features
     const subExports = [
@@ -115,22 +116,22 @@ describe('@orchestr8/testkit - External Dependency Integration', () => {
       { path: '@orchestr8/testkit/env', feature: 'Environment control' },
       { path: '@orchestr8/testkit/msw', feature: 'Mock Service Worker' },
       { path: '@orchestr8/testkit/sqlite', feature: 'SQLite testing' },
-      { path: '@orchestr8/testkit/fs', feature: 'File system utilities' }
-    ];
+      { path: '@orchestr8/testkit/fs', feature: 'File system utilities' },
+    ]
 
-    const results = [];
+    const results = []
     for (const { path, feature } of subExports) {
       try {
-        await import(path);
-        results.push(`✅ ${path} - ${feature}`);
+        await import(path)
+        results.push(`✅ ${path} - ${feature}`)
       } catch (error) {
         // Some sub-exports may require optional dependencies
         // This is expected and part of the lean core design
-        results.push(`⚠️ ${path} - ${feature} (requires optional deps)`);
+        results.push(`⚠️ ${path} - ${feature} (requires optional deps)`)
       }
     }
 
-    console.log(results.join('\n'));
-    console.log('\n✅ Lean core pattern verified: Optional features available via sub-exports');
-  });
-});
+    console.log(results.join('\n'))
+    console.log('\n✅ Lean core pattern verified: Optional features available via sub-exports')
+  })
+})

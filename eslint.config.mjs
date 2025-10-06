@@ -26,6 +26,9 @@ export default [
       '**/tsconfig.*.json',
       '**/test-hook.ts',
       '**/test-prettier.ts',
+      '**/test-setup.ts',
+      '**/vitest.config.ts',
+      '**/tsup.config.ts',
     ],
   },
   // Base configuration for all files

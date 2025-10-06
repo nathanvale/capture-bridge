@@ -18,10 +18,5 @@
     "vitest.projects.ts",
     "tsup.config.ts"
   ],
-  "exclude": [
-    "dist",
-    "node_modules",
-    "test-hook.ts",
-    "test-prettier.ts"
-  ]
+  "exclude": ["dist", "node_modules", "test-hook.ts", "test-prettier.ts"]
 }

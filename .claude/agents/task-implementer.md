@@ -326,41 +326,102 @@ For each acceptance criterion:
    - Related specs, ADRs, and guides content
    - Expected test structure from test_verification paths
 
-3. **Invoke wallaby-tdd-agent with full context:**
+3. **Invoke wallaby-tdd-agent using the Task tool:**
+
+   Use the Task tool with this exact invocation:
+   ```typescript
+   <invoke name="Task">
+   <parameter name="subagent_type">wallaby-tdd-agent</parameter>
+   <parameter name="description">Implement [AC_ID] via TDD</parameter>
+   <parameter name="prompt">Execute TDD cycle for [TASK_ID] - [AC_ID]:
+
+   **Acceptance Criterion:**
+   [Full AC text]
+
+   **Risk Level:** [High/Medium/Low]
+
+   **Testing Pattern:** [Pattern name from testkit-tdd-guide.md]
+
+   **TestKit API:** [Specific API with signature]
+
+   **Test Example:** [File path and line numbers from foundation tests]
+
+   **Context:**
+   [relevant specs/ADRs/guides summary]
+
+   **Instructions:**
+   1. RED: Write failing tests using the identified pattern
+   2. GREEN: Minimal implementation to pass tests
+   3. REFACTOR: Clean up while maintaining green
+   4. Report coverage and test results</parameter>
+   </invoke>
    ```
-   Task wallaby-tdd-agent:
-   "Execute TDD cycle for [TASK_ID] - [AC_ID]:
-   - AC Text: [acceptance criterion text]
-   - Risk Level: [High/Medium/Low]
-   - Testing Pattern: [Pattern name from testkit-tdd-guide.md]
-   - TestKit API: [Specific API with signature]
-   - Test Example: [File path and line numbers from foundation tests]
-   - Context: [relevant specs/ADRs/guides summary]
-   - Create failing tests first using the pattern, then minimal implementation"
-   ```
+
 4. Receive TDD completion report from wallaby-tdd-agent
 5. Validate that AC is satisfied with passing tests
 6. Update task state based on wallaby-tdd-agent's report
 
 **B. If AC classified as Setup Mode:**
-1. Execute setup operation directly (install package, create directory, etc.)
-2. Verify operation succeeded:
-   - For package install: Check node_modules and lock file
-   - For directory creation: Verify directory exists
-   - For config changes: Verify file contains expected changes
-3. Document action in commit message referencing AC ID
+
+1. **Invoke general-purpose agent using the Task tool:**
+
+   Use the Task tool with this exact invocation:
+   ```typescript
+   <invoke name="Task">
+   <parameter name="subagent_type">general-purpose</parameter>
+   <parameter name="description">Execute setup for [AC_ID]</parameter>
+   <parameter name="prompt">Execute setup operation for [TASK_ID] - [AC_ID]:
+
+   **Acceptance Criterion:**
+   [Full AC text]
+
+   **Operation:**
+   [Specific setup command or file operation]
+
+   **Verification:**
+   [How to verify success - e.g., check file exists, package in node_modules]
+
+   **Commit Message:**
+   [Suggested commit message with AC reference]</parameter>
+   </invoke>
+   ```
+
+2. Receive completion report from general-purpose agent
+3. Verify operation succeeded based on report
 4. Update task state: Add AC to acs_completed
-5. **NO delegation to wallaby-tdd-agent needed**
 
 **C. If AC classified as Documentation Mode:**
-1. Generate or update documentation content
-2. Verify completeness:
-   - All required sections present
-   - Accurate information
-   - Proper formatting
-3. Commit with documentation message referencing AC ID
+
+1. **Invoke general-purpose agent using the Task tool:**
+
+   Use the Task tool with this exact invocation:
+   ```typescript
+   <invoke name="Task">
+   <parameter name="subagent_type">general-purpose</parameter>
+   <parameter name="description">Create documentation for [AC_ID]</parameter>
+   <parameter name="prompt">Create/update documentation for [TASK_ID] - [AC_ID]:
+
+   **Acceptance Criterion:**
+   [Full AC text]
+
+   **Documentation Requirements:**
+   - Required sections: [list sections]
+   - Format: [Markdown/JSDoc/etc.]
+   - Location: [file path]
+
+   **Verification:**
+   - All sections present
+   - Content accurate and clear
+   - Follows project standards
+
+   **Commit Message:**
+   [Suggested commit message with AC reference]</parameter>
+   </invoke>
+   ```
+
+2. Receive documentation from general-purpose agent
+3. Verify completeness and accuracy
 4. Update task state: Add AC to acs_completed
-5. **NO delegation to wallaby-tdd-agent needed**
 
 ### Phase 3: Incremental Implementation (Multi-Mode Execution)
 Execute each AC according to its classified mode:

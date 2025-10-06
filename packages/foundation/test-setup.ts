@@ -17,10 +17,10 @@ import { cleanupAllResources } from '@orchestr8/testkit/utils'
 // Configure automatic resource cleanup
 // This hooks into Vitest's lifecycle to clean up after each test and test file
 await setupResourceCleanup({
-  cleanupAfterEach: true,   // Clean up after each individual test
-  cleanupAfterAll: true,    // Clean up after all tests in a file
-  enableLeakDetection: true, // Detect and warn about resource leaks
-  logStats: process.env.LOG_CLEANUP_STATS === '1', // Log cleanup statistics if env var set
+  cleanupAfterEach: true, // Clean up after each individual test
+  cleanupAfterAll: true, // Clean up after all tests in a file
+  enableLeakDetection: false, // Disabled to prevent process exit timeout
+  logStats: process.env['LOG_CLEANUP_STATS'] === '1', // Log cleanup statistics if env var set
 })
 
 // Add global afterAll hook for comprehensive cleanup

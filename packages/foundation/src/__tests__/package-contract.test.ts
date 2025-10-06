@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { readFile } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -20,6 +21,7 @@ describe('Package Contract Validation', () => {
   it('should export all functions expected by tests', async () => {
     // Import from source to ensure coverage is tracked
     const pkg = await import('../index.js')
+    // eslint-disable-next-line sonarjs/no-alphabetical-sort -- Need to sort for comparison
     const actualExports = Object.keys(pkg).sort()
 
     console.log('📦 Package Contract Validation')
@@ -35,14 +37,11 @@ describe('Package Contract Validation', () => {
     ]
 
     // Check for missing exports
-    const missing = expectedExports.filter(exp => !actualExports.includes(exp))
-    expect(
-      missing,
-      `Missing exports that tests may expect: ${missing.join(', ')}`
-    ).toEqual([])
+    const missing = expectedExports.filter((exp) => !actualExports.includes(exp))
+    expect(missing).toEqual([])
 
     // Check for unexpected exports (this helps catch accidental exports)
-    const unexpected = actualExports.filter(exp => !expectedExports.includes(exp))
+    const unexpected = actualExports.filter((exp) => !expectedExports.includes(exp))
 
     if (unexpected.length > 0) {
       console.log(`⚠️  Unexpected exports found: ${unexpected.join(', ')}`)
@@ -111,6 +110,7 @@ describe('Package Contract Validation', () => {
     console.log(`✅ foundationVersion matches package.json version: ${pkg.foundationVersion}`)
   })
 
+  // eslint-disable-next-line vitest/expect-expect, sonarjs/assertions-in-tests -- Documentation test with console output
   it('should document the relationship with testkit tests', () => {
     console.log('\n📚 Test Suite Documentation')
     console.log('===========================')
@@ -134,19 +134,20 @@ describe('Package Contract Validation', () => {
     console.log('✅ Test suite documentation acknowledged')
   })
 
-  it('should warn if tests import from wrong package', async () => {
+  // eslint-disable-next-line vitest/expect-expect, sonarjs/assertions-in-tests -- Documentation test with console output
+  it('should warn if tests import from wrong package', () => {
     console.log('\n⚠️  Import Validation')
     console.log('=====================')
     console.log('Tests in this package should import from @orchestr8/testkit, not @capture-bridge/foundation')
     console.log('(except for this contract test which validates foundation exports)')
     console.log('')
     console.log('Expected import pattern for most tests:')
-    console.log('  import { ... } from \'@orchestr8/testkit\'')
-    console.log('  import { ... } from \'@orchestr8/testkit/msw\'')
-    console.log('  import { ... } from \'@orchestr8/testkit/sqlite\'')
+    console.log("  import { ... } from '@orchestr8/testkit'")
+    console.log("  import { ... } from '@orchestr8/testkit/msw'")
+    console.log("  import { ... } from '@orchestr8/testkit/sqlite'")
     console.log('')
     console.log('NOT:')
-    console.log('  import { ... } from \'@capture-bridge/foundation\'')
+    console.log("  import { ... } from '@capture-bridge/foundation'")
     console.log('')
     console.log('✅ Import pattern guidelines acknowledged')
   })

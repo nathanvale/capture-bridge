@@ -9,17 +9,17 @@ export default defineConfig(
 
       // Bootstrap sequence (order matters!)
       setupFiles: [
-        '@orchestr8/testkit/register',  // 1. TestKit bootstrap
-        './test-setup.ts',               // 2. Resource cleanup config
+        '@orchestr8/testkit/register', // 1. TestKit bootstrap
+        './test-setup.ts', // 2. Resource cleanup config
       ],
 
       // Prevent zombie processes and hanging tests
       reporters: process.env.CI ? ['default'] : ['default', 'hanging-process'],
 
       // Timeout configuration
-      testTimeout: 10000,      // 10s per test
-      hookTimeout: 5000,       // 5s for hooks
-      teardownTimeout: 20000,  // 20s for cleanup
+      testTimeout: 10000, // 10s per test
+      hookTimeout: 5000, // 5s for hooks
+      teardownTimeout: 20000, // 20s for cleanup
 
       // Fork pool for process isolation
       pool: 'forks',

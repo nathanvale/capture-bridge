@@ -11,6 +11,7 @@
 ## Executive Summary
 
 We have 8 remaining tasks to complete before final production deployment:
+
 - **3 Code Optimizations** (Priority 1 - High Impact)
 - **2 Verification Tasks** (Ensure improvements work)
 - **3 Documentation/QA Tasks** (Final validation)
@@ -33,37 +34,40 @@ We have 8 remaining tasks to complete before final production deployment:
 **Expected Savings**: ~11 seconds (59% of total optimization)
 
 **Current Code**:
+
 ```typescript
-it('should maintain minimum connections', async () => {
+it("should maintain minimum connections", async () => {
   const pool = await createPool({
     minConnections: 2,
     maxConnections: 5,
-  });
+  })
 
-  await new Promise(resolve => setTimeout(resolve, 11000)); // ❌ 11 second wait!
+  await new Promise((resolve) => setTimeout(resolve, 11000)) // ❌ 11 second wait!
 
-  const stats = pool.getStats();
-  expect(stats.totalConnections).toBeGreaterThanOrEqual(2);
-}, 15000);
+  const stats = pool.getStats()
+  expect(stats.totalConnections).toBeGreaterThanOrEqual(2)
+}, 15000)
 ```
 
 **Required Change**:
+
 ```typescript
-it('should maintain minimum connections', async () => {
+it("should maintain minimum connections", async () => {
   const pool = await createPool({
     minConnections: 2,
     maxConnections: 5,
-  });
+  })
 
   // Use warmUp() instead of waiting for automatic warmup
-  await pool.warmUp(); // ✅ Explicit, fast, correct
+  await pool.warmUp() // ✅ Explicit, fast, correct
 
-  const stats = pool.getStats();
-  expect(stats.totalConnections).toBeGreaterThanOrEqual(2);
-});
+  const stats = pool.getStats()
+  expect(stats.totalConnections).toBeGreaterThanOrEqual(2)
+})
 ```
 
 **Verification**:
+
 - Test must still pass
 - Pool must have 2+ connections after warmUp()
 - No timeout needed (remove 15000ms from test)
@@ -80,33 +84,35 @@ it('should maintain minimum connections', async () => {
 **Changes Required**:
 
 1. **Line 437-438** (Idle Connection Cleanup test):
+
 ```typescript
 // BEFORE
 const pool = await createPool({
   minConnections: 0,
   idleTimeout: 2000,
-});
+})
 
 // AFTER
 const pool = await createPool({
   minConnections: 0,
-  idleTimeout: 500,  // ✅ Reduced from 2000ms
-});
+  idleTimeout: 500, // ✅ Reduced from 2000ms
+})
 ```
 
 2. **Lines 467, 474** (Don't cleanup below minConnections test):
+
 ```typescript
 // BEFORE
 const pool = await createPool({
   minConnections: 1,
   idleTimeout: 1000,
-});
+})
 
 // AFTER
 const pool = await createPool({
   minConnections: 1,
-  idleTimeout: 300,  // ✅ Reduced from 1000ms
-});
+  idleTimeout: 300, // ✅ Reduced from 1000ms
+})
 
 // Also update wait time proportionally (line 474):
 // BEFORE: await new Promise(resolve => setTimeout(resolve, 2000));
@@ -114,18 +120,19 @@ const pool = await createPool({
 ```
 
 3. **Lines 483, 489** (Idle connection reaper test):
+
 ```typescript
 // BEFORE
 const pool = await createPool({
   minConnections: 0,
   idleTimeout: 1000,
-});
+})
 
 // AFTER
 const pool = await createPool({
   minConnections: 0,
-  idleTimeout: 300,  // ✅ Reduced from 1000ms
-});
+  idleTimeout: 300, // ✅ Reduced from 1000ms
+})
 
 // Also update wait time (line 489):
 // BEFORE: await new Promise(resolve => setTimeout(resolve, 2000));
@@ -133,6 +140,7 @@ const pool = await createPool({
 ```
 
 **Verification**:
+
 - All idle timeout tests must still pass
 - Cleanup behavior must work correctly
 - No flakiness introduced
@@ -149,68 +157,77 @@ const pool = await createPool({
 **Changes Required**:
 
 1. **Lines 97-99** (delay memory leak test):
+
 ```typescript
 // BEFORE
 for (let i = 0; i < 1000; i++) {
-  await delay(1);
+  await delay(1)
 }
 
 // AFTER
-for (let i = 0; i < 100; i++) {  // ✅ Reduced from 1000
-  await delay(1);
+for (let i = 0; i < 100; i++) {
+  // ✅ Reduced from 1000
+  await delay(1)
 }
 // Comment: Memory leaks manifest early; 100 iterations sufficient for detection
 ```
 
 2. **Lines 124-129** (withTimeout memory leak test):
+
 ```typescript
 // BEFORE
 for (let i = 0; i < 1000; i++) {
   await withTimeout(async () => {
-    await delay(1);
-  }, 100);
+    await delay(1)
+  }, 100)
 }
 
 // AFTER
-for (let i = 0; i < 100; i++) {  // ✅ Reduced from 1000
+for (let i = 0; i < 100; i++) {
+  // ✅ Reduced from 1000
   await withTimeout(async () => {
-    await delay(1);
-  }, 100);
+    await delay(1)
+  }, 100)
 }
 ```
 
 3. **Lines 154-156** (retry memory leak test):
+
 ```typescript
 // BEFORE
 for (let i = 0; i < 1000; i++) {
-  await retry(async () => i, { maxAttempts: 1 });
+  await retry(async () => i, { maxAttempts: 1 })
 }
 
 // AFTER
-for (let i = 0; i < 100; i++) {  // ✅ Reduced from 1000
-  await retry(async () => i, { maxAttempts: 1 });
+for (let i = 0; i < 100; i++) {
+  // ✅ Reduced from 1000
+  await retry(async () => i, { maxAttempts: 1 })
 }
 ```
 
 4. **Lines 567-569** (nested delay test):
+
 ```typescript
 // BEFORE
 for (let outer = 0; outer < 10; outer++) {
   for (let inner = 0; inner < 100; inner++) {
-    await delay(1);
+    await delay(1)
   }
 }
 
 // AFTER
 for (let outer = 0; outer < 10; outer++) {
-  for (let inner = 0; inner < 10; inner++) {  // ✅ Reduced from 100
-    await delay(1);
+  for (let inner = 0; inner < 10; inner++) {
+    // ✅ Reduced from 100
+    await delay(1)
   }
 }
 // Total iterations: 100 instead of 1000
 ```
 
 **Verification**:
+
 - Memory leak detection tests must still pass
 - Heap growth thresholds (< 5MB) must still be met
 - No false negatives (leaks must still be detectable)
@@ -226,6 +243,7 @@ for (let outer = 0; outer < 10; outer++) {
 
 **Task**: Run optimized test suite and measure improvement
 **Commands**:
+
 ```bash
 cd /Users/nathanvale/code/capture-bridge/packages/foundation
 
@@ -242,12 +260,14 @@ done
 ```
 
 **Success Criteria**:
+
 - ✅ All 319 tests pass (100%)
 - ✅ Execution time: 6-10 seconds (target: 6-8s)
 - ✅ No new failures introduced
 - ✅ Improvement: ~50-65% faster than 18.73s baseline
 
 **Deliverables**:
+
 - Average execution time across 3 runs
 - Min/max execution times
 - Comparison table (before vs after)
@@ -259,6 +279,7 @@ done
 
 **Task**: Generate coverage report and verify thresholds met
 **Commands**:
+
 ```bash
 cd /Users/nathanvale/code/capture-bridge/packages/foundation
 
@@ -270,6 +291,7 @@ cat coverage/coverage-summary.json | jq '.total'
 ```
 
 **Success Criteria**:
+
 - ✅ Coverage generated successfully
 - ✅ Lines: ≥80% (expect 100% - only 4 lines in src/index.ts)
 - ✅ Functions: ≥80% (expect 100% - only 1 function)
@@ -277,6 +299,7 @@ cat coverage/coverage-summary.json | jq '.total'
 - ✅ Statements: ≥80% (expect 100% - only 2 statements)
 
 **Deliverables**:
+
 - Coverage percentages for all metrics
 - Coverage HTML report location
 - Confirmation thresholds exceeded
@@ -292,6 +315,7 @@ cat coverage/coverage-summary.json | jq '.total'
 
 **Task**: Run flakiness detection script to ensure no unstable tests
 **Commands**:
+
 ```bash
 cd /Users/nathanvale/code/capture-bridge/packages/foundation
 
@@ -303,12 +327,14 @@ cat logs/flakiness/flakiness_*/summary.txt
 ```
 
 **Success Criteria**:
+
 - ✅ 10/10 runs pass (100% pass rate)
 - ✅ No tests fail inconsistently
 - ✅ Execution time stable across runs (±10%)
 - ✅ Zero flaky tests detected
 
 **Deliverables**:
+
 - Flakiness summary report
 - Pass rate (target: 100%)
 - Timing variance analysis
@@ -324,13 +350,16 @@ cat logs/flakiness/flakiness_*/summary.txt
 **Updates Required**:
 
 1. **Update execution metrics** (after optimizations):
+
 ```markdown
 ## Before Optimizations
+
 - Total Tests: 319
 - Duration: 18.73s
 - Per-Test Average: 59ms
 
 ## After Optimizations
+
 - Total Tests: 319
 - Duration: ~6-8s (actual: X.XXs)
 - Per-Test Average: ~19-25ms
@@ -338,30 +367,33 @@ cat logs/flakiness/flakiness_*/summary.txt
 ```
 
 2. **Update per-file test breakdown** with accurate counts:
+
 ```markdown
-| Test File | Actual Tests | Avg Time/Test |
-|-----------|--------------|---------------|
-| testkit-sqlite-pool.test.ts | 46 | XXms |
-| testkit-sqlite-features.test.ts | 25 | XXms |
-| testkit-sqlite-advanced.test.ts | 21 | XXms |
-| testkit-cli-utilities-behavioral.test.ts | 56 | XXms |
-| testkit-cli-utilities.test.ts | 18 | XXms |
-| testkit-msw-features.test.ts | 34 | XXms |
-| testkit-core-utilities.test.ts | 39 | XXms |
-| testkit-utils-advanced.test.ts | 32 | XXms |
-| security-validation.test.ts | 21 | XXms |
-| performance-benchmarks.test.ts | 14 | XXms |
-| testkit-main-export.test.ts | 3 | XXms |
-| testkit-final-validation.test.ts | 5 | XXms |
-| package-contract.test.ts | 5 | XXms |
+| Test File                                | Actual Tests | Avg Time/Test |
+| ---------------------------------------- | ------------ | ------------- |
+| testkit-sqlite-pool.test.ts              | 46           | XXms          |
+| testkit-sqlite-features.test.ts          | 25           | XXms          |
+| testkit-sqlite-advanced.test.ts          | 21           | XXms          |
+| testkit-cli-utilities-behavioral.test.ts | 56           | XXms          |
+| testkit-cli-utilities.test.ts            | 18           | XXms          |
+| testkit-msw-features.test.ts             | 34           | XXms          |
+| testkit-core-utilities.test.ts           | 39           | XXms          |
+| testkit-utils-advanced.test.ts           | 32           | XXms          |
+| security-validation.test.ts              | 21           | XXms          |
+| performance-benchmarks.test.ts           | 14           | XXms          |
+| testkit-main-export.test.ts              | 3            | XXms          |
+| testkit-final-validation.test.ts         | 5            | XXms          |
+| package-contract.test.ts                 | 5            | XXms          |
 ```
 
 3. **Update optimization results section**:
+
 - Document which optimizations were applied
 - Show actual time savings achieved
 - Update bottleneck analysis
 
 **Deliverables**:
+
 - Updated performance analysis document
 - Accurate test count breakdown
 - Before/after comparison tables
@@ -422,6 +454,7 @@ cat logs/flakiness/flakiness_*/summary.txt
 ```
 
 **Deliverables**:
+
 - Complete production readiness report
 - Executive summary
 - Risk assessment
@@ -453,32 +486,35 @@ Total Estimated Time: 30 minutes
 
 ## Agent Assignment Summary
 
-| Batch | Agent | Type | Task | Priority |
-|-------|-------|------|------|----------|
-| 1 | Agent 1 | code-analyzer | Remove 11s wait | P0 |
-| 1 | Agent 2 | code-analyzer | Reduce timeouts | P0 |
-| 1 | Agent 3 | code-analyzer | Reduce iterations | P0 |
-| 2 | Agent 4 | test-runner | Verify performance | P1 |
-| 2 | Agent 5 | test-runner | Verify coverage | P1 |
-| 3 | Agent 6 | code-analyzer | Flakiness detection | P2 |
-| 3 | Agent 7 | code-analyzer | Update docs | P2 |
-| 3 | Agent 8 | code-analyzer | Production report | P2 |
+| Batch | Agent   | Type          | Task                | Priority |
+| ----- | ------- | ------------- | ------------------- | -------- |
+| 1     | Agent 1 | code-analyzer | Remove 11s wait     | P0       |
+| 1     | Agent 2 | code-analyzer | Reduce timeouts     | P0       |
+| 1     | Agent 3 | code-analyzer | Reduce iterations   | P0       |
+| 2     | Agent 4 | test-runner   | Verify performance  | P1       |
+| 2     | Agent 5 | test-runner   | Verify coverage     | P1       |
+| 3     | Agent 6 | code-analyzer | Flakiness detection | P2       |
+| 3     | Agent 7 | code-analyzer | Update docs         | P2       |
+| 3     | Agent 8 | code-analyzer | Production report   | P2       |
 
 ---
 
 ## Success Criteria
 
 **Batch 1 Success**:
+
 - All code changes applied correctly
 - No syntax errors introduced
 - Git diff shows expected changes
 
 **Batch 2 Success**:
+
 - Test execution time: 6-10s (target: 6-8s)
 - All 319 tests passing
 - Coverage: 100% on all metrics
 
 **Batch 3 Success**:
+
 - Flakiness: 0/10 failures
 - Documentation: Complete and accurate
 - Production report: Approved for deployment
@@ -504,12 +540,14 @@ If any optimization breaks tests:
 ## Next Steps
 
 **Option 1: Execute All Batches** (Recommended)
+
 ```bash
 # Launch all agents in correct order
 # See execution commands in each batch section above
 ```
 
 **Option 2: Execute Batch 1 Only** (Conservative)
+
 ```bash
 # Apply optimizations
 # Verify manually
@@ -517,6 +555,7 @@ If any optimization breaks tests:
 ```
 
 **Option 3: Skip Optimizations** (Deploy As-Is)
+
 ```bash
 # Current state: 18.73s, all tests passing
 # Already production-ready

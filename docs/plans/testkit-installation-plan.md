@@ -32,6 +32,7 @@ Use this plan when:
 Before starting installation, verify these prerequisites:
 
 ### 1. Monorepo Setup
+
 ```bash
 # Check you're in the monorepo root
 pwd
@@ -43,6 +44,7 @@ pnpm --version
 ```
 
 ### 2. Package Exists
+
 ```bash
 # Verify package directory exists
 ls -la packages/<package-name>
@@ -52,6 +54,7 @@ test -f packages/<package-name>/package.json && echo "✅ package.json exists" |
 ```
 
 ### 3. Node Version
+
 ```bash
 # Check Node version
 node --version
@@ -65,6 +68,7 @@ node --version
 **Action:** Add TestKit core and required peer dependencies to package.json
 
 **Commands:**
+
 ```bash
 # Navigate to package directory
 cd packages/<package-name>
@@ -77,18 +81,21 @@ pnpm list @orchestr8/testkit vitest
 ```
 
 **Expected Output:**
+
 ```
 @orchestr8/testkit file:/Users/nathanvale/code/@orchestr8/packages/testkit
 vitest ^3.2.4
 ```
 
 **Verification:**
+
 ```bash
 # Check package.json has correct entries
 grep -A2 "devDependencies" packages/<package-name>/package.json | grep -E "(testkit|vitest)"
 ```
 
 **Success Criteria:**
+
 - ✅ `@orchestr8/testkit` appears in devDependencies
 - ✅ `vitest` version is 3.2.0 or higher
 - ✅ No installation errors in terminal
@@ -99,17 +106,18 @@ grep -A2 "devDependencies" packages/<package-name>/package.json | grep -E "(test
 
 **Decision Matrix:**
 
-| Need | Install | Command |
-|------|---------|---------|
+| Need                    | Install          | Command                      |
+| ----------------------- | ---------------- | ---------------------------- |
 | SQLite database testing | `better-sqlite3` | `pnpm add -D better-sqlite3` |
-| HTTP mocking | `msw` | `pnpm add -D msw` |
-| DOM testing | `happy-dom` | `pnpm add -D happy-dom` |
-| Container testing | `testcontainers` | `pnpm add -D testcontainers` |
-| PostgreSQL containers | `pg` | `pnpm add -D pg @types/pg` |
-| MySQL containers | `mysql2` | `pnpm add -D mysql2` |
-| Convex testing | `convex-test` | `pnpm add -D convex-test` |
+| HTTP mocking            | `msw`            | `pnpm add -D msw`            |
+| DOM testing             | `happy-dom`      | `pnpm add -D happy-dom`      |
+| Container testing       | `testcontainers` | `pnpm add -D testcontainers` |
+| PostgreSQL containers   | `pg`             | `pnpm add -D pg @types/pg`   |
+| MySQL containers        | `mysql2`         | `pnpm add -D mysql2`         |
+| Convex testing          | `convex-test`    | `pnpm add -D convex-test`    |
 
 **Example for ADHD Brain packages:**
+
 ```bash
 # Most packages will need SQLite and MSW
 cd packages/<package-name>
@@ -120,6 +128,7 @@ pnpm list better-sqlite3 msw happy-dom
 ```
 
 **Success Criteria:**
+
 - ✅ Required optional dependencies installed
 - ✅ All dependencies appear in devDependencies
 - ✅ No peer dependency warnings
@@ -129,6 +138,7 @@ pnpm list better-sqlite3 msw happy-dom
 **Action:** Create or update vitest.config.ts with TestKit settings
 
 **Commands:**
+
 ```bash
 # Navigate to package directory
 cd packages/<package-name>
@@ -138,50 +148,53 @@ test -f vitest.config.ts && echo "✅ Config exists" || echo "❌ Config missing
 ```
 
 **Create vitest.config.ts:**
+
 ```typescript
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from "vitest/config"
 
 export default defineConfig({
   test: {
-    name: '@capture-bridge/<package-name>',
-    environment: 'node',
+    name: "@capture-bridge/<package-name>",
+    environment: "node",
     globals: false,
     setupFiles: [],
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      provider: "v8",
+      reporter: ["text", "json", "html"],
       exclude: [
-        'node_modules/**',
-        'dist/**',
-        '**/*.test.ts',
-        '**/*.spec.ts',
-        '**/fixtures/**',
-        '**/test-helpers/**'
-      ]
+        "node_modules/**",
+        "dist/**",
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "**/fixtures/**",
+        "**/test-helpers/**",
+      ],
     },
     // Wallaby integration
     testTimeout: 10000,
-    hookTimeout: 10000
-  }
+    hookTimeout: 10000,
+  },
 })
 ```
 
 **Alternative (Using TestKit Config):**
+
 ```typescript
-import { defineConfig } from 'vitest/config'
-import { createVitestConfig } from '@orchestr8/testkit/config'
+import { defineConfig } from "vitest/config"
+import { createVitestConfig } from "@orchestr8/testkit/config"
 
 export default defineConfig(
   createVitestConfig({
     test: {
-      name: '@capture-bridge/<package-name>',
-      environment: 'node'
-    }
+      name: "@capture-bridge/<package-name>",
+      environment: "node",
+    },
   })
 )
 ```
 
 **Verification:**
+
 ```bash
 # Check config file exists and is valid TypeScript
 npx tsc --noEmit vitest.config.ts
@@ -191,6 +204,7 @@ pnpm test --run --reporter=verbose --bail 1 2>&1 | head -20
 ```
 
 **Success Criteria:**
+
 - ✅ vitest.config.ts exists
 - ✅ Config is valid TypeScript
 - ✅ Vitest can load the config without errors
@@ -200,6 +214,7 @@ pnpm test --run --reporter=verbose --bail 1 2>&1 | head -20
 **Action:** Add or update test scripts in package.json
 
 **Required Scripts:**
+
 ```json
 {
   "scripts": {
@@ -212,6 +227,7 @@ pnpm test --run --reporter=verbose --bail 1 2>&1 | head -20
 ```
 
 **Commands:**
+
 ```bash
 # Check current scripts
 grep -A5 "scripts" packages/<package-name>/package.json
@@ -221,6 +237,7 @@ pnpm test:ci 2>&1 | grep -E "(PASS|FAIL|No test files found)"
 ```
 
 **Success Criteria:**
+
 - ✅ All required scripts present
 - ✅ `pnpm test` executes without errors
 - ✅ Scripts reference vitest (not jest or other runners)
@@ -230,6 +247,7 @@ pnpm test:ci 2>&1 | grep -E "(PASS|FAIL|No test files found)"
 **Action:** Set up standard test directory layout
 
 **Commands:**
+
 ```bash
 cd packages/<package-name>
 
@@ -245,6 +263,7 @@ test -d fixtures && echo "✅ fixtures exists"
 ```
 
 **Expected Structure:**
+
 ```
 packages/<package-name>/
 ├── src/
@@ -260,6 +279,7 @@ packages/<package-name>/
 ```
 
 **Success Criteria:**
+
 - ✅ `src/__tests__/` directory exists
 - ✅ `test-helpers/` directory exists (if needed)
 - ✅ `fixtures/` directory exists (if needed)
@@ -269,6 +289,7 @@ packages/<package-name>/
 **Action:** Create a simple test to verify TestKit is working
 
 **Commands:**
+
 ```bash
 cd packages/<package-name>
 
@@ -315,6 +336,7 @@ pnpm test testkit-verification
 ```
 
 **Expected Output:**
+
 ```
 ✓ TestKit Verification
   ✓ core utilities are available
@@ -325,6 +347,7 @@ Tests  2 passed (2)
 ```
 
 **Success Criteria:**
+
 - ✅ Verification test file created
 - ✅ Test runs without errors
 - ✅ All assertions pass
@@ -334,6 +357,7 @@ Tests  2 passed (2)
 **Action:** If better-sqlite3 is installed, verify SQLite testing works
 
 **Commands:**
+
 ```bash
 cd packages/<package-name>
 
@@ -390,6 +414,7 @@ pnpm test sqlite-verification
 ```
 
 **Success Criteria:**
+
 - ✅ SQLite test file created
 - ✅ Test runs without errors
 - ✅ Foreign key constraints work
@@ -399,6 +424,7 @@ pnpm test sqlite-verification
 **Action:** If msw is installed, verify HTTP mocking works
 
 **Commands:**
+
 ```bash
 cd packages/<package-name>
 
@@ -436,6 +462,7 @@ pnpm test msw-verification
 ```
 
 **Success Criteria:**
+
 - ✅ MSW test file created
 - ✅ Test runs without errors
 - ✅ HTTP requests are intercepted
@@ -445,6 +472,7 @@ pnpm test msw-verification
 **Action:** Execute complete test suite to verify everything works
 
 **Commands:**
+
 ```bash
 cd packages/<package-name>
 
@@ -460,6 +488,7 @@ cat test-output.log | grep -E "(passed|failed)"
 ```
 
 **Success Criteria:**
+
 - ✅ All tests pass
 - ✅ No import errors
 - ✅ Coverage reports generate successfully
@@ -470,6 +499,7 @@ cat test-output.log | grep -E "(passed|failed)"
 **Action:** Document TestKit usage in package README
 
 **Commands:**
+
 ```bash
 cd packages/<package-name>
 
@@ -478,7 +508,8 @@ test -f README.md && echo "✅ README exists" || echo "❌ README missing"
 ```
 
 **Add to README.md:**
-```markdown
+
+````markdown
 ## Testing
 
 This package uses TestKit 2.0 for testing.
@@ -498,6 +529,7 @@ pnpm test:coverage
 # Run CI tests (bail on first failure)
 pnpm test:ci
 ```
+````
 
 ### Test Structure
 
@@ -512,7 +544,8 @@ Tests are co-located with source code in `src/__tests__/` directories.
 - **Environment control**: `@orchestr8/testkit/env`
 
 See [TestKit Usage Guide](../../docs/guides/guide-testkit-usage.md) for complete documentation.
-```
+
+````
 
 **Success Criteria:**
 - ✅ README updated with testing section
@@ -607,7 +640,7 @@ else
   echo "❌ $ERRORS error(s) found. Review installation steps."
   exit 1
 fi
-```
+````
 
 ### Manual Verification Checklist
 
@@ -638,6 +671,7 @@ pnpm test 2>&1 | grep -E "Cannot find module"
 **Cause:** TestKit not installed or wrong path
 
 **Solution:**
+
 ```bash
 # Check installation
 pnpm list @orchestr8/testkit
@@ -655,6 +689,7 @@ pnpm install
 **Cause:** Missing optional peer dependency
 
 **Solution:**
+
 ```bash
 # Install required peer dependency
 pnpm add -D better-sqlite3
@@ -668,6 +703,7 @@ pnpm list better-sqlite3
 **Cause:** Invalid TypeScript or wrong Vitest version
 
 **Solution:**
+
 ```bash
 # Check Vitest version
 pnpm list vitest
@@ -684,6 +720,7 @@ npx tsc --noEmit vitest.config.ts
 **Cause:** Missing test files or incorrect glob pattern
 
 **Solution:**
+
 ```bash
 # Check for test files
 find src -name "*.test.ts"
@@ -697,6 +734,7 @@ pnpm test --reporter=verbose --bail 1
 **Cause:** Wrong import paths or missing dependencies
 
 **Solution:**
+
 ```bash
 # Check imports in test files
 grep -r "from '@orchestr8/testkit" src/__tests__/

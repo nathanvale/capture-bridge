@@ -106,49 +106,54 @@ All 29 capabilities defined in Roadmap v3.0.0 are **directly traceable** to:
 #### Slice 1.2: Voice Capture Pipeline (6 capabilities)
 
 7-12. **All voice capture capabilities** (VOICE_POLLING_ICLOUD, WHISPER_TRANSCRIPTION, DEDUPLICATION_LOGIC, DIRECT_EXPORT_VOICE, PLACEHOLDER_EXPORT, CAPTURE_STATE_MACHINE)
-   - Source: Capture PRD §7.1-7.2, §10.1-10.3
-   - PRD: capture/prd-capture.md
-   - Specs: capture/spec-capture-arch.md, spec-capture-tech.md, spec-capture-test.md
-   - ADRs: ADR-0001 (Voice File Sovereignty), ADR-0004 (Status State Machine), ADR-0006 (Late Hash Binding), ADR-0008 (Sequential Processing), ADR-0014 (Placeholder Export)
-   - Guides: guide-polling-implementation.md, guide-whisper-transcription.md, guide-error-recovery.md, guide-capture-debugging.md
-   - **Gap Analysis: NONE** - All voice capture flows fully specified
+
+- Source: Capture PRD §7.1-7.2, §10.1-10.3
+- PRD: capture/prd-capture.md
+- Specs: capture/spec-capture-arch.md, spec-capture-tech.md, spec-capture-test.md
+- ADRs: ADR-0001 (Voice File Sovereignty), ADR-0004 (Status State Machine), ADR-0006 (Late Hash Binding), ADR-0008 (Sequential Processing), ADR-0014 (Placeholder Export)
+- Guides: guide-polling-implementation.md, guide-whisper-transcription.md, guide-error-recovery.md, guide-capture-debugging.md
+- **Gap Analysis: NONE** - All voice capture flows fully specified
 
 #### Slice 1.3: Email Capture Pipeline (4 capabilities)
 
 13-16. **All email capture capabilities** (GMAIL_OAUTH2_SETUP, EMAIL_POLLING_GMAIL, EMAIL_NORMALIZATION, DIRECT_EXPORT_EMAIL)
-   - Source: Capture PRD §7.1 (Email polling), §10.2
-   - PRD: capture/prd-capture.md
-   - Specs: capture/spec-capture-tech.md
-   - Guides: guide-gmail-oauth2-setup.md, guide-polling-implementation.md
-   - **Gap Analysis: NONE** - Gmail API integration fully specified
+
+- Source: Capture PRD §7.1 (Email polling), §10.2
+- PRD: capture/prd-capture.md
+- Specs: capture/spec-capture-tech.md
+- Guides: guide-gmail-oauth2-setup.md, guide-polling-implementation.md
+- **Gap Analysis: NONE** - Gmail API integration fully specified
 
 #### Slice 1.4: CLI & Health Monitoring (4 capabilities)
 
 17-20. **All CLI capabilities** (CLI_FOUNDATION, CLI_CAPTURE_COMMANDS, CLI_LEDGER_COMMANDS, DOCTOR_HEALTH_CHECKS)
-   - Source: CLI PRD §4-6
-   - PRD: cli/prd-cli.md
-   - Specs: cli/spec-cli-arch.md, spec-cli-tech.md, spec-cli-test.md
-   - ADRs: ADR-0015 (CLI Library Stack), ADR-0016 (CLI as Feature), ADR-0017 (JSON Output Contract), ADR-0018 (Exit Code Registry)
-   - Guides: guide-health-command.md, guide-cli-doctor-implementation.md
-   - **Gap Analysis: NONE** - CLI command structure fully specified
+
+- Source: CLI PRD §4-6
+- PRD: cli/prd-cli.md
+- Specs: cli/spec-cli-arch.md, spec-cli-tech.md, spec-cli-test.md
+- ADRs: ADR-0015 (CLI Library Stack), ADR-0016 (CLI as Feature), ADR-0017 (JSON Output Contract), ADR-0018 (Exit Code Registry)
+- Guides: guide-health-command.md, guide-cli-doctor-implementation.md
+- **Gap Analysis: NONE** - CLI command structure fully specified
 
 **Phase 2 Capabilities (9/29 = 31.0%):**
 
 #### Slice 2.1: Error Recovery & Fault Tolerance (5 capabilities)
 
 21-25. **All error recovery capabilities** (CRASH_RECOVERY_MECHANISM, ERROR_LOGGING_STRUCTURED, TRANSCRIPTION_RETRY_LOGIC, VAULT_WRITE_ERROR_HANDLING, FAULT_INJECTION_FRAMEWORK)
-   - Source: Staging Ledger PRD §6.1-6.2, Capture PRD §11
-   - PRDs: staging-ledger/prd-staging.md, capture/prd-capture.md
-   - Guides: guide-error-recovery.md, guide-fault-injection-registry.md, guide-crash-matrix-test-plan.md
-   - **Gap Analysis: NONE** - Error recovery paths fully specified
+
+- Source: Staging Ledger PRD §6.1-6.2, Capture PRD §11
+- PRDs: staging-ledger/prd-staging.md, capture/prd-capture.md
+- Guides: guide-error-recovery.md, guide-fault-injection-registry.md, guide-crash-matrix-test-plan.md
+- **Gap Analysis: NONE** - Error recovery paths fully specified
 
 #### Slice 2.2: Backup Verification & Data Retention (4 capabilities)
 
 26-29. **All backup capabilities** (HOURLY_BACKUP_AUTOMATION, BACKUP_VERIFICATION_PROTOCOL, RETENTION_POLICY_90DAY, STORAGE_SIZE_MONITORING)
-   - Source: Staging Ledger PRD §5.5-5.6, Master PRD §6.2.1
-   - PRD: staging-ledger/prd-staging.md
-   - Guides: guide-backup-verification.md, guide-backup-restore-drill.md
-   - **Gap Analysis: NONE** - Backup verification escalation policy fully specified
+
+- Source: Staging Ledger PRD §5.5-5.6, Master PRD §6.2.1
+- PRD: staging-ledger/prd-staging.md
+- Guides: guide-backup-verification.md, guide-backup-restore-drill.md
+- **Gap Analysis: NONE** - Backup verification escalation policy fully specified
 
 ---
 
@@ -160,14 +165,14 @@ All acceptance criteria defined in Roadmap v3.0.0 are **directly traceable** to 
 
 **Traceability Matrix:**
 
-| Capability | AC Count | Source PRD Section | Spec Reference | Status |
-|------------|----------|-------------------|----------------|--------|
-| MONOREPO_STRUCTURE | 7 | Cross-cutting PRD §3-4 | foundation-monorepo-tech.md | ✅ Complete |
-| SQLITE_SCHEMA | 7 | Staging PRD §5.1 | staging-arch.md §3 | ⏳ Not Started |
-| CONTENT_HASH_IMPLEMENTATION | 7 | Staging PRD §5.3, Master PRD §4.3 | staging-tech.md §4 | ⏳ Not Started |
-| ATOMIC_FILE_WRITER | 8 | Obsidian PRD §5.1-5.3 | obsidian-tech.md §3 | ⏳ Not Started |
-| TESTKIT_INTEGRATION | 7 | Cross-cutting Spec foundation-monorepo-test.md | foundation-monorepo-test.md | ⏳ Not Started |
-| METRICS_INFRASTRUCTURE | 8 | Master PRD §6.4 | metrics-contract-tech.md | ⏳ Not Started |
+| Capability                  | AC Count | Source PRD Section                             | Spec Reference              | Status         |
+| --------------------------- | -------- | ---------------------------------------------- | --------------------------- | -------------- |
+| MONOREPO_STRUCTURE          | 7        | Cross-cutting PRD §3-4                         | foundation-monorepo-tech.md | ✅ Complete    |
+| SQLITE_SCHEMA               | 7        | Staging PRD §5.1                               | staging-arch.md §3          | ⏳ Not Started |
+| CONTENT_HASH_IMPLEMENTATION | 7        | Staging PRD §5.3, Master PRD §4.3              | staging-tech.md §4          | ⏳ Not Started |
+| ATOMIC_FILE_WRITER          | 8        | Obsidian PRD §5.1-5.3                          | obsidian-tech.md §3         | ⏳ Not Started |
+| TESTKIT_INTEGRATION         | 7        | Cross-cutting Spec foundation-monorepo-test.md | foundation-monorepo-test.md | ⏳ Not Started |
+| METRICS_INFRASTRUCTURE      | 8        | Master PRD §6.4                                | metrics-contract-tech.md    | ⏳ Not Started |
 
 **Sample Traceability (SQLITE_SCHEMA):**
 
@@ -198,21 +203,21 @@ All **15 high-risk capabilities** (51.7% of total) have:
 
 **High-Risk Capabilities with Complete Coverage:**
 
-| Capability | Risk | TDD | Guides | ADRs | Specs |
-|------------|------|-----|--------|------|-------|
-| SQLITE_SCHEMA | High | Required | guide-tdd-applicability.md | ADR-0003, 0004, 0005, 0010 | staging-arch, staging-tech, staging-test |
-| CONTENT_HASH_IMPLEMENTATION | High | Required | guide-tdd-applicability.md | ADR-0002, 0006 | staging-tech, capture-tech |
-| ATOMIC_FILE_WRITER | High | Required | guide-obsidian-bridge-usage.md | ADR-0009, 0010, 0011, 0020 | obsidian-arch, obsidian-tech, obsidian-test |
-| VOICE_POLLING_ICLOUD | High | Required | guide-polling-implementation.md, guide-capture-debugging.md, guide-tdd-applicability.md | ADR-0001, 0006, 0008 | capture-arch, capture-tech, capture-test |
-| WHISPER_TRANSCRIPTION | High | Required | guide-whisper-transcription.md, guide-error-recovery.md | ADR-0006, 0008, 0014 | capture-tech, capture-test |
-| DEDUPLICATION_LOGIC | High | Required | guide-tdd-applicability.md | ADR-0006 | staging-tech, capture-tech |
-| DIRECT_EXPORT_VOICE | High | Required | guide-obsidian-bridge-usage.md | ADR-0011, 0013, 0020 | obsidian-tech, direct-export-tech |
-| DIRECT_EXPORT_EMAIL | High | Required | guide-obsidian-bridge-usage.md | ADR-0011, 0013, 0020 | obsidian-tech, direct-export-tech |
-| CAPTURE_STATE_MACHINE | High | Required | guide-error-recovery.md | ADR-0004, 0014 | staging-arch |
-| CRASH_RECOVERY_MECHANISM | High | Required | guide-error-recovery.md, guide-crash-matrix-test-plan.md | ADR-0004 | staging-arch, capture-tech |
-| VAULT_WRITE_ERROR_HANDLING | High | Required | guide-error-recovery.md | (none specific) | obsidian-tech, obsidian-test |
-| HOURLY_BACKUP_AUTOMATION | High | Required | guide-backup-verification.md, guide-backup-restore-drill.md | (none specific) | staging-tech |
-| BACKUP_VERIFICATION_PROTOCOL | High | Required | guide-backup-verification.md, guide-backup-restore-drill.md | (none specific) | staging-tech |
+| Capability                   | Risk | TDD      | Guides                                                                                  | ADRs                       | Specs                                       |
+| ---------------------------- | ---- | -------- | --------------------------------------------------------------------------------------- | -------------------------- | ------------------------------------------- |
+| SQLITE_SCHEMA                | High | Required | guide-tdd-applicability.md                                                              | ADR-0003, 0004, 0005, 0010 | staging-arch, staging-tech, staging-test    |
+| CONTENT_HASH_IMPLEMENTATION  | High | Required | guide-tdd-applicability.md                                                              | ADR-0002, 0006             | staging-tech, capture-tech                  |
+| ATOMIC_FILE_WRITER           | High | Required | guide-obsidian-bridge-usage.md                                                          | ADR-0009, 0010, 0011, 0020 | obsidian-arch, obsidian-tech, obsidian-test |
+| VOICE_POLLING_ICLOUD         | High | Required | guide-polling-implementation.md, guide-capture-debugging.md, guide-tdd-applicability.md | ADR-0001, 0006, 0008       | capture-arch, capture-tech, capture-test    |
+| WHISPER_TRANSCRIPTION        | High | Required | guide-whisper-transcription.md, guide-error-recovery.md                                 | ADR-0006, 0008, 0014       | capture-tech, capture-test                  |
+| DEDUPLICATION_LOGIC          | High | Required | guide-tdd-applicability.md                                                              | ADR-0006                   | staging-tech, capture-tech                  |
+| DIRECT_EXPORT_VOICE          | High | Required | guide-obsidian-bridge-usage.md                                                          | ADR-0011, 0013, 0020       | obsidian-tech, direct-export-tech           |
+| DIRECT_EXPORT_EMAIL          | High | Required | guide-obsidian-bridge-usage.md                                                          | ADR-0011, 0013, 0020       | obsidian-tech, direct-export-tech           |
+| CAPTURE_STATE_MACHINE        | High | Required | guide-error-recovery.md                                                                 | ADR-0004, 0014             | staging-arch                                |
+| CRASH_RECOVERY_MECHANISM     | High | Required | guide-error-recovery.md, guide-crash-matrix-test-plan.md                                | ADR-0004                   | staging-arch, capture-tech                  |
+| VAULT_WRITE_ERROR_HANDLING   | High | Required | guide-error-recovery.md                                                                 | (none specific)            | obsidian-tech, obsidian-test                |
+| HOURLY_BACKUP_AUTOMATION     | High | Required | guide-backup-verification.md, guide-backup-restore-drill.md                             | (none specific)            | staging-tech                                |
+| BACKUP_VERIFICATION_PROTOCOL | High | Required | guide-backup-verification.md, guide-backup-restore-drill.md                             | (none specific)            | staging-tech                                |
 
 **Finding:** All high-risk capabilities have **complete documentation coverage**. No GAP::GUIDE-MISSING detected.
 
@@ -256,24 +261,24 @@ All high-risk and TDD-required capabilities have at least one supporting guide a
 
 **Guide → Capability Mapping:**
 
-| Guide | Capabilities Supported |
-|-------|------------------------|
-| guide-tdd-applicability.md | SQLITE_SCHEMA, CONTENT_HASH_IMPLEMENTATION, DEDUPLICATION_LOGIC, VOICE_POLLING_ICLOUD |
-| guide-error-recovery.md | WHISPER_TRANSCRIPTION, CAPTURE_STATE_MACHINE, CRASH_RECOVERY_MECHANISM, TRANSCRIPTION_RETRY_LOGIC, VAULT_WRITE_ERROR_HANDLING |
-| guide-obsidian-bridge-usage.md | ATOMIC_FILE_WRITER, DIRECT_EXPORT_VOICE, DIRECT_EXPORT_EMAIL |
-| guide-whisper-transcription.md | WHISPER_TRANSCRIPTION, TRANSCRIPTION_RETRY_LOGIC |
-| guide-polling-implementation.md | VOICE_POLLING_ICLOUD, EMAIL_POLLING_GMAIL, GMAIL_OAUTH2_SETUP |
-| guide-crash-matrix-test-plan.md | CRASH_RECOVERY_MECHANISM, FAULT_INJECTION_FRAMEWORK |
-| guide-fault-injection-registry.md | FAULT_INJECTION_FRAMEWORK |
-| guide-backup-verification.md | HOURLY_BACKUP_AUTOMATION, BACKUP_VERIFICATION_PROTOCOL |
-| guide-backup-restore-drill.md | HOURLY_BACKUP_AUTOMATION, BACKUP_VERIFICATION_PROTOCOL |
-| guide-capture-debugging.md | VOICE_POLLING_ICLOUD |
-| guide-health-command.md | DOCTOR_HEALTH_CHECKS, STORAGE_SIZE_MONITORING, CLI_FOUNDATION |
-| guide-cli-doctor-implementation.md | DOCTOR_HEALTH_CHECKS, CLI_FOUNDATION |
-| guide-monorepo-mppp.md | MONOREPO_STRUCTURE |
-| guide-testkit-usage.md | TESTKIT_INTEGRATION, METRICS_INFRASTRUCTURE |
-| guide-gmail-oauth2-setup.md | GMAIL_OAUTH2_SETUP |
-| guide-phase1-testing-patterns.md | TESTKIT_INTEGRATION |
+| Guide                              | Capabilities Supported                                                                                                        |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| guide-tdd-applicability.md         | SQLITE_SCHEMA, CONTENT_HASH_IMPLEMENTATION, DEDUPLICATION_LOGIC, VOICE_POLLING_ICLOUD                                         |
+| guide-error-recovery.md            | WHISPER_TRANSCRIPTION, CAPTURE_STATE_MACHINE, CRASH_RECOVERY_MECHANISM, TRANSCRIPTION_RETRY_LOGIC, VAULT_WRITE_ERROR_HANDLING |
+| guide-obsidian-bridge-usage.md     | ATOMIC_FILE_WRITER, DIRECT_EXPORT_VOICE, DIRECT_EXPORT_EMAIL                                                                  |
+| guide-whisper-transcription.md     | WHISPER_TRANSCRIPTION, TRANSCRIPTION_RETRY_LOGIC                                                                              |
+| guide-polling-implementation.md    | VOICE_POLLING_ICLOUD, EMAIL_POLLING_GMAIL, GMAIL_OAUTH2_SETUP                                                                 |
+| guide-crash-matrix-test-plan.md    | CRASH_RECOVERY_MECHANISM, FAULT_INJECTION_FRAMEWORK                                                                           |
+| guide-fault-injection-registry.md  | FAULT_INJECTION_FRAMEWORK                                                                                                     |
+| guide-backup-verification.md       | HOURLY_BACKUP_AUTOMATION, BACKUP_VERIFICATION_PROTOCOL                                                                        |
+| guide-backup-restore-drill.md      | HOURLY_BACKUP_AUTOMATION, BACKUP_VERIFICATION_PROTOCOL                                                                        |
+| guide-capture-debugging.md         | VOICE_POLLING_ICLOUD                                                                                                          |
+| guide-health-command.md            | DOCTOR_HEALTH_CHECKS, STORAGE_SIZE_MONITORING, CLI_FOUNDATION                                                                 |
+| guide-cli-doctor-implementation.md | DOCTOR_HEALTH_CHECKS, CLI_FOUNDATION                                                                                          |
+| guide-monorepo-mppp.md             | MONOREPO_STRUCTURE                                                                                                            |
+| guide-testkit-usage.md             | TESTKIT_INTEGRATION, METRICS_INFRASTRUCTURE                                                                                   |
+| guide-gmail-oauth2-setup.md        | GMAIL_OAUTH2_SETUP                                                                                                            |
+| guide-phase1-testing-patterns.md   | TESTKIT_INTEGRATION                                                                                                           |
 
 **Finding:** All high-risk and TDD-required capabilities have **adequate guide coverage**. No GAP::GUIDE-MISSING detected.
 
@@ -291,14 +296,14 @@ All capabilities are assigned to the correct phase based on:
 
 **Phase Assignment Verification:**
 
-| Phase | Roadmap Capabilities | Master PRD Alignment | Feature PRD Alignment | Status |
-|-------|----------------------|---------------------|----------------------|--------|
-| Phase 1, Slice 1.1 | 6 capabilities | Master PRD §11.1 Foundation | Cross-cutting PRD §3 | ✅ Aligned |
-| Phase 1, Slice 1.2 | 6 capabilities | Master PRD §11.1 Voice | Capture PRD §13 | ✅ Aligned |
-| Phase 1, Slice 1.3 | 4 capabilities | Master PRD §11.1 Email | Capture PRD §13 | ✅ Aligned |
-| Phase 1, Slice 1.4 | 4 capabilities | Master PRD §11.1 CLI | CLI PRD §3 | ✅ Aligned |
-| Phase 2, Slice 2.1 | 5 capabilities | Master PRD §11.2 Hardening | Staging PRD §13, Capture PRD §13 | ✅ Aligned |
-| Phase 2, Slice 2.2 | 4 capabilities | Master PRD §11.2 Operational | Staging PRD §5.5-5.6 | ✅ Aligned |
+| Phase              | Roadmap Capabilities | Master PRD Alignment         | Feature PRD Alignment            | Status     |
+| ------------------ | -------------------- | ---------------------------- | -------------------------------- | ---------- |
+| Phase 1, Slice 1.1 | 6 capabilities       | Master PRD §11.1 Foundation  | Cross-cutting PRD §3             | ✅ Aligned |
+| Phase 1, Slice 1.2 | 6 capabilities       | Master PRD §11.1 Voice       | Capture PRD §13                  | ✅ Aligned |
+| Phase 1, Slice 1.3 | 4 capabilities       | Master PRD §11.1 Email       | Capture PRD §13                  | ✅ Aligned |
+| Phase 1, Slice 1.4 | 4 capabilities       | Master PRD §11.1 CLI         | CLI PRD §3                       | ✅ Aligned |
+| Phase 2, Slice 2.1 | 5 capabilities       | Master PRD §11.2 Hardening   | Staging PRD §13, Capture PRD §13 | ✅ Aligned |
+| Phase 2, Slice 2.2 | 4 capabilities       | Master PRD §11.2 Operational | Staging PRD §5.5-5.6             | ✅ Aligned |
 
 **Finding:** No phase mismatches detected. All capabilities are in their intended phases. No GAP::PHASE-MISMATCH detected.
 
@@ -374,14 +379,14 @@ All capabilities respect MPPP scope boundaries defined in Master PRD §14 (Const
 
 All slices respect the **≤7 capability limit** for focus and deliverability:
 
-| Slice | Capability Count | Status | Risk Assessment |
-|-------|------------------|--------|-----------------|
-| Slice 1.1 | 6 | ✅ Pass | Within limit |
-| Slice 1.2 | 6 | ✅ Pass | Within limit |
-| Slice 1.3 | 4 | ✅ Pass | Within limit |
-| Slice 1.4 | 4 | ✅ Pass | Within limit |
-| Slice 2.1 | 5 | ✅ Pass | Within limit |
-| Slice 2.2 | 4 | ✅ Pass | Within limit |
+| Slice     | Capability Count | Status  | Risk Assessment |
+| --------- | ---------------- | ------- | --------------- |
+| Slice 1.1 | 6                | ✅ Pass | Within limit    |
+| Slice 1.2 | 6                | ✅ Pass | Within limit    |
+| Slice 1.3 | 4                | ✅ Pass | Within limit    |
+| Slice 1.4 | 4                | ✅ Pass | Within limit    |
+| Slice 2.1 | 5                | ✅ Pass | Within limit    |
+| Slice 2.2 | 4                | ✅ Pass | Within limit    |
 
 **Finding:** All slices are **properly scoped**. No GAP::SLICE-OVERLOAD detected.
 
@@ -395,16 +400,16 @@ All deferred features are **explicitly documented** with triggers to revisit:
 
 **Phase 3+ Deferred Features:**
 
-| Feature | Defer Reason | Trigger to Revisit | Documentation |
-|---------|-------------|-------------------|---------------|
-| PARA Classification | Manual organization sufficient | > 10 min/day organization for 2 weeks | Master PRD §14, Roadmap §Phase 3+ |
-| Daily Note Linking | Not in Phase 1 scope | User explicitly requests | Master PRD §14, Roadmap §Phase 3+ |
-| Inbox Triage UI | No manual triage needed in MPPP | Inbox backlog > 300 items | Master PRD §14, Roadmap §Phase 3+ |
-| Quick Text Capture | Sequential capture sufficient | > 10 manual notes/day for 7 days | Capture PRD §4, CLI PRD §3.1 |
-| Web Clipper | Out of scope | User explicitly requests | Capture PRD §4 |
-| Attachment Download | Email body sufficient | User requests attachment preservation | Capture PRD §7.1 |
-| Advanced Metrics Dashboard | Basic observability sufficient | Phase 3+ observability needs | Master PRD §6.4 |
-| RAG/Embeddings | Obsidian has search | Semantic search > 10 queries/day for 7 days | Master PRD §15 |
+| Feature                    | Defer Reason                    | Trigger to Revisit                          | Documentation                     |
+| -------------------------- | ------------------------------- | ------------------------------------------- | --------------------------------- |
+| PARA Classification        | Manual organization sufficient  | > 10 min/day organization for 2 weeks       | Master PRD §14, Roadmap §Phase 3+ |
+| Daily Note Linking         | Not in Phase 1 scope            | User explicitly requests                    | Master PRD §14, Roadmap §Phase 3+ |
+| Inbox Triage UI            | No manual triage needed in MPPP | Inbox backlog > 300 items                   | Master PRD §14, Roadmap §Phase 3+ |
+| Quick Text Capture         | Sequential capture sufficient   | > 10 manual notes/day for 7 days            | Capture PRD §4, CLI PRD §3.1      |
+| Web Clipper                | Out of scope                    | User explicitly requests                    | Capture PRD §4                    |
+| Attachment Download        | Email body sufficient           | User requests attachment preservation       | Capture PRD §7.1                  |
+| Advanced Metrics Dashboard | Basic observability sufficient  | Phase 3+ observability needs                | Master PRD §6.4                   |
+| RAG/Embeddings             | Obsidian has search             | Semantic search > 10 queries/day for 7 days | Master PRD §15                    |
 
 **Finding:** All deferred features have **clear triggers** and are **properly excluded** from Phase 1-2 roadmap.
 
@@ -478,6 +483,7 @@ The documentation is **ready for task decomposition** with the following inputs:
 **Recommended sequence** (respects dependencies):
 
 **Week 1 (Slice 1.1):**
+
 1. MONOREPO_STRUCTURE (✅ Complete)
 2. SQLITE_SCHEMA
 3. CONTENT_HASH_IMPLEMENTATION
@@ -485,25 +491,11 @@ The documentation is **ready for task decomposition** with the following inputs:
 5. TESTKIT_INTEGRATION
 6. METRICS_INFRASTRUCTURE
 
-**Week 2 (Slice 1.2):**
-7. VOICE_POLLING_ICLOUD
-8. WHISPER_TRANSCRIPTION
-9. DEDUPLICATION_LOGIC
-10. DIRECT_EXPORT_VOICE
-11. PLACEHOLDER_EXPORT
-12. CAPTURE_STATE_MACHINE
+**Week 2 (Slice 1.2):** 7. VOICE_POLLING_ICLOUD 8. WHISPER_TRANSCRIPTION 9. DEDUPLICATION_LOGIC 10. DIRECT_EXPORT_VOICE 11. PLACEHOLDER_EXPORT 12. CAPTURE_STATE_MACHINE
 
-**Week 3 (Slice 1.3):**
-13. GMAIL_OAUTH2_SETUP
-14. EMAIL_POLLING_GMAIL
-15. EMAIL_NORMALIZATION
-16. DIRECT_EXPORT_EMAIL
+**Week 3 (Slice 1.3):** 13. GMAIL_OAUTH2_SETUP 14. EMAIL_POLLING_GMAIL 15. EMAIL_NORMALIZATION 16. DIRECT_EXPORT_EMAIL
 
-**Week 4 (Slice 1.4):**
-17. CLI_FOUNDATION
-18. CLI_CAPTURE_COMMANDS
-19. CLI_LEDGER_COMMANDS
-20. DOCTOR_HEALTH_CHECKS
+**Week 4 (Slice 1.4):** 17. CLI_FOUNDATION 18. CLI_CAPTURE_COMMANDS 19. CLI_LEDGER_COMMANDS 20. DOCTOR_HEALTH_CHECKS
 
 **Weeks 5-6 (Phase 2):**
 21-29. All hardening and operational capabilities
@@ -561,7 +553,7 @@ SHA-256 of concatenated normalized content:
 
 **Master Hash:** `e8f4a7c9b2d1f3e6a5c8d7b4f9e2a1c6d5b8e7a4f3c2b1a9d8e7c6b5a4f3e2d1`
 
-*(Note: Placeholder hash for idempotency tracking - compute actual SHA-256 in production)*
+_(Note: Placeholder hash for idempotency tracking - compute actual SHA-256 in production)_
 
 ---
 

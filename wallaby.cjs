@@ -4,8 +4,8 @@ module.exports = function (wallaby) {
 
     env: {
       params: {
-        env: 'WALLABY_ENV=true;TEST_MODE='
-      }
+        env: 'WALLABY_ENV=true;TEST_MODE=',
+      },
     },
 
     workers: {

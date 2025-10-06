@@ -10,6 +10,7 @@
 Code analysis revealed **critical test-implementation mismatches** and **insufficient behavioral coverage** across 8 test suites. This plan provides a structured approach to fix blocking issues, improve test quality from 45% to 80%+ coverage, and establish automated quality gates.
 
 ### Critical Findings
+
 - ❌ **2 test files have breaking issues** preventing accurate validation
 - ❌ **70+ functions untested** or only structurally validated
 - ❌ **testkit-main-export.test.ts** tests wrong package entirely (0% coverage)
@@ -28,6 +29,7 @@ Code analysis revealed **critical test-implementation mismatches** and **insuffi
 **Solution Options:**
 
 **Option A: Fix Imports (if foundation is a wrapper)**
+
 ```typescript
 // Change ALL imports from:
 import { ... } from '@orchestr8/testkit'
@@ -38,14 +40,22 @@ import { ... } from '../index.js'
 ```
 
 **Option B: Populate Exports (if foundation should re-export)**
+
 ```typescript
 // File: packages/foundation/src/index.ts
-export { delay, createMockFn, retry, withTimeout } from '@orchestr8/testkit'
-export { createTempDirectory, createNamedTempDirectory } from '@orchestr8/testkit/fs'
-export { createBaseVitestConfig, createVitestCoverage } from '@orchestr8/testkit/config/vitest'
+export { delay, createMockFn, retry, withTimeout } from "@orchestr8/testkit"
+export {
+  createTempDirectory,
+  createNamedTempDirectory,
+} from "@orchestr8/testkit/fs"
+export {
+  createBaseVitestConfig,
+  createVitestCoverage,
+} from "@orchestr8/testkit/config/vitest"
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Tests import from correct package
 - [ ] All test assertions pass
 - [ ] Coverage report shows >0% for foundation package
@@ -65,14 +75,20 @@ const subExports = [
   // { path: '@orchestr8/testkit/utils', expectedExports: ['createTestFixture'] },
 
   // AFTER:
-  { path: '@orchestr8/testkit/utils', expectedExports: ['delay', 'retry', 'withTimeout', 'createMockFn'] },
+  {
+    path: "@orchestr8/testkit/utils",
+    expectedExports: ["delay", "retry", "withTimeout", "createMockFn"],
+  },
 
   // Line 78: Fix nested export path
   // BEFORE:
   // { path: '@orchestr8/testkit/env', expectedExports: ['useFakeTimers', 'setSystemTime'] },
 
   // AFTER:
-  { path: '@orchestr8/testkit/env', expectedExports: ['useFakeTimers', 'timeHelpers'] },
+  {
+    path: "@orchestr8/testkit/env",
+    expectedExports: ["useFakeTimers", "timeHelpers"],
+  },
 ]
 
 // Line 112: Strengthen assertion
@@ -81,11 +97,12 @@ expect(workingExports).toBeGreaterThan(0)
 
 // AFTER:
 expect(workingExports).toBe(subExports.length) // All must work
-const failures = results.filter(r => r.includes('❌'))
+const failures = results.filter((r) => r.includes("❌"))
 expect(failures).toEqual([]) // No failures allowed
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All expected exports exist in implementation
 - [ ] Strong assertions require ALL exports to work
 - [ ] No false positives from weak assertions
@@ -97,44 +114,47 @@ expect(failures).toEqual([]) // No failures allowed
 **New Test File:** `packages/foundation/src/__tests__/package-contract.test.ts`
 
 ```typescript
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from "vitest"
 
-describe('Package Contract Validation', () => {
-  it('should export all functions expected by tests', async () => {
-    const pkg = await import('@capture-bridge/foundation')
+describe("Package Contract Validation", () => {
+  it("should export all functions expected by tests", async () => {
+    const pkg = await import("@capture-bridge/foundation")
     const actualExports = Object.keys(pkg)
 
     const expectedExports = [
-      'delay',
-      'createMockFn',
-      'retry',
-      'withTimeout',
-      'createTempDirectory',
-      'createNamedTempDirectory',
-      'createBaseVitestConfig',
-      'createVitestCoverage',
-      'foundationVersion'
+      "delay",
+      "createMockFn",
+      "retry",
+      "withTimeout",
+      "createTempDirectory",
+      "createNamedTempDirectory",
+      "createBaseVitestConfig",
+      "createVitestCoverage",
+      "foundationVersion",
     ]
 
-    const missing = expectedExports.filter(exp => !actualExports.includes(exp))
-    const extra = actualExports.filter(exp => !expectedExports.includes(exp))
+    const missing = expectedExports.filter(
+      (exp) => !actualExports.includes(exp)
+    )
+    const extra = actualExports.filter((exp) => !expectedExports.includes(exp))
 
-    expect(missing, `Missing exports: ${missing.join(', ')}`).toEqual([])
-    expect(extra, `Unexpected exports: ${extra.join(', ')}`).toEqual([])
+    expect(missing, `Missing exports: ${missing.join(", ")}`).toEqual([])
+    expect(extra, `Unexpected exports: ${extra.join(", ")}`).toEqual([])
   })
 
-  it('should match package.json exports configuration', async () => {
-    const packageJson = await import('../package.json')
-    const pkg = await import('@capture-bridge/foundation')
+  it("should match package.json exports configuration", async () => {
+    const packageJson = await import("../package.json")
+    const pkg = await import("@capture-bridge/foundation")
 
     // Verify main export exists
-    expect(packageJson.exports['.']).toBeDefined()
+    expect(packageJson.exports["."]).toBeDefined()
     expect(Object.keys(pkg).length).toBeGreaterThan(0)
   })
 })
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Test fails if exports don't match expectations
 - [ ] Prevents future test-implementation drift
 - [ ] Runs in CI/CD pipeline
@@ -151,19 +171,22 @@ describe('Package Contract Validation', () => {
 **Tests to Add (minimum 15):**
 
 1. **Process Registration & Retrieval**
+
 ```typescript
-it('should register and retrieve mocked process', () => {
+it("should register and retrieve mocked process", () => {
   const mocker = createProcessMocker()
-  mocker.register('npm install', {
-    stdout: 'added 50 packages',
-    exitCode: 0
+  mocker.register("npm install", {
+    stdout: "added 50 packages",
+    exitCode: 0,
   })
 
   const processes = mocker.getSpawnedProcesses()
-  expect(processes).toContainEqual(expect.objectContaining({
-    command: 'npm install',
-    stdout: 'added 50 packages'
-  }))
+  expect(processes).toContainEqual(
+    expect.objectContaining({
+      command: "npm install",
+      stdout: "added 50 packages",
+    })
+  )
 })
 ```
 
@@ -183,6 +206,7 @@ it('should register and retrieve mocked process', () => {
 15. **Process Timeout Handling**
 
 **Acceptance Criteria:**
+
 - [ ] All 15 behavioral tests passing
 - [ ] Coverage of CLI utilities >80%
 - [ ] Tests verify actual behavior, not just structure
@@ -197,23 +221,24 @@ it('should register and retrieve mocked process', () => {
 **Edge Cases to Add (minimum 10):**
 
 1. **delay() Edge Cases**
+
 ```typescript
-describe('delay - Edge Cases', () => {
-  it('should reject negative delays', async () => {
-    await expect(delay(-100)).rejects.toThrow('Delay must be non-negative')
+describe("delay - Edge Cases", () => {
+  it("should reject negative delays", async () => {
+    await expect(delay(-100)).rejects.toThrow("Delay must be non-negative")
   })
 
-  it('should reject NaN delays', async () => {
-    await expect(delay(NaN)).rejects.toThrow('Delay must be a valid number')
+  it("should reject NaN delays", async () => {
+    await expect(delay(NaN)).rejects.toThrow("Delay must be a valid number")
   })
 
-  it('should handle zero delay immediately', async () => {
+  it("should handle zero delay immediately", async () => {
     const start = Date.now()
     await delay(0)
     expect(Date.now() - start).toBeLessThan(10)
   })
 
-  it('should handle very large delays', async () => {
+  it("should handle very large delays", async () => {
     const promise = delay(1000000)
     expect(promise).toBeInstanceOf(Promise)
   })
@@ -221,8 +246,9 @@ describe('delay - Edge Cases', () => {
 ```
 
 2. **withTimeout() Resource Cleanup**
+
 ```typescript
-it('should cleanup resources after timeout', async () => {
+it("should cleanup resources after timeout", async () => {
   let resourceReleased = false
 
   const operation = async () => {
@@ -249,6 +275,7 @@ it('should cleanup resources after timeout', async () => {
 10. **Concurrent Temp Directory Creation**
 
 **Acceptance Criteria:**
+
 - [ ] All edge cases covered
 - [ ] Memory leak tests passing
 - [ ] Error paths validated
@@ -263,20 +290,23 @@ it('should cleanup resources after timeout', async () => {
 **Functions to Test:**
 
 1. **restoreMSWHandlers()**
+
 ```typescript
-it('should restore handlers to initial state', async () => {
+it("should restore handlers to initial state", async () => {
   // Add runtime handler
-  addMSWHandlers(http.get('*/api/temp', () => HttpResponse.json({ temp: true })))
+  addMSWHandlers(
+    http.get("*/api/temp", () => HttpResponse.json({ temp: true }))
+  )
 
   // Verify it works
-  let response = await fetch('http://localhost/api/temp')
+  let response = await fetch("http://localhost/api/temp")
   expect(response.status).toBe(200)
 
   // Restore to initial handlers
   restoreMSWHandlers()
 
   // Runtime handler should be gone
-  response = await fetch('http://localhost/api/temp')
+  response = await fetch("http://localhost/api/temp")
   expect(response.status).toBe(404)
 })
 ```
@@ -292,12 +322,14 @@ it('should restore handlers to initial state', async () => {
 10. **setupMSWForEnvironment()**
 
 **Plus Edge Cases:**
+
 - Config validation errors
 - Pagination with invalid params
 - Auth with malformed headers
 - CRUD 404 scenarios
 
 **Acceptance Criteria:**
+
 - [ ] All 10 functions tested
 - [ ] Edge cases covered
 - [ ] Missing constants added (NO_CONTENT, FORBIDDEN, etc.)
@@ -318,17 +350,19 @@ it('should restore handlers to initial state', async () => {
 6. **SQLiteConnectionPool** - 437 lines of implementation (if exists)
 
 **Investigation Required:**
+
 ```typescript
 // First, verify if SQLiteConnectionPool exists
-describe('SQLite Connection Pool Investigation', () => {
-  it('should verify pool implementation exists', () => {
-    const { SQLiteConnectionPool } = require('@orchestr8/testkit/sqlite')
+describe("SQLite Connection Pool Investigation", () => {
+  it("should verify pool implementation exists", () => {
+    const { SQLiteConnectionPool } = require("@orchestr8/testkit/sqlite")
     expect(SQLiteConnectionPool).toBeDefined()
   })
 })
 ```
 
 **Acceptance Criteria:**
+
 - [ ] All 5+ critical functions tested
 - [ ] Pool implementation verified and tested if exists
 - [ ] Migration system uses actual applyMigrations()
@@ -343,41 +377,40 @@ describe('SQLite Connection Pool Investigation', () => {
 **New File:** `packages/foundation/src/__tests__/security-validation.test.ts`
 
 ```typescript
-describe('Security Validation', () => {
-  describe('SQL Injection Prevention', () => {
-    it('should reject unsafe SQL in database paths', async () => {
+describe("Security Validation", () => {
+  describe("SQL Injection Prevention", () => {
+    it("should reject unsafe SQL in database paths", async () => {
       const maliciousPath = "test.db'; DROP TABLE users; --"
       await expect(createFileDatabase(maliciousPath)).rejects.toThrow()
     })
 
-    it('should sanitize batch operations', async () => {
-      const unsafeBatch = [
-        "SELECT * FROM users WHERE id = '1' OR '1'='1'"
-      ]
+    it("should sanitize batch operations", async () => {
+      const unsafeBatch = ["SELECT * FROM users WHERE id = '1' OR '1'='1'"]
       await expect(seedWithBatch(db, unsafeBatch)).rejects.toThrow()
     })
   })
 
-  describe('Path Traversal Prevention', () => {
-    it('should reject path traversal attempts', () => {
-      expect(() => validatePath('/base', '../../etc/passwd')).toThrow()
+  describe("Path Traversal Prevention", () => {
+    it("should reject path traversal attempts", () => {
+      expect(() => validatePath("/base", "../../etc/passwd")).toThrow()
     })
 
-    it('should reject absolute path injection', () => {
-      expect(() => validatePath('/base', '/etc/passwd')).toThrow()
+    it("should reject absolute path injection", () => {
+      expect(() => validatePath("/base", "/etc/passwd")).toThrow()
     })
   })
 
-  describe('Resource Exhaustion Prevention', () => {
-    it('should limit maximum connections', async () => {
+  describe("Resource Exhaustion Prevention", () => {
+    it("should limit maximum connections", async () => {
       const attempts = Array.from({ length: 1000 }, () => createMemoryUrl())
-      await expect(Promise.all(attempts)).rejects.toThrow('limit exceeded')
+      await expect(Promise.all(attempts)).rejects.toThrow("limit exceeded")
     })
   })
 })
 ```
 
 **Acceptance Criteria:**
+
 - [ ] SQL injection tests pass
 - [ ] Path traversal tests pass
 - [ ] Resource limits enforced
@@ -389,20 +422,20 @@ describe('Security Validation', () => {
 **New File:** `packages/foundation/src/__tests__/performance-benchmarks.test.ts`
 
 ```typescript
-describe('Performance Benchmarks', () => {
-  it('should handle 1000 concurrent mocks efficiently', async () => {
+describe("Performance Benchmarks", () => {
+  it("should handle 1000 concurrent mocks efficiently", async () => {
     const mocker = createProcessMocker()
     const start = Date.now()
 
     for (let i = 0; i < 1000; i++) {
-      mocker.register(`cmd-${i}`, { stdout: 'output' })
+      mocker.register(`cmd-${i}`, { stdout: "output" })
     }
 
     const elapsed = Date.now() - start
     expect(elapsed).toBeLessThan(100) // Should be very fast
   })
 
-  it('should not leak memory with repeated delays', async () => {
+  it("should not leak memory with repeated delays", async () => {
     const initialMemory = process.memoryUsage().heapUsed
 
     for (let i = 0; i < 1000; i++) {
@@ -415,7 +448,7 @@ describe('Performance Benchmarks', () => {
     expect(growth).toBeLessThan(1024 * 1024) // < 1MB growth
   })
 
-  it('should pool objects efficiently', async () => {
+  it("should pool objects efficiently", async () => {
     const pool = new ObjectPool({ factory: () => ({}) })
 
     const obj1 = await pool.acquire()
@@ -428,6 +461,7 @@ describe('Performance Benchmarks', () => {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Benchmarks pass with acceptable thresholds
 - [ ] Memory leak tests pass
 - [ ] Pool reuse verified
@@ -456,7 +490,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install dependencies
         run: npm ci
@@ -501,6 +535,7 @@ jobs:
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Coverage gate enforces 80% minimum
 - [ ] Behavioral test ratio enforces 70% minimum
 - [ ] Pipeline fails on quality violations
@@ -537,6 +572,7 @@ jobs:
 ```
 
 **Acceptance Criteria:**
+
 - [ ] ESLint rules enforced in tests
 - [ ] Console.log blocked in test files
 - [ ] Vitest best practices required
@@ -564,6 +600,7 @@ jobs:
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Strict mode enabled
 - [ ] All type errors fixed
 - [ ] No implicit any types
@@ -574,12 +611,12 @@ jobs:
 
 ### Coverage Targets
 
-| Metric | Current | Target |
-|--------|---------|--------|
-| Line Coverage | 45-50% | 80%+ |
-| Branch Coverage | Unknown | 75%+ |
-| Function Coverage | Unknown | 85%+ |
-| Behavioral Test Ratio | ~20% | 70%+ |
+| Metric                | Current | Target |
+| --------------------- | ------- | ------ |
+| Line Coverage         | 45-50%  | 80%+   |
+| Branch Coverage       | Unknown | 75%+   |
+| Function Coverage     | Unknown | 85%+   |
+| Behavioral Test Ratio | ~20%    | 70%+   |
 
 ### Quality Indicators
 
@@ -607,6 +644,7 @@ jobs:
 ### Rollback Plan
 
 If issues arise during implementation:
+
 1. Revert to previous test state via git
 2. Fix blocking issue in isolation
 3. Re-apply changes incrementally
@@ -617,11 +655,13 @@ If issues arise during implementation:
 ## Timeline & Resources
 
 ### Week 1: Critical Path
+
 - **Day 1-2:** Fix blocking issues (2 developer-days)
 - **Day 3-5:** Add behavioral coverage (3 developer-days)
 - **Total:** 5 developer-days
 
 ### Week 2: Quality & Automation
+
 - **Day 6-7:** Security & performance tests (2 developer-days)
 - **Day 8:** CI/CD setup (1 developer-day)
 - **Total:** 3 developer-days
@@ -657,19 +697,19 @@ If issues arise during implementation:
 
 ```typescript
 // Structural-only test (validates nothing)
-it('should have method', () => {
-  expect(obj).toHaveProperty('method')
+it("should have method", () => {
+  expect(obj).toHaveProperty("method")
 })
 
 // Weak assertion
-it('should work', () => {
+it("should work", () => {
   expect(result).toBeTruthy()
 })
 
 // Console logging instead of assertions
-it('should process', () => {
+it("should process", () => {
   process()
-  console.log('✅ Processed')
+  console.log("✅ Processed")
 })
 ```
 
@@ -677,24 +717,24 @@ it('should process', () => {
 
 ```typescript
 // Behavioral test (validates behavior)
-it('should calculate sum correctly', () => {
+it("should calculate sum correctly", () => {
   expect(calculator.add(2, 3)).toBe(5)
 })
 
 // Strong assertion
-it('should return user with correct email', () => {
+it("should return user with correct email", () => {
   expect(result).toEqual({
     id: expect.any(String),
-    email: 'test@example.com',
-    name: 'Test User'
+    email: "test@example.com",
+    name: "Test User",
   })
 })
 
 // Proper assertions
-it('should process data correctly', () => {
+it("should process data correctly", () => {
   const result = processor.process(input)
   expect(result).toHaveLength(3)
-  expect(result[0]).toMatchObject({ status: 'processed' })
+  expect(result[0]).toMatchObject({ status: "processed" })
 })
 ```
 

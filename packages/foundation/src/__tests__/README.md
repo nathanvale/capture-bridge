@@ -1,8 +1,7 @@
 # Foundation Package Test Suite - Comprehensive Guide
 
-**Last Updated**: 2025-10-04
-**Test Coverage**: 85%+ (279 tests)
-**Verified Against**: @orchestr8/testkit v2.0.0 source code
+**Last Updated**: 2025-10-04 **Test Coverage**: 85%+ (279 tests) **Verified
+Against**: @orchestr8/testkit v2.0.0 source code
 
 ---
 
@@ -23,9 +22,12 @@
 
 ### Overview
 
-This test suite validates the @capture-bridge/foundation package, which serves as a thin wrapper around @orchestr8/testkit v2.0.0. The suite contains **13 test files** with **279 comprehensive tests** covering:
+This test suite validates the @capture-bridge/foundation package, which serves
+as a thin wrapper around @orchestr8/testkit v2.0.0. The suite contains **13 test
+files** with **279 comprehensive tests** covering:
 
-- ✅ SQLite database testing (connection pooling, migrations, seeding, transactions)
+- ✅ SQLite database testing (connection pooling, migrations, seeding,
+  transactions)
 - ✅ MSW (Mock Service Worker) HTTP mocking
 - ✅ CLI process mocking and testing
 - ✅ Core utilities (delay, retry, withTimeout)
@@ -36,15 +38,15 @@ This test suite validates the @capture-bridge/foundation package, which serves a
 
 ### Test Categories
 
-| Category | Files | Tests | Coverage |
-|----------|-------|-------|----------|
-| **SQLite Testing** | 3 | 76 | Pool management, migrations, CRUD, transactions |
-| **Security** | 1 | 21 | SQL injection, path traversal, command injection |
-| **Performance** | 1 | 14 | Memory leaks, concurrency, stress tests |
-| **CLI Mocking** | 2 | 73 | Process registration, behavioral validation |
-| **MSW Mocking** | 1 | 37 | HTTP handlers, responses, auth |
-| **Core Utilities** | 2 | 48 | Delay, retry, timeout, mocks, resources |
-| **Contract Validation** | 3 | 13 | Export validation, integration tests |
+| Category                | Files | Tests | Coverage                                         |
+| ----------------------- | ----- | ----- | ------------------------------------------------ |
+| **SQLite Testing**      | 3     | 76    | Pool management, migrations, CRUD, transactions  |
+| **Security**            | 1     | 21    | SQL injection, path traversal, command injection |
+| **Performance**         | 1     | 14    | Memory leaks, concurrency, stress tests          |
+| **CLI Mocking**         | 2     | 73    | Process registration, behavioral validation      |
+| **MSW Mocking**         | 1     | 37    | HTTP handlers, responses, auth                   |
+| **Core Utilities**      | 2     | 48    | Delay, retry, timeout, mocks, resources          |
+| **Contract Validation** | 3     | 13    | Export validation, integration tests             |
 
 ---
 
@@ -124,27 +126,29 @@ This test suite validates the @capture-bridge/foundation package, which serves a
 ### Behavioral vs Structural Testing
 
 **❌ AVOID: Structural Testing (superficial)**
+
 ```typescript
 // Only checks if export exists
-it('should export createDatabase', async () => {
-  const { createDatabase } = await import('@orchestr8/testkit/sqlite')
+it("should export createDatabase", async () => {
+  const { createDatabase } = await import("@orchestr8/testkit/sqlite")
   expect(createDatabase).toBeDefined()
 })
 ```
 
 **✅ PREFER: Behavioral Testing (validates functionality)**
+
 ```typescript
 // Validates actual behavior works
-it('should create in-memory database with createDatabase', async () => {
-  const { createDatabase } = await import('@orchestr8/testkit/sqlite')
+it("should create in-memory database with createDatabase", async () => {
+  const { createDatabase } = await import("@orchestr8/testkit/sqlite")
 
-  const db = await createDatabase(':memory:')
+  const db = await createDatabase(":memory:")
 
   expect(db).toBeDefined()
   expect(db.open).toBe(true)
 
   // Verify database actually works
-  const result = db.prepare('SELECT 1 as value').get()
+  const result = db.prepare("SELECT 1 as value").get()
   expect(result).toEqual({ value: 1 })
 
   db.close()
@@ -154,7 +158,7 @@ it('should create in-memory database with createDatabase', async () => {
 ### Test Organization Pattern
 
 ```typescript
-describe('Feature Group', () => {
+describe("Feature Group", () => {
   // 1. SETUP - Run before each test
   let resource: Resource
 
@@ -168,29 +172,29 @@ describe('Feature Group', () => {
   })
 
   // 3. TESTS - Grouped by behavior
-  describe('Happy Path', () => {
-    it('should work in normal conditions', async () => {
+  describe("Happy Path", () => {
+    it("should work in normal conditions", async () => {
       // Arrange - Setup test data
-      const input = 'test'
+      const input = "test"
 
       // Act - Execute the behavior
       const result = await resource.process(input)
 
       // Assert - Validate the outcome
-      expect(result).toBe('processed: test')
+      expect(result).toBe("processed: test")
     })
   })
 
-  describe('Error Handling', () => {
-    it('should throw on invalid input', async () => {
+  describe("Error Handling", () => {
+    it("should throw on invalid input", async () => {
       await expect(resource.process(null)).rejects.toThrow()
     })
   })
 
-  describe('Edge Cases', () => {
-    it('should handle empty string', async () => {
-      const result = await resource.process('')
-      expect(result).toBe('processed: ')
+  describe("Edge Cases", () => {
+    it("should handle empty string", async () => {
+      const result = await resource.process("")
+      expect(result).toBe("processed: ")
     })
   })
 })
@@ -207,17 +211,17 @@ describe('Feature Group', () => {
  *
  * Source: testkit-main-export.test.ts
  */
-describe('Package Integration', () => {
-  it('should validate external package exports', async () => {
+describe("Package Integration", () => {
+  it("should validate external package exports", async () => {
     // Import from ACTUAL package, not local code
-    const testkit = await import('@orchestr8/testkit')
+    const testkit = await import("@orchestr8/testkit")
 
     // Validate expected exports exist
-    expect(testkit).toHaveProperty('createDatabase')
-    expect(testkit).toHaveProperty('setupMSW')
+    expect(testkit).toHaveProperty("createDatabase")
+    expect(testkit).toHaveProperty("setupMSW")
 
     // Validate exports actually work
-    const db = testkit.createDatabase(':memory:')
+    const db = testkit.createDatabase(":memory:")
     expect(db.open).toBe(true)
     db.close()
   })
@@ -281,19 +285,21 @@ afterEach(async () => {
 #### Pool-Managed Connection Anti-Pattern
 
 **❌ NEVER DO THIS:**
+
 ```typescript
 // WRONG: Double-tracking pool-managed connections
 const pool = await createConnectionPool(dbPath, { maxConnections: 5 })
 const conn = await pool.acquire()
 
-databases.push(conn)  // ❌ FATAL ERROR: Will cause double-close!
+databases.push(conn) // ❌ FATAL ERROR: Will cause double-close!
 
 await pool.release(conn)
-await pool.drain()     // Closes connection
-conn.close()          // ❌ CRASH: Already closed by pool!
+await pool.drain() // Closes connection
+conn.close() // ❌ CRASH: Already closed by pool!
 ```
 
 **✅ CORRECT PATTERN:**
+
 ```typescript
 // RIGHT: Let pool manage its own connections
 const pool = await createConnectionPool(dbPath, { maxConnections: 5 })
@@ -303,7 +309,7 @@ const conn = await pool.acquire()
 // pools.push(pool)  // Track pool only, not connections
 
 await pool.release(conn)
-await pool.drain()     // ✅ Pool handles connection cleanup
+await pool.drain() // ✅ Pool handles connection cleanup
 ```
 
 #### Migration & Seeding Pattern
@@ -320,12 +326,12 @@ await pool.drain()     // ✅ Pool handles connection cleanup
 // ✅ CORRECT: Use TestKit utilities
 const db = createFileDatabase(dbPath)
 await applyMigrations(db, [
-  { id: '001', up: 'CREATE TABLE users (id INTEGER PRIMARY KEY)' }
+  { id: "001", up: "CREATE TABLE users (id INTEGER PRIMARY KEY)" },
 ])
 
 // ❌ WRONG: Manual migration (reinventing the wheel)
-db.exec('CREATE TABLE IF NOT EXISTS migrations (...)')
-db.prepare('INSERT INTO migrations (...)').run()
+db.exec("CREATE TABLE IF NOT EXISTS migrations (...)")
+db.prepare("INSERT INTO migrations (...)").run()
 ```
 
 #### Transaction Management
@@ -337,20 +343,20 @@ db.prepare('INSERT INTO migrations (...)').run()
  * Source: testkit-sqlite-features.test.ts:263-294
  */
 
-it('should handle transaction rollback on error', async () => {
-  const db = createDatabase(':memory:')
-  db.exec('CREATE TABLE users (id INTEGER PRIMARY KEY)')
+it("should handle transaction rollback on error", async () => {
+  const db = createDatabase(":memory:")
+  db.exec("CREATE TABLE users (id INTEGER PRIMARY KEY)")
 
   // Use TestKit's transaction helper (auto-rollback on throw)
   await expect(
     runInTransaction(db, async () => {
-      db.prepare('INSERT INTO users VALUES (1)').run()
-      throw new Error('Intentional failure')
+      db.prepare("INSERT INTO users VALUES (1)").run()
+      throw new Error("Intentional failure")
     })
   ).rejects.toThrow()
 
   // Verify rollback happened
-  const count = db.prepare('SELECT COUNT(*) as count FROM users').get()
+  const count = db.prepare("SELECT COUNT(*) as count FROM users").get()
   expect(count.count).toBe(0)
 
   db.close()
@@ -374,16 +380,16 @@ it('should handle transaction rollback on error', async () => {
  */
 
 // ✅ CORRECT: Use singleton instance
-import { getGlobalProcessMocker } from '@orchestr8/testkit/cli'
+import { getGlobalProcessMocker } from "@orchestr8/testkit/cli"
 
 beforeEach(() => {
   const mocker = getGlobalProcessMocker()
-  mocker.reset()  // Clear previous registrations
+  mocker.reset() // Clear previous registrations
 })
 
 // ❌ WRONG: Creating new instances
-const mocker1 = new ProcessMocker()  // Separate registry
-const mocker2 = new ProcessMocker()  // Won't see mocker1's registrations!
+const mocker1 = new ProcessMocker() // Separate registry
+const mocker2 = new ProcessMocker() // Won't see mocker1's registrations!
 ```
 
 #### Hexa-Register Pattern
@@ -400,15 +406,15 @@ const mocker2 = new ProcessMocker()  // Won't see mocker1's registrations!
  * Source: testkit-cli-utilities-behavioral.test.ts:121-155
  */
 
-mocker.register('git status')  // One registration
+mocker.register("git status") // One registration
 
 // ALL six methods now mocked!
-const result1 = spawn('git', ['status'])          // ✅ Mocked
-const result2 = spawnSync('git', ['status'])      // ✅ Mocked
-const result3 = exec('git status')                // ✅ Mocked
-const result4 = execSync('git status')            // ✅ Mocked
-const result5 = execFile('git', ['status'])       // ✅ Mocked
-const result6 = execFileSync('git', ['status'])   // ✅ Mocked
+const result1 = spawn("git", ["status"]) // ✅ Mocked
+const result2 = spawnSync("git", ["status"]) // ✅ Mocked
+const result3 = exec("git status") // ✅ Mocked
+const result4 = execSync("git status") // ✅ Mocked
+const result5 = execFile("git", ["status"]) // ✅ Mocked
+const result6 = execFileSync("git", ["status"]) // ✅ Mocked
 ```
 
 #### Process Output Streaming
@@ -420,22 +426,22 @@ const result6 = execFileSync('git', ['status'])   // ✅ Mocked
  * Source: testkit-cli-utilities-behavioral.test.ts:235-281
  */
 
-it('should stream stdout chunks', (done) => {
-  mocker.register('npm install', {
-    stdout: 'Installing...\nDone!\n'
+it("should stream stdout chunks", (done) => {
+  mocker.register("npm install", {
+    stdout: "Installing...\nDone!\n",
   })
 
-  const proc = spawn('npm', ['install'])
+  const proc = spawn("npm", ["install"])
   const chunks: string[] = []
 
-  proc.stdout.on('data', (chunk) => {
+  proc.stdout.on("data", (chunk) => {
     chunks.push(chunk.toString())
   })
 
-  proc.on('close', (code) => {
+  proc.on("close", (code) => {
     expect(code).toBe(0)
-    expect(chunks.join('')).toContain('Installing')
-    expect(chunks.join('')).toContain('Done')
+    expect(chunks.join("")).toContain("Installing")
+    expect(chunks.join("")).toContain("Done")
     done()
   })
 })
@@ -454,15 +460,15 @@ it('should stream stdout chunks', (done) => {
  * Source: testkit-msw-features.test.ts:21-40
  */
 
-describe('MSW Tests', () => {
+describe("MSW Tests", () => {
   beforeAll(async () => {
     // Setup MSW server once for all tests
     await setupMSW({
       handlers: [
-        http.get('/api/users', () => {
-          return HttpResponse.json([{ id: 1, name: 'Alice' }])
-        })
-      ]
+        http.get("/api/users", () => {
+          return HttpResponse.json([{ id: 1, name: "Alice" }])
+        }),
+      ],
     })
   })
 
@@ -487,21 +493,21 @@ describe('MSW Tests', () => {
  * Source: testkit-msw-features.test.ts:179-213
  */
 
-it('should allow dynamic handler addition', async () => {
-  const { addMSWHandler, getMSWServer } = await import('@orchestr8/testkit/msw')
+it("should allow dynamic handler addition", async () => {
+  const { addMSWHandler, getMSWServer } = await import("@orchestr8/testkit/msw")
 
   // Add handler during test
   addMSWHandler(
-    http.post('/api/users', async ({ request }) => {
+    http.post("/api/users", async ({ request }) => {
       const user = await request.json()
       return HttpResponse.json({ id: 2, ...user }, { status: 201 })
     })
   )
 
   // Handler now active
-  const response = await fetch('http://localhost/api/users', {
-    method: 'POST',
-    body: JSON.stringify({ name: 'Bob' })
+  const response = await fetch("http://localhost/api/users", {
+    method: "POST",
+    body: JSON.stringify({ name: "Bob" }),
   })
 
   expect(response.status).toBe(201)
@@ -521,15 +527,15 @@ it('should allow dynamic handler addition', async () => {
  * Source: security-validation.test.ts:22-90
  */
 
-it('should prevent SQL injection via prepared statements', async () => {
-  const db = createDatabase(':memory:')
-  db.exec('CREATE TABLE users (id INTEGER, name TEXT)')
+it("should prevent SQL injection via prepared statements", async () => {
+  const db = createDatabase(":memory:")
+  db.exec("CREATE TABLE users (id INTEGER, name TEXT)")
 
   // ❌ VULNERABLE: String concatenation
   // db.exec(`INSERT INTO users VALUES (1, '${userInput}')`)
 
   // ✅ SAFE: Prepared statements with parameter binding
-  const stmt = db.prepare('INSERT INTO users VALUES (?, ?)')
+  const stmt = db.prepare("INSERT INTO users VALUES (?, ?)")
 
   // Attack payload
   const maliciousInput = "'; DROP TABLE users; --"
@@ -538,8 +544,8 @@ it('should prevent SQL injection via prepared statements', async () => {
   stmt.run(1, maliciousInput)
 
   // Verify data integrity
-  const result = db.prepare('SELECT name FROM users WHERE id = ?').get(1)
-  expect(result.name).toBe("'; DROP TABLE users; --")  // Literal value stored
+  const result = db.prepare("SELECT name FROM users WHERE id = ?").get(1)
+  expect(result.name).toBe("'; DROP TABLE users; --") // Literal value stored
 
   db.close()
 })
@@ -554,21 +560,23 @@ it('should prevent SQL injection via prepared statements', async () => {
  * Source: security-validation.test.ts:92-156
  */
 
-it('should prevent directory traversal attacks', async () => {
-  const { validatePath } = await import('@orchestr8/testkit/utils')
+it("should prevent directory traversal attacks", async () => {
+  const { validatePath } = await import("@orchestr8/testkit/utils")
 
-  const baseDir = '/tmp/safe-dir'
+  const baseDir = "/tmp/safe-dir"
 
   // ✅ SAFE: Stays within base directory
-  expect(() => validatePath(baseDir, 'file.txt')).not.toThrow()
-  expect(() => validatePath(baseDir, 'subdir/file.txt')).not.toThrow()
+  expect(() => validatePath(baseDir, "file.txt")).not.toThrow()
+  expect(() => validatePath(baseDir, "subdir/file.txt")).not.toThrow()
 
   // ❌ ATTACK: Tries to escape base directory
-  expect(() => validatePath(baseDir, '../../../etc/passwd'))
-    .toThrow('Path traversal detected')
+  expect(() => validatePath(baseDir, "../../../etc/passwd")).toThrow(
+    "Path traversal detected"
+  )
 
-  expect(() => validatePath(baseDir, '..\\..\\windows\\system32'))
-    .toThrow('Path traversal detected')
+  expect(() => validatePath(baseDir, "..\\..\\windows\\system32")).toThrow(
+    "Path traversal detected"
+  )
 })
 ```
 
@@ -581,23 +589,25 @@ it('should prevent directory traversal attacks', async () => {
  * Source: security-validation.test.ts:218-294
  */
 
-it('should prevent command injection via shell metacharacters', async () => {
-  const { validateShellExecution } = await import('@orchestr8/testkit/utils')
+it("should prevent command injection via shell metacharacters", async () => {
+  const { validateShellExecution } = await import("@orchestr8/testkit/utils")
 
   // ✅ SAFE: Simple command
-  expect(() => validateShellExecution('echo', ['hello'])).not.toThrow()
+  expect(() => validateShellExecution("echo", ["hello"])).not.toThrow()
 
   // ❌ ATTACK: Shell metacharacters
-  expect(() => validateShellExecution('rm -rf /', []))
-    .toThrow('Dangerous command detected')
+  expect(() => validateShellExecution("rm -rf /", [])).toThrow(
+    "Dangerous command detected"
+  )
 
-  expect(() => validateShellExecution('echo', ['$(cat /etc/passwd)']))
-    .toThrow('Shell injection attempt detected')
+  expect(() => validateShellExecution("echo", ["$(cat /etc/passwd)"])).toThrow(
+    "Shell injection attempt detected"
+  )
 
   // ✅ SAFE: Properly escaped arguments
-  const { command, args } = validateShellExecution('echo', ['hello world'])
-  expect(command).toBe('echo')
-  expect(args[0]).toMatch(/hello world/)  // Escaped version
+  const { command, args } = validateShellExecution("echo", ["hello world"])
+  expect(command).toBe("echo")
+  expect(args[0]).toMatch(/hello world/) // Escaped version
 })
 ```
 
@@ -615,26 +625,26 @@ it('should prevent command injection via shell metacharacters', async () => {
  * Configure in vitest.config.ts poolOptions.forks.execArgv
  */
 
-it('should not leak memory during connection pool operations', async () => {
+it("should not leak memory during connection pool operations", async () => {
   if (!global.gc) {
-    console.warn('⚠️ GC not available, skipping memory leak test')
+    console.warn("⚠️ GC not available, skipping memory leak test")
     return
   }
 
   // Baseline measurement
   global.gc()
-  await new Promise(resolve => setTimeout(resolve, 100))
+  await new Promise((resolve) => setTimeout(resolve, 100))
   const baselineMemory = process.memoryUsage().heapUsed
 
   // Stress test: Create and destroy 100 pools
   for (let i = 0; i < 100; i++) {
-    const pool = await createConnectionPool(':memory:', { maxConnections: 5 })
+    const pool = await createConnectionPool(":memory:", { maxConnections: 5 })
     await pool.drain()
   }
 
   // Force garbage collection
   global.gc()
-  await new Promise(resolve => setTimeout(resolve, 100))
+  await new Promise((resolve) => setTimeout(resolve, 100))
 
   // Final measurement
   const finalMemory = process.memoryUsage().heapUsed
@@ -655,15 +665,15 @@ it('should not leak memory during connection pool operations', async () => {
  * Source: performance-benchmarks.test.ts:164-217
  */
 
-it('should handle concurrent connection pool operations', async () => {
-  const pool = await createConnectionPool(':memory:', { maxConnections: 10 })
+it("should handle concurrent connection pool operations", async () => {
+  const pool = await createConnectionPool(":memory:", { maxConnections: 10 })
 
   // Simulate 50 concurrent operations
   const operations = Array.from({ length: 50 }, async (_, i) => {
     const conn = await pool.acquire()
 
     // Simulate work
-    conn.prepare('SELECT ?').get(i)
+    conn.prepare("SELECT ?").get(i)
 
     await pool.release(conn)
   })
@@ -692,7 +702,7 @@ it('should handle concurrent connection pool operations', async () => {
 //    - Must drain before closing connections
 //    - Prevents SQLITE_BUSY errors
 for (const pool of pools) {
-  await pool.drain()  // Closes all pooled connections
+  await pool.drain() // Closes all pooled connections
 }
 
 // 2. DATABASE CONNECTIONS (critical)
@@ -707,10 +717,10 @@ for (const db of databases) {
 // 3. CHILD PROCESSES (important)
 //    - Send SIGTERM, wait, then SIGKILL if needed
 for (const proc of processes) {
-  proc.kill('SIGTERM')
+  proc.kill("SIGTERM")
   await waitForExit(proc, 1000)
   if (proc.exitCode === null) {
-    proc.kill('SIGKILL')
+    proc.kill("SIGKILL")
   }
 }
 
@@ -744,8 +754,8 @@ if (global.gc) {
  * Ensures resources are cleaned even if individual tests fail.
  */
 
-import { afterAll } from 'vitest'
-import { cleanupAllResources } from '@orchestr8/testkit/utils'
+import { afterAll } from "vitest"
+import { cleanupAllResources } from "@orchestr8/testkit/utils"
 
 afterAll(async () => {
   await cleanupAllResources()
@@ -770,10 +780,8 @@ afterAll(async () => {
 
 export default defineConfig({
   test: {
-    reporters: process.env.CI
-      ? ['default']
-      : ['default', 'hanging-process'],  // Local dev only
-  }
+    reporters: process.env.CI ? ["default"] : ["default", "hanging-process"], // Local dev only
+  },
 })
 ```
 
@@ -783,15 +791,16 @@ export default defineConfig({
 
 ### Attack Surface Coverage
 
-The security-validation.test.ts file provides comprehensive coverage of common vulnerabilities:
+The security-validation.test.ts file provides comprehensive coverage of common
+vulnerabilities:
 
-| Vulnerability | Tests | Prevention Method |
-|---------------|-------|-------------------|
-| SQL Injection | 5 | Prepared statements with parameter binding |
-| Path Traversal | 5 | validatePath() with base directory enforcement |
-| Command Injection | 5 | validateShellExecution() with metacharacter detection |
-| Resource Exhaustion | 3 | Connection limits, timeout enforcement, rate limiting |
-| Combined Attacks | 3 | Multi-layer validation (path + SQL + command) |
+| Vulnerability       | Tests | Prevention Method                                     |
+| ------------------- | ----- | ----------------------------------------------------- |
+| SQL Injection       | 5     | Prepared statements with parameter binding            |
+| Path Traversal      | 5     | validatePath() with base directory enforcement        |
+| Command Injection   | 5     | validateShellExecution() with metacharacter detection |
+| Resource Exhaustion | 3     | Connection limits, timeout enforcement, rate limiting |
+| Combined Attacks    | 3     | Multi-layer validation (path + SQL + command)         |
 
 ### Security Testing Checklist
 
@@ -838,33 +847,34 @@ The security-validation.test.ts file provides comprehensive coverage of common v
 const pool = await createConnectionPool(dbPath)
 const conn = await pool.acquire()
 
-databases.push(conn)  // Track connection
+databases.push(conn) // Track connection
 
 await pool.release(conn)
-await pool.drain()    // Closes connection
-conn.close()         // ❌ CRASH: Already closed!
+await pool.drain() // Closes connection
+conn.close() // ❌ CRASH: Already closed!
 ```
 
-**Fix**: Never manually track or close pool-managed connections. Let the pool handle its own connections.
+**Fix**: Never manually track or close pool-managed connections. Let the pool
+handle its own connections.
 
 ### ❌ Pitfall 2: Wrong Cleanup Order
 
 ```typescript
 // ❌ WRONG: Filesystem before database
-rmSync(tempDir, { recursive: true })  // Delete DB file
-db.close()  // ❌ ERROR: File no longer exists!
+rmSync(tempDir, { recursive: true }) // Delete DB file
+db.close() // ❌ ERROR: File no longer exists!
 
 // ✅ CORRECT: Database before filesystem
-db.close()  // Close connection first
-rmSync(tempDir, { recursive: true })  // Then delete file
+db.close() // Close connection first
+rmSync(tempDir, { recursive: true }) // Then delete file
 ```
 
 ### ❌ Pitfall 3: Forgetting Resource Cleanup
 
 ```typescript
 // ❌ WRONG: No afterEach cleanup
-it('should create database', async () => {
-  const db = createDatabase(':memory:')
+it("should create database", async () => {
+  const db = createDatabase(":memory:")
   // ... test code ...
   // ❌ Missing: db.close()
 })
@@ -881,18 +891,18 @@ afterEach(() => {
 
 ```typescript
 // ❌ WRONG: Only checks if export exists
-it('should export createDatabase', async () => {
-  const { createDatabase } = await import('@orchestr8/testkit/sqlite')
-  expect(createDatabase).toBeDefined()  // Superficial!
+it("should export createDatabase", async () => {
+  const { createDatabase } = await import("@orchestr8/testkit/sqlite")
+  expect(createDatabase).toBeDefined() // Superficial!
 })
 
 // ✅ CORRECT: Actually test the behavior
-it('should create working database', async () => {
-  const { createDatabase } = await import('@orchestr8/testkit/sqlite')
-  const db = createDatabase(':memory:')
+it("should create working database", async () => {
+  const { createDatabase } = await import("@orchestr8/testkit/sqlite")
+  const db = createDatabase(":memory:")
 
   // Verify it actually works
-  const result = db.prepare('SELECT 1 as value').get()
+  const result = db.prepare("SELECT 1 as value").get()
   expect(result.value).toBe(1)
 
   db.close()
@@ -903,15 +913,15 @@ it('should create working database', async () => {
 
 ```typescript
 // ❌ WRONG: Using non-existent enum value
-registerResource('my-resource', cleanup, {
-  category: ResourceCategory.OTHER  // ❌ Doesn't exist!
+registerResource("my-resource", cleanup, {
+  category: ResourceCategory.OTHER, // ❌ Doesn't exist!
 })
 
 // ✅ CORRECT: Use valid enum value
-import { ResourceCategory } from '@orchestr8/testkit'
+import { ResourceCategory } from "@orchestr8/testkit"
 
-registerResource('my-resource', cleanup, {
-  category: ResourceCategory.EVENT  // ✅ Valid
+registerResource("my-resource", cleanup, {
+  category: ResourceCategory.EVENT, // ✅ Valid
 })
 ```
 
@@ -919,16 +929,16 @@ registerResource('my-resource', cleanup, {
 
 ```typescript
 // ❌ WRONG: Spawn and forget
-const proc = spawn('long-running-command')
+const proc = spawn("long-running-command")
 // ❌ Test ends, process keeps running!
 
 // ✅ CORRECT: Track and cleanup
-const proc = spawn('long-running-command')
-processes.push(proc)  // Track for cleanup
+const proc = spawn("long-running-command")
+processes.push(proc) // Track for cleanup
 
 afterEach(async () => {
   for (const p of processes) {
-    p.kill('SIGTERM')
+    p.kill("SIGTERM")
     await waitForExit(p, 1000)
   }
 })
@@ -938,7 +948,8 @@ afterEach(async () => {
 
 ## Source Code References
 
-All tests in this suite have been verified against the actual @orchestr8/testkit v2.0.0 source code.
+All tests in this suite have been verified against the actual @orchestr8/testkit
+v2.0.0 source code.
 
 ### TestKit Source Code Map
 
@@ -973,20 +984,20 @@ All tests in this suite have been verified against the actual @orchestr8/testkit
 
 ### Test File → Source Code Mapping
 
-| Test File | Primary Source Files |
-|-----------|---------------------|
-| testkit-sqlite-pool.test.ts | sqlite/pool.js:1-437 |
-| testkit-sqlite-features.test.ts | sqlite/database.js, migrate.js, seed.js, transaction.js |
-| testkit-sqlite-advanced.test.ts | sqlite/database.js, migrate.js |
-| security-validation.test.ts | security/index.js:1-247 |
-| performance-benchmarks.test.ts | sqlite/pool.js, resources.js |
-| testkit-cli-utilities-behavioral.test.ts | cli/mocker.js:1-394, builder.js, commands.js |
-| testkit-cli-utilities.test.ts | cli/mocker.js |
-| testkit-msw-features.test.ts | msw/index.js, handlers.js, responses.js |
-| testkit-core-utilities.test.ts | utils/index.js:1-289 |
-| testkit-utils-advanced.test.ts | utils/concurrency.js, pooling.js, resources.js, security/index.js |
-| testkit-main-export.test.ts | index.js (main entry) |
-| package-contract.test.ts | ../src/index.ts (foundation package) |
+| Test File                                | Primary Source Files                                              |
+| ---------------------------------------- | ----------------------------------------------------------------- |
+| testkit-sqlite-pool.test.ts              | sqlite/pool.js:1-437                                              |
+| testkit-sqlite-features.test.ts          | sqlite/database.js, migrate.js, seed.js, transaction.js           |
+| testkit-sqlite-advanced.test.ts          | sqlite/database.js, migrate.js                                    |
+| security-validation.test.ts              | security/index.js:1-247                                           |
+| performance-benchmarks.test.ts           | sqlite/pool.js, resources.js                                      |
+| testkit-cli-utilities-behavioral.test.ts | cli/mocker.js:1-394, builder.js, commands.js                      |
+| testkit-cli-utilities.test.ts            | cli/mocker.js                                                     |
+| testkit-msw-features.test.ts             | msw/index.js, handlers.js, responses.js                           |
+| testkit-core-utilities.test.ts           | utils/index.js:1-289                                              |
+| testkit-utils-advanced.test.ts           | utils/concurrency.js, pooling.js, resources.js, security/index.js |
+| testkit-main-export.test.ts              | index.js (main entry)                                             |
+| package-contract.test.ts                 | ../src/index.ts (foundation package)                              |
 
 ---
 
@@ -1030,6 +1041,7 @@ pnpm vitest run -t "should handle concurrent connection pool operations"
 ### Coverage Thresholds
 
 Configured in `vitest.config.ts`:
+
 - Lines: 80%
 - Functions: 80%
 - Branches: 75%
@@ -1067,6 +1079,7 @@ Configured in `vitest.config.ts`:
 **Cause**: Unclosed resources (databases, processes, listeners)
 
 **Fix**:
+
 1. Check `afterEach` hooks are running
 2. Verify all databases are closed: `db.close()`
 3. Verify all pools are drained: `await pool.drain()`
@@ -1078,10 +1091,11 @@ Configured in `vitest.config.ts`:
 **Cause**: Connection closed before pool drained
 
 **Fix**:
+
 ```typescript
 // ✅ CORRECT ORDER
-await pool.drain()  // First: drain pool
-db.close()          // Then: close database
+await pool.drain() // First: drain pool
+db.close() // Then: close database
 ```
 
 ### Memory Leaks
@@ -1089,6 +1103,7 @@ db.close()          // Then: close database
 **Cause**: Resources not being cleaned up
 
 **Fix**:
+
 1. Ensure `global.gc` is available: `node --expose-gc`
 2. Add cleanup in afterEach
 3. Use `cleanupAllResources()` in global afterAll hook
@@ -1099,6 +1114,7 @@ db.close()          // Then: close database
 **Cause**: TypeScript strict mode enabled
 
 **Fix**: Check TypeScript strict mode errors separately:
+
 ```bash
 pnpm tsc --noEmit
 ```
@@ -1116,8 +1132,5 @@ pnpm tsc --noEmit
 
 ---
 
-**Last Verified**: 2025-10-04
-**TestKit Version**: 2.0.0
-**Total Tests**: 279
-**Coverage**: 85%+
-**Status**: ✅ Production Ready
+**Last Verified**: 2025-10-04 **TestKit Version**: 2.0.0 **Total Tests**: 279
+**Coverage**: 85%+ **Status**: ✅ Production Ready

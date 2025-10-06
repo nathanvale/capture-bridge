@@ -80,15 +80,51 @@ Your responsibility is to:
 
 **ALL patterns verified against 319 passing tests in foundation package**
 
+### 🚨 MANDATORY: TestKit Library Usage
+
+**YOU MUST USE TestKit utilities when they exist. DO NOT reinvent them.**
+
+**Before writing ANY test code:**
+1. Check if TestKit provides a utility for your need
+2. If it exists in `@orchestr8/testkit/*`, you MUST use it
+3. Only write custom code if TestKit doesn't provide the utility
+
 ### Essential Patterns (Quick Reference)
 
 **Import Pattern** (from guide):
 ```typescript
-// ✅ PRODUCTION PATTERN: Dynamic imports
+// ✅ MANDATORY: Use TestKit utilities, not raw libraries
 const { delay } = await import('@orchestr8/testkit')
-const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
+const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')  // NOT new Database(':memory:')
+const { applyMigrations } = await import('@orchestr8/testkit/sqlite')  // NOT custom migration code
 const { setupMSW } = await import('@orchestr8/testkit/msw')
 const { createProcessMocker } = await import('@orchestr8/testkit/cli')
+```
+
+**❌ NEVER do this:**
+```typescript
+// ❌ WRONG: Using raw library instead of TestKit utility
+const db = new Database(':memory:')  // Use createMemoryUrl() instead!
+
+// ❌ WRONG: Writing custom migration code
+function myCustomMigration(db) { ... }  // Use applyMigrations() instead!
+
+// ❌ WRONG: Manual cleanup without TestKit patterns
+afterEach(() => { db.close() })  // Missing 4-step sequence!
+```
+
+**✅ CORRECT - Use TestKit utilities:**
+```typescript
+// ✅ Use TestKit's createMemoryUrl()
+const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
+const Database = (await import('better-sqlite3')).default
+const db = new Database(createMemoryUrl())
+
+// ✅ Use TestKit's applyMigrations()
+const { applyMigrations } = await import('@orchestr8/testkit/sqlite')
+await applyMigrations(db, [
+  { id: 1, sql: 'CREATE TABLE users (...)' }
+])
 ```
 
 **Cleanup Pattern** (from `performance-benchmarks.test.ts:37-89`):
@@ -172,6 +208,26 @@ You have exclusive access to these Wallaby MCP tools:
 ## TDD Workflow Protocol
 
 ### Phase 1: RED - Write Failing Test
+
+**0. Pre-Flight Checklist (MANDATORY before writing ANY test code):**
+
+```markdown
+Before writing test code, ask yourself:
+
+□ Have I read `.claude/rules/testkit-tdd-guide.md` for patterns?
+□ Have I checked what TestKit utilities exist for my use case?
+□ Am I using TestKit utilities instead of reinventing them?
+  - Database: createMemoryUrl() instead of ':memory:'
+  - Migrations: applyMigrations() instead of custom runner
+  - HTTP: setupMSW() instead of custom mock server
+  - CLI: mockSpawn() instead of manual process mocking
+  - Async: delay()/retry() instead of setTimeout/loops
+□ Am I using dynamic imports (await import())?
+□ Am I following the 4-step cleanup sequence?
+□ Am I using parameterized queries (prepared statements)?
+
+If ANY answer is NO, STOP and fix it before proceeding.
+```
 
 **1. Load Production Patterns**:
 ```typescript
@@ -456,24 +512,33 @@ Ready for task-implementer to update task state to COMPLETED
 ### ✅ ALWAYS DO
 
 1. **Read the TDD guide first**: `.claude/rules/testkit-tdd-guide.md`
-2. **Use dynamic imports**: `await import('@orchestr8/testkit/...')`
-3. **Follow 4-step cleanup**: settling → pools → databases → filesystem → GC
-4. **Use parameterized queries**: Never concatenate SQL strings
-5. **Test security**: SQL injection, path traversal, command injection
-6. **Check memory leaks**: GC before/after, < 5MB growth
-7. **Verify with Wallaby**: Use MCP tools to confirm status
-8. **Report to task-implementer**: Complete status report
+2. **Use TestKit utilities FIRST**: Check `@orchestr8/testkit/*` exports before writing custom code
+   - For SQLite: `createMemoryUrl()`, `applyMigrations()`, `SQLiteConnectionPool`
+   - For HTTP: `setupMSW()`, `createAuthHandlers()`, `createCRUDHandlers()`
+   - For CLI: `createProcessMocker()`, `mockSpawn()`
+   - For async: `delay()`, `retry()`, `withTimeout()`
+3. **Use dynamic imports**: `await import('@orchestr8/testkit/...')`
+4. **Follow 4-step cleanup**: settling → pools → databases → filesystem → GC
+5. **Use parameterized queries**: Never concatenate SQL strings
+6. **Test security**: SQL injection, path traversal, command injection
+7. **Check memory leaks**: GC before/after, < 5MB growth
+8. **Verify with Wallaby**: Use MCP tools to confirm status
+9. **Report to task-implementer**: Complete status report
 
 ### ❌ NEVER DO
 
 1. **Don't skip TDD**: Tests MUST come first
-2. **Don't use static imports**: Breaks sub-export pattern
-3. **Don't skip cleanup steps**: Causes resource leaks
-4. **Don't concatenate SQL**: Security risk
-5. **Don't manually close pool connections**: Use `pool.drain()`
-6. **Don't forget settling delay**: Prevents race conditions
-7. **Don't bypass Wallaby**: Real-time feedback is mandatory
-8. **Don't commit without verification**: All tests must pass
+2. **Don't reinvent TestKit utilities**: If it exists in `@orchestr8/testkit/*`, USE IT
+   - ❌ `new Database(':memory:')` → ✅ `new Database(createMemoryUrl())`
+   - ❌ Custom migration runner → ✅ `applyMigrations(db, migrations)`
+   - ❌ Manual delay loops → ✅ `delay(ms)` from TestKit
+3. **Don't use static imports**: Breaks sub-export pattern
+4. **Don't skip cleanup steps**: Causes resource leaks
+5. **Don't concatenate SQL**: Security risk
+6. **Don't manually close pool connections**: Use `pool.drain()`
+7. **Don't forget settling delay**: Prevents race conditions
+8. **Don't bypass Wallaby**: Real-time feedback is mandatory
+9. **Don't commit without verification**: All tests must pass
 
 ## Risk-Based Test Requirements
 

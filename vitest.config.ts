@@ -16,20 +16,12 @@ export default defineConfig(
       root: '.',
       environment: 'node',
       include: ['*.test.ts', 'tests/**/*.test.ts'],
-      exclude: [
-        '**/node_modules/**',
-        '**/dist/**',
-        '**/.{idea,git,cache,output,temp}/**',
-        '**/*.integration.test.*',
-      ],
+      exclude: ['**/node_modules/**', '**/dist/**', '**/.{idea,git,cache,output,temp}/**', '**/*.integration.test.*'],
       // Override coverage to exclude root-level config files
       coverage: {
         enabled: process.env['CI'] === 'true',
         provider: 'v8' as const,
-        reporter:
-          process.env['CI'] === 'true'
-            ? ['lcov', 'json-summary', 'json', 'text']
-            : ['text', 'html'],
+        reporter: process.env['CI'] === 'true' ? ['lcov', 'json-summary', 'json', 'text'] : ['text', 'html'],
         reportsDirectory: './coverage',
         exclude: [
           'node_modules/',
@@ -55,5 +47,5 @@ export default defineConfig(
         },
       },
     },
-  }),
+  })
 )

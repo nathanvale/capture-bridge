@@ -66,6 +66,7 @@ pnpm list @orchestr8/testkit vitest 2>&1 | grep -E "(testkit|vitest)" && echo "�
 ```
 
 **Expected Output:**
+
 ```
 @orchestr8/testkit file:/Users/nathanvale/code/@orchestr8/packages/testkit
 vitest 3.2.4
@@ -73,6 +74,7 @@ vitest 3.2.4
 ```
 
 **Success Criteria:**
+
 - ✅ `@orchestr8/testkit` listed
 - ✅ `vitest` version 3.2.0+
 - ✅ No "not found" errors
@@ -88,6 +90,7 @@ npx tsc --noEmit vitest.config.ts 2>&1 && echo "✅ Config valid" || echo "❌ C
 ```
 
 **Success Criteria:**
+
 - ✅ vitest.config.ts exists
 - ✅ No TypeScript errors
 
@@ -99,17 +102,21 @@ pnpm test:ci 2>&1 | grep -E "(passed|failed|No test files found)" && echo "✅ T
 ```
 
 **Expected Output:**
+
 ```
 No test files found
 ✅ Test runner works
 ```
+
 OR
+
 ```
 Test Files  2 passed (2)
 ✅ Test runner works
 ```
 
 **Success Criteria:**
+
 - ✅ Vitest executes without errors
 - ✅ Either finds tests or reports "no tests found"
 
@@ -156,6 +163,7 @@ pnpm list testcontainers 2>/dev/null && echo "  ✅ testcontainers (Container te
 ```
 
 **Success Criteria:**
+
 - ✅ Core deps present
 - ✅ Expected optional deps present (based on package needs)
 
@@ -214,6 +222,7 @@ fi
 ```
 
 **Success Criteria:**
+
 - ✅ All import tests pass
 - ✅ No "Cannot find module" errors
 
@@ -276,6 +285,7 @@ fi
 ```
 
 **Success Criteria:**
+
 - ✅ SQLite tests pass (if installed)
 - ✅ In-memory databases work
 - ✅ Pragmas apply correctly
@@ -329,6 +339,7 @@ fi
 ```
 
 **Success Criteria:**
+
 - ✅ MSW tests pass (if installed)
 - ✅ HTTP interception works
 - ✅ Server lifecycle managed
@@ -397,6 +408,7 @@ fi
 ```
 
 **Success Criteria:**
+
 - ✅ Environment detection works
 - ✅ Fake timers work
 - ✅ Randomness control works
@@ -459,6 +471,7 @@ fi
 ```
 
 **Success Criteria:**
+
 - ✅ Temp directories work
 - ✅ Directory creation works
 - ✅ Path joining works
@@ -483,6 +496,7 @@ pnpm test:coverage --run > /dev/null 2>&1 && echo "  ✅ test:coverage works" ||
 ```
 
 **Success Criteria:**
+
 - ✅ All required scripts present
 - ✅ Scripts execute without errors
 
@@ -509,6 +523,7 @@ fi
 ```
 
 **Success Criteria:**
+
 - ✅ Tests complete in under 10 seconds (ideal)
 - ⚠️ Tests complete in under 30 seconds (acceptable)
 
@@ -676,6 +691,7 @@ fi
 ```
 
 **Success Criteria:**
+
 - ✅ All integration patterns pass
 - ✅ Database, file system, and HTTP work together
 - ✅ Time control works with database operations
@@ -743,6 +759,7 @@ fi
 ```
 
 **Success Criteria:**
+
 - ✅ Concurrency limits enforced
 - ✅ Batch processing works
 
@@ -801,6 +818,7 @@ fi
 ```
 
 **Success Criteria:**
+
 - ✅ Resource registration works
 - ✅ Cleanup executes properly
 
@@ -862,6 +880,7 @@ fi
 ```
 
 **Success Criteria:**
+
 - ✅ Command validation works
 - ✅ Path validation works
 - ✅ SQL sanitization works
@@ -887,6 +906,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 Use this checklist to confirm TestKit is ready for TDD workflows:
 
 ### Core Functionality
+
 - [ ] ✅ TestKit installed and importable
 - [ ] ✅ Vitest 3.2.0+ installed
 - [ ] ✅ vitest.config.ts exists and valid
@@ -894,6 +914,7 @@ Use this checklist to confirm TestKit is ready for TDD workflows:
 - [ ] ✅ Tests can run (even if none exist)
 
 ### Essential Utilities
+
 - [ ] ✅ Core utilities work (delay, retry, withTimeout)
 - [ ] ✅ Environment control works (getTestEnvironment, setupTestEnv)
 - [ ] ✅ File system utilities work (createTempDirectory)
@@ -901,17 +922,20 @@ Use this checklist to confirm TestKit is ready for TDD workflows:
 - [ ] ✅ Randomness control works (quickRandom, quickCrypto)
 
 ### Optional Features (Based on Needs)
+
 - [ ] ⚠️ SQLite testing works (if using database)
 - [ ] ⚠️ MSW testing works (if mocking HTTP)
 - [ ] ⚠️ Container testing works (if using containers)
 
 ### Performance & Quality
+
 - [ ] ✅ Tests complete in under 30 seconds
 - [ ] ✅ No import errors in test files
 - [ ] ✅ No security validation errors
 - [ ] ✅ Resource cleanup works properly
 
 ### Documentation
+
 - [ ] ✅ README has testing section
 - [ ] ✅ Test commands documented
 - [ ] ✅ Links to guides included
@@ -1049,6 +1073,7 @@ fi
 ```
 
 **Usage:**
+
 ```bash
 # Quick check
 ./testkit-readiness.sh packages/foundation 1
@@ -1067,6 +1092,7 @@ fi
 **Symptom:** "Cannot find module '@orchestr8/testkit'"
 
 **Diagnosis:**
+
 ```bash
 # Check installation
 pnpm list @orchestr8/testkit
@@ -1076,6 +1102,7 @@ ls -la node_modules/@orchestr8/testkit
 ```
 
 **Solution:**
+
 ```bash
 # Reinstall
 rm -rf node_modules pnpm-lock.yaml
@@ -1087,12 +1114,14 @@ pnpm install
 **Symptom:** "Cannot find module '@orchestr8/testkit/sqlite'"
 
 **Diagnosis:**
+
 ```bash
 # Check if peer dependency installed
 pnpm list better-sqlite3
 ```
 
 **Solution:**
+
 ```bash
 # Install missing peer dependency
 pnpm add -D better-sqlite3
@@ -1103,6 +1132,7 @@ pnpm add -D better-sqlite3
 **Symptom:** Tests don't run or crash
 
 **Diagnosis:**
+
 ```bash
 # Check Vitest version
 pnpm list vitest
@@ -1115,6 +1145,7 @@ pnpm test --reporter=verbose --bail 1
 ```
 
 **Solution:**
+
 ```bash
 # Upgrade Vitest
 pnpm add -D vitest@^3.2.0
@@ -1128,6 +1159,7 @@ pnpm add -D vitest@^3.2.0
 **Symptom:** Tests run slowly (>30s)
 
 **Diagnosis:**
+
 ```bash
 # Profile tests
 pnpm test --reporter=verbose --silent=false
@@ -1137,6 +1169,7 @@ pnpm test --reporter=verbose | grep -E "[0-9]+ms" | sort -n
 ```
 
 **Solution:**
+
 1. Use in-memory databases (not file-based)
 2. Use fake timers instead of real delays
 3. Limit concurrency for I/O operations
@@ -1147,6 +1180,7 @@ pnpm test --reporter=verbose | grep -E "[0-9]+ms" | sort -n
 **Symptom:** Database locked or constraint errors
 
 **Diagnosis:**
+
 ```bash
 # Check SQLite version
 pnpm list better-sqlite3
@@ -1156,6 +1190,7 @@ grep -r "createMemoryUrl" src/__tests__/
 ```
 
 **Solution:**
+
 ```bash
 # Always use memory URLs
 # Always close databases in afterEach
@@ -1167,6 +1202,7 @@ grep -r "createMemoryUrl" src/__tests__/
 **Symptom:** HTTP requests not intercepted
 
 **Diagnosis:**
+
 ```bash
 # Check MSW version
 pnpm list msw
@@ -1176,6 +1212,7 @@ grep -r "setupMSW" src/__tests__/
 ```
 
 **Solution:**
+
 ```bash
 # Use MSW v2 API (http.* not rest.*)
 # Verify server lifecycle
@@ -1203,14 +1240,14 @@ test:ci: required
 
 ### Common Issues
 
-| Issue | Quick Fix |
-|-------|-----------|
-| Import error | `pnpm install` |
-| Module not found | Install peer dependency |
-| Tests don't run | Check vitest.config.ts |
-| Slow tests | Use memory DBs, fake timers |
-| Database locked | Use memory URLs |
-| HTTP not mocked | Verify MSW setup |
+| Issue            | Quick Fix                   |
+| ---------------- | --------------------------- |
+| Import error     | `pnpm install`              |
+| Module not found | Install peer dependency     |
+| Tests don't run  | Check vitest.config.ts      |
+| Slow tests       | Use memory DBs, fake timers |
+| Database locked  | Use memory URLs             |
+| HTTP not mocked  | Verify MSW setup            |
 
 ## Related Documentation
 

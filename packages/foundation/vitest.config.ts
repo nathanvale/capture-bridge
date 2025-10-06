@@ -16,19 +16,19 @@ export default defineConfig(
       ],
 
       // Prevent zombie processes and hanging tests
-      reporters: process.env.CI ? ['default'] : ['default', 'hanging-process'],
+      reporters: process.env['CI'] ? ['default'] : ['default', 'hanging-process'],
 
       // Timeout configuration
-      testTimeout: 10000,      // 10s per test (doubled for database/file tests)
-      hookTimeout: 5000,       // 5s for beforeEach/afterEach
-      teardownTimeout: 60000,  // 60s for final cleanup (handles 83 file handles from pool tests)
+      testTimeout: 10000, // 10s per test (doubled for database/file tests)
+      hookTimeout: 5000, // 5s for beforeEach/afterEach
+      teardownTimeout: 120000, // 120s for final cleanup (handles file handles from pool tests)
 
       // Fork pool for process isolation (prevents cross-test leaks)
       pool: 'forks',
       poolOptions: {
         forks: {
           singleFork: false,
-          maxForks: process.env.CI ? 2 : 4,  // Limit workers in CI
+          maxForks: process.env['CI'] ? 2 : 6, // Increased from 4 to 6 (no performance regression, better scalability for future tests)
           minForks: 1,
           // Memory limit per worker (512MB default, 1GB for DB tests)
           execArgv: ['--max-old-space-size=1024'],

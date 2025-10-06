@@ -14,15 +14,11 @@
       "category": "output",
       "risk": "High",
       "tdd": "Required",
-      "depends_on": [
-        "MONOREPO_STRUCTURE"
-      ],
+      "depends_on": ["MONOREPO_STRUCTURE"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
-      "guides": [
-        "guide-obsidian-bridge-usage.md"
-      ],
+      "guides": ["guide-obsidian-bridge-usage.md"],
       "acceptance_refs": [
         {
           "bullet_hash": "a1b2c3d4e5f6",
@@ -51,12 +47,7 @@
           "excerpt_hash": "test001"
         }
       ],
-      "adr_refs": [
-        "ADR-0009",
-        "ADR-0010",
-        "ADR-0011",
-        "ADR-0020"
-      ]
+      "adr_refs": ["ADR-0009", "ADR-0010", "ADR-0011", "ADR-0020"]
     },
     {
       "id": "BACKUP_VERIFICATION_PROTOCOL",
@@ -66,9 +57,7 @@
       "category": "foundation",
       "risk": "High",
       "tdd": "Required",
-      "depends_on": [
-        "HOURLY_BACKUP_AUTOMATION"
-      ],
+      "depends_on": ["HOURLY_BACKUP_AUTOMATION"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
@@ -95,15 +84,11 @@
       "category": "process",
       "risk": "High",
       "tdd": "Required",
-      "depends_on": [
-        "SQLITE_SCHEMA"
-      ],
+      "depends_on": ["SQLITE_SCHEMA"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
-      "guides": [
-        "guide-error-recovery.md"
-      ],
+      "guides": ["guide-error-recovery.md"],
       "acceptance_refs": [],
       "spec_refs": [
         {
@@ -113,10 +98,7 @@
           "excerpt_hash": "arch002"
         }
       ],
-      "adr_refs": [
-        "ADR-0004",
-        "ADR-0014"
-      ]
+      "adr_refs": ["ADR-0004", "ADR-0014"]
     },
     {
       "id": "CLI_CAPTURE_COMMANDS",
@@ -144,9 +126,7 @@
           "excerpt_hash": "tech003"
         }
       ],
-      "adr_refs": [
-        "ADR-0016"
-      ]
+      "adr_refs": ["ADR-0016"]
     },
     {
       "id": "CLI_FOUNDATION",
@@ -156,9 +136,7 @@
       "category": "foundation",
       "risk": "Low",
       "tdd": "Optional",
-      "depends_on": [
-        "MONOREPO_STRUCTURE"
-      ],
+      "depends_on": ["MONOREPO_STRUCTURE"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
@@ -181,12 +159,7 @@
           "excerpt_hash": "tech004"
         }
       ],
-      "adr_refs": [
-        "ADR-0015",
-        "ADR-0016",
-        "ADR-0017",
-        "ADR-0018"
-      ]
+      "adr_refs": ["ADR-0015", "ADR-0016", "ADR-0017", "ADR-0018"]
     },
     {
       "id": "CLI_LEDGER_COMMANDS",
@@ -196,10 +169,7 @@
       "category": "capture",
       "risk": "Low",
       "tdd": "Optional",
-      "depends_on": [
-        "CLI_FOUNDATION",
-        "SQLITE_SCHEMA"
-      ],
+      "depends_on": ["CLI_FOUNDATION", "SQLITE_SCHEMA"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
@@ -213,9 +183,7 @@
           "excerpt_hash": "tech005"
         }
       ],
-      "adr_refs": [
-        "ADR-0017"
-      ]
+      "adr_refs": ["ADR-0017"]
     },
     {
       "id": "CONTENT_HASH_IMPLEMENTATION",
@@ -225,15 +193,11 @@
       "category": "foundation",
       "risk": "High",
       "tdd": "Required",
-      "depends_on": [
-        "MONOREPO_STRUCTURE"
-      ],
+      "depends_on": ["MONOREPO_STRUCTURE"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
-      "guides": [
-        "guide-tdd-applicability.md"
-      ],
+      "guides": ["guide-tdd-applicability.md"],
       "acceptance_refs": [],
       "spec_refs": [
         {
@@ -249,10 +213,7 @@
           "excerpt_hash": "tech007"
         }
       ],
-      "adr_refs": [
-        "ADR-0002",
-        "ADR-0006"
-      ]
+      "adr_refs": ["ADR-0002", "ADR-0006"]
     },
     {
       "id": "CRASH_RECOVERY_MECHANISM",
@@ -262,17 +223,11 @@
       "category": "process",
       "risk": "High",
       "tdd": "Required",
-      "depends_on": [
-        "CAPTURE_STATE_MACHINE",
-        "SQLITE_SCHEMA"
-      ],
+      "depends_on": ["CAPTURE_STATE_MACHINE", "SQLITE_SCHEMA"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
-      "guides": [
-        "guide-error-recovery.md",
-        "guide-crash-matrix-test-plan.md"
-      ],
+      "guides": ["guide-error-recovery.md", "guide-crash-matrix-test-plan.md"],
       "acceptance_refs": [],
       "spec_refs": [
         {
@@ -288,9 +243,7 @@
           "excerpt_hash": "tech008"
         }
       ],
-      "adr_refs": [
-        "ADR-0004"
-      ]
+      "adr_refs": ["ADR-0004"]
     },
     {
       "id": "DEDUPLICATION_LOGIC",
@@ -300,16 +253,11 @@
       "category": "process",
       "risk": "High",
       "tdd": "Required",
-      "depends_on": [
-        "CONTENT_HASH_IMPLEMENTATION",
-        "SQLITE_SCHEMA"
-      ],
+      "depends_on": ["CONTENT_HASH_IMPLEMENTATION", "SQLITE_SCHEMA"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
-      "guides": [
-        "guide-tdd-applicability.md"
-      ],
+      "guides": ["guide-tdd-applicability.md"],
       "acceptance_refs": [],
       "spec_refs": [
         {
@@ -325,9 +273,7 @@
           "excerpt_hash": "tech010"
         }
       ],
-      "adr_refs": [
-        "ADR-0006"
-      ]
+      "adr_refs": ["ADR-0006"]
     },
     {
       "id": "DIRECT_EXPORT_EMAIL",
@@ -345,9 +291,7 @@
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
-      "guides": [
-        "guide-obsidian-bridge-usage.md"
-      ],
+      "guides": ["guide-obsidian-bridge-usage.md"],
       "acceptance_refs": [],
       "spec_refs": [
         {
@@ -363,11 +307,7 @@
           "excerpt_hash": "tech012"
         }
       ],
-      "adr_refs": [
-        "ADR-0011",
-        "ADR-0013",
-        "ADR-0020"
-      ]
+      "adr_refs": ["ADR-0011", "ADR-0013", "ADR-0020"]
     },
     {
       "id": "DIRECT_EXPORT_VOICE",
@@ -385,9 +325,7 @@
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
-      "guides": [
-        "guide-obsidian-bridge-usage.md"
-      ],
+      "guides": ["guide-obsidian-bridge-usage.md"],
       "acceptance_refs": [],
       "spec_refs": [
         {
@@ -403,11 +341,7 @@
           "excerpt_hash": "tech014"
         }
       ],
-      "adr_refs": [
-        "ADR-0011",
-        "ADR-0013",
-        "ADR-0020"
-      ]
+      "adr_refs": ["ADR-0011", "ADR-0013", "ADR-0020"]
     },
     {
       "id": "DOCTOR_HEALTH_CHECKS",
@@ -417,10 +351,7 @@
       "category": "foundation",
       "risk": "Medium",
       "tdd": "Recommended",
-      "depends_on": [
-        "CLI_FOUNDATION",
-        "SQLITE_SCHEMA"
-      ],
+      "depends_on": ["CLI_FOUNDATION", "SQLITE_SCHEMA"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
@@ -453,10 +384,7 @@
       "category": "process",
       "risk": "Medium",
       "tdd": "Required",
-      "depends_on": [
-        "EMAIL_POLLING_GMAIL",
-        "CONTENT_HASH_IMPLEMENTATION"
-      ],
+      "depends_on": ["EMAIL_POLLING_GMAIL", "CONTENT_HASH_IMPLEMENTATION"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
@@ -480,10 +408,7 @@
       "category": "capture",
       "risk": "Medium",
       "tdd": "Required",
-      "depends_on": [
-        "GMAIL_OAUTH2_SETUP",
-        "SQLITE_SCHEMA"
-      ],
+      "depends_on": ["GMAIL_OAUTH2_SETUP", "SQLITE_SCHEMA"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
@@ -516,16 +441,11 @@
       "category": "foundation",
       "risk": "Medium",
       "tdd": "Recommended",
-      "depends_on": [
-        "SQLITE_SCHEMA"
-      ],
+      "depends_on": ["SQLITE_SCHEMA"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
-      "guides": [
-        "guide-error-recovery.md",
-        "guide-health-command.md"
-      ],
+      "guides": ["guide-error-recovery.md", "guide-health-command.md"],
       "acceptance_refs": [],
       "spec_refs": [
         {
@@ -545,9 +465,7 @@
       "category": "foundation",
       "risk": "Medium",
       "tdd": "Required",
-      "depends_on": [
-        "CRASH_RECOVERY_MECHANISM"
-      ],
+      "depends_on": ["CRASH_RECOVERY_MECHANISM"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
@@ -580,9 +498,7 @@
       "category": "capture",
       "risk": "Medium",
       "tdd": "Recommended",
-      "depends_on": [
-        "SQLITE_SCHEMA"
-      ],
+      "depends_on": ["SQLITE_SCHEMA"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
@@ -609,9 +525,7 @@
       "category": "foundation",
       "risk": "High",
       "tdd": "Required",
-      "depends_on": [
-        "SQLITE_SCHEMA"
-      ],
+      "depends_on": ["SQLITE_SCHEMA"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
@@ -638,15 +552,11 @@
       "category": "foundation",
       "risk": "Low",
       "tdd": "Optional",
-      "depends_on": [
-        "MONOREPO_STRUCTURE"
-      ],
+      "depends_on": ["MONOREPO_STRUCTURE"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
-      "guides": [
-        "guide-testkit-usage.md"
-      ],
+      "guides": ["guide-testkit-usage.md"],
       "acceptance_refs": [],
       "spec_refs": [
         {
@@ -662,9 +572,7 @@
           "excerpt_hash": "test005"
         }
       ],
-      "adr_refs": [
-        "ADR-0021"
-      ]
+      "adr_refs": ["ADR-0021"]
     },
     {
       "id": "MONOREPO_STRUCTURE",
@@ -678,9 +586,7 @@
       "defer": false,
       "defer_trigger": null,
       "status": "complete",
-      "guides": [
-        "guide-monorepo-mppp.md"
-      ],
+      "guides": ["guide-monorepo-mppp.md"],
       "acceptance_refs": [],
       "spec_refs": [
         {
@@ -702,9 +608,7 @@
           "excerpt_hash": "test006"
         }
       ],
-      "adr_refs": [
-        "ADR-0019"
-      ]
+      "adr_refs": ["ADR-0019"]
     },
     {
       "id": "PLACEHOLDER_EXPORT",
@@ -714,17 +618,11 @@
       "category": "output",
       "risk": "Medium",
       "tdd": "Required",
-      "depends_on": [
-        "WHISPER_TRANSCRIPTION",
-        "ATOMIC_FILE_WRITER"
-      ],
+      "depends_on": ["WHISPER_TRANSCRIPTION", "ATOMIC_FILE_WRITER"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
-      "guides": [
-        "guide-error-recovery.md",
-        "guide-whisper-transcription.md"
-      ],
+      "guides": ["guide-error-recovery.md", "guide-whisper-transcription.md"],
       "acceptance_refs": [],
       "spec_refs": [
         {
@@ -740,9 +638,7 @@
           "excerpt_hash": "tech024"
         }
       ],
-      "adr_refs": [
-        "ADR-0014"
-      ]
+      "adr_refs": ["ADR-0014"]
     },
     {
       "id": "RETENTION_POLICY_90DAY",
@@ -752,10 +648,7 @@
       "category": "foundation",
       "risk": "Medium",
       "tdd": "Required",
-      "depends_on": [
-        "SQLITE_SCHEMA",
-        "BACKUP_VERIFICATION_PROTOCOL"
-      ],
+      "depends_on": ["SQLITE_SCHEMA", "BACKUP_VERIFICATION_PROTOCOL"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
@@ -769,9 +662,7 @@
           "excerpt_hash": "tech025"
         }
       ],
-      "adr_refs": [
-        "ADR-0007"
-      ]
+      "adr_refs": ["ADR-0007"]
     },
     {
       "id": "SQLITE_SCHEMA",
@@ -781,15 +672,11 @@
       "category": "foundation",
       "risk": "High",
       "tdd": "Required",
-      "depends_on": [
-        "MONOREPO_STRUCTURE"
-      ],
+      "depends_on": ["MONOREPO_STRUCTURE"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
-      "guides": [
-        "guide-tdd-applicability.md"
-      ],
+      "guides": ["guide-tdd-applicability.md"],
       "acceptance_refs": [],
       "spec_refs": [
         {
@@ -811,12 +698,7 @@
           "excerpt_hash": "test007"
         }
       ],
-      "adr_refs": [
-        "ADR-0003",
-        "ADR-0004",
-        "ADR-0005",
-        "ADR-0010"
-      ]
+      "adr_refs": ["ADR-0003", "ADR-0004", "ADR-0005", "ADR-0010"]
     },
     {
       "id": "STORAGE_SIZE_MONITORING",
@@ -826,16 +708,11 @@
       "category": "foundation",
       "risk": "Low",
       "tdd": "Optional",
-      "depends_on": [
-        "SQLITE_SCHEMA",
-        "METRICS_INFRASTRUCTURE"
-      ],
+      "depends_on": ["SQLITE_SCHEMA", "METRICS_INFRASTRUCTURE"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
-      "guides": [
-        "guide-health-command.md"
-      ],
+      "guides": ["guide-health-command.md"],
       "acceptance_refs": [],
       "spec_refs": [
         {
@@ -855,9 +732,7 @@
       "category": "foundation",
       "risk": "Medium",
       "tdd": "N/A",
-      "depends_on": [
-        "MONOREPO_STRUCTURE"
-      ],
+      "depends_on": ["MONOREPO_STRUCTURE"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
@@ -875,9 +750,7 @@
           "excerpt_hash": "test008"
         }
       ],
-      "adr_refs": [
-        "ADR-0019"
-      ]
+      "adr_refs": ["ADR-0019"]
     },
     {
       "id": "TRANSCRIPTION_RETRY_LOGIC",
@@ -887,17 +760,11 @@
       "category": "process",
       "risk": "Medium",
       "tdd": "Required",
-      "depends_on": [
-        "WHISPER_TRANSCRIPTION",
-        "ERROR_LOGGING_STRUCTURED"
-      ],
+      "depends_on": ["WHISPER_TRANSCRIPTION", "ERROR_LOGGING_STRUCTURED"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
-      "guides": [
-        "guide-error-recovery.md",
-        "guide-whisper-transcription.md"
-      ],
+      "guides": ["guide-error-recovery.md", "guide-whisper-transcription.md"],
       "acceptance_refs": [],
       "spec_refs": [
         {
@@ -907,9 +774,7 @@
           "excerpt_hash": "tech028"
         }
       ],
-      "adr_refs": [
-        "ADR-0014"
-      ]
+      "adr_refs": ["ADR-0014"]
     },
     {
       "id": "VAULT_WRITE_ERROR_HANDLING",
@@ -919,16 +784,11 @@
       "category": "output",
       "risk": "High",
       "tdd": "Required",
-      "depends_on": [
-        "ATOMIC_FILE_WRITER",
-        "ERROR_LOGGING_STRUCTURED"
-      ],
+      "depends_on": ["ATOMIC_FILE_WRITER", "ERROR_LOGGING_STRUCTURED"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
-      "guides": [
-        "guide-error-recovery.md"
-      ],
+      "guides": ["guide-error-recovery.md"],
       "acceptance_refs": [],
       "spec_refs": [
         {
@@ -954,10 +814,7 @@
       "category": "capture",
       "risk": "High",
       "tdd": "Required",
-      "depends_on": [
-        "SQLITE_SCHEMA",
-        "CONTENT_HASH_IMPLEMENTATION"
-      ],
+      "depends_on": ["SQLITE_SCHEMA", "CONTENT_HASH_IMPLEMENTATION"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
@@ -980,11 +837,7 @@
           "excerpt_hash": "tech030"
         }
       ],
-      "adr_refs": [
-        "ADR-0001",
-        "ADR-0006",
-        "ADR-0008"
-      ]
+      "adr_refs": ["ADR-0001", "ADR-0006", "ADR-0008"]
     },
     {
       "id": "WHISPER_TRANSCRIPTION",
@@ -994,16 +847,11 @@
       "category": "process",
       "risk": "High",
       "tdd": "Required",
-      "depends_on": [
-        "VOICE_POLLING_ICLOUD"
-      ],
+      "depends_on": ["VOICE_POLLING_ICLOUD"],
       "defer": false,
       "defer_trigger": null,
       "status": "planned",
-      "guides": [
-        "guide-whisper-transcription.md",
-        "guide-error-recovery.md"
-      ],
+      "guides": ["guide-whisper-transcription.md", "guide-error-recovery.md"],
       "acceptance_refs": [],
       "spec_refs": [
         {
@@ -1019,11 +867,7 @@
           "excerpt_hash": "test010"
         }
       ],
-      "adr_refs": [
-        "ADR-0006",
-        "ADR-0008",
-        "ADR-0014"
-      ]
+      "adr_refs": ["ADR-0006", "ADR-0008", "ADR-0014"]
     }
   ],
   "guide_coverage": {

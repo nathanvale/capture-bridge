@@ -4,7 +4,8 @@ Zero-friction capture layer with durable staging ledger for Obsidian.
 
 ## Architecture
 
-This monorepo follows modern TypeScript patterns with centralized tooling and configuration management.
+This monorepo follows modern TypeScript patterns with centralized tooling and
+configuration management.
 
 ### Packages
 
@@ -44,7 +45,8 @@ pnpm format
 
 ### Build System
 
-This project uses a **centralized build configuration** approach inspired by @orchestr8 patterns:
+This project uses a **centralized build configuration** approach inspired by
+@orchestr8 patterns:
 
 - **Base Configuration**: Shared TSUP config in `tooling/build/`
 - **Package Overrides**: Packages can customize configuration as needed
@@ -55,11 +57,13 @@ This project uses a **centralized build configuration** approach inspired by @or
 
 1. Create package directory in `packages/`
 2. Add `tsup.config.ts`:
-   ```typescript
-   import { createDefinedTsupConfig } from '@capture-bridge/build-config'
 
-   export default createDefinedTsupConfig('src/index.ts')
+   ```typescript
+   import { createDefinedTsupConfig } from "@capture-bridge/build-config"
+
+   export default createDefinedTsupConfig("src/index.ts")
    ```
+
 3. Add `@capture-bridge/build-config` as devDependency
 4. Follow standard package.json structure
 
@@ -70,7 +74,8 @@ This project uses a **centralized build configuration** approach inspired by @or
 - **Flexibility**: Override any setting on a per-package basis
 - **Modern Defaults**: ES2022 target, ESM format, optimized for Node.js
 
-See [`tooling/build/README.md`](./tooling/build/README.md) for detailed build configuration documentation.
+See [`tooling/build/README.md`](./tooling/build/README.md) for detailed build
+configuration documentation.
 
 ## Project Structure
 

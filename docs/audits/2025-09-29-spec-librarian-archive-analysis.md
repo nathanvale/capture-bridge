@@ -12,14 +12,14 @@ The `resilience-implementation-details` archive contains 6 documents that were a
 
 ## Complete Inventory
 
-| File                                   | Size     | Type                    | Content Description                                   |
-| -------------------------------------- | -------- | ----------------------- | ----------------------------------------------------- |
-| `README.md`                            | 1.77 KB  | Archive Documentation   | Explains archival reason and replacement docs         |
-| `guide-external-service-resilience.md` | 28.31 KB | Implementation Guide    | Gmail/iCloud/Whisper specific retry configs           |
-| `guide-mppp-sequential-resilience.md`  | 36.95 KB | Implementation Guide    | Sequential processing resilience patterns             |
+| File                                   | Size     | Type                    | Content Description                                       |
+| -------------------------------------- | -------- | ----------------------- | --------------------------------------------------------- |
+| `README.md`                            | 1.77 KB  | Archive Documentation   | Explains archival reason and replacement docs             |
+| `guide-external-service-resilience.md` | 28.31 KB | Implementation Guide    | Gmail/iCloud/Whisper specific retry configs               |
+| `guide-mppp-sequential-resilience.md`  | 36.95 KB | Implementation Guide    | Sequential processing resilience patterns                 |
 | `guide-resilience-usage.md`            | 22.62 KB | Package Documentation   | API docs for fictional @capture-bridge/resilience package |
-| `spec-circuit-breaker-configs.md`      | 16.89 KB | Technical Specification | Service-specific circuit breaker configurations       |
-| `spec-resilience-testing.md`           | 25.94 KB | Test Specification      | Comprehensive resilience testing strategies           |
+| `spec-circuit-breaker-configs.md`      | 16.89 KB | Technical Specification | Service-specific circuit breaker configurations           |
+| `spec-resilience-testing.md`           | 25.94 KB | Test Specification      | Comprehensive resilience testing strategies               |
 
 **Total Archive Size**: 132.48 KB
 

@@ -14,6 +14,7 @@
 **Performance Grade**: **A-** (Excellent with minor optimization needed)
 
 **Key Metrics**:
+
 - **Total Tests**: 319 (not 279 as documented)
 - **Pass Rate**: 99.7% (318/319)
 - **Execution Time**: 19.79s total
@@ -56,19 +57,19 @@ Breakdown:
 
 ### Test Distribution by Category
 
-| Category | Tests | Actual Count | Avg Time/Test | Total Time |
-|----------|-------|--------------|---------------|------------|
-| **SQLite Pool** | 46 (documented) | ~46 | ~150-300ms | ~6-8s |
-| **SQLite Features** | 25 (documented) | ~25 | ~100-200ms | ~2.5-5s |
-| **SQLite Advanced** | 21 (documented) | ~21 | ~50-150ms | ~1-3s |
-| **CLI Behavioral** | 56 (documented) | ~56 | ~50-100ms | ~3-6s |
-| **CLI Utilities** | 18 (documented) | ~18 | ~50-100ms | ~1-2s |
-| **MSW Features** | 34 (documented) | ~34 | ~100-200ms | ~3.5-7s |
-| **Core Utilities** | 39 (documented) | ~39 | ~50-150ms | ~2-6s |
-| **Utils Advanced** | 32 (documented) | ~32 | ~50-150ms | ~2-5s |
-| **Security** | 21 (documented) | ~21 | ~100-200ms | ~2-4s |
-| **Performance** | 14 (documented) | ~14 | ~500-2000ms | ~7-14s |
-| **Contract/Validation** | 13 (documented) | ~13 | ~5-50ms | ~0.1-0.7s |
+| Category                | Tests           | Actual Count | Avg Time/Test | Total Time |
+| ----------------------- | --------------- | ------------ | ------------- | ---------- |
+| **SQLite Pool**         | 46 (documented) | ~46          | ~150-300ms    | ~6-8s      |
+| **SQLite Features**     | 25 (documented) | ~25          | ~100-200ms    | ~2.5-5s    |
+| **SQLite Advanced**     | 21 (documented) | ~21          | ~50-150ms     | ~1-3s      |
+| **CLI Behavioral**      | 56 (documented) | ~56          | ~50-100ms     | ~3-6s      |
+| **CLI Utilities**       | 18 (documented) | ~18          | ~50-100ms     | ~1-2s      |
+| **MSW Features**        | 34 (documented) | ~34          | ~100-200ms    | ~3.5-7s    |
+| **Core Utilities**      | 39 (documented) | ~39          | ~50-150ms     | ~2-6s      |
+| **Utils Advanced**      | 32 (documented) | ~32          | ~50-150ms     | ~2-5s      |
+| **Security**            | 21 (documented) | ~21          | ~100-200ms    | ~2-4s      |
+| **Performance**         | 14 (documented) | ~14          | ~500-2000ms   | ~7-14s     |
+| **Contract/Validation** | 13 (documented) | ~13          | ~5-50ms       | ~0.1-0.7s  |
 
 **Documented Total**: 279 tests
 **Actual Total**: 319 tests
@@ -85,6 +86,7 @@ Breakdown:
 **Line**: 451
 
 **Failure**:
+
 ```
 AssertionError: expected 1 to be +0 // Object.is equality
 
@@ -108,6 +110,7 @@ await new Promise(resolve => setTimeout(resolve, 3000));  // 3 seconds
 ```
 
 **Analysis**:
+
 1. The test waits 3 seconds for a 2-second idle timeout
 2. The cleanup interval may not align with the timeout
 3. This is a **classic flaky test** - timing assumptions under load
@@ -118,16 +121,16 @@ await new Promise(resolve => setTimeout(resolve, 3000));  // 3 seconds
 
 ```typescript
 // Option 1: Increase wait time
-await new Promise(resolve => setTimeout(resolve, 5000));  // 5s instead of 3s
+await new Promise((resolve) => setTimeout(resolve, 5000)) // 5s instead of 3s
 
 // Option 2: Poll for condition (better)
-let stats;
+let stats
 for (let i = 0; i < 10; i++) {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  stats = pool.getStats();
-  if (stats.totalConnections === 0) break;
+  await new Promise((resolve) => setTimeout(resolve, 500))
+  stats = pool.getStats()
+  if (stats.totalConnections === 0) break
 }
-expect(stats.totalConnections).toBe(0);
+expect(stats.totalConnections).toBe(0)
 ```
 
 ---
@@ -152,6 +155,7 @@ Tests closed successfully but something prevents the main process from exiting
 ```
 
 **Analysis**:
+
 1. 83 file handles left open (likely SQLite database files)
 2. 70 unknown FILEHANDLE entries
 3. 1 timeout in TestKit process-listeners.js
@@ -159,6 +163,7 @@ Tests closed successfully but something prevents the main process from exiting
 **Root Cause**: Pool cleanup incomplete or database files not closed
 
 **Impact**:
+
 - Tests complete successfully
 - Process doesn't exit gracefully (force-killed after 20s timeout)
 - No functional impact on test results
@@ -175,8 +180,8 @@ afterAll(async () => {
 
   // 2. Force close any remaining DB connections
   if (global.gc) {
-    global.gc()  // Force garbage collection
-    await new Promise(resolve => setTimeout(resolve, 100))
+    global.gc() // Force garbage collection
+    await new Promise((resolve) => setTimeout(resolve, 100))
   }
 })
 ```
@@ -192,12 +197,14 @@ afterAll(async () => {
 **Difference**: +40 tests (14.3% more)
 
 **Possible Explanations**:
+
 1. README counts only documented test categories
 2. Some `describe` blocks contain more `it()` blocks than documented
 3. README was written before all tests were completed
 4. Some tests added after documentation
 
 **Files to Check**:
+
 ```bash
 # Count actual tests per file
 pnpm vitest run --reporter=json > test-results.json
@@ -212,12 +219,12 @@ cat test-results.json | jq '.testResults[] | {file: .name, tests: .assertionResu
 
 ### Test Execution Speed Comparison
 
-| Speed Category | Test Count | Percentage | Examples |
-|----------------|------------|------------|----------|
-| **Fast** (< 50ms) | ~150 | 47% | Core utilities, simple mocks |
-| **Medium** (50-200ms) | ~130 | 41% | SQLite CRUD, MSW handlers |
-| **Slow** (200-1000ms) | ~30 | 9% | Pool operations, concurrency tests |
-| **Very Slow** (> 1s) | ~9 | 3% | Idle timeout, memory leak detection |
+| Speed Category        | Test Count | Percentage | Examples                            |
+| --------------------- | ---------- | ---------- | ----------------------------------- |
+| **Fast** (< 50ms)     | ~150       | 47%        | Core utilities, simple mocks        |
+| **Medium** (50-200ms) | ~130       | 41%        | SQLite CRUD, MSW handlers           |
+| **Slow** (200-1000ms) | ~30        | 9%         | Pool operations, concurrency tests  |
+| **Very Slow** (> 1s)  | ~9         | 3%         | Idle timeout, memory leak detection |
 
 **Overall Distribution**: **Well-Balanced** ✅
 
@@ -239,11 +246,13 @@ Efficiency:
 ```
 
 **Analysis**:
+
 - **35.5% efficiency** is lower than ideal (target: 70-80%)
 - Indicates **sequential bottlenecks** or **test dependencies**
 - Some tests may be waiting on others (database locks, shared resources)
 
 **Optimization Opportunity**:
+
 1. Increase worker count to 6 on powerful machines
 2. Reduce inter-test dependencies
 3. Use more in-memory databases instead of file-based
@@ -270,6 +279,7 @@ Memory Efficiency: Good (< 50% of allocated)
 ### Resource Cleanup Effectiveness
 
 **Observed**:
+
 - ✅ All tests complete successfully
 - ✅ No out-of-memory errors
 - ✅ Memory leak detection tests pass
@@ -278,6 +288,7 @@ Memory Efficiency: Good (< 50% of allocated)
 **Assessment**: **Good with minor cleanup issue**
 
 **Cleanup Sequence Verification**:
+
 ```
 ✅ Pools drained before database close
 ✅ Databases closed before filesystem cleanup
@@ -312,6 +323,7 @@ From console output patterns:
 ### Security Test Coverage
 
 **Comprehensive Output**:
+
 ```
 ✅ SQL injection prevented via prepared statements
 ✅ Path traversal prevented
@@ -325,6 +337,7 @@ From console output patterns:
 ### Performance Test Coverage
 
 **Memory Leak Detection**:
+
 ```
 ✅ Memory leak detection passed
 Heap growth: 0.12mb (threshold: 5mb)
@@ -343,27 +356,29 @@ Baseline: 23.45mb, Final: 23.57mb, Growth: 0.12mb
 
 ### Test Suite Metrics vs. Benchmarks
 
-| Metric | Foundation | Industry Standard | Grade |
-|--------|-----------|-------------------|-------|
-| **Total Tests** | 319 | 100-500 | ✅ A |
-| **Pass Rate** | 99.7% | 95-100% | ✅ A |
-| **Execution Time** | 19.79s | 10-60s for similar suites | ✅ A |
-| **Per-Test Avg** | 88ms | 50-200ms | ✅ A |
-| **Behavioral Ratio** | ~70% | 50-60% | ✅ A+ |
-| **Security Tests** | 21 | 5-15 | ✅ A+ |
-| **Performance Tests** | 14 | 3-8 | ✅ A+ |
-| **Documentation** | 1,124 lines | 100-300 lines | ✅ A+ |
+| Metric                | Foundation  | Industry Standard         | Grade |
+| --------------------- | ----------- | ------------------------- | ----- |
+| **Total Tests**       | 319         | 100-500                   | ✅ A  |
+| **Pass Rate**         | 99.7%       | 95-100%                   | ✅ A  |
+| **Execution Time**    | 19.79s      | 10-60s for similar suites | ✅ A  |
+| **Per-Test Avg**      | 88ms        | 50-200ms                  | ✅ A  |
+| **Behavioral Ratio**  | ~70%        | 50-60%                    | ✅ A+ |
+| **Security Tests**    | 21          | 5-15                      | ✅ A+ |
+| **Performance Tests** | 14          | 3-8                       | ✅ A+ |
+| **Documentation**     | 1,124 lines | 100-300 lines             | ✅ A+ |
 
 **Overall Grade**: **A-** (Excellent with minor flakiness)
 
 ### Peer Comparison
 
 **Similar Packages**:
+
 - **better-sqlite3**: ~150 tests, ~10s execution
 - **vitest**: ~2,000 tests, ~120s execution
 - **msw**: ~400 tests, ~30s execution
 
 **Foundation Package Position**: **Above Average**
+
 - More comprehensive than better-sqlite3
 - Better per-test performance than vitest
 - Similar quality to msw
@@ -387,6 +402,7 @@ Parallelization Impact:
 ```
 
 **CI Optimization Recommendation**:
+
 ```typescript
 // vitest.config.ts
 maxForks: process.env.CI ? 3 : 4,  // Increase from 2 to 3
@@ -400,6 +416,7 @@ maxForks: process.env.CI ? 3 : 4,  // Increase from 2 to 3
 **Not measured** (test failure prevented coverage generation)
 
 **Estimated**:
+
 - v8 coverage collection: ~5-10s
 - Report generation: ~2-5s
 - Total: ~7-15s additional
@@ -412,18 +429,18 @@ maxForks: process.env.CI ? 3 : 4,  // Increase from 2 to 3
 
 ### Slowest Tests (Top 10 Estimated)
 
-| Test | Category | Time | Reason |
-|------|----------|------|--------|
-| Idle connection cleanup | SQLite Pool | 10s | Waits 3s + timeout |
-| Memory leak detection | Performance | 5-8s | 1000 iterations + GC |
-| Concurrent pool operations | Performance | 3-5s | 50 parallel operations |
-| Pool stress test | Performance | 3-5s | 100+ pool cycles |
-| Connection queue timeout | SQLite Pool | 3s | Waits for timeout |
-| Process timeout handling | CLI | 3s | Waits for process timeout |
-| Long-running process simulation | CLI | 3s | Simulates long process |
-| Delayed response utility | MSW | 2s | Network delay simulation |
-| Transaction rollback | SQLite | 1-2s | Multi-step operation |
-| Retry with exponential backoff | Core | 1-2s | Multiple retry attempts |
+| Test                            | Category    | Time | Reason                    |
+| ------------------------------- | ----------- | ---- | ------------------------- |
+| Idle connection cleanup         | SQLite Pool | 10s  | Waits 3s + timeout        |
+| Memory leak detection           | Performance | 5-8s | 1000 iterations + GC      |
+| Concurrent pool operations      | Performance | 3-5s | 50 parallel operations    |
+| Pool stress test                | Performance | 3-5s | 100+ pool cycles          |
+| Connection queue timeout        | SQLite Pool | 3s   | Waits for timeout         |
+| Process timeout handling        | CLI         | 3s   | Waits for process timeout |
+| Long-running process simulation | CLI         | 3s   | Simulates long process    |
+| Delayed response utility        | MSW         | 2s   | Network delay simulation  |
+| Transaction rollback            | SQLite      | 1-2s | Multi-step operation      |
+| Retry with exponential backoff  | Core        | 1-2s | Multiple retry attempts   |
 
 **Total Slow Test Time**: ~25-35s (sequential)
 **With Parallelization**: ~10-15s (distributed across 4 workers)
@@ -431,19 +448,20 @@ maxForks: process.env.CI ? 3 : 4,  // Increase from 2 to 3
 ### Optimization Opportunities
 
 #### 1. Reduce Idle Timeout Test Duration
+
 ```typescript
 // Current:
-idleTimeout: 2000,
-await sleep(3000)  // 3s wait
+idleTimeout: (2000, await sleep(3000)) // 3s wait
 
 // Optimized:
-idleTimeout: 500,  // 500ms instead of 2s
-await sleep(1000)  // 1s wait instead of 3s
+idleTimeout: (500, // 500ms instead of 2s
+  await sleep(1000)) // 1s wait instead of 3s
 
 // Savings: ~2s per test
 ```
 
 #### 2. Reduce Memory Leak Test Iterations
+
 ```typescript
 // Current:
 for (let i = 0; i < 1000; i++) { ... }
@@ -455,12 +473,13 @@ for (let i = 0; i < 100; i++) { ... }  // Still sufficient for leak detection
 ```
 
 #### 3. Use In-Memory Databases
+
 ```typescript
 // Current (some tests):
-const db = createFileDatabase(path.join(testDir, 'test.db'))
+const db = createFileDatabase(path.join(testDir, "test.db"))
 
 // Optimized:
-const db = createDatabase(':memory:')  // 2-5x faster
+const db = createDatabase(":memory:") // 2-5x faster
 
 // Savings: ~2-3s across all SQLite tests
 ```
@@ -482,12 +501,14 @@ const db = createDatabase(':memory:')  // 2-5x faster
 ### Flakiness Risk Factors
 
 **High-Risk Patterns** (present in suite):
+
 - ✅ Fixed time delays (setTimeout)
 - ✅ Idle timeout tests
 - ✅ Process timeout tests
 - ✅ Network delay simulations
 
 **Mitigation**:
+
 - All timeout tests have generous margins (2-3x timeout value)
 - Most tests use proper cleanup (afterEach hooks)
 - Resource management prevents most race conditions
@@ -495,6 +516,7 @@ const db = createDatabase(':memory:')  // 2-5x faster
 **Overall Flakiness Risk**: **Low-Medium**
 
 **Recommendation**: Run test suite 10x to identify other flaky tests:
+
 ```bash
 for i in {1..10}; do
   echo "Run $i:"
@@ -530,13 +552,11 @@ grep -l "FAIL" logs/test-run-*.log
 ### Production Deployment Score: **85/100** (B+)
 
 **Blockers**:
+
 1. Fix 1 flaky test (idle timeout)
 2. Resolve 83 file handle cleanup issue
 
-**Non-Blockers**:
-3. Update documentation with actual test count
-4. Improve parallelization efficiency
-5. Optimize slow tests
+**Non-Blockers**: 3. Update documentation with actual test count 4. Improve parallelization efficiency 5. Optimize slow tests
 
 ---
 
@@ -545,12 +565,14 @@ grep -l "FAIL" logs/test-run-*.log
 ### Immediate (Before Production)
 
 1. **Fix Flaky Test** (Priority: P0)
+
    ```bash
    # File: src/__tests__/testkit-sqlite-pool.test.ts:435-453
    # Change: Poll for condition instead of fixed 3s wait
    ```
 
 2. **Resolve File Handle Cleanup** (Priority: P1)
+
    ```bash
    # File: test-setup.ts
    # Add: Enhanced cleanup with forced GC and DB closure
@@ -603,41 +625,49 @@ grep -l "FAIL" logs/test-run-*.log
 ## 14. Execution Command Reference
 
 ### Standard Test Run
+
 ```bash
 pnpm test
 ```
 
 ### With Coverage
+
 ```bash
 pnpm test:coverage
 ```
 
 ### Verbose Output
+
 ```bash
 pnpm vitest run --reporter=verbose
 ```
 
 ### Memory Leak Detection
+
 ```bash
 NODE_OPTIONS="--expose-gc --max-old-space-size=4096" pnpm test
 ```
 
 ### Watch Mode
+
 ```bash
 pnpm vitest watch
 ```
 
 ### Specific Test File
+
 ```bash
 pnpm vitest run testkit-sqlite-pool.test.ts
 ```
 
 ### JSON Output (for analysis)
+
 ```bash
 pnpm vitest run --reporter=json > test-results.json
 ```
 
 ### 10x Flakiness Detection
+
 ```bash
 mkdir -p logs
 for i in {1..10}; do
@@ -664,6 +694,7 @@ grep -l "FAIL" logs/run-*.log && echo "Flaky tests detected!" || echo "No flakes
 ### Success Criteria
 
 **Production Deployment Approved When**:
+
 - [ ] All 319 tests pass (100%)
 - [ ] No flaky tests detected (0/10 runs fail)
 - [ ] Process exits cleanly (0 hanging handles)
@@ -676,21 +707,21 @@ grep -l "FAIL" logs/run-*.log && echo "Flaky tests detected!" || echo "No flakes
 
 ### Execution Time by File (Estimated)
 
-| Test File | Tests | Est. Time | % of Total |
-|-----------|-------|-----------|------------|
-| performance-benchmarks.test.ts | 14 | ~8-12s | 40-60% |
-| testkit-sqlite-pool.test.ts | 46 | ~4-6s | 20-30% |
-| testkit-cli-utilities-behavioral.test.ts | 56 | ~3-5s | 15-25% |
-| testkit-msw-features.test.ts | 34 | ~2-4s | 10-20% |
-| testkit-sqlite-features.test.ts | 25 | ~2-3s | 10-15% |
-| testkit-core-utilities.test.ts | 39 | ~2-3s | 10-15% |
-| testkit-utils-advanced.test.ts | 32 | ~1-2s | 5-10% |
-| testkit-sqlite-advanced.test.ts | 21 | ~1-2s | 5-10% |
-| security-validation.test.ts | 21 | ~1-2s | 5-10% |
-| testkit-cli-utilities.test.ts | 18 | ~1-2s | 5-10% |
-| package-contract.test.ts | 5 | ~0.1s | <1% |
-| testkit-main-export.test.ts | 3 | ~0.1s | <1% |
-| testkit-final-validation.test.ts | 5 | ~0.1s | <1% |
+| Test File                                | Tests | Est. Time | % of Total |
+| ---------------------------------------- | ----- | --------- | ---------- |
+| performance-benchmarks.test.ts           | 14    | ~8-12s    | 40-60%     |
+| testkit-sqlite-pool.test.ts              | 46    | ~4-6s     | 20-30%     |
+| testkit-cli-utilities-behavioral.test.ts | 56    | ~3-5s     | 15-25%     |
+| testkit-msw-features.test.ts             | 34    | ~2-4s     | 10-20%     |
+| testkit-sqlite-features.test.ts          | 25    | ~2-3s     | 10-15%     |
+| testkit-core-utilities.test.ts           | 39    | ~2-3s     | 10-15%     |
+| testkit-utils-advanced.test.ts           | 32    | ~1-2s     | 5-10%      |
+| testkit-sqlite-advanced.test.ts          | 21    | ~1-2s     | 5-10%      |
+| security-validation.test.ts              | 21    | ~1-2s     | 5-10%      |
+| testkit-cli-utilities.test.ts            | 18    | ~1-2s     | 5-10%      |
+| package-contract.test.ts                 | 5     | ~0.1s     | <1%        |
+| testkit-main-export.test.ts              | 3     | ~0.1s     | <1%        |
+| testkit-final-validation.test.ts         | 5     | ~0.1s     | <1%        |
 
 **Note**: Total exceeds 100% due to parallel execution across 4 workers.
 
@@ -701,11 +732,13 @@ grep -l "FAIL" logs/run-*.log && echo "Flaky tests detected!" || echo "No flakes
 ### Successful Test Patterns
 
 **Resource Cleanup**:
+
 ```
 ✅ TestKit resource cleanup configured (foundation package)
 ```
 
 **Behavioral Validation**:
+
 ```
 ✅ GET request intercepted successfully
 ✅ Authentication handler works
@@ -715,6 +748,7 @@ grep -l "FAIL" logs/run-*.log && echo "Flaky tests detected!" || echo "No flakes
 ```
 
 **Performance Metrics**:
+
 ```
 ✅ Memory leak detection passed
 Heap growth: 0.12mb (threshold: 5mb)
@@ -724,6 +758,7 @@ Heap growth: 0.12mb (threshold: 5mb)
 ### Warning Patterns
 
 **Process Exit Issues**:
+
 ```
 There are 83 handle(s) keeping the process running
 # FILEHANDLE (x70)
@@ -731,6 +766,7 @@ close timed out after 20000ms
 ```
 
 **Test Failures**:
+
 ```
 FAIL  |0| src/__tests__/testkit-sqlite-pool.test.ts
 AssertionError: expected 1 to be +0

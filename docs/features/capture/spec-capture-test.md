@@ -406,7 +406,10 @@ All tests MUST use TestKit patterns per [TestKit Standardization Guide](../../gu
 
 ```typescript
 // Database testing
-import { createMemoryUrl, applyTestPragmas } from "@capture-bridge/testkit/sqlite"
+import {
+  createMemoryUrl,
+  applyTestPragmas,
+} from "@capture-bridge/testkit/sqlite"
 
 // File system testing
 import {
@@ -422,7 +425,10 @@ import { setupMSW, http, HttpResponse } from "@capture-bridge/testkit/msw"
 import { loadFixture } from "@capture-bridge/testkit/fixtures"
 
 // Test helpers
-import { setupStagingLedger, seedCaptures } from "@capture-bridge/testkit/helpers"
+import {
+  setupStagingLedger,
+  seedCaptures,
+} from "@capture-bridge/testkit/helpers"
 ```
 
 **Custom Assertions:**

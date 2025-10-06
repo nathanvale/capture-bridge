@@ -56,9 +56,10 @@ This guide explains when and how to use parallel task execution for VTM-based im
 ```json
 {
   "task_id": "CONTENT_HASH--T01",
-  "parallel": true,                    // Can run concurrently?
-  "conflicts_with": [],                // Tasks that conflict with this
-  "file_scope": [                      // Files this task modifies
+  "parallel": true, // Can run concurrently?
+  "conflicts_with": [], // Tasks that conflict with this
+  "file_scope": [
+    // Files this task modifies
     "packages/foundation/src/hash/",
     "packages/foundation/tests/hash/"
   ],
@@ -71,6 +72,7 @@ This guide explains when and how to use parallel task execution for VTM-based im
 Task-decomposition-architect analyzes:
 
 1. **File scope overlap**
+
    ```typescript
    if (task1.file_scope overlaps task2.file_scope) {
      task1.conflicts_with.push(task2.task_id);
@@ -93,6 +95,7 @@ Task-decomposition-architect analyzes:
 ### Calculating Potential Savings
 
 **Formula:**
+
 ```
 Serial Time = sum(all task durations)
 Parallel Time = max(group1) + max(group2) + ... + max(groupN)
@@ -100,6 +103,7 @@ Savings = (Serial - Parallel) / Serial * 100%
 ```
 
 **Example: Slice 1.1**
+
 ```
 Tasks:
 - MONOREPO_STRUCTURE--T01: 15 mins (parallel-safe)
@@ -122,16 +126,19 @@ Savings: 37 mins (36%)
 ### Realistic Expectations
 
 **Best case:** 60-70% time reduction
+
 - Many small, independent tasks
 - Perfect parallelization
 - No blockers
 
 **Typical case:** 30-40% time reduction
+
 - Mix of serial and parallel tasks
 - Some overhead for coordination
 - Occasional blocker
 
 **Worst case:** 10-20% time reduction
+
 - Mostly High-risk tasks (serialized)
 - Many conflicts
 - Coordination overhead
@@ -189,7 +196,7 @@ Savings: 37 mins (36%)
     },
     {
       "type": "serial",
-      "tasks": ["B"]  // Runs after A despite being in conflict
+      "tasks": ["B"] // Runs after A despite being in conflict
     }
   ]
 }
@@ -202,6 +209,7 @@ Savings: 37 mins (36%)
 **Symptom:** Tasks marked conflicting but actually safe
 
 **Solution:**
+
 ```bash
 # Check file_scope
 cat docs/backlog/virtual-task-manifest.json | jq '.tasks[] | select(.task_id=="TASK_A" or .task_id=="TASK_B") | {task_id, file_scope, conflicts_with}'
@@ -217,6 +225,7 @@ cat docs/backlog/virtual-task-manifest.json | jq '.tasks[] | select(.task_id=="T
 **Root cause:** Test isolation issue (TestKit not fully isolating)
 
 **Solution:**
+
 1. Check TestKit version (ensure latest)
 2. Review test setup - shared global state?
 3. Add to conflicts_with as workaround
@@ -227,6 +236,7 @@ cat docs/backlog/virtual-task-manifest.json | jq '.tasks[] | select(.task_id=="T
 **Symptom:** "WIP overload: 3 tasks in-progress (max 3)"
 
 **Solution:**
+
 ```bash
 # Check current WIP
 cat docs/backlog/task-state.json | jq '.tasks | to_entries | map(select(.value.status=="in-progress")) | length'
@@ -239,12 +249,14 @@ jq '.tasks["TASK_ID"].status = "pending"' task-state.json > tmp && mv tmp task-s
 ### "Time savings lower than expected"
 
 **Reasons:**
+
 1. **Coordination overhead** - Small tasks (~5 mins) don't benefit from parallelization
 2. **Uneven task sizes** - One 30-min task dominates group with 3x 10-min tasks
 3. **Sequential bottlenecks** - Too many High-risk tasks (serialized)
 4. **Blockers** - One task blocks, wastes parallel capacity
 
 **Optimization:**
+
 - Group similar-sized tasks
 - Split large tasks into smaller chunks
 - Reduce High-risk tasks through better risk analysis
@@ -278,12 +290,14 @@ jq '.tasks["TASK_ID"].status = "pending"' task-state.json > tmp && mv tmp task-s
 ## Measuring Success
 
 **Metrics to track:**
+
 - Time savings: actual parallel time vs estimated serial time
 - Conflict rate: number of false positive conflicts / total task pairs
 - Blocker rate: tasks blocked / total tasks executed
 - Test pass rate: parallel vs sequential execution
 
 **Success criteria:**
+
 - 30%+ time savings on multi-task slices
 - <5% conflict false positives
 - <10% blocker rate (unrelated to parallelization)
@@ -294,11 +308,13 @@ jq '.tasks["TASK_ID"].status = "pending"' task-state.json > tmp && mv tmp task-s
 ### Scenario 1: Foundation Setup
 
 **Tasks:**
+
 - MONOREPO_STRUCTURE--T01: Set up pnpm workspaces
 - CONTENT_HASH--T01: Implement hashing utility
 - ATOMIC_WRITER--T01: Implement file writer
 
 **Analysis:**
+
 - Different packages? No, all in foundation
 - Different file scopes? Yes (workspaces vs hash vs writer)
 - Shared configs? MONOREPO_STRUCTURE touches root configs
@@ -311,11 +327,13 @@ jq '.tasks["TASK_ID"].status = "pending"' task-state.json > tmp && mv tmp task-s
 ### Scenario 2: Storage Layer
 
 **Tasks:**
+
 - SQLITE_SCHEMA--T01: Create database schema
 - SQLITE_SCHEMA--T02: Add indexes
 - SQLITE_SCHEMA--T03: Write tests
 
 **Analysis:**
+
 - Same capability? Yes, sequential within capability
 - File overlap? Yes, all modify schema files
 - Risk levels? All High
@@ -327,11 +345,13 @@ jq '.tasks["TASK_ID"].status = "pending"' task-state.json > tmp && mv tmp task-s
 ### Scenario 3: Cross-Package Implementation
 
 **Tasks:**
+
 - VOICE_POLLING--T01: Implement voice polling (capture package)
 - EMAIL_POLLING--T01: Implement email polling (capture package)
 - WHISPER_TRANSCRIBE--T01: Implement transcription (capture package)
 
 **Analysis:**
+
 - Different packages? No, all capture
 - Different file scopes? Yes (voice/ vs email/ vs whisper/)
 - Shared deps? All depend on SQLITE_SCHEMA being complete
@@ -346,13 +366,16 @@ jq '.tasks["TASK_ID"].status = "pending"' task-state.json > tmp && mv tmp task-s
 ### Issue: Git Merge Conflicts
 
 **Detection:**
+
 ```bash
 git status
 # Shows merge conflicts after parallel batch
 ```
 
 **Root cause analysis:**
+
 1. Check which tasks modified conflicting files:
+
    ```bash
    cat docs/backlog/task-state.json | jq '.tasks | to_entries[] | select(.value.status=="completed") | {task: .key, files: .value.files_modified}'
    ```
@@ -363,6 +386,7 @@ git status
    ```
 
 **Resolution:**
+
 1. Resolve git conflicts manually
 2. Update VTM conflicts_with to prevent future occurrences
 3. Regenerate VTM with corrected metadata
@@ -370,6 +394,7 @@ git status
 ### Issue: Test Interference
 
 **Detection:**
+
 ```bash
 # Tests pass in isolation
 pnpm test packages/foundation/tests/hash.spec.ts # ✅
@@ -379,12 +404,14 @@ pnpm test # ❌ (when both hash and writer tests run)
 ```
 
 **Root cause analysis:**
+
 1. Shared test fixtures? Check if tests modify same files
 2. Global state pollution? Look for singletons or module-level variables
 3. Port conflicts? Check if tests start services on same port
 4. Database conflicts? Verify TestKit isolation working
 
 **Resolution:**
+
 1. **Best:** Fix test isolation (proper TestKit usage)
 2. **Workaround:** Add tests to conflicts_with in VTM
 3. **Last resort:** Serialize entire package tests
@@ -392,6 +419,7 @@ pnpm test # ❌ (when both hash and writer tests run)
 ### Issue: Blocker Cascade
 
 **Detection:**
+
 ```text
 Group 1: All tasks blocked waiting for missing ADR
 Group 2: Can't start (depends on Group 1)
@@ -401,6 +429,7 @@ Group 3: Can't start (depends on Group 2)
 **Root cause:** Missing prerequisite (spec, ADR, guide)
 
 **Resolution:**
+
 1. Create missing prerequisite immediately
 2. Restart failed tasks:
    ```bash
@@ -424,6 +453,7 @@ Wave 3 (parallel): Integration (2 tasks)
 ```
 
 **Implementation:**
+
 ```bash
 # Wave 1
 Execute parallel tasks: MONOREPO--T01, HASH--T01, WRITER--T01 using task-batch-coordinator
@@ -436,6 +466,7 @@ Execute parallel tasks: VOICE--T01, EMAIL--T01 using task-batch-coordinator
 ```
 
 **Benefits:**
+
 - Clear checkpoints between waves
 - Can validate after each wave
 - Easier to understand progress
@@ -458,6 +489,7 @@ Group 3 (parallel):
 ```
 
 **Use when:**
+
 - Mix of risk levels in same slice
 - Some tasks have clear dependency chains
 - Want to parallelize where safe, serialize where needed
@@ -546,12 +578,12 @@ Group 3 (parallel):
 
 ### Metadata Field Reference
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `parallel` | boolean | Yes | Can task run concurrently with others? |
-| `conflicts_with` | string[] | Yes | Task IDs that conflict (may be empty) |
-| `file_scope` | string[] | Yes | Files/directories this task modifies |
-| `parallelism_group` | string \| null | No | Optional grouping for related tasks |
+| Field               | Type           | Required | Description                            |
+| ------------------- | -------------- | -------- | -------------------------------------- |
+| `parallel`          | boolean        | Yes      | Can task run concurrently with others? |
+| `conflicts_with`    | string[]       | Yes      | Task IDs that conflict (may be empty)  |
+| `file_scope`        | string[]       | Yes      | Files/directories this task modifies   |
+| `parallelism_group` | string \| null | No       | Optional grouping for related tasks    |
 
 ### Validation Rules
 
@@ -563,11 +595,13 @@ Group 3 (parallel):
 ---
 
 **Next Steps:**
+
 1. Regenerate VTM with parallel metadata
 2. Test with Slice 1.1 tasks
 3. Measure actual time savings
 4. Refine conflict detection based on results
 
 **Related Guides:**
+
 - [Agent Workflow Guide](guide-agent-workflow.md) - Usage instructions
 - [TDD Applicability Guide](guide-tdd-applicability.md) - Risk assessment

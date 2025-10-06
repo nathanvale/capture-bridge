@@ -9,7 +9,10 @@ export function getVitestProjects() {
   const isWallaby = process.env['WALLABY_ENV'] === 'true'
   const isIntegration = process.env['TEST_MODE'] === 'integration' && !isWallaby
   const isE2E = process.env['TEST_MODE'] === 'e2e' && !isWallaby
-  const globalTeardownPath = resolve(__dirname, 'node_modules/@orchestr8/testkit/dist/teardown/globalTeardown.js')
+  const globalTeardownPath = resolve(
+    __dirname,
+    'node_modules/@orchestr8/testkit/dist/teardown/globalTeardown.js'
+  )
 
   const root = createBaseVitestConfig({
     test: {

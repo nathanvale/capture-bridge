@@ -277,7 +277,9 @@ Per-task enrichment fields (timestamps, PR links, verification) are now owned by
     - If any related_specs/adrs/guides missing or unreadable: BLOCK and report GAP
     - If High risk task lacks test spec reference: BLOCK
     - If acceptance_criteria array is empty: BLOCK
-12. Propose Implementation Guidance Block (consumed by task-implementer):
+12. **Prepare Implementation Guidance Block and ask user to proceed:**
+
+    After validating all context, prepare a comprehensive guidance block with:
     - Task ID and title
     - Full acceptance_criteria array (all id + text pairs)
     - Key requirements extracted from related_specs
@@ -285,8 +287,26 @@ Per-task enrichment fields (timestamps, PR links, verification) are now owned by
     - Implementation patterns from related_guides
     - Test verification expectations from test_verification paths
     - Required TDD approach based on risk level
-13. Delegate to task-implementer agent for actual implementation with full context
-14. Task-implementer updates state file as work progresses
+
+    Then **ASK THE USER**:
+
+    ```
+    I've prepared the context package for [TASK_ID].
+
+    **Should I invoke the task-implementer agent to begin implementation?**
+
+    If yes, I will use the Task tool to delegate with this invocation:
+
+    <invoke name="Task">
+    <parameter name="subagent_type">task-implementer</parameter>
+    <parameter name="description">Implement [TASK_ID]</parameter>
+    <parameter name="prompt">[Full context package prepared above]</parameter>
+    </invoke>
+    ```
+
+13. **If user confirms**, invoke task-implementer using the Task tool with prepared context
+14. Task-implementer receives context and delegates to specialist agents (wallaby-tdd-agent, general-purpose)
+14. Task-implementer updates task-state.json as work progresses
 15. Reload state and recompute pulse after each task completion
 16. Emit Progress Pulse
 
