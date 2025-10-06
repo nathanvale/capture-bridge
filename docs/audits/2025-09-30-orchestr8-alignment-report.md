@@ -28,24 +28,29 @@
 ### BLOCKING Issues (Must fix before production)
 
 #### 1. Missing @orchestr8/testkit Integration
+
 **Impact:** 🔴 BLOCKING
 **Files Affected:**
+
 - `/packages/foundation/vitest.config.ts` - Line 1-30
 - `/packages/*/src/__tests__/*.test.ts` - All test files
 - `/package.json` - Line 51 (testkit version mismatch)
 
 **Issue:** Using custom test utilities instead of standardized @orchestr8/testkit
 **Fix:**
+
 ```typescript
 // Replace in all test files:
-import { createTestContext } from '../test-utils'
+import { createTestContext } from "../test-utils"
 // With:
-import { createTestContext } from '@orchestr8/testkit'
+import { createTestContext } from "@orchestr8/testkit"
 ```
 
 #### 2. TypeScript Strict Mode Disabled
+
 **Impact:** 🔴 BLOCKING
 **Files Affected:**
+
 - `/tsconfig.json` - Missing file
 - `/packages/*/tsconfig.json` - Lines 5-10
 
@@ -55,8 +60,10 @@ import { createTestContext } from '@orchestr8/testkit'
 ### HIGH Priority Issues
 
 #### 3. Turbo Pipeline Misconfiguration
+
 **Impact:** 🟠 HIGH
 **Files Affected:**
+
 - `/turbo.json` - Missing file
 - `/package.json` - Lines 16-46 (scripts)
 
@@ -64,8 +71,10 @@ import { createTestContext } from '@orchestr8/testkit'
 **Fix:** Add turbo.json with explicit pipeline definitions
 
 #### 4. ESLint Configuration Drift
+
 **Impact:** 🟠 HIGH
 **Files Affected:**
+
 - `/.eslintrc.js` - Missing @orchestr8/eslint-config
 - `/packages/*/.eslintrc.js` - Inconsistent rules
 
@@ -75,14 +84,16 @@ import { createTestContext } from '@orchestr8/testkit'
 ### MEDIUM Priority Issues
 
 #### 5. Package Naming Convention
+
 **Impact:** 🟡 MEDIUM
 **Files Affected:**
+
 - `/packages/capture/package.json` - Line 2
 - `/packages/cli/package.json` - Line 2
 - `/packages/storage/package.json` - Line 2
 
 **Issue:** Packages not scoped under @capture-bridge namespace
-**Fix:** Rename packages to @capture-bridge/* pattern
+**Fix:** Rename packages to @capture-bridge/\* pattern
 
 ---
 
@@ -116,6 +127,7 @@ import { createTestContext } from '@orchestr8/testkit'
 ## 📋 STRATEGIC RECOMMENDATIONS
 
 ### Phase 1: Critical Fixes (0-1 week)
+
 **Goal:** Achieve baseline @orchestr8 compatibility
 
 1. **Day 1-2:** Install and configure @orchestr8/testkit
@@ -168,13 +180,13 @@ import { createTestContext } from '@orchestr8/testkit'
 
 ### Critical Risks if Not Addressed
 
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| **Type Safety Failures** | Production bugs | HIGH | Enable strict mode immediately |
-| **Test Suite Incompatibility** | Cannot run in CI/CD | CERTAIN | Migrate to @orchestr8/testkit |
-| **Build Pipeline Failure** | Cannot deploy | HIGH | Add turbo.json configuration |
-| **Dependency Conflicts** | Runtime errors | MEDIUM | Audit and align versions |
-| **Code Quality Drift** | Tech debt accumulation | HIGH | Enforce @orchestr8 linting |
+| Risk                           | Impact                 | Probability | Mitigation                     |
+| ------------------------------ | ---------------------- | ----------- | ------------------------------ |
+| **Type Safety Failures**       | Production bugs        | HIGH        | Enable strict mode immediately |
+| **Test Suite Incompatibility** | Cannot run in CI/CD    | CERTAIN     | Migrate to @orchestr8/testkit  |
+| **Build Pipeline Failure**     | Cannot deploy          | HIGH        | Add turbo.json configuration   |
+| **Dependency Conflicts**       | Runtime errors         | MEDIUM      | Audit and align versions       |
+| **Code Quality Drift**         | Tech debt accumulation | HIGH        | Enforce @orchestr8 linting     |
 
 ### Breaking Change Risks
 
@@ -189,6 +201,7 @@ import { createTestContext } from '@orchestr8/testkit'
 ### Immediate Actions Checklist
 
 #### Create New Files
+
 - [ ] `/tsconfig.json` - Root TypeScript configuration
 - [ ] `/turbo.json` - Turbo pipeline configuration
 - [ ] `/.eslintrc.js` - Root ESLint configuration
@@ -197,6 +210,7 @@ import { createTestContext } from '@orchestr8/testkit'
 #### Update Existing Files
 
 ##### Root Level
+
 - [ ] `/package.json`
   - Line 51: Update @orchestr8/testkit to ^1.0.1
   - Line 16-46: Align scripts with @orchestr8 patterns
@@ -204,6 +218,7 @@ import { createTestContext } from '@orchestr8/testkit'
   - Add @orchestr8/typescript-config to devDependencies
 
 ##### Package: foundation
+
 - [ ] `/packages/foundation/package.json`
   - Line 2: Rename to "@capture-bridge/foundation"
   - Update version to match monorepo
@@ -220,6 +235,7 @@ import { createTestContext } from '@orchestr8/testkit'
   - Add proper paths configuration
 
 ##### Package: capture
+
 - [ ] `/packages/capture/package.json`
   - Line 2: Rename to "@capture-bridge/capture"
   - Add @capture-bridge/foundation as dependency
@@ -230,18 +246,21 @@ import { createTestContext } from '@orchestr8/testkit'
   - Set proper outDir and rootDir
 
 ##### Package: cli
+
 - [ ] `/packages/cli/package.json`
   - Line 2: Rename to "@capture-bridge/cli"
   - Update bin field with proper namespace
   - Add proper dependencies
 
 ##### Package: storage
+
 - [ ] `/packages/storage/package.json`
   - Line 2: Rename to "@capture-bridge/storage"
   - Update exports field
   - Align scripts with standards
 
 #### Test Files Updates
+
 - [ ] All `*.test.ts` files - Update imports from @orchestr8/testkit
 - [ ] Remove `/packages/*/test-utils.ts` - Replace with @orchestr8/testkit
 - [ ] Update test assertions to use @orchestr8 patterns
@@ -272,14 +291,14 @@ pnpm run validate      # Should pass all checks
 
 ### Alignment Targets
 
-| Metric | Current | Target | Deadline |
-|--------|---------|--------|----------|
-| TypeScript Strict Compliance | 0% | 100% | Week 1 |
-| @orchestr8/testkit Usage | 0% | 100% | Week 1 |
-| Test Coverage | 60% | 80% | Week 3 |
-| Linting Compliance | 65% | 100% | Week 2 |
-| Build Pipeline Success | 70% | 100% | Week 1 |
-| Documentation Completeness | 85% | 100% | Week 4 |
+| Metric                       | Current | Target | Deadline |
+| ---------------------------- | ------- | ------ | -------- |
+| TypeScript Strict Compliance | 0%      | 100%   | Week 1   |
+| @orchestr8/testkit Usage     | 0%      | 100%   | Week 1   |
+| Test Coverage                | 60%     | 80%    | Week 3   |
+| Linting Compliance           | 65%     | 100%   | Week 2   |
+| Build Pipeline Success       | 70%     | 100%   | Week 1   |
+| Documentation Completeness   | 85%     | 100%   | Week 4   |
 
 ### Definition of Done
 
@@ -316,4 +335,4 @@ pnpm run validate      # Should pass all checks
 **Next Review:** 2025-10-07
 **Contact:** engineering@capture-bridge.dev
 
-*This report is based on automated analysis and manual code review. All estimates are preliminary and may change based on implementation discoveries.*
+_This report is based on automated analysis and manual code review. All estimates are preliminary and may change based on implementation discoveries._

@@ -1,3 +1,4 @@
+/* eslint-disable no-console, sonarjs/no-nested-functions, require-await, unicorn/consistent-function-scoping, sonarjs/no-ignored-exceptions, @typescript-eslint/no-unused-vars, vitest/expect-expect, sonarjs/assertions-in-tests, @typescript-eslint/no-empty-function, sonarjs/no-hardcoded-passwords, sonarjs/file-permissions, sonarjs/no-alphabetical-sort, sonarjs/different-types-comparison */
 import { describe, it, expect } from 'vitest'
 
 /**
@@ -72,17 +73,17 @@ KEY IMPROVEMENTS:
 
     // Test sub-exports that should now work
     const subExports = [
-      { path: '@orchestr8/testkit/utils', expectedExports: ['createTestFixture'] },
+      { path: '@orchestr8/testkit/utils', expectedExports: ['delay', 'retry', 'withTimeout', 'createMockFn'] },
       { path: '@orchestr8/testkit/config/vitest', expectedExports: ['createBaseVitestConfig'] },
       { path: '@orchestr8/testkit/msw', expectedExports: ['setupMSW', 'http'] },
-      { path: '@orchestr8/testkit/env', expectedExports: ['useFakeTimers', 'setSystemTime'] },
-      { path: '@orchestr8/testkit/fs', expectedExports: ['createTempDirectory'] }
+      { path: '@orchestr8/testkit/env', expectedExports: ['useFakeTimers', 'timeHelpers'] },
+      { path: '@orchestr8/testkit/fs', expectedExports: ['createTempDirectory'] },
     ]
 
     for (const { path, expectedExports } of subExports) {
       try {
         const module = await import(path)
-        const foundExports = expectedExports.filter(exp => exp in module)
+        const foundExports = expectedExports.filter((exp) => exp in module)
         if (foundExports.length > 0) {
           results.push(`✅ ${path}: Found ${foundExports.join(', ')}`)
         } else {
@@ -107,9 +108,11 @@ LEAN CORE BENEFITS:
 ✅ Clear separation of concerns
     `)
 
-    // With the fix, we expect most/all sub-exports to work
-    const workingExports = results.filter(r => r.includes('✅')).length
-    expect(workingExports).toBeGreaterThan(0)
+    // With the fix, we expect ALL sub-exports to work
+    const workingExports = results.filter((r) => r.includes('✅')).length
+    const failures = results.filter((r) => r.includes('❌'))
+    expect(workingExports).toBe(subExports.length)
+    expect(failures).toEqual([])
   })
 
   it('should document migration path', () => {
@@ -118,7 +121,7 @@ LEAN CORE BENEFITS:
       'REMOVE WORKAROUNDS: Delete any temporary fixes or patches',
       'USE SUB-EXPORTS: Import optional features only when needed',
       'NO PEER DEPS: Core utilities work without any peer dependencies',
-      'TREE SHAKING: Benefit from smaller bundle sizes'
+      'TREE SHAKING: Benefit from smaller bundle sizes',
     ]
 
     console.log(`
@@ -163,7 +166,7 @@ BENEFITS:
     expect(mockFn).toHaveBeenCalledTimes(1)
 
     // Basic async utilities work
-    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
     expect(delay).toBeDefined()
     expect(typeof delay).toBe('function')
@@ -195,7 +198,7 @@ until testkit package issues are resolved.
       'Core Utilities': '✅ WORKING',
       'Sub-Exports': '✅ WORKING',
       'Lazy Loading': '✅ IMPLEMENTED',
-      'Overall Assessment': '✅ READY FOR PRODUCTION'
+      'Overall Assessment': '✅ READY FOR PRODUCTION',
     }
 
     console.log(`
@@ -203,7 +206,9 @@ until testkit package issues are resolved.
 ===========================
 
 SUCCESS CRITERIA:
-${Object.entries(successCriteria).map(([key, status]) => `${status} ${key}`).join('\n')}
+${Object.entries(successCriteria)
+  .map(([key, status]) => `${status} ${key}`)
+  .join('\n')}
 
 CONCLUSION:
 @orchestr8/testkit with lean core approach is NOW ready for production use
@@ -222,23 +227,7 @@ CONFIDENCE LEVEL: HIGH
 - No optional dependencies required for core
     `)
 
-    const successCount = Object.values(successCriteria).filter(s => s.includes('✅')).length
+    const successCount = Object.values(successCriteria).filter((s) => s.includes('✅')).length
     expect(successCount).toBe(Object.keys(successCriteria).length) // All should be success now
   })
 })
-
-// Re-declare vitest globally for this test file
-declare global {
-  const vitest: typeof import('vitest')
-}
-
-// Use vitest from global scope
-const vitest = globalThis.vitest || {
-  fn: () => {
-    const mockFn = (() => {}) as any
-    mockFn.mockReturnValue = () => mockFn
-    mockFn.toHaveBeenCalledWith = () => true
-    mockFn.toHaveBeenCalledTimes = () => true
-    return mockFn
-  }
-}

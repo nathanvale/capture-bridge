@@ -8,7 +8,8 @@
 
 **Notes**
 
-- All packages in this monorepo are **private** and will NOT be published to npm.
+- All packages in this monorepo are **private** and will NOT be published to
+  npm.
 - Changesets are used for version management and changelog generation only.
 - Tags are created in git for tracking releases.
 - Use conventional commits for better changelog formatting.

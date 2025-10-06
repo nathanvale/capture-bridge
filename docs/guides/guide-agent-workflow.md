@@ -12,14 +12,14 @@ This guide explains how to use the ADHD Brain agent system to go from planning d
 
 | File                                      | Purpose                             | Modified By                                    |
 | ----------------------------------------- | ----------------------------------- | ---------------------------------------------- |
-| `docs/master/prd-master.md`               | Master product requirements         | capture-bridge-planner + roadmap-orchestrator      |
+| `docs/master/prd-master.md`               | Master product requirements         | capture-bridge-planner + roadmap-orchestrator  |
 | `docs/master/roadmap.md`                  | Capability breakdown by phase/slice | roadmap-orchestrator                           |
-| `docs/features/*/prd-*.md`                | Feature-specific requirements       | capture-bridge-planner + roadmap-orchestrator      |
-| `docs/features/*/spec-*.md`               | Technical specifications            | capture-bridge-planner + spec-librarian            |
+| `docs/features/*/prd-*.md`                | Feature-specific requirements       | capture-bridge-planner + roadmap-orchestrator  |
+| `docs/features/*/spec-*.md`               | Technical specifications            | capture-bridge-planner + spec-librarian        |
 | `docs/backlog/virtual-task-manifest.json` | Decomposed task list (68 tasks)     | task-decomposition-architect                   |
 | `docs/backlog/task-state.json`            | Execution progress tracking         | task-implementer + implementation-orchestrator |
 | `docs/adr/*.md`                           | Architectural decisions             | adr-curator                                    |
-| `docs/guides/*.md`                        | Implementation patterns             | capture-bridge-planner + spec-librarian            |
+| `docs/guides/*.md`                        | Implementation patterns             | capture-bridge-planner + spec-librarian        |
 
 ## The Agent Pipeline
 
@@ -423,6 +423,7 @@ Marking task completed in task-state.json ✓
 **Use:** `task-batch-coordinator`
 
 **When to use:**
+
 - Multiple tasks in same slice marked `parallel: true`
 - Tasks are truly independent (different files, packages, or layers)
 - Want to reduce total implementation time
@@ -473,6 +474,7 @@ Time savings: 47 minutes (41% reduction)
 ```
 
 **Progress tracking:**
+
 - Real-time updates as each task completes
 - Consolidated task-state.json updates after each group
 - Final summary with:
@@ -485,16 +487,17 @@ Time savings: 47 minutes (41% reduction)
 
 **When to use parallel vs sequential:**
 
-| Scenario | Recommended Mode |
-|----------|------------------|
-| Starting new slice with multiple independent tasks | **Parallel** (task-batch-coordinator) |
-| High-risk tasks requiring careful TDD | **Sequential** (task-implementer one at a time) |
-| Tasks with file conflicts or shared state | **Sequential** (orchestrator handles ordering) |
-| Learning new codebase area | **Sequential** (better for understanding) |
-| Time-sensitive delivery | **Parallel** (maximize throughput) |
-| Single task or tightly coupled chain | **Sequential** (task-implementer) |
+| Scenario                                           | Recommended Mode                                |
+| -------------------------------------------------- | ----------------------------------------------- |
+| Starting new slice with multiple independent tasks | **Parallel** (task-batch-coordinator)           |
+| High-risk tasks requiring careful TDD              | **Sequential** (task-implementer one at a time) |
+| Tasks with file conflicts or shared state          | **Sequential** (orchestrator handles ordering)  |
+| Learning new codebase area                         | **Sequential** (better for understanding)       |
+| Time-sensitive delivery                            | **Parallel** (maximize throughput)              |
+| Single task or tightly coupled chain               | **Sequential** (task-implementer)               |
 
 **Safety features:**
+
 - Max 3 concurrent tasks (ADHD-friendly limit)
 - Automatic conflict detection prevents file collisions
 - High-risk tasks never parallelized
@@ -503,6 +506,7 @@ Time savings: 47 minutes (41% reduction)
 - TestKit isolation ensures no test interference
 
 **Failure handling:**
+
 - If any task blocks, others continue
 - Partial completion is valid state
 - Clear remediation steps for blockers
@@ -555,6 +559,7 @@ cat docs/backlog/virtual-task-manifest.json | jq '.tasks[] | select(.parallel==t
 ```
 
 **Expected output:**
+
 ```
   3 foundation-setup
   2 storage-foundation
@@ -807,8 +812,8 @@ cat docs/backlog/task-state.json | jq '.tasks[] | select(.status=="in-progress")
 
 | Goal                        | Command                                                                                          |
 | --------------------------- | ------------------------------------------------------------------------------------------------ |
-| Research & plan ANY feature | `Use capture-bridge-planner to research and create [spec/PRD]`                                       |
-| Review existing specs       | `Use capture-bridge-planner to review [spec] against best practices`                                 |
+| Research & plan ANY feature | `Use capture-bridge-planner to research and create [spec/PRD]`                                   |
+| Review existing specs       | `Use capture-bridge-planner to review [spec] against best practices`                             |
 | Document decisions          | `Use adr-curator to document [decision]`                                                         |
 | Sync docs → roadmap         | `Use roadmap-orchestrator to sync and validate`                                                  |
 | Fix doc issues              | `Use spec-librarian to fix [issue]`                                                              |

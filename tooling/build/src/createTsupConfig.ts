@@ -1,5 +1,5 @@
 import { defineConfig, type Options } from 'tsup'
-import { baseTsupConfig } from './tsup.base'
+import { baseTsupConfig } from './tsup.base.js'
 
 /**
  * Creates a TSUP configuration by merging the base configuration

@@ -80,16 +80,19 @@ The generated `example.test.ts` demonstrates:
 ### After Creation
 
 1. **Install Dependencies**
+
    ```bash
    pnpm install
    ```
 
 2. **Run Tests**
+
    ```bash
    pnpm --filter @capture-bridge/<package-name> test
    ```
 
 3. **Run with Leak Detection**
+
    ```bash
    LOG_CLEANUP_STATS=1 pnpm --filter @capture-bridge/<package-name> test
    ```
@@ -109,11 +112,13 @@ The generated `example.test.ts` demonstrates:
 ### Error Handling
 
 **Package Already Exists**
+
 ```
 Error: Package already exists at packages/notifications
 ```
 
 **Invalid Name Format**
+
 ```
 Error: Package name must be kebab-case (lowercase with hyphens)
 Examples: notifications, email-service, task-manager
@@ -129,6 +134,7 @@ Examples: notifications, email-service, task-manager
 ### Testing the Script
 
 Test package creation:
+
 ```bash
 # Create test package
 ./scripts/create-package.sh test-demo
@@ -155,14 +161,12 @@ export default defineConfig(
 
       // Bootstrap sequence
       setupFiles: [
-        '@orchestr8/testkit/register',  // 1. TestKit bootstrap
-        './test-setup.ts',               // 2. Resource cleanup
+        '@orchestr8/testkit/register', // 1. TestKit bootstrap
+        './test-setup.ts', // 2. Resource cleanup
       ],
 
       // Anti-zombie configuration
-      reporters: process.env.CI
-        ? ['default']
-        : ['default', 'hanging-process'],
+      reporters: process.env.CI ? ['default'] : ['default', 'hanging-process'],
 
       // Timeout settings
       testTimeout: 10000,
@@ -190,8 +194,8 @@ export default defineConfig(
 import { setupResourceCleanup } from '@orchestr8/testkit/config'
 
 await setupResourceCleanup({
-  cleanupAfterEach: true,    // Clean after each test
-  cleanupAfterAll: true,     // Clean after suite
+  cleanupAfterEach: true, // Clean after each test
+  cleanupAfterAll: true, // Clean after suite
   enableLeakDetection: true, // Warn about leaks
   logStats: process.env.LOG_CLEANUP_STATS === '1', // Optional stats
 })
@@ -208,6 +212,7 @@ chmod +x scripts/create-package.sh
 ### pnpm install Fails
 
 Ensure you're in the monorepo root and have pnpm installed:
+
 ```bash
 npm install -g pnpm@latest
 ```

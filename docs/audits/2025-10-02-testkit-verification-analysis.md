@@ -44,12 +44,14 @@ Analyzed three verification test files against the actual TestKit 1.0.7 type def
 #### WILL FAIL
 
 **Test: "should have default config aliases" (Line 424-432)**
+
 ```typescript
-const { baseVitestConfig, defaultConfig } = await import('@orchestr8/testkit');
-expect(defaultConfig).toBe(baseVitestConfig); // Should be aliases
+const { baseVitestConfig, defaultConfig } = await import("@orchestr8/testkit")
+expect(defaultConfig).toBe(baseVitestConfig) // Should be aliases
 ```
 
 **Issue**: The actual export is:
+
 ```typescript
 export { baseVitestConfig as defaultConfig }
 ```
@@ -57,27 +59,34 @@ export { baseVitestConfig as defaultConfig }
 This IS an alias, so the test SHOULD pass. Actually this will **PASS**.
 
 **Test: "should use managed temporary directory" (Line 326-347)**
+
 ```typescript
-const { useTempDirectory, createManagedTempDirectory } = await import('@orchestr8/testkit');
+const { useTempDirectory, createManagedTempDirectory } = await import(
+  "@orchestr8/testkit"
+)
 ```
 
 **Issue**: These functions are NOT exported from main `@orchestr8/testkit`. They exist in `@orchestr8/testkit/fs`:
+
 - `useTempDirectory` - in `fs/cleanup.js`
 - `createManagedTempDirectory` - in `fs/cleanup.js`
 
 **Fix Required**: Change import to:
+
 ```typescript
-const { useTempDirectory } = await import('@orchestr8/testkit/fs');
+const { useTempDirectory } = await import("@orchestr8/testkit/fs")
 ```
 
 **Test: "should have config aliases" (Line 366, 386, 400)**
+
 ```typescript
-expect(createVitestBaseConfig).toBe(createBaseVitestConfig);
-expect(createCIConfig).toBe(createCIOptimizedConfig);
-expect(createWallabyConfig).toBe(createWallabyOptimizedConfig);
+expect(createVitestBaseConfig).toBe(createBaseVitestConfig)
+expect(createCIConfig).toBe(createCIOptimizedConfig)
+expect(createWallabyConfig).toBe(createWallabyOptimizedConfig)
 ```
 
 **Issue**: These specific alias names are NOT exported:
+
 - `createVitestBaseConfig` - EXISTS (aliased)
 - `createCIConfig` - EXISTS (aliased as `createCIOptimizedConfig as createCIConfig`)
 - `createWallabyConfig` - EXISTS (aliased as `createWallabyOptimizedConfig as createWallabyConfig`)
@@ -95,6 +104,7 @@ Actually these will **PASS** based on the actual exports.
 #### WILL PASS
 
 All SQLite imports use correct path `@orchestr8/testkit/sqlite`:
+
 - `createMemoryUrl` - EXISTS
 - `FileDatabase` - EXISTS
 - `createFileDatabase` - EXISTS
@@ -113,34 +123,43 @@ All SQLite imports use correct path `@orchestr8/testkit/sqlite`:
 #### WILL FAIL
 
 **Test: "should create file-based SQLite database" (Line 65-94)**
+
 ```typescript
-const { createFileDatabase, createTempDirectory } = await import('@orchestr8/testkit/sqlite');
-const { createTempDirectory: createTempDir } = await import('@orchestr8/testkit/fs');
+const { createFileDatabase, createTempDirectory } = await import(
+  "@orchestr8/testkit/sqlite"
+)
+const { createTempDirectory: createTempDir } = await import(
+  "@orchestr8/testkit/fs"
+)
 ```
 
 **Issue**: `createTempDirectory` is NOT exported from `@orchestr8/testkit/sqlite`. It's only in main export and `/fs`.
 
 **Fix Required**: Remove `createTempDirectory` from sqlite import:
+
 ```typescript
-const { createFileDatabase } = await import('@orchestr8/testkit/sqlite');
-const { createTempDirectory } = await import('@orchestr8/testkit/fs');
+const { createFileDatabase } = await import("@orchestr8/testkit/sqlite")
+const { createTempDirectory } = await import("@orchestr8/testkit/fs")
 // Or use main export:
-const { createTempDirectory } = await import('@orchestr8/testkit');
+const { createTempDirectory } = await import("@orchestr8/testkit")
 ```
 
 **Test: "should handle database cleanup count" (Line 373-385)**
+
 ```typescript
-const count = getCleanupCount();
+const count = getCleanupCount()
 ```
 
 **Issue**: The actual function is `getCleanupCount()` which returns a NUMBER, but also `getDetailedCleanupCount()` exists. The test expects:
+
 ```typescript
-expect(count).toBeGreaterThanOrEqual(3);
+expect(count).toBeGreaterThanOrEqual(3)
 ```
 
 This should work IF `getCleanupCount()` returns a simple number. However, the export shows:
+
 ```typescript
-getCleanupCount, getDetailedCleanupCount
+;(getCleanupCount, getDetailedCleanupCount)
 ```
 
 Need to verify the return type. Based on usage pattern, this should **PASS**.
@@ -156,6 +175,7 @@ Need to verify the return type. Based on usage pattern, this should **PASS**.
 #### WILL PASS
 
 All MSW imports use correct path `@orchestr8/testkit/msw`:
+
 - `createMSWServer` - EXISTS
 - `startMSWServer` - EXISTS
 - `stopMSWServer` - EXISTS
@@ -192,12 +212,12 @@ All MSW imports use correct path `@orchestr8/testkit/msw`:
 
 ### Pass/Fail Breakdown
 
-| Test File | Total Tests | Will Pass | Will Fail | Pass Rate |
-|-----------|-------------|-----------|-----------|-----------|
-| Core Utilities | ~25 | ~24 | 1 | 96% |
-| SQLite Features | ~15 | ~14 | 1 | 93% |
-| MSW Features | ~20 | ~20 | 0 | 100% |
-| **TOTAL** | **~60** | **~58** | **2** | **97%** |
+| Test File       | Total Tests | Will Pass | Will Fail | Pass Rate |
+| --------------- | ----------- | --------- | --------- | --------- |
+| Core Utilities  | ~25         | ~24       | 1         | 96%       |
+| SQLite Features | ~15         | ~14       | 1         | 93%       |
+| MSW Features    | ~20         | ~20       | 0         | 100%      |
+| **TOTAL**       | **~60**     | **~58**   | **2**     | **97%**   |
 
 ### Critical Issues Found
 
@@ -214,64 +234,74 @@ All MSW imports use correct path `@orchestr8/testkit/msw`:
 ### Fix 1: Core Utilities Test (Line 326-347)
 
 **Current Code**:
+
 ```typescript
-it('should use managed temporary directory', async () => {
-  const { useTempDirectory, createManagedTempDirectory } = await import('@orchestr8/testkit');
+it("should use managed temporary directory", async () => {
+  const { useTempDirectory, createManagedTempDirectory } = await import(
+    "@orchestr8/testkit"
+  )
   // ...
-});
+})
 ```
 
 **Fixed Code**:
+
 ```typescript
-it('should use managed temporary directory', async () => {
-  const { useTempDirectory } = await import('@orchestr8/testkit/fs');
-  const path = await import('path');
-  const fs = await import('fs/promises');
+it("should use managed temporary directory", async () => {
+  const { useTempDirectory } = await import("@orchestr8/testkit/fs")
+  const path = await import("path")
+  const fs = await import("fs/promises")
 
   // Use temp directory in a test context
   const tempDir = await useTempDirectory(async (dir) => {
     // Write a test file
-    const testFile = path.join(dir.path, 'test.txt');
-    await fs.writeFile(testFile, 'test content');
+    const testFile = path.join(dir.path, "test.txt")
+    await fs.writeFile(testFile, "test content")
 
     // Verify file exists
-    const content = await fs.readFile(testFile, 'utf-8');
-    expect(content).toBe('test content');
+    const content = await fs.readFile(testFile, "utf-8")
+    expect(content).toBe("test content")
 
-    return 'completed';
-  });
+    return "completed"
+  })
 
-  expect(tempDir).toBe('completed');
+  expect(tempDir).toBe("completed")
 
-  console.log('✅ Managed temp directory with automatic cleanup');
-});
+  console.log("✅ Managed temp directory with automatic cleanup")
+})
 ```
 
 ### Fix 2: SQLite Features Test (Line 65-94)
 
 **Current Code**:
+
 ```typescript
-it('should create file-based SQLite database', async () => {
-  const { createFileDatabase, createTempDirectory } = await import('@orchestr8/testkit/sqlite');
-  const { createTempDirectory: createTempDir } = await import('@orchestr8/testkit/fs');
+it("should create file-based SQLite database", async () => {
+  const { createFileDatabase, createTempDirectory } = await import(
+    "@orchestr8/testkit/sqlite"
+  )
+  const { createTempDirectory: createTempDir } = await import(
+    "@orchestr8/testkit/fs"
+  )
   // ...
-});
+})
 ```
 
 **Fixed Code**:
+
 ```typescript
-it('should create file-based SQLite database', async () => {
-  const { createFileDatabase } = await import('@orchestr8/testkit/sqlite');
-  const { createTempDirectory } = await import('@orchestr8/testkit');
+it("should create file-based SQLite database", async () => {
+  const { createFileDatabase } = await import("@orchestr8/testkit/sqlite")
+  const { createTempDirectory } = await import("@orchestr8/testkit")
 
   // Create temp directory for database file
-  const tempDir = createTempDirectory();
-  const dbPath = `${tempDir.path}/test.db`;
+  const tempDir = createTempDirectory()
+  const dbPath = `${tempDir.path}/test.db`
 
   // Create file database
-  const fileDb = createFileDatabase(dbPath);
-  db = fileDb.getDatabase();
-  databases.push(db);
+  const fileDb = createFileDatabase(dbPath)
+  db = fileDb.getDatabase()
+  databases.push(db)
 
   // Create a table and insert data
   db.exec(`
@@ -279,17 +309,19 @@ it('should create file-based SQLite database', async () => {
       id INTEGER PRIMARY KEY,
       name TEXT NOT NULL
     )
-  `);
+  `)
 
-  db.prepare('INSERT INTO users (name) VALUES (?)').run('John Doe');
+  db.prepare("INSERT INTO users (name) VALUES (?)").run("John Doe")
 
   // Verify data persists
-  const user = db.prepare('SELECT * FROM users WHERE name = ?').get('John Doe') as any;
-  expect(user).toBeDefined();
-  expect(user.name).toBe('John Doe');
+  const user = db
+    .prepare("SELECT * FROM users WHERE name = ?")
+    .get("John Doe") as any
+  expect(user).toBeDefined()
+  expect(user.name).toBe("John Doe")
 
-  console.log('✅ File-based SQLite database created at:', dbPath);
-});
+  console.log("✅ File-based SQLite database created at:", dbPath)
+})
 ```
 
 ## Test Execution Recommendations
@@ -297,6 +329,7 @@ it('should create file-based SQLite database', async () => {
 ### Before Running Tests
 
 1. Ensure dependencies are installed:
+
    ```bash
    pnpm install @orchestr8/testkit@1.0.7
    pnpm install better-sqlite3 msw happy-dom
@@ -368,6 +401,7 @@ After applying these fixes, all tests should pass, providing comprehensive valid
 ---
 
 **Testing Strategist Verification**
+
 - TDD Applicability: Verification tests (no TDD needed - testing external library)
 - Coverage Target: 100% of critical TestKit APIs used by project
 - Test Layers: Integration tests (testing actual TestKit behavior)

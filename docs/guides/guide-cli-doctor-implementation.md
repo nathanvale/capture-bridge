@@ -704,7 +704,8 @@ const RECOMMENDATION_RULES: RecommendationRule[] = [
     priority: "critical",
     issue: "Obsidian vault path does not exist",
     action: 'Create vault directory: mkdir -p "${VAULT_PATH}"',
-    documentation_url: "https://docs.capture-bridge.dev/setup/vault-configuration",
+    documentation_url:
+      "https://docs.capture-bridge.dev/setup/vault-configuration",
   },
   {
     checkId: "gmail_token_valid",
@@ -1242,7 +1243,7 @@ export const EXIT_CODE_CONTRACT = {
 | [Health Command Guide](./guide-health-command.md)              | Usage patterns and troubleshooting |
 | [Test Strategy Guide](./guide-test-strategy.md)                | Overall testing approach           |
 | [Phase 1 Testing Patterns](./guide-phase1-testing-patterns.md) | Implementation patterns            |
-| [TestKit Usage Guide](./guide-testkit.md)                | Test utilities                     |
+| [TestKit Usage Guide](./guide-testkit.md)                      | Test utilities                     |
 
 ---
 

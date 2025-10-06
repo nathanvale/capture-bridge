@@ -42,9 +42,7 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "MONOREPO_STRUCTURE--T01"
-      ],
+      "depends_on_tasks": ["MONOREPO_STRUCTURE--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
@@ -52,15 +50,8 @@
         "docs/features/obsidian-bridge/spec-obsidian-tech.md",
         "docs/features/obsidian-bridge/spec-obsidian-test.md"
       ],
-      "related_adrs": [
-        "ADR-0009",
-        "ADR-0010",
-        "ADR-0011",
-        "ADR-0020"
-      ],
-      "related_guides": [
-        "docs/guides/guide-obsidian-bridge-usage.md"
-      ],
+      "related_adrs": ["ADR-0009", "ADR-0010", "ADR-0011", "ADR-0020"],
+      "related_guides": ["docs/guides/guide-obsidian-bridge-usage.md"],
       "parallel": false,
       "conflicts_with": [
         "ATOMIC_FILE_WRITER--T02",
@@ -108,9 +99,7 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "ATOMIC_FILE_WRITER--T01"
-      ],
+      "depends_on_tasks": ["ATOMIC_FILE_WRITER--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
@@ -118,15 +107,8 @@
         "docs/features/obsidian-bridge/spec-obsidian-tech.md",
         "docs/features/obsidian-bridge/spec-obsidian-test.md"
       ],
-      "related_adrs": [
-        "ADR-0009",
-        "ADR-0010",
-        "ADR-0011",
-        "ADR-0020"
-      ],
-      "related_guides": [
-        "docs/guides/guide-obsidian-bridge-usage.md"
-      ],
+      "related_adrs": ["ADR-0009", "ADR-0010", "ADR-0011", "ADR-0020"],
+      "related_guides": ["docs/guides/guide-obsidian-bridge-usage.md"],
       "parallel": false,
       "conflicts_with": [
         "ATOMIC_FILE_WRITER--T01",
@@ -174,22 +156,15 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "MONOREPO_STRUCTURE--T01"
-      ],
+      "depends_on_tasks": ["MONOREPO_STRUCTURE--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
         "docs/features/staging-ledger/spec-staging-tech.md",
         "docs/features/capture/spec-capture-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0002",
-        "ADR-0006"
-      ],
-      "related_guides": [
-        "docs/guides/guide-tdd-applicability.md"
-      ],
+      "related_adrs": ["ADR-0002", "ADR-0006"],
+      "related_guides": ["docs/guides/guide-tdd-applicability.md"],
       "parallel": false,
       "conflicts_with": [
         "BACKUP_VERIFICATION_PROTOCOL--T01",
@@ -212,10 +187,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": null
     },
     {
@@ -243,22 +215,15 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "CONTENT_HASH_IMPLEMENTATION--T01"
-      ],
+      "depends_on_tasks": ["CONTENT_HASH_IMPLEMENTATION--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
         "docs/features/staging-ledger/spec-staging-tech.md",
         "docs/features/capture/spec-capture-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0002",
-        "ADR-0006"
-      ],
-      "related_guides": [
-        "docs/guides/guide-tdd-applicability.md"
-      ],
+      "related_adrs": ["ADR-0002", "ADR-0006"],
+      "related_guides": ["docs/guides/guide-tdd-applicability.md"],
       "parallel": false,
       "conflicts_with": [
         "BACKUP_VERIFICATION_PROTOCOL--T01",
@@ -281,10 +246,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": null
     },
     {
@@ -332,21 +294,15 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "MONOREPO_STRUCTURE--T01"
-      ],
+      "depends_on_tasks": ["MONOREPO_STRUCTURE--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
         "docs/cross-cutting/spec-metrics-contract-tech.md",
         "docs/cross-cutting/spec-metrics-contract-tech-test.md"
       ],
-      "related_adrs": [
-        "ADR-0021"
-      ],
-      "related_guides": [
-        "docs/guides/guide-testkit-usage.md"
-      ],
+      "related_adrs": ["ADR-0021"],
+      "related_guides": ["docs/guides/guide-testkit-usage.md"],
       "parallel": true,
       "conflicts_with": [
         "BACKUP_VERIFICATION_PROTOCOL--T01",
@@ -369,10 +325,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": "foundation-tasks"
     },
     {
@@ -404,12 +357,8 @@
         "docs/cross-cutting/spec-foundation-monorepo-tech.md",
         "docs/cross-cutting/spec-foundation-monorepo-test.md"
       ],
-      "related_adrs": [
-        "ADR-0019"
-      ],
-      "related_guides": [
-        "docs/guides/guide-monorepo-mppp.md"
-      ],
+      "related_adrs": ["ADR-0019"],
+      "related_guides": ["docs/guides/guide-monorepo-mppp.md"],
       "parallel": false,
       "conflicts_with": [
         "BACKUP_VERIFICATION_PROTOCOL--T01",
@@ -466,9 +415,7 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "MONOREPO_STRUCTURE--T01"
-      ],
+      "depends_on_tasks": ["MONOREPO_STRUCTURE--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
@@ -476,15 +423,8 @@
         "docs/features/staging-ledger/spec-staging-tech.md",
         "docs/features/staging-ledger/spec-staging-test.md"
       ],
-      "related_adrs": [
-        "ADR-0003",
-        "ADR-0004",
-        "ADR-0005",
-        "ADR-0010"
-      ],
-      "related_guides": [
-        "docs/guides/guide-tdd-applicability.md"
-      ],
+      "related_adrs": ["ADR-0003", "ADR-0004", "ADR-0005", "ADR-0010"],
+      "related_guides": ["docs/guides/guide-tdd-applicability.md"],
       "parallel": false,
       "conflicts_with": [
         "BACKUP_VERIFICATION_PROTOCOL--T01",
@@ -507,10 +447,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": null
     },
     {
@@ -538,9 +475,7 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "SQLITE_SCHEMA--T01"
-      ],
+      "depends_on_tasks": ["SQLITE_SCHEMA--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
@@ -548,15 +483,8 @@
         "docs/features/staging-ledger/spec-staging-tech.md",
         "docs/features/staging-ledger/spec-staging-test.md"
       ],
-      "related_adrs": [
-        "ADR-0003",
-        "ADR-0004",
-        "ADR-0005",
-        "ADR-0010"
-      ],
-      "related_guides": [
-        "docs/guides/guide-tdd-applicability.md"
-      ],
+      "related_adrs": ["ADR-0003", "ADR-0004", "ADR-0005", "ADR-0010"],
+      "related_guides": ["docs/guides/guide-tdd-applicability.md"],
       "parallel": false,
       "conflicts_with": [
         "BACKUP_VERIFICATION_PROTOCOL--T01",
@@ -579,10 +507,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": null
     },
     {
@@ -602,9 +527,7 @@
       "est": {
         "size": "L"
       },
-      "depends_on_tasks": [
-        "SQLITE_SCHEMA--T02"
-      ],
+      "depends_on_tasks": ["SQLITE_SCHEMA--T02"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
@@ -612,15 +535,8 @@
         "docs/features/staging-ledger/spec-staging-tech.md",
         "docs/features/staging-ledger/spec-staging-test.md"
       ],
-      "related_adrs": [
-        "ADR-0003",
-        "ADR-0004",
-        "ADR-0005",
-        "ADR-0010"
-      ],
-      "related_guides": [
-        "docs/guides/guide-tdd-applicability.md"
-      ],
+      "related_adrs": ["ADR-0003", "ADR-0004", "ADR-0005", "ADR-0010"],
+      "related_guides": ["docs/guides/guide-tdd-applicability.md"],
       "parallel": false,
       "conflicts_with": [
         "BACKUP_VERIFICATION_PROTOCOL--T01",
@@ -643,10 +559,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": null
     },
     {
@@ -690,17 +603,11 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "MONOREPO_STRUCTURE--T01"
-      ],
+      "depends_on_tasks": ["MONOREPO_STRUCTURE--T01"],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/cross-cutting/spec-foundation-monorepo-test.md"
-      ],
-      "related_adrs": [
-        "ADR-0019"
-      ],
+      "related_specs": ["docs/cross-cutting/spec-foundation-monorepo-test.md"],
+      "related_adrs": ["ADR-0019"],
       "related_guides": [
         "docs/guides/guide-testkit-usage.md",
         "docs/guides/guide-testkit-optimizations.md",
@@ -728,10 +635,7 @@
         "SQLITE_SCHEMA--T03",
         "STORAGE_SIZE_MONITORING--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": "foundation-tasks"
     },
     {
@@ -759,21 +663,12 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "SQLITE_SCHEMA--T03"
-      ],
+      "depends_on_tasks": ["SQLITE_SCHEMA--T03"],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-arch.md"
-      ],
-      "related_adrs": [
-        "ADR-0004",
-        "ADR-0014"
-      ],
-      "related_guides": [
-        "docs/guides/guide-error-recovery.md"
-      ],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-arch.md"],
+      "related_adrs": ["ADR-0004", "ADR-0014"],
+      "related_guides": ["docs/guides/guide-error-recovery.md"],
       "parallel": false,
       "conflicts_with": [
         "CAPTURE_STATE_MACHINE--T02",
@@ -796,10 +691,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": null
     },
     {
@@ -827,21 +719,12 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "CAPTURE_STATE_MACHINE--T01"
-      ],
+      "depends_on_tasks": ["CAPTURE_STATE_MACHINE--T01"],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-arch.md"
-      ],
-      "related_adrs": [
-        "ADR-0004",
-        "ADR-0014"
-      ],
-      "related_guides": [
-        "docs/guides/guide-error-recovery.md"
-      ],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-arch.md"],
+      "related_adrs": ["ADR-0004", "ADR-0014"],
+      "related_guides": ["docs/guides/guide-error-recovery.md"],
       "parallel": false,
       "conflicts_with": [
         "CAPTURE_STATE_MACHINE--T01",
@@ -864,10 +747,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": null
     },
     {
@@ -887,21 +767,12 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "CAPTURE_STATE_MACHINE--T02"
-      ],
+      "depends_on_tasks": ["CAPTURE_STATE_MACHINE--T02"],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-arch.md"
-      ],
-      "related_adrs": [
-        "ADR-0004",
-        "ADR-0014"
-      ],
-      "related_guides": [
-        "docs/guides/guide-error-recovery.md"
-      ],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-arch.md"],
+      "related_adrs": ["ADR-0004", "ADR-0014"],
+      "related_guides": ["docs/guides/guide-error-recovery.md"],
       "parallel": false,
       "conflicts_with": [
         "CAPTURE_STATE_MACHINE--T01",
@@ -924,10 +795,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": null
     },
     {
@@ -973,12 +841,8 @@
         "docs/features/staging-ledger/spec-staging-tech.md",
         "docs/features/capture/spec-capture-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0006"
-      ],
-      "related_guides": [
-        "docs/guides/guide-tdd-applicability.md"
-      ],
+      "related_adrs": ["ADR-0006"],
+      "related_guides": ["docs/guides/guide-tdd-applicability.md"],
       "parallel": false,
       "conflicts_with": [
         "CAPTURE_STATE_MACHINE--T01",
@@ -1001,10 +865,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": null
     },
     {
@@ -1036,21 +897,15 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "DEDUPLICATION_LOGIC--T01"
-      ],
+      "depends_on_tasks": ["DEDUPLICATION_LOGIC--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
         "docs/features/staging-ledger/spec-staging-tech.md",
         "docs/features/capture/spec-capture-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0006"
-      ],
-      "related_guides": [
-        "docs/guides/guide-tdd-applicability.md"
-      ],
+      "related_adrs": ["ADR-0006"],
+      "related_guides": ["docs/guides/guide-tdd-applicability.md"],
       "parallel": false,
       "conflicts_with": [
         "CAPTURE_STATE_MACHINE--T01",
@@ -1073,10 +928,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": null
     },
     {
@@ -1119,14 +971,8 @@
         "docs/features/obsidian-bridge/spec-obsidian-tech.md",
         "docs/cross-cutting/spec-direct-export-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0011",
-        "ADR-0013",
-        "ADR-0020"
-      ],
-      "related_guides": [
-        "docs/guides/guide-obsidian-bridge-usage.md"
-      ],
+      "related_adrs": ["ADR-0011", "ADR-0013", "ADR-0020"],
+      "related_guides": ["docs/guides/guide-obsidian-bridge-usage.md"],
       "parallel": false,
       "conflicts_with": [
         "ATOMIC_FILE_WRITER--T01",
@@ -1174,23 +1020,15 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "DIRECT_EXPORT_VOICE--T01"
-      ],
+      "depends_on_tasks": ["DIRECT_EXPORT_VOICE--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
         "docs/features/obsidian-bridge/spec-obsidian-tech.md",
         "docs/cross-cutting/spec-direct-export-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0011",
-        "ADR-0013",
-        "ADR-0020"
-      ],
-      "related_guides": [
-        "docs/guides/guide-obsidian-bridge-usage.md"
-      ],
+      "related_adrs": ["ADR-0011", "ADR-0013", "ADR-0020"],
+      "related_guides": ["docs/guides/guide-obsidian-bridge-usage.md"],
       "parallel": false,
       "conflicts_with": [
         "ATOMIC_FILE_WRITER--T01",
@@ -1248,9 +1086,7 @@
         "docs/features/capture/spec-capture-tech.md",
         "docs/features/obsidian-bridge/spec-obsidian-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0014"
-      ],
+      "related_adrs": ["ADR-0014"],
       "related_guides": [
         "docs/guides/guide-error-recovery.md",
         "docs/guides/guide-whisper-transcription.md"
@@ -1298,18 +1134,14 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "PLACEHOLDER_EXPORT--T01"
-      ],
+      "depends_on_tasks": ["PLACEHOLDER_EXPORT--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
         "docs/features/capture/spec-capture-tech.md",
         "docs/features/obsidian-bridge/spec-obsidian-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0014"
-      ],
+      "related_adrs": ["ADR-0014"],
       "related_guides": [
         "docs/guides/guide-error-recovery.md",
         "docs/guides/guide-whisper-transcription.md"
@@ -1375,11 +1207,7 @@
         "docs/features/capture/spec-capture-arch.md",
         "docs/features/capture/spec-capture-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0001",
-        "ADR-0006",
-        "ADR-0008"
-      ],
+      "related_adrs": ["ADR-0001", "ADR-0006", "ADR-0008"],
       "related_guides": [
         "docs/guides/guide-polling-implementation.md",
         "docs/guides/guide-capture-debugging.md"
@@ -1406,10 +1234,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": null
     },
     {
@@ -1445,20 +1270,14 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "VOICE_POLLING_ICLOUD--T01"
-      ],
+      "depends_on_tasks": ["VOICE_POLLING_ICLOUD--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
         "docs/features/capture/spec-capture-arch.md",
         "docs/features/capture/spec-capture-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0001",
-        "ADR-0006",
-        "ADR-0008"
-      ],
+      "related_adrs": ["ADR-0001", "ADR-0006", "ADR-0008"],
       "related_guides": [
         "docs/guides/guide-polling-implementation.md",
         "docs/guides/guide-capture-debugging.md"
@@ -1485,10 +1304,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": null
     },
     {
@@ -1524,20 +1340,14 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "VOICE_POLLING_ICLOUD--T02"
-      ],
+      "depends_on_tasks": ["VOICE_POLLING_ICLOUD--T02"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
         "docs/features/capture/spec-capture-tech.md",
         "docs/features/capture/spec-capture-test.md"
       ],
-      "related_adrs": [
-        "ADR-0006",
-        "ADR-0008",
-        "ADR-0014"
-      ],
+      "related_adrs": ["ADR-0006", "ADR-0008", "ADR-0014"],
       "related_guides": [
         "docs/guides/guide-whisper-transcription.md",
         "docs/guides/guide-error-recovery.md"
@@ -1564,10 +1374,7 @@
         "VOICE_POLLING_ICLOUD--T02",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": null
     },
     {
@@ -1603,20 +1410,14 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "WHISPER_TRANSCRIPTION--T01"
-      ],
+      "depends_on_tasks": ["WHISPER_TRANSCRIPTION--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
         "docs/features/capture/spec-capture-tech.md",
         "docs/features/capture/spec-capture-test.md"
       ],
-      "related_adrs": [
-        "ADR-0006",
-        "ADR-0008",
-        "ADR-0014"
-      ],
+      "related_adrs": ["ADR-0006", "ADR-0008", "ADR-0014"],
       "related_guides": [
         "docs/guides/guide-whisper-transcription.md",
         "docs/guides/guide-error-recovery.md"
@@ -1643,10 +1444,7 @@
         "VOICE_POLLING_ICLOUD--T02",
         "WHISPER_TRANSCRIPTION--T01"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": null
     },
     {
@@ -1689,14 +1487,8 @@
         "docs/features/obsidian-bridge/spec-obsidian-tech.md",
         "docs/cross-cutting/spec-direct-export-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0011",
-        "ADR-0013",
-        "ADR-0020"
-      ],
-      "related_guides": [
-        "docs/guides/guide-obsidian-bridge-usage.md"
-      ],
+      "related_adrs": ["ADR-0011", "ADR-0013", "ADR-0020"],
+      "related_guides": ["docs/guides/guide-obsidian-bridge-usage.md"],
       "parallel": false,
       "conflicts_with": [
         "ATOMIC_FILE_WRITER--T01",
@@ -1744,23 +1536,15 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "DIRECT_EXPORT_EMAIL--T01"
-      ],
+      "depends_on_tasks": ["DIRECT_EXPORT_EMAIL--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
         "docs/features/obsidian-bridge/spec-obsidian-tech.md",
         "docs/cross-cutting/spec-direct-export-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0011",
-        "ADR-0013",
-        "ADR-0020"
-      ],
-      "related_guides": [
-        "docs/guides/guide-obsidian-bridge-usage.md"
-      ],
+      "related_adrs": ["ADR-0011", "ADR-0013", "ADR-0020"],
+      "related_guides": ["docs/guides/guide-obsidian-bridge-usage.md"],
       "parallel": false,
       "conflicts_with": [
         "ATOMIC_FILE_WRITER--T01",
@@ -1814,9 +1598,7 @@
       ],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/capture/spec-capture-tech.md"
-      ],
+      "related_specs": ["docs/features/capture/spec-capture-tech.md"],
       "related_adrs": [],
       "related_guides": [],
       "parallel": false,
@@ -1841,10 +1623,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": null
     },
     {
@@ -1872,14 +1651,10 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "EMAIL_NORMALIZATION--T01"
-      ],
+      "depends_on_tasks": ["EMAIL_NORMALIZATION--T01"],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/capture/spec-capture-tech.md"
-      ],
+      "related_specs": ["docs/features/capture/spec-capture-tech.md"],
       "related_adrs": [],
       "related_guides": [],
       "parallel": true,
@@ -1904,10 +1679,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": "process-tasks"
     },
     {
@@ -1943,10 +1715,7 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "GMAIL_OAUTH2_SETUP--T01",
-        "SQLITE_SCHEMA--T03"
-      ],
+      "depends_on_tasks": ["GMAIL_OAUTH2_SETUP--T01", "SQLITE_SCHEMA--T03"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
@@ -1980,10 +1749,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": null
     },
     {
@@ -2019,9 +1785,7 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "EMAIL_POLLING_GMAIL--T01"
-      ],
+      "depends_on_tasks": ["EMAIL_POLLING_GMAIL--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
@@ -2055,10 +1819,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": "capture-tasks"
     },
     {
@@ -2102,14 +1863,10 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "SQLITE_SCHEMA--T03"
-      ],
+      "depends_on_tasks": ["SQLITE_SCHEMA--T03"],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/capture/spec-capture-tech.md"
-      ],
+      "related_specs": ["docs/features/capture/spec-capture-tech.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-gmail-oauth2-setup.md",
@@ -2137,10 +1894,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": "capture-tasks"
     },
     {
@@ -2191,12 +1945,8 @@
       ],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/cli/spec-cli-tech.md"
-      ],
-      "related_adrs": [
-        "ADR-0016"
-      ],
+      "related_specs": ["docs/features/cli/spec-cli-tech.md"],
+      "related_adrs": ["ADR-0016"],
       "related_guides": [],
       "parallel": true,
       "conflicts_with": [
@@ -2220,10 +1970,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": "capture-tasks"
     },
     {
@@ -2271,21 +2018,14 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "MONOREPO_STRUCTURE--T01"
-      ],
+      "depends_on_tasks": ["MONOREPO_STRUCTURE--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
         "docs/features/cli/spec-cli-arch.md",
         "docs/features/cli/spec-cli-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0015",
-        "ADR-0016",
-        "ADR-0017",
-        "ADR-0018"
-      ],
+      "related_adrs": ["ADR-0015", "ADR-0016", "ADR-0017", "ADR-0018"],
       "related_guides": [
         "docs/guides/guide-health-command.md",
         "docs/guides/guide-cli-doctor-implementation.md"
@@ -2312,10 +2052,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": "foundation-tasks"
     },
     {
@@ -2359,18 +2096,11 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "CLI_FOUNDATION--T01",
-        "SQLITE_SCHEMA--T03"
-      ],
+      "depends_on_tasks": ["CLI_FOUNDATION--T01", "SQLITE_SCHEMA--T03"],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/cli/spec-cli-tech.md"
-      ],
-      "related_adrs": [
-        "ADR-0017"
-      ],
+      "related_specs": ["docs/features/cli/spec-cli-tech.md"],
+      "related_adrs": ["ADR-0017"],
       "related_guides": [],
       "parallel": true,
       "conflicts_with": [
@@ -2394,10 +2124,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": "capture-tasks"
     },
     {
@@ -2469,10 +2196,7 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "CLI_FOUNDATION--T01",
-        "SQLITE_SCHEMA--T03"
-      ],
+      "depends_on_tasks": ["CLI_FOUNDATION--T01", "SQLITE_SCHEMA--T03"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
@@ -2506,10 +2230,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": "foundation-tasks"
     },
     {
@@ -2541,19 +2262,14 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "CAPTURE_STATE_MACHINE--T03",
-        "SQLITE_SCHEMA--T03"
-      ],
+      "depends_on_tasks": ["CAPTURE_STATE_MACHINE--T03", "SQLITE_SCHEMA--T03"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
         "docs/features/staging-ledger/spec-staging-arch.md",
         "docs/features/capture/spec-capture-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0004"
-      ],
+      "related_adrs": ["ADR-0004"],
       "related_guides": [
         "docs/guides/guide-error-recovery.md",
         "docs/guides/guide-crash-matrix-test-plan.md"
@@ -2580,10 +2296,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": null
     },
     {
@@ -2611,18 +2324,14 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "CRASH_RECOVERY_MECHANISM--T01"
-      ],
+      "depends_on_tasks": ["CRASH_RECOVERY_MECHANISM--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
         "docs/features/staging-ledger/spec-staging-arch.md",
         "docs/features/capture/spec-capture-tech.md"
       ],
-      "related_adrs": [
-        "ADR-0004"
-      ],
+      "related_adrs": ["ADR-0004"],
       "related_guides": [
         "docs/guides/guide-error-recovery.md",
         "docs/guides/guide-crash-matrix-test-plan.md"
@@ -2649,10 +2358,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": null
     },
     {
@@ -2696,14 +2402,10 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "SQLITE_SCHEMA--T03"
-      ],
+      "depends_on_tasks": ["SQLITE_SCHEMA--T03"],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-error-recovery.md",
@@ -2731,10 +2433,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": "foundation-tasks"
     },
     {
@@ -2766,9 +2465,7 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "CRASH_RECOVERY_MECHANISM--T02"
-      ],
+      "depends_on_tasks": ["CRASH_RECOVERY_MECHANISM--T02"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
@@ -2802,10 +2499,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": null
     },
     {
@@ -2833,9 +2527,7 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "FAULT_INJECTION_FRAMEWORK--T01"
-      ],
+      "depends_on_tasks": ["FAULT_INJECTION_FRAMEWORK--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
@@ -2869,10 +2561,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": "foundation-tasks"
     },
     {
@@ -2906,12 +2595,8 @@
       ],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/capture/spec-capture-tech.md"
-      ],
-      "related_adrs": [
-        "ADR-0014"
-      ],
+      "related_specs": ["docs/features/capture/spec-capture-tech.md"],
+      "related_adrs": ["ADR-0014"],
       "related_guides": [
         "docs/guides/guide-error-recovery.md",
         "docs/guides/guide-whisper-transcription.md"
@@ -2938,10 +2623,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": null
     },
     {
@@ -2969,17 +2651,11 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "TRANSCRIPTION_RETRY_LOGIC--T01"
-      ],
+      "depends_on_tasks": ["TRANSCRIPTION_RETRY_LOGIC--T01"],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/capture/spec-capture-tech.md"
-      ],
-      "related_adrs": [
-        "ADR-0014"
-      ],
+      "related_specs": ["docs/features/capture/spec-capture-tech.md"],
+      "related_adrs": ["ADR-0014"],
       "related_guides": [
         "docs/guides/guide-error-recovery.md",
         "docs/guides/guide-whisper-transcription.md"
@@ -3006,10 +2682,7 @@
         "WHISPER_TRANSCRIPTION--T01",
         "WHISPER_TRANSCRIPTION--T02"
       ],
-      "file_scope": [
-        "packages/capture/**",
-        "packages/capture/tests/**"
-      ],
+      "file_scope": ["packages/capture/**", "packages/capture/tests/**"],
       "parallelism_group": "process-tasks"
     },
     {
@@ -3056,9 +2729,7 @@
         "docs/features/obsidian-bridge/spec-obsidian-test.md"
       ],
       "related_adrs": [],
-      "related_guides": [
-        "docs/guides/guide-error-recovery.md"
-      ],
+      "related_guides": ["docs/guides/guide-error-recovery.md"],
       "parallel": false,
       "conflicts_with": [
         "ATOMIC_FILE_WRITER--T01",
@@ -3106,9 +2777,7 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "VAULT_WRITE_ERROR_HANDLING--T01"
-      ],
+      "depends_on_tasks": ["VAULT_WRITE_ERROR_HANDLING--T01"],
       "gap_codes": [],
       "provisional": false,
       "related_specs": [
@@ -3116,9 +2785,7 @@
         "docs/features/obsidian-bridge/spec-obsidian-test.md"
       ],
       "related_adrs": [],
-      "related_guides": [
-        "docs/guides/guide-error-recovery.md"
-      ],
+      "related_guides": ["docs/guides/guide-error-recovery.md"],
       "parallel": false,
       "conflicts_with": [
         "ATOMIC_FILE_WRITER--T01",
@@ -3166,14 +2833,10 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "HOURLY_BACKUP_AUTOMATION--T02"
-      ],
+      "depends_on_tasks": ["HOURLY_BACKUP_AUTOMATION--T02"],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-backup-verification.md",
@@ -3201,10 +2864,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": null
     },
     {
@@ -3236,14 +2896,10 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "BACKUP_VERIFICATION_PROTOCOL--T01"
-      ],
+      "depends_on_tasks": ["BACKUP_VERIFICATION_PROTOCOL--T01"],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-backup-verification.md",
@@ -3271,10 +2927,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": null
     },
     {
@@ -3306,14 +2959,10 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "SQLITE_SCHEMA--T03"
-      ],
+      "depends_on_tasks": ["SQLITE_SCHEMA--T03"],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-backup-verification.md",
@@ -3341,10 +2990,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": null
     },
     {
@@ -3376,14 +3022,10 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "HOURLY_BACKUP_AUTOMATION--T01"
-      ],
+      "depends_on_tasks": ["HOURLY_BACKUP_AUTOMATION--T01"],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [],
       "related_guides": [
         "docs/guides/guide-backup-verification.md",
@@ -3411,10 +3053,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": null
     },
     {
@@ -3452,12 +3091,8 @@
       ],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
-      "related_adrs": [
-        "ADR-0007"
-      ],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
+      "related_adrs": ["ADR-0007"],
       "related_guides": [],
       "parallel": false,
       "conflicts_with": [
@@ -3481,10 +3116,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": null
     },
     {
@@ -3512,17 +3144,11 @@
       "est": {
         "size": "M"
       },
-      "depends_on_tasks": [
-        "RETENTION_POLICY_90DAY--T01"
-      ],
+      "depends_on_tasks": ["RETENTION_POLICY_90DAY--T01"],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
-      "related_adrs": [
-        "ADR-0007"
-      ],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
+      "related_adrs": ["ADR-0007"],
       "related_guides": [],
       "parallel": true,
       "conflicts_with": [
@@ -3546,10 +3172,7 @@
         "STORAGE_SIZE_MONITORING--T01",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": "foundation-tasks"
     },
     {
@@ -3593,19 +3216,12 @@
       "est": {
         "size": "S"
       },
-      "depends_on_tasks": [
-        "SQLITE_SCHEMA--T03",
-        "METRICS_INFRASTRUCTURE--T01"
-      ],
+      "depends_on_tasks": ["SQLITE_SCHEMA--T03", "METRICS_INFRASTRUCTURE--T01"],
       "gap_codes": [],
       "provisional": false,
-      "related_specs": [
-        "docs/features/staging-ledger/spec-staging-tech.md"
-      ],
+      "related_specs": ["docs/features/staging-ledger/spec-staging-tech.md"],
       "related_adrs": [],
-      "related_guides": [
-        "docs/guides/guide-health-command.md"
-      ],
+      "related_guides": ["docs/guides/guide-health-command.md"],
       "parallel": true,
       "conflicts_with": [
         "BACKUP_VERIFICATION_PROTOCOL--T01",
@@ -3628,10 +3244,7 @@
         "SQLITE_SCHEMA--T03",
         "TESTKIT_INTEGRATION--T01"
       ],
-      "file_scope": [
-        "packages/foundation/**",
-        "packages/foundation/tests/**"
-      ],
+      "file_scope": ["packages/foundation/**", "packages/foundation/tests/**"],
       "parallelism_group": "foundation-tasks"
     }
   ]

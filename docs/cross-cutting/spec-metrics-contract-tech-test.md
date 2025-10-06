@@ -329,7 +329,11 @@ const metricsDir = path.join(tempDir, ".metrics")
 **Time Helpers:**
 
 ```typescript
-import { freezeTime, advanceTime, resetTime } from "@capture-bridge/testkit/time"
+import {
+  freezeTime,
+  advanceTime,
+  resetTime,
+} from "@capture-bridge/testkit/time"
 
 // Test rotation at midnight UTC
 freezeTime("2025-09-27T23:59:59.000Z")
