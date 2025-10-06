@@ -3,7 +3,7 @@
 **Purpose**: Production-accurate TDD guide based on 319 passing tests in foundation package
 **TestKit Version**: @orchestr8/testkit v2.0.0
 **Source**: `/packages/foundation/src/__tests__/` (verified against implementation)
-**Last Updated**: 2025-10-04
+**Last Updated**: 2025-10-07 - Added createTempDirectory() pattern, deprecated tmpdir()
 
 ---
 
@@ -51,6 +51,7 @@ When implementing TDD task:
 
 **Jump to pattern:**
 - [Import Patterns](#import-patterns) - Dynamic imports, type imports
+- [TestKit Temp Directory](#testkit-temp-directory-pattern) - createTempDirectory() usage
 - [Cleanup Sequence](#cleanup-sequence-critical) - 4-step cleanup with settling
 - [SQLite Testing](#sqlite-testing-patterns) - Pools, migrations, transactions
 - [MSW HTTP Mocking](#msw-http-mocking-patterns) - Module-level setup
@@ -58,6 +59,7 @@ When implementing TDD task:
 - [Security Testing](#security-testing-patterns) - Attack vectors
 - [Memory Leak Detection](#memory-leak-detection-patterns) - GC patterns
 - [Global Setup](#global-test-setup) - test-setup.ts configuration
+- [Deprecated Patterns](#️-deprecated-patterns) - What NOT to use
 
 ---
 
@@ -104,11 +106,48 @@ import type { SetupServer } from 'msw/node'
 
 ---
 
+## TestKit Temp Directory Pattern
+
+### ✅ PRODUCTION PATTERN: TestKit Temp Directories
+
+**Updated**: 2025-10-07 - TestKit 2.0.0 best practice
+
+```typescript
+describe('My Tests', () => {
+  let testDir: string
+
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
+  })
+
+  // No manual cleanup needed - TestKit handles it automatically!
+})
+```
+
+**Why use createTempDirectory()?**
+- ✅ Automatic cleanup via TestKit resource tracking
+- ✅ Proper test isolation between runs
+- ✅ Cross-platform safety (handles path differences)
+- ✅ Integration with TestKit's global cleanup hooks
+- ✅ No manual rmSync() needed in afterEach
+
+**What TestKit manages for you:**
+- Directory creation with unique naming
+- Automatic cleanup after each test
+- Resource leak detection
+- Cross-platform path handling
+
+**Source**: TestKit 2.0.0 utilities, automatic resource management
+
+---
+
 ## Cleanup Sequence (CRITICAL)
 
-### ✅ PRODUCTION PATTERN: 4-Step Cleanup
+### ✅ PRODUCTION PATTERN: 4-Step Cleanup (Updated)
 
-**From**: `performance-benchmarks.test.ts:37-89` (exact copy)
+**Updated**: 2025-10-07 - Uses TestKit's createTempDirectory()
 
 ```typescript
 describe('My Tests', () => {
@@ -116,10 +155,11 @@ describe('My Tests', () => {
   let pools: any[] = []
   const databases: Database[] = []
 
-  beforeEach(() => {
-    // Create temp directory
-    testDir = join(tmpdir(), `test-${Date.now()}`)
-    mkdirSync(testDir, { recursive: true })
+  beforeEach(async () => {
+    // Create temp directory using TestKit
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
   })
 
   afterEach(async () => {
@@ -161,12 +201,9 @@ describe('My Tests', () => {
     }
     databases.length = 0
 
-    // 3. Clean up file system resources THIRD
-    try {
-      rmSync(testDir, { recursive: true, force: true })
-    } catch (error) {
-      // Directory might not exist or be in use - safe to ignore
-    }
+    // 3. TestKit handles temp directory cleanup automatically
+    //    - No manual rmSync() needed!
+    //    - Cleanup happens via TestKit's resource tracking
 
     // 4. Force garbage collection LAST (if available)
     //    - Helps with memory leak detection
@@ -181,7 +218,7 @@ describe('My Tests', () => {
 **Why this order?**
 1. Pools hold connections → drain pools before closing DBs
 2. DBs hold file handles → close DBs before filesystem cleanup
-3. Files prevent deletion → cleanup files after closing DBs
+3. TestKit handles temp directory cleanup automatically
 4. GC frees memory → run last to reclaim all resources
 
 **Source**: `performance-benchmarks.test.ts:37-89`
@@ -192,7 +229,7 @@ describe('My Tests', () => {
 
 ### Pool Creation with Helper
 
-**From**: `testkit-sqlite-pool.test.ts:62-67`
+**Updated**: 2025-10-07 - Uses TestKit's createTempDirectory()
 
 ```typescript
 describe('SQLite Pool Tests', () => {
@@ -200,9 +237,10 @@ describe('SQLite Pool Tests', () => {
   let dbPath: string
   let pools: any[] = []
 
-  beforeEach(() => {
-    testDir = join(tmpdir(), `testkit-pool-${Date.now()}`)
-    mkdirSync(testDir, { recursive: true })
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
     dbPath = join(testDir, 'test.db')
   })
 
@@ -217,12 +255,7 @@ describe('SQLite Pool Tests', () => {
     }
     pools = []
 
-    // Clean up test directory
-    try {
-      rmSync(testDir, { recursive: true, force: true })
-    } catch (error) {
-      // Ignore cleanup errors
-    }
+    // TestKit handles temp directory cleanup automatically
   })
 
   const createPool = async (options = {}) => {
@@ -240,7 +273,7 @@ describe('SQLite Pool Tests', () => {
 })
 ```
 
-**Source**: `testkit-sqlite-pool.test.ts:31-77`
+**Source**: Updated pattern based on `testkit-sqlite-pool.test.ts:31-77`
 
 ### In-Memory Database
 
@@ -610,9 +643,9 @@ export default defineConfig({
 
 ### SQLite Test Template
 
+**Updated**: 2025-10-07 - Uses TestKit's createTempDirectory()
+
 ```typescript
-import { mkdirSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import type { Database } from 'better-sqlite3'
@@ -623,9 +656,10 @@ describe('My SQLite Feature', () => {
   let pools: any[] = []
   const databases: Database[] = []
 
-  beforeEach(() => {
-    testDir = join(tmpdir(), `test-${Date.now()}`)
-    mkdirSync(testDir, { recursive: true })
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
     dbPath = join(testDir, 'test.db')
   })
 
@@ -653,11 +687,7 @@ describe('My SQLite Feature', () => {
     }
     databases.length = 0
 
-    try {
-      rmSync(testDir, { recursive: true, force: true })
-    } catch (error) {
-      // Ignore
-    }
+    // TestKit handles temp directory cleanup automatically
 
     if (global.gc) global.gc()
   })
@@ -703,33 +733,99 @@ describe('My API Tests', () => {
 
 ### ✅ DO
 
-1. **Use dynamic imports**: `await import('@orchestr8/testkit/sqlite')`
-2. **Track resources in arrays**: `pools: any[] = []`, `databases: Database[] = []`
-3. **Follow 4-step cleanup**: settling → pools → databases → filesystem → GC
-4. **Use parameterized queries**: `prepare('SELECT * FROM users WHERE name = ?').get(name)`
-5. **Test security**: SQL injection, path traversal, command injection
-6. **Check memory leaks**: GC before/after, 100 iterations, < 5MB growth
-7. **Add console logs**: `console.log('✅ Test passed')`
-8. **Use try-catch in cleanup**: Ignore errors to prevent cascade failures
-9. **Set extended timeouts**: `30000ms` for memory leak tests
-10. **Configure test-setup.ts**: Global resource cleanup
+1. **Use TestKit's createTempDirectory()**: `const { createTempDirectory } = await import('@orchestr8/testkit')`
+2. **Use dynamic imports**: `await import('@orchestr8/testkit/sqlite')`
+3. **Track resources in arrays**: `pools: any[] = []`, `databases: Database[] = []`
+4. **Follow 4-step cleanup**: settling → pools → databases → (TestKit auto-cleanup) → GC
+5. **Use parameterized queries**: `prepare('SELECT * FROM users WHERE name = ?').get(name)`
+6. **Test security**: SQL injection, path traversal, command injection
+7. **Check memory leaks**: GC before/after, 100 iterations, < 5MB growth
+8. **Add console logs**: `console.log('✅ Test passed')`
+9. **Use try-catch in cleanup**: Ignore errors to prevent cascade failures
+10. **Set extended timeouts**: `30000ms` for memory leak tests
+11. **Configure test-setup.ts**: Global resource cleanup
 
 ### ❌ DON'T
 
-1. **Don't use static imports** (except for types and vitest)
-2. **Don't skip cleanup steps** (causes resource leaks)
-3. **Don't use string concatenation in SQL** (SQL injection risk)
-4. **Don't manually close pool-managed connections** (use `pool.drain()`)
-5. **Don't forget settling delay** (100ms before pool.drain())
-6. **Don't set GC first** (must be last in cleanup)
-7. **Don't use fixed delays** (use explicit waits like `pool.warmUp()`)
-8. **Don't parallelize cleanup** (use sequential for loops)
-9. **Don't throw in cleanup** (use try-catch and ignore errors)
-10. **Don't test implementation details** (test behavior)
+1. **Don't use Node.js tmpdir()** (use TestKit's `createTempDirectory()` instead)
+2. **Don't use static imports** (except for types and vitest)
+3. **Don't skip cleanup steps** (causes resource leaks)
+4. **Don't use string concatenation in SQL** (SQL injection risk)
+5. **Don't manually close pool-managed connections** (use `pool.drain()`)
+6. **Don't forget settling delay** (100ms before pool.drain())
+7. **Don't set GC first** (must be last in cleanup)
+8. **Don't use fixed delays** (use explicit waits like `pool.warmUp()`)
+9. **Don't parallelize cleanup** (use sequential for loops)
+10. **Don't throw in cleanup** (use try-catch and ignore errors)
+11. **Don't test implementation details** (test behavior)
+12. **Don't manually rmSync() temp directories** (TestKit handles cleanup)
+
+---
+
+## ⚠️ DEPRECATED PATTERNS
+
+### DO NOT Use Node.js tmpdir() for Test Directories
+
+**Deprecated as of 2025-10-07** - TestKit 2.0.0 provides better alternatives
+
+❌ **Old way (pre-TestKit 2.0)**:
+```typescript
+import { tmpdir } from 'node:os'
+import { mkdirSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
+
+beforeEach(() => {
+  testDir = join(tmpdir(), `test-${Date.now()}`)
+  mkdirSync(testDir, { recursive: true })
+})
+
+afterEach(() => {
+  rmSync(testDir, { recursive: true, force: true })
+})
+```
+
+**Problems with this approach**:
+- ❌ Requires manual cleanup in `afterEach`
+- ❌ Risks temp directory pollution if cleanup fails
+- ❌ No integration with TestKit's resource management
+- ❌ More code, more chances for errors
+- ❌ No cross-platform path safety
+
+✅ **New way (TestKit 2.0+)**:
+```typescript
+import { join } from 'node:path'
+
+beforeEach(async () => {
+  const { createTempDirectory } = await import('@orchestr8/testkit')
+  const tempDir = await createTempDirectory()
+  testDir = tempDir.path
+})
+
+afterEach(async () => {
+  // No manual rmSync() needed - TestKit handles cleanup automatically!
+  // Just close your resources in the proper order
+})
+```
+
+**Benefits of TestKit's createTempDirectory()**:
+- ✅ Automatic cleanup via TestKit resource tracking
+- ✅ Proper test isolation between runs
+- ✅ Cross-platform safety (handles path differences)
+- ✅ Integration with TestKit's global cleanup hooks
+- ✅ Less code, fewer errors
+- ✅ Built-in leak detection
 
 ---
 
 ## Common Patterns Quick Reference
+
+### Create Temp Directory
+
+```typescript
+const { createTempDirectory } = await import('@orchestr8/testkit')
+const tempDir = await createTempDirectory()
+const testDir = tempDir.path
+```
 
 ### Create Pool
 
