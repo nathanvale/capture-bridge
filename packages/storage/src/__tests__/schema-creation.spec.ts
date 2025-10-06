@@ -16,9 +16,11 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 
 import { createSchema, initializePragmas } from '../schema/schema.js'
 
+type DatabaseInstance = ReturnType<typeof Database>
+
 describe('Schema Creation', () => {
-  let db: Database.Database
-  const databases: Database.Database[] = []
+  let db: DatabaseInstance
+  const databases: DatabaseInstance[] = []
 
   beforeEach(() => {
     db = new Database(':memory:')

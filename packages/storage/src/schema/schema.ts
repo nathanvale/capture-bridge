@@ -11,7 +11,9 @@
  * ADR: docs/adr/0003-four-table-hard-cap.md
  */
 
-import type Database from 'better-sqlite3'
+import type DatabaseConstructor from 'better-sqlite3'
+
+type Database = ReturnType<typeof DatabaseConstructor>
 
 /**
  * Initialize SQLite PRAGMAs for optimal performance and safety
@@ -28,7 +30,7 @@ import type Database from 'better-sqlite3'
  * Source: docs/features/staging-ledger/spec-staging-tech.md §2.2
  * ADR: docs/adr/0005-wal-mode-normal-sync.md
  */
-export const initializePragmas = (db: Database.Database): void => {
+export const initializePragmas = (db: Database): void => {
   db.pragma('journal_mode = WAL')
   db.pragma('synchronous = NORMAL')
   db.pragma('foreign_keys = ON')
@@ -49,7 +51,7 @@ export const initializePragmas = (db: Database.Database): void => {
  *
  * All indexes are created immediately after their tables.
  */
-export const createSchema = (db: Database.Database): void => {
+export const createSchema = (db: Database): void => {
   // === Table 1: captures (Ephemeral Staging) ===
   db.exec(`
     CREATE TABLE IF NOT EXISTS captures (
@@ -164,7 +166,7 @@ export const createSchema = (db: Database.Database): void => {
  * // Database is now ready to use
  * ```
  */
-export const initializeDatabase = (db: Database.Database): void => {
+export const initializeDatabase = (db: Database): void => {
   initializePragmas(db)
   createSchema(db)
 }
@@ -179,7 +181,7 @@ export const initializeDatabase = (db: Database.Database): void => {
  * @returns Object with verification results
  */
 export const verifySchema = (
-  db: Database.Database
+  db: Database
 ): {
   tables: string[]
   indexes: string[]
