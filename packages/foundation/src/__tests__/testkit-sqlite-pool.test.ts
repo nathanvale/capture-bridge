@@ -758,7 +758,8 @@ describe('SQLite Connection Pool', () => {
         })
       )
 
-      const connections = await Promise.all(acquisitions)
+      // Type assertion needed because Promise.all returns unknown[] for complex promise chains
+      const connections = (await Promise.all(acquisitions)) as Awaited<ReturnType<typeof pool.acquire>>[]
       expect(connections).toHaveLength(10)
 
       // Release all
