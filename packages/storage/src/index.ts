@@ -20,4 +20,5 @@ export {
   initializePragmas,
   initializeDatabase,
   verifySchema,
+  verifyPragmas,
 } from './schema/index.js'

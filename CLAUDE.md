@@ -243,14 +243,16 @@ import { createSchema } from "../schema/schema.js"
 When working with Promise.all() or async operations that return `unknown`:
 
 **❌ WRONG - Direct property access:**
+
 ```typescript
 const results = await Promise.all(tasks)
-results.forEach(r => {
+results.forEach((r) => {
   expect(r.valid).toBe(true) // TS18046: 'r' is of type 'unknown'
 })
 ```
 
 **✅ CORRECT - Add type assertion or guard:**
+
 ```typescript
 // Pattern 1: Type assertion with interface
 interface TestResult {
@@ -260,14 +262,14 @@ interface TestResult {
 }
 
 const results = (await Promise.all(tasks)) as TestResult[]
-results.forEach(r => {
+results.forEach((r) => {
   expect(r.valid).toBe(true) // ✅ Type is known
 })
 
 // Pattern 2: Type guard
 const results = await Promise.all(tasks)
 for (const result of results) {
-  if (typeof result === 'object' && result !== null && 'valid' in result) {
+  if (typeof result === "object" && result !== null && "valid" in result) {
     expect(result.valid).toBe(true)
   }
 }
@@ -278,6 +280,7 @@ for (const result of results) {
 **Rule**: Keep ESLint disables minimal and targeted
 
 **❌ WRONG - Blanket disables at file top:**
+
 ```typescript
 /* eslint-disable unicorn/consistent-function-scoping, sonarjs/no-ignored-exceptions,
    @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function,
@@ -285,6 +288,7 @@ for (const result of results) {
 ```
 
 **✅ CORRECT - Inline disables where needed:**
+
 ```typescript
 // Only disable specific rules at specific locations
 try {
@@ -295,6 +299,7 @@ try {
 ```
 
 **Cleanup Process**:
+
 1. Remove file-level disables
 2. Run ESLint to see actual violations
 3. Add targeted inline disables with justification comments
@@ -305,15 +310,18 @@ try {
 **Rule**: Don't compare incompatible types with strict equality
 
 **❌ WRONG - Comparing different types:**
+
 ```typescript
 const stringValue = "123"
 const numberValue = 123
-if (stringValue !== numberValue) { // Always true, different types!
+if (stringValue !== numberValue) {
+  // Always true, different types!
   // This always executes
 }
 ```
 
 **✅ CORRECT - Use type coercion or type guards:**
+
 ```typescript
 // Pattern 1: Explicit type conversion
 if (Number(stringValue) !== numberValue) {
@@ -321,7 +329,7 @@ if (Number(stringValue) !== numberValue) {
 }
 
 // Pattern 2: Type guard (preferred)
-if (typeof value === 'string' && value !== expectedString) {
+if (typeof value === "string" && value !== expectedString) {
   // Type-safe comparison
 }
 ```
@@ -331,22 +339,109 @@ if (typeof value === 'string' && value !== expectedString) {
 **Rule**: Prefer non-mutating array methods in modern TypeScript
 
 **❌ WRONG - Mutating sort in chain:**
+
 ```typescript
 const sorted = numbers.sort() // Mutates original array!
-expect(sorted.join(',')).toBe('1,2,3')
+expect(sorted.join(",")).toBe("1,2,3")
 ```
 
 **✅ CORRECT - Use toSorted() (ES2023+):**
+
 ```typescript
 // Pattern 1: Non-mutating toSorted (preferred)
 const sorted = numbers.toSorted()
-expect(sorted.join(',')).toBe('1,2,3')
+expect(sorted.join(",")).toBe("1,2,3")
 
 // Pattern 2: Separate statement (fallback)
 const copy = [...numbers]
 copy.sort()
-expect(copy.join(',')).toBe('1,2,3')
+expect(copy.join(",")).toBe("1,2,3")
 ```
+
+### Empty Catch Blocks
+
+When intentionally ignoring errors in cleanup code:
+
+**❌ WRONG - Empty catch triggers ESLint error:**
+
+```typescript
+try {
+  database.close()
+} catch {
+  // ERROR: sonarjs/no-ignored-exceptions
+}
+```
+
+**❌ ALSO WRONG - Named but unused variable:**
+
+```typescript
+try {
+  database.close()
+} catch (error) {
+  // ERROR: @typescript-eslint/no-unused-vars
+  // Ignore errors
+}
+```
+
+**✅ CORRECT - Empty catch with inline disable:**
+
+```typescript
+try {
+  database.close()
+  // eslint-disable-next-line sonarjs/no-ignored-exceptions -- Safe in cleanup
+} catch {
+  // Intentionally ignore errors during cleanup
+}
+```
+
+**✅ ALSO CORRECT - Use underscore prefix:**
+
+```typescript
+try {
+  database.close()
+} catch (_error) {
+  // Underscore indicates intentional suppression
+}
+```
+
+**Rationale**:
+
+- `sonarjs/no-ignored-exceptions` flags empty catch blocks by default
+- Use inline disable with justification OR underscore-prefixed variable
+- Always document WHY you're ignoring the error (cleanup, non-critical, etc.)
+
+### Better-SQLite3 Type Imports
+
+When importing types from better-sqlite3:
+
+**❌ WRONG - Named import from module:**
+
+```typescript
+import type { Database } from "better-sqlite3" // TS2305: Module has no exported member 'Database'
+```
+
+**✅ CORRECT - Import default and use namespace:**
+
+```typescript
+import type Database from "better-sqlite3"
+
+// Then use as type
+const db: Database.Database = new Database(":memory:")
+```
+
+**✅ ALSO CORRECT - Dynamic import pattern (TestKit):**
+
+```typescript
+// No type import needed at top
+const Database = (await import("better-sqlite3")).default
+const db = new Database(":memory:")
+```
+
+**Rationale**:
+
+- better-sqlite3 exports a default class, not named exports
+- TypeScript type is accessed via `Database.Database` namespace
+- Dynamic imports avoid the issue entirely (preferred in tests)
 
 ### Code Quality Checklist
 
@@ -355,8 +450,9 @@ Before committing, verify:
 - [ ] **No non-null assertions** unless after explicit null check
 - [ ] **All relative imports** include `.js` extension
 - [ ] **Array access** uses length assertion first OR optional chaining
-- [ ] **Catch blocks** either handle errors OR use empty `catch` blocks
+- [ ] **Catch blocks** use underscore prefix OR inline disable with justification
 - [ ] **Unknown types** have type assertions or guards
+- [ ] **better-sqlite3 types** use `Database.Database` namespace or dynamic imports
 - [ ] **File formatted** with Prettier (`pnpm format`)
 - [ ] **No TypeScript errors** (`pnpm typecheck`)
 - [ ] **No ESLint errors** (`pnpm lint`)

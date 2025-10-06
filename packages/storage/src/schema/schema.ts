@@ -41,6 +41,48 @@ export const initializePragmas = (db: Database): void => {
 }
 
 /**
+ * Verify all critical PRAGMAs are correctly set
+ * Returns validation result with details about any issues
+ */
+export const verifyPragmas = (db: Database): { valid: boolean; issues: string[] } => {
+  const issues: string[] = []
+
+  // Check journal_mode (should be 'wal' for file-based DBs, 'memory' for in-memory)
+  const journalMode = db.prepare('PRAGMA journal_mode').get() as { journal_mode: string }
+  const dbName = db.name
+  const isInMemory = dbName === ':memory:' || dbName === ''
+
+  if (!isInMemory && journalMode.journal_mode.toLowerCase() !== 'wal') {
+    issues.push(
+      `journal_mode is '${journalMode.journal_mode}' but expected 'wal' for file-based database`
+    )
+  }
+
+  // Check synchronous (should be 1 for NORMAL)
+  const synchronous = db.prepare('PRAGMA synchronous').get() as { synchronous: number }
+  if (synchronous.synchronous !== 1) {
+    issues.push(`synchronous is ${synchronous.synchronous} but expected 1 (NORMAL)`)
+  }
+
+  // Check foreign_keys (should be 1 for ON)
+  const foreignKeys = db.prepare('PRAGMA foreign_keys').get() as { foreign_keys: number }
+  if (foreignKeys.foreign_keys !== 1) {
+    issues.push(`foreign_keys is ${foreignKeys.foreign_keys} but expected 1 (ON)`)
+  }
+
+  // Check busy_timeout (should be 5000)
+  const busyTimeout = db.prepare('PRAGMA busy_timeout').get() as { timeout: number }
+  if (busyTimeout.timeout !== 5000) {
+    issues.push(`busy_timeout is ${busyTimeout.timeout} but expected 5000`)
+  }
+
+  return {
+    valid: issues.length === 0,
+    issues,
+  }
+}
+
+/**
  * Create all 4 tables with complete schema
  *
  * Order matters:
@@ -148,6 +190,12 @@ export const createSchema = (db: Database): void => {
       value TEXT NOT NULL,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
+  `)
+
+  // Insert schema version (INSERT OR IGNORE ensures idempotency)
+  db.exec(`
+    INSERT OR IGNORE INTO sync_state (key, value)
+    VALUES ('schema_version', '1')
   `)
 }
 
