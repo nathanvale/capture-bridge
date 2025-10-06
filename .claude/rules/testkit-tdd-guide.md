@@ -3,7 +3,7 @@
 **Purpose**: Production-accurate TDD guide based on 319 passing tests in foundation package
 **TestKit Version**: @orchestr8/testkit v2.0.0
 **Source**: `/packages/foundation/src/__tests__/` (verified against implementation)
-**Last Updated**: 2025-10-07 - Added createTempDirectory() pattern, deprecated tmpdir()
+**Last Updated**: 2025-10-07 - Added createTempDirectory() pattern, TempDirectory API, advanced utilities; changed tmpdir() from deprecated to legacy
 
 ---
 
@@ -52,6 +52,8 @@ When implementing TDD task:
 **Jump to pattern:**
 - [Import Patterns](#import-patterns) - Dynamic imports, type imports
 - [TestKit Temp Directory](#testkit-temp-directory-pattern) - createTempDirectory() usage
+- [TempDirectory API](#tempdirectory-api) - Helper methods (writeFile, readFile, etc.)
+- [Advanced Temp Directory Utilities](#advanced-temp-directory-utilities) - Named, batch, scoped patterns
 - [Cleanup Sequence](#cleanup-sequence-critical) - 4-step cleanup with settling
 - [SQLite Testing](#sqlite-testing-patterns) - Pools, migrations, transactions
 - [MSW HTTP Mocking](#msw-http-mocking-patterns) - Module-level setup
@@ -59,7 +61,7 @@ When implementing TDD task:
 - [Security Testing](#security-testing-patterns) - Attack vectors
 - [Memory Leak Detection](#memory-leak-detection-patterns) - GC patterns
 - [Global Setup](#global-test-setup) - test-setup.ts configuration
-- [Deprecated Patterns](#️-deprecated-patterns) - What NOT to use
+- [Legacy Patterns](#️-legacy-patterns) - tmpdir() pattern (still supported)
 
 ---
 
@@ -94,7 +96,8 @@ import type { SetupServer } from 'msw/node'
 ### Available Sub-Exports
 
 ```typescript
-'@orchestr8/testkit'         // Core: delay, retry, withTimeout
+'@orchestr8/testkit'         // Core: delay, retry, withTimeout (re-exports fs utilities)
+'@orchestr8/testkit/fs'      // File system: createTempDirectory, temp directory utilities
 '@orchestr8/testkit/sqlite'  // Database: pools, migrations, seeding
 '@orchestr8/testkit/msw'     // HTTP mocking: MSW integration
 '@orchestr8/testkit/cli'     // CLI: process mocking
@@ -114,12 +117,24 @@ import type { SetupServer } from 'msw/node'
 
 ```typescript
 describe('My Tests', () => {
-  let testDir: string
+  let tempDir: any  // Full TempDirectory object with helper methods
 
   beforeEach(async () => {
-    const { createTempDirectory } = await import('@orchestr8/testkit')
-    const tempDir = await createTempDirectory()
-    testDir = tempDir.path
+    // ✅ PREFERRED: Explicit sub-export (more discoverable)
+    const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+    tempDir = await createTempDirectory()
+
+    // ✅ ALSO VALID: Main export re-exports filesystem utilities
+    // const { createTempDirectory } = await import('@orchestr8/testkit')
+  })
+
+  it('should work', async () => {
+    // Access the temp directory path
+    const testDir = tempDir.path
+
+    // Use helper methods (see TempDirectory API below)
+    await tempDir.writeFile('test.txt', 'content')
+    const exists = await tempDir.exists('test.txt')
   })
 
   // No manual cleanup needed - TestKit handles it automatically!
@@ -132,6 +147,7 @@ describe('My Tests', () => {
 - ✅ Cross-platform safety (handles path differences)
 - ✅ Integration with TestKit's global cleanup hooks
 - ✅ No manual rmSync() needed in afterEach
+- ✅ Rich API with file operation helpers
 
 **What TestKit manages for you:**
 - Directory creation with unique naming
@@ -139,7 +155,81 @@ describe('My Tests', () => {
 - Resource leak detection
 - Cross-platform path handling
 
-**Source**: TestKit 2.0.0 utilities, automatic resource management
+### TempDirectory API
+
+The object returned by `createTempDirectory()` includes these methods:
+
+```typescript
+const tempDir = await createTempDirectory()
+
+// Access path
+tempDir.path                               // string: absolute path to temp directory
+
+// File operations (all paths are relative to tempDir.path)
+await tempDir.writeFile('test.txt', 'content')     // Write file
+await tempDir.readFile('test.txt')                 // Read file (returns string)
+await tempDir.exists('test.txt')                   // Check if file/dir exists (returns boolean)
+await tempDir.mkdir('subdir')                      // Create subdirectory
+await tempDir.readdir()                            // List files (returns string[])
+const absPath = tempDir.getPath('file.txt')        // Get absolute path for relative path
+
+// Copy external files in
+await tempDir.copyFileIn('/absolute/source.txt', 'dest.txt')
+
+// Create directory structure (nested files/folders)
+await tempDir.createStructure({
+  'package.json': '{}',
+  'src/index.ts': 'export {}'
+})
+
+// Manual cleanup (automatic, but can call explicitly if needed)
+await tempDir.cleanup()
+```
+
+**Source**: TestKit 2.0.0 `/fs` utilities, automatic resource management
+
+### Advanced Temp Directory Utilities
+
+**TestKit provides additional filesystem utilities for advanced use cases:**
+
+```typescript
+// Named temp directories (custom prefix)
+const { createNamedTempDirectory } = await import('@orchestr8/testkit/fs')
+const tempDir = await createNamedTempDirectory('my-test')
+// Creates: /tmp/test-my-test-abc123
+
+// Batch creation (multiple temp directories at once)
+const { createMultipleTempDirectories } = await import('@orchestr8/testkit/fs')
+const tempDirs = await createMultipleTempDirectories(5, { prefix: 'batch-' })
+// Returns: Array of 5 TempDirectory objects
+
+// Scoped cleanup (automatic cleanup after scope exits)
+const { withTempDirectoryScope } = await import('@orchestr8/testkit/fs')
+await withTempDirectoryScope(async (tempDir) => {
+  // Use tempDir.path here
+  await tempDir.writeFile('test.txt', 'content')
+  // Automatic cleanup when scope exits (even on error)
+})
+
+// Batch cleanup
+const { cleanupMultipleTempDirectories } = await import('@orchestr8/testkit/fs')
+await cleanupMultipleTempDirectories(tempDirs)
+
+// Hook-style temp directory (returns cleanup function)
+const { useTempDirectory } = await import('@orchestr8/testkit/fs')
+const { path, cleanup } = await useTempDirectory()
+try {
+  // Use path
+} finally {
+  await cleanup()
+}
+```
+
+**When to use advanced utilities**:
+- `createNamedTempDirectory()` - When you need recognizable temp directory names for debugging
+- `createMultipleTempDirectories()` - When testing parallel operations or isolation between workers
+- `withTempDirectoryScope()` - When you want guaranteed cleanup in a specific code block
+- `useTempDirectory()` - When you need functional/hook-style temp directory management
 
 ---
 
@@ -733,7 +823,7 @@ describe('My API Tests', () => {
 
 ### ✅ DO
 
-1. **Use TestKit's createTempDirectory()**: `const { createTempDirectory } = await import('@orchestr8/testkit')`
+1. **Use TestKit's createTempDirectory()**: `const { createTempDirectory } = await import('@orchestr8/testkit/fs')` (or main export)
 2. **Use dynamic imports**: `await import('@orchestr8/testkit/sqlite')`
 3. **Track resources in arrays**: `pools: any[] = []`, `databases: Database[] = []`
 4. **Follow 4-step cleanup**: settling → pools → databases → (TestKit auto-cleanup) → GC
@@ -762,13 +852,13 @@ describe('My API Tests', () => {
 
 ---
 
-## ⚠️ DEPRECATED PATTERNS
+## ⚠️ LEGACY PATTERNS
 
-### DO NOT Use Node.js tmpdir() for Test Directories
+### Node.js tmpdir() Pattern (Still Supported, TestKit Preferred)
 
-**Deprecated as of 2025-10-07** - TestKit 2.0.0 provides better alternatives
+**Status**: Legacy pattern - still functional but TestKit 2.0.0 provides better alternatives
 
-❌ **Old way (pre-TestKit 2.0)**:
+⚠️ **Legacy way (still used in some production tests)**:
 ```typescript
 import { tmpdir } from 'node:os'
 import { mkdirSync, rmSync } from 'node:fs'
@@ -784,19 +874,26 @@ afterEach(() => {
 })
 ```
 
-**Problems with this approach**:
-- ❌ Requires manual cleanup in `afterEach`
-- ❌ Risks temp directory pollution if cleanup fails
-- ❌ No integration with TestKit's resource management
-- ❌ More code, more chances for errors
-- ❌ No cross-platform path safety
+**When to use this pattern**:
+- ✅ Maintaining existing tests that use this pattern
+- ✅ Need manual control over cleanup timing
+- ✅ Working with code that can't use async beforeEach
+- ❌ New tests (use `createTempDirectory()` instead)
 
-✅ **New way (TestKit 2.0+)**:
+**Limitations of this approach**:
+- ⚠️ Requires manual cleanup in `afterEach`
+- ⚠️ Risks temp directory pollution if cleanup fails
+- ⚠️ No integration with TestKit's resource management
+- ⚠️ More code, more chances for errors
+- ⚠️ No cross-platform path safety
+- ⚠️ No helper methods (writeFile, readFile, etc.)
+
+✅ **Recommended way (TestKit 2.0+)**:
 ```typescript
 import { join } from 'node:path'
 
 beforeEach(async () => {
-  const { createTempDirectory } = await import('@orchestr8/testkit')
+  const { createTempDirectory } = await import('@orchestr8/testkit/fs')
   const tempDir = await createTempDirectory()
   testDir = tempDir.path
 })
@@ -814,6 +911,7 @@ afterEach(async () => {
 - ✅ Integration with TestKit's global cleanup hooks
 - ✅ Less code, fewer errors
 - ✅ Built-in leak detection
+- ✅ Rich API with helper methods (writeFile, readFile, createStructure, etc.)
 
 ---
 
@@ -822,9 +920,14 @@ afterEach(async () => {
 ### Create Temp Directory
 
 ```typescript
-const { createTempDirectory } = await import('@orchestr8/testkit')
+// Preferred: Explicit sub-export
+const { createTempDirectory } = await import('@orchestr8/testkit/fs')
 const tempDir = await createTempDirectory()
 const testDir = tempDir.path
+
+// Access helper methods
+await tempDir.writeFile('test.txt', 'content')
+await tempDir.readFile('test.txt')
 ```
 
 ### Create Pool
