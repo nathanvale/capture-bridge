@@ -31,6 +31,32 @@ export default defineConfig(
           execArgv: ['--max-old-space-size=1024'],
         },
       },
+
+      // Coverage configuration
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'json', 'json-summary', 'html'],
+        reportsDirectory: './coverage',
+        exclude: [
+          'node_modules/**',
+          'dist/**',
+          '**/*.test.ts',
+          '**/*.spec.ts',
+          '**/test-setup.ts',
+          '**/__tests__/**',
+          '**/vitest.config.ts',
+          '**/tsup.config.ts',
+          '**/example.ts', // Exclude example file from coverage
+        ],
+        include: ['src/**/*.ts'],
+        all: true,
+        thresholds: {
+          lines: 80,
+          functions: 80,
+          branches: 75,
+          statements: 80,
+        },
+      },
     },
   })
 )
