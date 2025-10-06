@@ -1,9 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 
-import type { Database } from 'better-sqlite3'
-
 describe('PRAGMA Configuration', () => {
-  const databases: Database[] = []
+  const databases: any[] = []
 
   afterEach(async () => {
     // 4-step cleanup sequence (TestKit pattern)
@@ -16,7 +14,7 @@ describe('PRAGMA Configuration', () => {
         if (database.open && !database.readonly) {
           database.close()
         }
-      } catch (_error) {
+      } catch {
         // Ignore close errors
       }
     }
@@ -62,7 +60,7 @@ describe('PRAGMA Configuration', () => {
         // Clean up test directory
         try {
           rmSync(testDir, { recursive: true, force: true })
-        } catch (_error) {
+        } catch {
           // Ignore cleanup errors
         }
       }
@@ -103,7 +101,7 @@ describe('PRAGMA Configuration', () => {
         // Clean up test directory
         try {
           rmSync(testDir, { recursive: true, force: true })
-        } catch (_error) {
+        } catch {
           // Ignore cleanup errors
         }
       }
@@ -136,7 +134,7 @@ describe('PRAGMA Configuration', () => {
       } finally {
         try {
           rmSync(testDir, { recursive: true, force: true })
-        } catch (_error) {
+        } catch {
           // Ignore cleanup errors
         }
       }
@@ -167,7 +165,7 @@ describe('PRAGMA Configuration', () => {
       } finally {
         try {
           rmSync(testDir, { recursive: true, force: true })
-        } catch (_error) {
+        } catch {
           // Ignore cleanup errors
         }
       }
@@ -198,7 +196,7 @@ describe('PRAGMA Configuration', () => {
       } finally {
         try {
           rmSync(testDir, { recursive: true, force: true })
-        } catch (_error) {
+        } catch {
           // Ignore cleanup errors
         }
       }
@@ -235,7 +233,7 @@ describe('PRAGMA Configuration', () => {
       } finally {
         try {
           rmSync(testDir, { recursive: true, force: true })
-        } catch (_error) {
+        } catch {
           // Ignore cleanup errors
         }
       }
@@ -274,7 +272,7 @@ describe('PRAGMA Configuration', () => {
       } finally {
         try {
           rmSync(testDir, { recursive: true, force: true })
-        } catch (_error) {
+        } catch {
           // Ignore cleanup errors
         }
       }
@@ -297,5 +295,3 @@ describe('PRAGMA Configuration', () => {
     })
   })
 })
-
-

@@ -1,9 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 
-import type { Database } from 'better-sqlite3'
-
 describe('Schema Versioning', () => {
-  const databases: Database[] = []
+  const databases: any[] = []
 
   afterEach(async () => {
     // 4-step cleanup sequence (TestKit pattern)
@@ -16,7 +14,7 @@ describe('Schema Versioning', () => {
         if (database.open && !database.readonly) {
           database.close()
         }
-      } catch (_error) {
+      } catch {
         // Ignore close errors
       }
     }
@@ -105,7 +103,7 @@ describe('Schema Versioning', () => {
         createSchema(db)
 
         // Verify initial version
-        const getVersion = (database: Database) =>
+        const getVersion = (database: any) =>
           database.prepare("SELECT value FROM sync_state WHERE key = 'schema_version'").get() as
             | { value: string }
             | undefined
@@ -136,7 +134,8 @@ describe('Schema Versioning', () => {
         // Clean up test directory
         try {
           rmSync(testDir, { recursive: true, force: true })
-        } catch (_error) {
+           
+        } catch {
           // Ignore cleanup errors
         }
       }
@@ -165,7 +164,9 @@ describe('Schema Versioning', () => {
       expect(result?.updated_at).toBeDefined()
 
       // Parse the timestamp (SQLite format: 'YYYY-MM-DD HH:MM:SS')
-      const timestamp = result!.updated_at
+      // Safe assertion: we've verified result is defined in expect() above
+      if (!result) throw new Error('Result should be defined')
+      const timestamp = result.updated_at
       const timestampMs = new Date(timestamp.replace(' ', 'T') + 'Z').getTime()
 
       // Timestamp should be between before and after (with some tolerance for timezone)
