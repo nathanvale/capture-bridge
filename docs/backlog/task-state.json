@@ -26,6 +26,18 @@
       ],
       "acs_remaining": [],
       "notes": "Completed SQLite schema implementation following strict TDD (Red-Green-Refactor). All 4 tables created (captures, exports_audit, errors_log, sync_state) with correct CHECK constraints, foreign keys (CASCADE/SET NULL), and 7 indexes. 53/53 tests passing. Files created: schema.ts, 3 test specs (schema-creation, foreign-key-constraints, index-performance), 0001_init.sql migration. Build successful."
+    },
+    "SQLITE_SCHEMA--T02": {
+      "status": "completed",
+      "started_at": "2025-10-06T13:00:00Z",
+      "completed_at": "2025-10-06T21:08:00Z",
+      "acs_completed": [
+        "SQLITE_SCHEMA-AC04",
+        "SQLITE_SCHEMA-AC05",
+        "SQLITE_SCHEMA-AC06"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed PRAGMA verification and schema version tracking following strict TDD. AC04: WAL mode verification (handles file vs in-memory DBs). AC05: All PRAGMAs verified (synchronous=NORMAL, foreign_keys=ON, busy_timeout=5000) with new verifyPragmas() utility. AC06: Schema version tracking in sync_state table with INSERT OR IGNORE for idempotency. 65/65 tests passing (53 existing + 12 new). Files created: pragma-configuration.spec.ts (8 tests), schema-versioning.spec.ts (4 tests). Modified: schema.ts (added verifyPragmas + schema version insert), index exports. Build successful."
     }
   }
 }
