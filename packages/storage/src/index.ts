@@ -21,4 +21,5 @@ export {
   initializeDatabase,
   verifySchema,
   verifyPragmas,
+  verifyIntegrity,
 } from './schema/index.js'

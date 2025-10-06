@@ -273,3 +273,76 @@ export const verifySchema = (
     missing,
   }
 }
+
+/**
+ * Verify database integrity using SQLite PRAGMA integrity_check
+ *
+ * Validates the internal structure of the database including:
+ * - Table structure integrity
+ * - Index consistency
+ * - Row data validity
+ * - B-tree structure correctness
+ *
+ * @param db - better-sqlite3 Database instance
+ * @returns Validation result with status and any issues found
+ */
+export const verifyIntegrity = (
+  db: Database
+): {
+  valid: boolean
+  result: string
+  issues: string[]
+} => {
+  try {
+    // Execute integrity check
+    const results = db.pragma('integrity_check', { simple: false }) as Array<{
+      integrity_check: string
+    }>
+
+    // SQLite returns array of objects: [{integrity_check: 'ok'}] or [{integrity_check: 'error msg'}]
+    if (!results || results.length === 0) {
+      return {
+        valid: false,
+        result: 'No integrity check results returned',
+        issues: ['Empty result from PRAGMA integrity_check'],
+      }
+    }
+
+    // Check first result
+    const firstResult = results[0]
+    if (!firstResult) {
+      return {
+        valid: false,
+        result: 'No integrity check results returned',
+        issues: ['Empty result from PRAGMA integrity_check'],
+      }
+    }
+
+    const status = firstResult.integrity_check || firstResult['integrity_check']
+
+    if (status === 'ok') {
+      return {
+        valid: true,
+        result: 'ok',
+        issues: [],
+      }
+    }
+
+    // Collect all issues
+    const issues = results
+      .map((r) => r.integrity_check || r['integrity_check'])
+      .filter((issue): issue is string => issue !== undefined)
+
+    return {
+      valid: false,
+      result: issues[0] || 'Unknown integrity check error',
+      issues,
+    }
+  } catch (error) {
+    return {
+      valid: false,
+      result: error instanceof Error ? error.message : 'Unknown error during integrity check',
+      issues: [error instanceof Error ? error.message : 'Unknown error'],
+    }
+  }
+}
