@@ -4,9 +4,8 @@
  * AC01-AC08: NDJSON writer, rotation, activation, core metrics, etc.
  */
 
-import { mkdirSync, rmSync } from 'node:fs'
+import { rmSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { performance } from 'node:perf_hooks'
 
@@ -23,10 +22,11 @@ describe('Metrics Client - AC01: NDJSON Writer', () => {
   let testDir: string
   let metricsDir: string
 
-  beforeEach(() => {
-    testDir = join(tmpdir(), `metrics-test-${Date.now()}`)
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
     metricsDir = join(testDir, '.metrics')
-    mkdirSync(testDir, { recursive: true })
   })
 
   afterEach(async () => {
@@ -98,10 +98,11 @@ describe('Metrics Client - AC02: Daily Log Rotation', () => {
   let testDir: string
   let metricsDir: string
 
-  beforeEach(() => {
-    testDir = join(tmpdir(), `metrics-test-${Date.now()}`)
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
     metricsDir = join(testDir, '.metrics')
-    mkdirSync(testDir, { recursive: true })
     vi.useFakeTimers()
   })
 
@@ -154,10 +155,11 @@ describe('Metrics Client - AC03: Opt-in Activation', () => {
   let testDir: string
   let metricsDir: string
 
-  beforeEach(() => {
-    testDir = join(tmpdir(), `metrics-test-${Date.now()}`)
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
     metricsDir = join(testDir, '.metrics')
-    mkdirSync(testDir, { recursive: true })
   })
 
   afterEach(async () => {
@@ -220,10 +222,11 @@ describe('Metrics Client - AC04: Core Metrics', () => {
   let testDir: string
   let metricsDir: string
 
-  beforeEach(() => {
-    testDir = join(tmpdir(), `metrics-test-${Date.now()}`)
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
     metricsDir = join(testDir, '.metrics')
-    mkdirSync(testDir, { recursive: true })
     process.env['CAPTURE_METRICS'] = '1'
   })
 
@@ -274,10 +277,11 @@ describe('Metrics Client - AC05: Monotonic Clock', () => {
   let testDir: string
   let metricsDir: string
 
-  beforeEach(() => {
-    testDir = join(tmpdir(), `metrics-test-${Date.now()}`)
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
     metricsDir = join(testDir, '.metrics')
-    mkdirSync(testDir, { recursive: true })
     process.env['CAPTURE_METRICS'] = '1'
   })
 
@@ -325,10 +329,11 @@ describe('Metrics Client - AC06: ISO 8601 Timestamps', () => {
   let testDir: string
   let metricsDir: string
 
-  beforeEach(() => {
-    testDir = join(tmpdir(), `metrics-test-${Date.now()}`)
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
     metricsDir = join(testDir, '.metrics')
-    mkdirSync(testDir, { recursive: true })
     process.env['CAPTURE_METRICS'] = '1'
   })
 
@@ -377,10 +382,11 @@ describe('Metrics Client - AC07: Schema Version', () => {
   let testDir: string
   let metricsDir: string
 
-  beforeEach(() => {
-    testDir = join(tmpdir(), `metrics-test-${Date.now()}`)
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
     metricsDir = join(testDir, '.metrics')
-    mkdirSync(testDir, { recursive: true })
     process.env['CAPTURE_METRICS'] = '1'
   })
 
@@ -446,10 +452,11 @@ describe('Metrics Client - AC08: No External Network Calls', () => {
   let testDir: string
   let metricsDir: string
 
-  beforeEach(() => {
-    testDir = join(tmpdir(), `metrics-test-${Date.now()}`)
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
     metricsDir = join(testDir, '.metrics')
-    mkdirSync(testDir, { recursive: true })
     process.env['CAPTURE_METRICS'] = '1'
   })
 

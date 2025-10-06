@@ -164,17 +164,17 @@ export class MetricsClient implements IMetricsClient {
   async flush(): Promise<void> {
     if (!this.enabled || this.buffer.length === 0) return
 
-    await this.ensureInitialized()
+    // Atomically take all pending events
+    const events = this.buffer.splice(0, this.buffer.length)
 
-    // Copy buffer and clear it
-    const events = [...this.buffer]
-    this.buffer.length = 0
-
-    // Write events to file
     try {
+      await this.ensureInitialized()
       await this.writer.write(events)
     } catch (error) {
-      // Log error but don't throw - metrics should not break the app
+      // Restore events on failure
+      if (events.length > 0) {
+        this.buffer.unshift(...events)
+      }
       console.error('Failed to write metrics:', error)
     }
   }

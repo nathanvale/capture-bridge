@@ -48,14 +48,27 @@ export class NDJSONWriter {
 
     // Write schema version as first event in new file
     if (!this.hasWrittenSchemaVersion) {
-      const schemaEvent: MetricEvent = {
-        timestamp: new Date().toISOString(),
-        metric: 'metrics.schema.version',
-        value: 1,
-        type: 'gauge',
-        version: SCHEMA_VERSION,
+      let fileHasContent = false
+      if (existsSync(this.currentFile)) {
+        try {
+          const stats = await stat(this.currentFile)
+          fileHasContent = stats.size > 0
+        } catch {
+          // Treat stat failures as an empty file and re-emit the schema record
+        }
       }
-      lines.push(JSON.stringify(schemaEvent))
+
+      if (!fileHasContent) {
+        const schemaEvent: MetricEvent = {
+          timestamp: new Date().toISOString(),
+          metric: 'metrics.schema.version',
+          value: 1,
+          type: 'gauge',
+          version: SCHEMA_VERSION,
+        }
+        lines.push(JSON.stringify(schemaEvent))
+      }
+
       this.hasWrittenSchemaVersion = true
     }
 
