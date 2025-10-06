@@ -9,6 +9,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
+
 import type DatabaseConstructor from 'better-sqlite3'
 
 type Database = ReturnType<typeof DatabaseConstructor>

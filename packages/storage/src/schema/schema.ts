@@ -331,11 +331,11 @@ export const verifyIntegrity = (
     // Collect all issues
     const issues = results
       .map((r) => r.integrity_check || r['integrity_check'])
-      .filter((issue): issue is string => issue !== undefined)
+      .filter((issue): issue is string => typeof issue === 'string')
 
     return {
       valid: false,
-      result: issues[0] || 'Unknown integrity check error',
+      result: issues[0] ?? 'Unknown integrity check error',
       issues,
     }
   } catch (error) {
