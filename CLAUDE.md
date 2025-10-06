@@ -348,6 +348,89 @@ copy.sort()
 expect(copy.join(',')).toBe('1,2,3')
 ```
 
+### Empty Catch Blocks
+
+When intentionally ignoring errors in cleanup code:
+
+**❌ WRONG - Empty catch triggers ESLint error:**
+
+```typescript
+try {
+  database.close()
+} catch {
+  // ERROR: sonarjs/no-ignored-exceptions
+}
+```
+
+**❌ ALSO WRONG - Named but unused variable:**
+
+```typescript
+try {
+  database.close()
+} catch (error) {
+  // ERROR: @typescript-eslint/no-unused-vars
+  // Ignore errors
+}
+```
+
+**✅ CORRECT - Empty catch with inline disable:**
+
+```typescript
+try {
+  database.close()
+// eslint-disable-next-line sonarjs/no-ignored-exceptions -- Safe in cleanup
+} catch {
+  // Intentionally ignore errors during cleanup
+}
+```
+
+**✅ ALSO CORRECT - Use underscore prefix:**
+
+```typescript
+try {
+  database.close()
+} catch (_error) {
+  // Underscore indicates intentional suppression
+}
+```
+
+**Rationale**:
+- `sonarjs/no-ignored-exceptions` flags empty catch blocks by default
+- Use inline disable with justification OR underscore-prefixed variable
+- Always document WHY you're ignoring the error (cleanup, non-critical, etc.)
+
+### Better-SQLite3 Type Imports
+
+When importing types from better-sqlite3:
+
+**❌ WRONG - Named import from module:**
+
+```typescript
+import type { Database } from 'better-sqlite3' // TS2305: Module has no exported member 'Database'
+```
+
+**✅ CORRECT - Import default and use namespace:**
+
+```typescript
+import type Database from 'better-sqlite3'
+
+// Then use as type
+const db: Database.Database = new Database(':memory:')
+```
+
+**✅ ALSO CORRECT - Dynamic import pattern (TestKit):**
+
+```typescript
+// No type import needed at top
+const Database = (await import('better-sqlite3')).default
+const db = new Database(':memory:')
+```
+
+**Rationale**:
+- better-sqlite3 exports a default class, not named exports
+- TypeScript type is accessed via `Database.Database` namespace
+- Dynamic imports avoid the issue entirely (preferred in tests)
+
 ### Code Quality Checklist
 
 Before committing, verify:
@@ -355,8 +438,9 @@ Before committing, verify:
 - [ ] **No non-null assertions** unless after explicit null check
 - [ ] **All relative imports** include `.js` extension
 - [ ] **Array access** uses length assertion first OR optional chaining
-- [ ] **Catch blocks** either handle errors OR use empty `catch` blocks
+- [ ] **Catch blocks** use underscore prefix OR inline disable with justification
 - [ ] **Unknown types** have type assertions or guards
+- [ ] **better-sqlite3 types** use `Database.Database` namespace or dynamic imports
 - [ ] **File formatted** with Prettier (`pnpm format`)
 - [ ] **No TypeScript errors** (`pnpm typecheck`)
 - [ ] **No ESLint errors** (`pnpm lint`)
