@@ -35,7 +35,11 @@ describe('Metrics Client - AC01: NDJSON Writer', () => {
   afterEach(async () => {
     // Shutdown all clients first
     for (const client of clients) {
-      await client.shutdown()
+      try {
+        await client.shutdown()
+      } catch {
+        // Intentionally ignore errors during cleanup
+      }
     }
     clients.length = 0
 
@@ -120,7 +124,11 @@ describe('Metrics Client - AC02: Daily Log Rotation', () => {
   afterEach(async () => {
     // Shutdown all clients first
     for (const client of clients) {
-      await client.shutdown()
+      try {
+        await client.shutdown()
+      } catch {
+        // Intentionally ignore errors during cleanup
+      }
     }
     clients.length = 0
 
@@ -183,7 +191,11 @@ describe('Metrics Client - AC03: Opt-in Activation', () => {
   afterEach(async () => {
     // Shutdown all clients first
     for (const client of clients) {
-      await client.shutdown()
+      try {
+        await client.shutdown()
+      } catch {
+        // Intentionally ignore errors during cleanup
+      }
     }
     clients.length = 0
 
@@ -259,7 +271,11 @@ describe('Metrics Client - AC04: Core Metrics', () => {
   afterEach(async () => {
     // Shutdown all clients first
     for (const client of clients) {
-      await client.shutdown()
+      try {
+        await client.shutdown()
+      } catch {
+        // Intentionally ignore errors during cleanup
+      }
     }
     clients.length = 0
 
@@ -321,7 +337,11 @@ describe('Metrics Client - AC05: Monotonic Clock', () => {
   afterEach(async () => {
     // Shutdown all clients first
     for (const client of clients) {
-      await client.shutdown()
+      try {
+        await client.shutdown()
+      } catch {
+        // Intentionally ignore errors during cleanup
+      }
     }
     clients.length = 0
 
@@ -387,7 +407,11 @@ describe('Metrics Client - AC06: ISO 8601 Timestamps', () => {
   afterEach(async () => {
     // Shutdown all clients first
     for (const client of clients) {
-      await client.shutdown()
+      try {
+        await client.shutdown()
+      } catch {
+        // Intentionally ignore errors during cleanup
+      }
     }
     clients.length = 0
 
@@ -447,7 +471,11 @@ describe('Metrics Client - AC07: Schema Version', () => {
   afterEach(async () => {
     // Shutdown all clients first
     for (const client of clients) {
-      await client.shutdown()
+      try {
+        await client.shutdown()
+      } catch {
+        // Intentionally ignore errors during cleanup
+      }
     }
     clients.length = 0
 
@@ -525,7 +553,11 @@ describe('Metrics Client - AC08: No External Network Calls', () => {
   afterEach(async () => {
     // Shutdown all clients first
     for (const client of clients) {
-      await client.shutdown()
+      try {
+        await client.shutdown()
+      } catch {
+        // Intentionally ignore errors during cleanup
+      }
     }
     clients.length = 0
 
@@ -580,7 +612,11 @@ describe('Metrics Client - Query Methods (Stubs)', () => {
   afterEach(async () => {
     // Shutdown all clients first
     for (const client of clients) {
-      await client.shutdown()
+      try {
+        await client.shutdown()
+      } catch {
+        // Intentionally ignore errors during cleanup
+      }
     }
     clients.length = 0
 
@@ -646,7 +682,11 @@ describe('Metrics Writer - Utility Methods', () => {
   afterEach(async () => {
     // Shutdown all clients first
     for (const client of clients) {
-      await client.shutdown()
+      try {
+        await client.shutdown()
+      } catch {
+        // Intentionally ignore errors during cleanup
+      }
     }
     clients.length = 0
 
