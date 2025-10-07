@@ -6,13 +6,14 @@
 
 import path from 'node:path'
 
+const ULID_REGEX = /^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$/
+
 /**
  * Validates ULID format (26 characters, Crockford Base32)
  * @throws Error if capture_id format is invalid
  */
 export const validateCaptureId = (capture_id: string): void => {
-  const ulid_regex = /^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$/
-  if (!ulid_regex.test(capture_id)) {
+  if (!ULID_REGEX.test(capture_id)) {
     throw new Error('Invalid capture_id format')
   }
 }

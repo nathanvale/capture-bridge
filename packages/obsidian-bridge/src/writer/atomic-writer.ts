@@ -89,7 +89,7 @@ export const writeAtomic = async (
         // eslint-disable-next-line security/detect-non-literal-fs-filename
         await fs.unlink(tempPath)
       } catch {
-        // Ignore cleanup errors - safe in cleanup context
+        // Intentionally ignore cleanup errors - safe in cleanup context
       }
     }
 

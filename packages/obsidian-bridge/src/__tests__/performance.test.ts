@@ -46,10 +46,13 @@ describe('Atomic Writer Performance', () => {
       }
 
       // Calculate p95
-      times.sort((a, b) => a - b)
-      const p95Index = Math.floor(times.length * 0.95)
-      // eslint-disable-next-line security/detect-object-injection, @typescript-eslint/no-non-null-assertion -- Safe: index calculated from non-empty array (100 items)
-      const p95 = times[p95Index]!
+      expect(times).toHaveLength(100)
+      const sorted = times.toSorted((a, b) => a - b)
+      const p95Index = Math.floor(sorted.length * 0.95)
+      // eslint-disable-next-line security/detect-object-injection -- Safe: p95Index is calculated from verified array length
+      const p95Value = sorted[p95Index]
+      expect(p95Value).toBeDefined()
+      const p95 = p95Value as number
 
       // eslint-disable-next-line no-console
       console.log(`✅ p95 latency: ${p95.toFixed(2)}ms`)
@@ -81,10 +84,13 @@ describe('Atomic Writer Performance', () => {
       }
 
       // Calculate p95
-      times.sort((a, b) => a - b)
-      const p95Index = Math.floor(times.length * 0.95)
-      // eslint-disable-next-line security/detect-object-injection, @typescript-eslint/no-non-null-assertion -- Safe: index calculated from non-empty array (50 items)
-      const p95 = times[p95Index]!
+      expect(times).toHaveLength(50)
+      const sorted = times.toSorted((a, b) => a - b)
+      const p95Index = Math.floor(sorted.length * 0.95)
+      // eslint-disable-next-line security/detect-object-injection -- Safe: p95Index is calculated from verified array length
+      const p95Value = sorted[p95Index]
+      expect(p95Value).toBeDefined()
+      const p95 = p95Value as number
 
       // eslint-disable-next-line no-console
       console.log(`✅ p95 latency with collision detection: ${p95.toFixed(2)}ms`)
@@ -107,13 +113,19 @@ describe('Atomic Writer Performance', () => {
       }
 
       // Calculate statistics
-      times.sort((a, b) => a - b)
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: index calculated from non-empty array (100 items)
-      const median = times[Math.floor(times.length / 2)]!
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: index calculated from non-empty array (100 items)
-      const p95 = times[Math.floor(times.length * 0.95)]!
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe: index calculated from non-empty array (100 items)
-      const p99 = times[Math.floor(times.length * 0.99)]!
+      expect(times).toHaveLength(100)
+      const sorted = times.toSorted((a, b) => a - b)
+      const medianValue = sorted[Math.floor(sorted.length / 2)]
+      const p95Value = sorted[Math.floor(sorted.length * 0.95)]
+      const p99Value = sorted[Math.floor(sorted.length * 0.99)]
+
+      expect(medianValue).toBeDefined()
+      expect(p95Value).toBeDefined()
+      expect(p99Value).toBeDefined()
+
+      const median = medianValue as number
+      const p95 = p95Value as number
+      const p99 = p99Value as number
 
       // eslint-disable-next-line no-console
       console.log(`✅ Small file performance stats:`)
