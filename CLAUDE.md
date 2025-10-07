@@ -487,8 +487,8 @@ describe('Tests', () => {
     for (const client of clients) {
       try {
         await client.shutdown()
-      } catch (_error) {
-        // Ignore cleanup errors
+      } catch {
+        // Intentionally ignore errors during cleanup
       }
     }
     clients.length = 0
