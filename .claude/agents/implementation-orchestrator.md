@@ -277,38 +277,66 @@ Per-task enrichment fields (timestamps, PR links, verification) are now owned by
     - If any related_specs/adrs/guides missing or unreadable: BLOCK and report GAP
     - If High risk task lacks test spec reference: BLOCK
     - If acceptance_criteria array is empty: BLOCK
-12. **Prepare Implementation Guidance Block and ask user to proceed:**
+12. **Determine TDD Requirements** (CRITICAL for delegation):
+    - Check task risk level: High = TDD MANDATORY
+    - Per TestKit TDD Guide (`.claude/rules/testkit-tdd-guide.md`):
+      - **High Risk (P0)**: TDD REQUIRED - wallaby-tdd-agent MANDATORY
+      - **Medium Risk (P1)**: TDD Recommended - wallaby-tdd-agent preferred
+      - **Low Risk (P2)**: TDD Optional - general-purpose acceptable
+13. **Prepare Implementation Guidance Block and ask user to proceed:**
 
     After validating all context, prepare a comprehensive guidance block with:
     - Task ID and title
+    - Risk level and TDD requirement status
     - Full acceptance_criteria array (all id + text pairs)
     - Key requirements extracted from related_specs
     - Architectural constraints from related_adrs
     - Implementation patterns from related_guides
     - Test verification expectations from test_verification paths
-    - Required TDD approach based on risk level
+    - **TDD Agent Selection** based on risk:
+      - High risk: "wallaby-tdd-agent REQUIRED for TDD enforcement"
+      - Medium risk: "wallaby-tdd-agent recommended for test-first development"
+      - Low risk: "general-purpose agent acceptable"
 
     Then **ASK THE USER**:
 
     ```
     I've prepared the context package for [TASK_ID].
 
-    **Should I invoke the task-implementer agent to begin implementation?**
+    **TDD Requirement**: [High Risk = MANDATORY / Medium Risk = Recommended / Low Risk = Optional]
+    **Agent Selection**: [wallaby-tdd-agent / task-implementer]
+
+    **Should I invoke the [agent-type] agent to begin implementation?**
 
     If yes, I will use the Task tool to delegate with this invocation:
 
     <invoke name="Task">
     <parameter name="subagent_type">task-implementer</parameter>
     <parameter name="description">Implement [TASK_ID]</parameter>
-    <parameter name="prompt">[Full context package prepared above]</parameter>
+    <parameter name="prompt">
+    [Full context package prepared above]
+
+    **CRITICAL TDD INSTRUCTION for task-implementer**:
+    - Risk Level: [High/Medium/Low]
+    - TDD Required: [YES/Recommended/Optional]
+    - **You MUST delegate to wallaby-tdd-agent** for all TDD implementation work
+    - wallaby-tdd-agent enforces Red-Green-Refactor cycle with real-time Wallaby feedback
+    - See: `.claude/rules/testkit-tdd-guide.md` for production-verified patterns
+
+    [Remaining context...]
+    </parameter>
     </invoke>
     ```
 
-13. **If user confirms**, invoke task-implementer using the Task tool with prepared context
-14. Task-implementer receives context and delegates to specialist agents (wallaby-tdd-agent, general-purpose)
-14. Task-implementer updates task-state.json as work progresses
-15. Reload state and recompute pulse after each task completion
-16. Emit Progress Pulse
+14. **If user confirms**, invoke task-implementer using the Task tool with prepared context
+15. Task-implementer receives context and:
+    - **For High/Medium risk**: MUST delegate to wallaby-tdd-agent for TDD cycles
+    - **For Low risk**: MAY use general-purpose agent or wallaby-tdd-agent
+    - wallaby-tdd-agent provides real-time feedback via Wallaby MCP tools
+16. Task-implementer coordinates specialist agents and reports progress
+17. Task-implementer updates task-state.json as work progresses
+18. Reload state and recompute pulse after each task completion
+19. Emit Progress Pulse
 
 ## Progress Pulse (Simplified)
 
