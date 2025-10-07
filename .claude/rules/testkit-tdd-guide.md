@@ -3,7 +3,7 @@
 **Purpose**: Production-accurate TDD guide based on 319 passing tests in foundation package
 **TestKit Version**: @orchestr8/testkit v2.0.0
 **Source**: `/packages/foundation/src/__tests__/` (verified against implementation)
-**Last Updated**: 2025-10-07 - Added createTempDirectory() pattern, TempDirectory API, advanced utilities; changed tmpdir() from deprecated to legacy
+**Last Updated**: 2025-10-07 - Added Custom Resource Cleanup Patterns section; critical guidance for event listeners, timers, async shutdown
 
 ---
 
@@ -55,6 +55,7 @@ When implementing TDD task:
 - [TempDirectory API](#tempdirectory-api) - Helper methods (writeFile, readFile, etc.)
 - [Advanced Temp Directory Utilities](#advanced-temp-directory-utilities) - Named, batch, scoped patterns
 - [Cleanup Sequence](#cleanup-sequence-critical) - 4-step cleanup with settling
+- [Custom Resource Cleanup](#custom-resource-cleanup-patterns-critical) - Event listeners, timers, async shutdown
 - [SQLite Testing](#sqlite-testing-patterns) - Pools, migrations, transactions
 - [MSW HTTP Mocking](#msw-http-mocking-patterns) - Module-level setup
 - [CLI Process Mocking](#cli-process-mocking-patterns) - Dynamic registration
@@ -312,6 +313,261 @@ describe('My Tests', () => {
 4. GC frees memory → run last to reclaim all resources
 
 **Source**: `performance-benchmarks.test.ts:37-89`
+
+---
+
+## Custom Resource Cleanup Patterns (CRITICAL)
+
+### ✅ PRODUCTION PATTERN: Custom Resources with Global State
+
+**Critical Principle**: Any custom resource that registers **global state** (event listeners, timers, intervals, file watchers, network connections) MUST provide an **async cleanup method** and be tracked for cleanup in `afterEach`.
+
+### The MetricsClient Anti-Pattern (What NOT to Do)
+
+**❌ WRONG: Violates TestKit cleanup principles**
+
+```typescript
+class MetricsClient {
+  private flushTimer: NodeJS.Timeout
+
+  constructor(config: MetricsConfig) {
+    // ❌ Registers event listeners without cleanup plan
+    process.on('SIGTERM', () => this.flush())
+    process.on('SIGINT', () => this.flush())
+    process.on('beforeExit', () => this.flush())
+
+    // ❌ Creates timer without cleanup plan
+    this.flushTimer = setInterval(() => {
+      this.flush()
+    }, config.flushIntervalMs)
+  }
+
+  // ❌ Synchronous shutdown - can't await cleanup
+  shutdown(): void {
+    clearInterval(this.flushTimer)
+    this.flush()  // Fire and forget - not awaited!
+  }
+}
+
+// ❌ Not tracked for cleanup
+describe('Metrics Tests', () => {
+  it('should collect metrics', async () => {
+    const client = new MetricsClient(config)  // Resource leak!
+    // No cleanup in afterEach → process hangs
+  })
+})
+```
+
+**Consequences**:
+- Process hangs after tests complete (event listeners prevent exit)
+- Timers continue running across tests (test pollution)
+- File handles/network connections leak
+- Vitest never completes, requires Ctrl+C
+
+### The Correct Pattern (TestKit-Compliant)
+
+**✅ CORRECT: Proper async cleanup with resource tracking**
+
+```typescript
+class MetricsClient {
+  private flushTimer: NodeJS.Timeout | undefined
+  private shutdownHandler: (() => void) | undefined = undefined
+
+  constructor(config: MetricsConfig) {
+    // ✅ Store handler reference for cleanup
+    this.shutdownHandler = () => {
+      void this.flush()  // Fire and forget is OK in process exit
+    }
+
+    // ✅ Register with stored reference
+    process.on('SIGTERM', this.shutdownHandler)
+    process.on('SIGINT', this.shutdownHandler)
+    process.on('beforeExit', this.shutdownHandler)
+
+    // ✅ Store timer reference for cleanup
+    this.flushTimer = setInterval(() => {
+      void this.flush()
+    }, config.flushIntervalMs)
+  }
+
+  // ✅ ASYNC shutdown - can await cleanup operations
+  async shutdown(): Promise<void> {
+    // Step 1: Clear timer first
+    if (this.flushTimer) {
+      clearInterval(this.flushTimer)
+      this.flushTimer = undefined
+    }
+
+    // Step 2: Remove event listeners (CRITICAL!)
+    if (this.shutdownHandler) {
+      process.removeListener('SIGTERM', this.shutdownHandler)
+      process.removeListener('SIGINT', this.shutdownHandler)
+      process.removeListener('beforeExit', this.shutdownHandler)
+      this.shutdownHandler = undefined
+    }
+
+    // Step 3: Final flush (await it!)
+    await this.flush()
+  }
+}
+
+// ✅ Track resources for cleanup
+describe('Metrics Tests', () => {
+  const clients: Array<{ shutdown: () => Promise<void> }> = []
+
+  afterEach(async () => {
+    // ✅ Cleanup all clients before other cleanup steps
+    for (const client of clients) {
+      try {
+        await client.shutdown()
+      } catch (error) {
+        // Ignore cleanup errors to prevent cascade failures
+      }
+    }
+    clients.length = 0
+
+    // Continue with standard 4-step cleanup...
+  })
+
+  it('should collect metrics', async () => {
+    const client = new MetricsClient(config)
+    clients.push(client)  // ✅ Track for cleanup
+
+    // Test implementation...
+  })
+})
+```
+
+### Custom Resource Cleanup Checklist
+
+Before implementing any custom resource class, verify:
+
+- [ ] **Async shutdown**: Does `shutdown()` return `Promise<void>`?
+- [ ] **Event listeners**: Are all `process.on()` calls paired with `process.removeListener()`?
+- [ ] **Timers**: Are all `setInterval()` calls paired with `clearInterval()`?
+- [ ] **File watchers**: Are all `fs.watch()` calls paired with `watcher.close()`?
+- [ ] **Network connections**: Are all sockets/servers closed in `shutdown()`?
+- [ ] **Resource tracking**: Is the resource tracked in an array for cleanup?
+- [ ] **afterEach cleanup**: Is `shutdown()` called in `afterEach` for ALL test files?
+- [ ] **Error handling**: Does cleanup use try-catch to prevent cascade failures?
+
+### Integration with 4-Step Cleanup
+
+Custom resources should be cleaned up **BEFORE** the standard 4-step cleanup:
+
+```typescript
+afterEach(async () => {
+  // 0. Custom resources FIRST (event listeners, timers, etc.)
+  for (const client of clients) {
+    try {
+      await client.shutdown()
+    } catch (error) {
+      // Ignore errors
+    }
+  }
+  clients.length = 0
+
+  // 1. Settling delay
+  await new Promise(resolve => setTimeout(resolve, 100))
+
+  // 2. Drain connection pools
+  for (const pool of pools) {
+    try {
+      await pool.drain()
+    } catch (error) {
+      console.warn('Pool drain error (non-critical):', error)
+    }
+  }
+  pools = []
+
+  // 3. Close databases
+  for (const database of databases) {
+    try {
+      if (database.open && !database.readonly) {
+        database.close()
+      }
+    } catch (error) {
+      // Ignore
+    }
+  }
+  databases.length = 0
+
+  // 4. TestKit handles temp directory cleanup automatically
+
+  // 5. Force garbage collection LAST
+  if (global.gc) global.gc()
+})
+```
+
+### Common Global State Patterns
+
+**Event Listeners:**
+```typescript
+// ❌ WRONG
+process.on('SIGTERM', handler)
+
+// ✅ CORRECT
+this.handler = () => { /* ... */ }
+process.on('SIGTERM', this.handler)
+// Later in shutdown():
+process.removeListener('SIGTERM', this.handler)
+```
+
+**Timers:**
+```typescript
+// ❌ WRONG
+setInterval(() => { /* ... */ }, 1000)
+
+// ✅ CORRECT
+this.timer = setInterval(() => { /* ... */ }, 1000)
+// Later in shutdown():
+clearInterval(this.timer)
+```
+
+**File Watchers:**
+```typescript
+// ❌ WRONG
+fs.watch(path, () => { /* ... */ })
+
+// ✅ CORRECT
+this.watcher = fs.watch(path, () => { /* ... */ })
+// Later in shutdown():
+this.watcher.close()
+```
+
+**Network Connections:**
+```typescript
+// ❌ WRONG
+const server = http.createServer()
+server.listen(port)
+
+// ✅ CORRECT
+this.server = http.createServer()
+this.server.listen(port)
+// Later in shutdown():
+await new Promise<void>((resolve) => {
+  this.server.close(() => resolve())
+})
+```
+
+### Wallaby TDD Agent Integration
+
+When using the Wallaby TDD agent, it will detect hanging tests and warn you. If you see:
+
+```
+⚠️  Tests completed but process not exiting
+⚠️  Possible resource leak detected
+```
+
+**Immediate actions:**
+
+1. Check for custom resources with global state
+2. Verify `shutdown()` is async and removes all listeners/timers
+3. Confirm `shutdown()` is called in `afterEach` for ALL test files
+4. Use `lsof` to identify leaked file handles: `lsof -p $(pgrep node)`
+5. Use `process._getActiveHandles()` to identify leaked timers/listeners
+
+**Source**: Lesson learned from foundation package metrics client implementation
 
 ---
 
@@ -825,30 +1081,37 @@ describe('My API Tests', () => {
 
 1. **Use TestKit's createTempDirectory()**: `const { createTempDirectory } = await import('@orchestr8/testkit/fs')` (or main export)
 2. **Use dynamic imports**: `await import('@orchestr8/testkit/sqlite')`
-3. **Track resources in arrays**: `pools: any[] = []`, `databases: Database[] = []`
-4. **Follow 4-step cleanup**: settling → pools → databases → (TestKit auto-cleanup) → GC
-5. **Use parameterized queries**: `prepare('SELECT * FROM users WHERE name = ?').get(name)`
-6. **Test security**: SQL injection, path traversal, command injection
-7. **Check memory leaks**: GC before/after, 100 iterations, < 5MB growth
-8. **Add console logs**: `console.log('✅ Test passed')`
-9. **Use try-catch in cleanup**: Ignore errors to prevent cascade failures
-10. **Set extended timeouts**: `30000ms` for memory leak tests
-11. **Configure test-setup.ts**: Global resource cleanup
+3. **Track resources in arrays**: `pools: any[] = []`, `databases: Database[] = []`, `clients: Array<{ shutdown: () => Promise<void> }> = []`
+4. **Follow 5-step cleanup**: custom resources → settling → pools → databases → (TestKit auto-cleanup) → GC
+5. **Make shutdown() async**: Always return `Promise<void>` for proper cleanup
+6. **Remove event listeners**: Pair every `process.on()` with `process.removeListener()` in shutdown
+7. **Clear timers**: Pair every `setInterval()` with `clearInterval()` in shutdown
+8. **Use parameterized queries**: `prepare('SELECT * FROM users WHERE name = ?').get(name)`
+9. **Test security**: SQL injection, path traversal, command injection
+10. **Check memory leaks**: GC before/after, 100 iterations, < 5MB growth
+11. **Add console logs**: `console.log('✅ Test passed')`
+12. **Use try-catch in cleanup**: Ignore errors to prevent cascade failures
+13. **Set extended timeouts**: `30000ms` for memory leak tests
+14. **Configure test-setup.ts**: Global resource cleanup
 
 ### ❌ DON'T
 
 1. **Don't use Node.js tmpdir()** (use TestKit's `createTempDirectory()` instead)
 2. **Don't use static imports** (except for types and vitest)
 3. **Don't skip cleanup steps** (causes resource leaks)
-4. **Don't use string concatenation in SQL** (SQL injection risk)
-5. **Don't manually close pool-managed connections** (use `pool.drain()`)
-6. **Don't forget settling delay** (100ms before pool.drain())
-7. **Don't set GC first** (must be last in cleanup)
-8. **Don't use fixed delays** (use explicit waits like `pool.warmUp()`)
-9. **Don't parallelize cleanup** (use sequential for loops)
-10. **Don't throw in cleanup** (use try-catch and ignore errors)
-11. **Don't test implementation details** (test behavior)
-12. **Don't manually rmSync() temp directories** (TestKit handles cleanup)
+4. **Don't make shutdown() synchronous** (must return `Promise<void>`)
+5. **Don't register event listeners without cleanup** (causes process hanging)
+6. **Don't create timers without clearing them** (causes test pollution)
+7. **Don't forget to track custom resources** (add to array for cleanup)
+8. **Don't use string concatenation in SQL** (SQL injection risk)
+9. **Don't manually close pool-managed connections** (use `pool.drain()`)
+10. **Don't forget settling delay** (100ms before pool.drain())
+11. **Don't set GC first** (must be last in cleanup)
+12. **Don't use fixed delays** (use explicit waits like `pool.warmUp()`)
+13. **Don't parallelize cleanup** (use sequential for loops)
+14. **Don't throw in cleanup** (use try-catch and ignore errors)
+15. **Don't test implementation details** (test behavior)
+16. **Don't manually rmSync() temp directories** (TestKit handles cleanup)
 
 ---
 

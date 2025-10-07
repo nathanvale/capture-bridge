@@ -23,7 +23,7 @@ async function readMetricsFile(filePath: string) {
 describe('Metrics Client - AC01: NDJSON Writer', () => {
   let testDir: string
   let metricsDir: string
-  const clients: Array<{ shutdown: () => void }> = []
+  const clients: Array<{ shutdown: () => Promise<void> }> = []
 
   beforeEach(async () => {
     const { createTempDirectory } = await import('@orchestr8/testkit')
@@ -107,7 +107,7 @@ describe('Metrics Client - AC01: NDJSON Writer', () => {
 describe('Metrics Client - AC02: Daily Log Rotation', () => {
   let testDir: string
   let metricsDir: string
-  const clients: Array<{ shutdown: () => void }> = []
+  const clients: Array<{ shutdown: () => Promise<void> }> = []
 
   beforeEach(async () => {
     const { createTempDirectory } = await import('@orchestr8/testkit')
@@ -171,7 +171,7 @@ describe('Metrics Client - AC02: Daily Log Rotation', () => {
 describe('Metrics Client - AC03: Opt-in Activation', () => {
   let testDir: string
   let metricsDir: string
-  const clients: Array<{ shutdown: () => void }> = []
+  const clients: Array<{ shutdown: () => Promise<void> }> = []
 
   beforeEach(async () => {
     const { createTempDirectory } = await import('@orchestr8/testkit')
@@ -246,7 +246,7 @@ describe('Metrics Client - AC03: Opt-in Activation', () => {
 describe('Metrics Client - AC04: Core Metrics', () => {
   let testDir: string
   let metricsDir: string
-  const clients: Array<{ shutdown: () => void }> = []
+  const clients: Array<{ shutdown: () => Promise<void> }> = []
 
   beforeEach(async () => {
     const { createTempDirectory } = await import('@orchestr8/testkit')
@@ -308,7 +308,7 @@ describe('Metrics Client - AC04: Core Metrics', () => {
 describe('Metrics Client - AC05: Monotonic Clock', () => {
   let testDir: string
   let metricsDir: string
-  const clients: Array<{ shutdown: () => void }> = []
+  const clients: Array<{ shutdown: () => Promise<void> }> = []
 
   beforeEach(async () => {
     const { createTempDirectory } = await import('@orchestr8/testkit')
@@ -374,7 +374,7 @@ describe('Metrics Client - AC05: Monotonic Clock', () => {
 describe('Metrics Client - AC06: ISO 8601 Timestamps', () => {
   let testDir: string
   let metricsDir: string
-  const clients: Array<{ shutdown: () => void }> = []
+  const clients: Array<{ shutdown: () => Promise<void> }> = []
 
   beforeEach(async () => {
     const { createTempDirectory } = await import('@orchestr8/testkit')
@@ -434,7 +434,7 @@ describe('Metrics Client - AC06: ISO 8601 Timestamps', () => {
 describe('Metrics Client - AC07: Schema Version', () => {
   let testDir: string
   let metricsDir: string
-  const clients: Array<{ shutdown: () => void }> = []
+  const clients: Array<{ shutdown: () => Promise<void> }> = []
 
   beforeEach(async () => {
     const { createTempDirectory } = await import('@orchestr8/testkit')
@@ -512,7 +512,7 @@ describe('Metrics Client - AC07: Schema Version', () => {
 describe('Metrics Client - AC08: No External Network Calls', () => {
   let testDir: string
   let metricsDir: string
-  const clients: Array<{ shutdown: () => void }> = []
+  const clients: Array<{ shutdown: () => Promise<void> }> = []
 
   beforeEach(async () => {
     const { createTempDirectory } = await import('@orchestr8/testkit')
@@ -567,7 +567,7 @@ describe('Metrics Client - AC08: No External Network Calls', () => {
 describe('Metrics Client - Query Methods (Stubs)', () => {
   let testDir: string
   let metricsDir: string
-  const clients: Array<{ shutdown: () => void }> = []
+  const clients: Array<{ shutdown: () => Promise<void> }> = []
 
   beforeEach(async () => {
     const { createTempDirectory } = await import('@orchestr8/testkit')
@@ -634,7 +634,7 @@ describe('Metrics Client - Query Methods (Stubs)', () => {
 describe('Metrics Writer - Utility Methods', () => {
   let testDir: string
   let metricsDir: string
-  const clients: Array<{ shutdown: () => void }> = []
+  const clients: Array<{ shutdown: () => Promise<void> }> = []
 
   beforeEach(async () => {
     const { createTempDirectory } = await import('@orchestr8/testkit')
