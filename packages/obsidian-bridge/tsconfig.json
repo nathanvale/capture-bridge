@@ -1,0 +1,20 @@
+{
+  "extends": "../../tooling/tsconfig/base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": ".",
+    "paths": {
+      "@capture-bridge/*": ["../*/src"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/__tests__/**/*.ts",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "test-setup.ts",
+    "vitest.config.ts",
+    "tsup.config.ts"
+  ],
+  "exclude": ["dist", "node_modules"]
+}

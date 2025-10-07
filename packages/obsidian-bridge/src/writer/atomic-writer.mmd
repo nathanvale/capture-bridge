@@ -1,0 +1,36 @@
+---
+id: e5ac769f-c151-4a95-8b94-b449d17fd5d2
+---
+sequenceDiagram
+  autonumber
+  participant Caller
+  participant Writer as writeAtomic
+  participant Resolver as PathResolver
+  participant FS as FileSystem
+  participant Hash as Foundation.Hash
+  participant CD as CollisionDetector
+
+  Caller->>Writer: writeAtomic(capture_id, content, vault_path)
+  Writer->>Resolver: resolveTempPath/resolveExportPath
+  Resolver-->>Writer: tempPath, exportPath
+  Writer->>Hash: computeSHA256(content)
+  Hash-->>Writer: contentHash
+  Writer->>CD: checkCollision(exportPath, contentHash)
+  alt Duplicate
+    CD-->>Writer: DUPLICATE
+    Writer-->>Caller: { success: true, skipped: true, export_path }
+  else Conflict
+    CD-->>Writer: CONFLICT
+    Writer-->>Caller: { success: false, error: EEXIST, temp_path, export_path }
+  else No collision
+    CD-->>Writer: NO_COLLISION
+    Writer->>FS: mkdirs(.trash/inbox)
+    Writer->>FS: writeFile(tempPath, content)
+    Writer->>FS: fsync(tempPath)
+    Writer->>FS: rename(tempPath -> exportPath)
+    Writer-->>Caller: { success: true, export_path }
+  end
+  opt Error at any step
+    Writer->>FS: cleanup(tempPath)
+    Writer-->>Caller: { success: false, error: mapped code, temp_path, export_path }
+  end
