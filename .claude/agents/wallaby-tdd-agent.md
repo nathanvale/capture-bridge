@@ -127,7 +127,7 @@ await applyMigrations(db, [
 ])
 ```
 
-**Cleanup Pattern** (from `performance-benchmarks.test.ts:37-89`):
+**Cleanup Pattern** (updated for TestKit 2.0.0):
 ```typescript
 afterEach(async () => {
   // 0. Settling delay (prevents race conditions)
@@ -147,8 +147,8 @@ afterEach(async () => {
   }
   databases.length = 0
 
-  // 3. Clean filesystem THIRD
-  try { rmSync(testDir, { recursive: true, force: true }) } catch {}
+  // 3. TestKit handles temp directory cleanup automatically
+  // No manual rmSync needed!
 
   // 4. Force GC LAST
   if (global.gc) global.gc()
@@ -225,6 +225,9 @@ Before writing test code, ask yourself:
 □ Am I using dynamic imports (await import())?
 □ Am I following the 4-step cleanup sequence?
 □ Am I using parameterized queries (prepared statements)?
+□ Am I using TestKit's createTempDirectory() instead of tmpdir()?
+  - ✅ CORRECT: const { createTempDirectory } = await import('@orchestr8/testkit')
+  - ❌ WRONG: const testDir = join(tmpdir(), `test-${Date.now()}`)
 
 If ANY answer is NO, STOP and fix it before proceeding.
 ```
@@ -242,22 +245,35 @@ Read('.claude/rules/testkit-tdd-guide.md')
 ```typescript
 describe('My Feature', () => {
   let testDir: string
+  let metricsDir: string
   let pools: any[] = []
   const databases: Database[] = []
 
-  beforeEach(() => {
-    testDir = join(tmpdir(), `test-${Date.now()}`)
-    mkdirSync(testDir, { recursive: true })
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
+    metricsDir = join(testDir, '.metrics')
   })
 
   afterEach(async () => {
-    // 4-step cleanup (see guide)
+    // TestKit handles temp directory cleanup automatically
     await new Promise(resolve => setTimeout(resolve, 100))
+
     for (const pool of pools) {
       try { await pool.drain() } catch {}
     }
     pools = []
-    // ... etc
+
+    for (const db of databases) {
+      try {
+        if (db.open && !db.readonly) db.close()
+      } catch {}
+    }
+    databases.length = 0
+
+    // No manual rmSync needed - TestKit handles it!
+    if (global.gc) global.gc()
   })
 })
 ```
@@ -414,8 +430,6 @@ mcp__wallaby__wallaby_runtimeValuesByTest
 ### SQLite Test (Copy from guide)
 
 ```typescript
-import { mkdirSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import type { Database } from 'better-sqlite3'
@@ -426,14 +440,16 @@ describe('My Feature', () => {
   let pools: any[] = []
   const databases: Database[] = []
 
-  beforeEach(() => {
-    testDir = join(tmpdir(), `test-${Date.now()}`)
-    mkdirSync(testDir, { recursive: true })
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
     dbPath = join(testDir, 'test.db')
   })
 
   afterEach(async () => {
     // 4-step cleanup (see .claude/rules/testkit-tdd-guide.md#cleanup-sequence-critical)
+    // TestKit handles temp directory cleanup automatically
     await new Promise(resolve => setTimeout(resolve, 100))
 
     for (const pool of pools) {
@@ -456,12 +472,7 @@ describe('My Feature', () => {
     }
     databases.length = 0
 
-    try {
-      rmSync(testDir, { recursive: true, force: true })
-    } catch (error) {
-      // Ignore
-    }
-
+    // No manual rmSync needed - TestKit handles it!
     if (global.gc) global.gc()
   })
 

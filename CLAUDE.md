@@ -21,10 +21,12 @@ When writing tests for this project, **always follow test-driven development** p
 ### Quick Rules
 
 1. **Test First**: Write failing tests before implementation
-2. **Cleanup**: Follow 4-step cleanup sequence (pools → databases → filesystem → GC)
-3. **Imports**: Use specific sub-exports (`@orchestr8/testkit/sqlite`, `/msw`, `/cli`)
-4. **Security**: Always test SQL injection, path traversal, command injection
-5. **Memory**: Check for leaks with `global.gc()` in cleanup
+2. **Cleanup**: Follow 5-step cleanup sequence (custom resources → pools → databases → filesystem → GC)
+3. **Custom Resources**: Any class with event listeners/timers MUST have async `shutdown()` method
+4. **Resource Tracking**: Track ALL resources (pools, databases, clients) in arrays for cleanup
+5. **Imports**: Use specific sub-exports (`@orchestr8/testkit/sqlite`, `/msw`, `/cli`)
+6. **Security**: Always test SQL injection, path traversal, command injection
+7. **Memory**: Check for leaks with `global.gc()` in cleanup
 
 ---
 
@@ -443,10 +445,86 @@ const db = new Database(":memory:")
 - TypeScript type is accessed via `Database.Database` namespace
 - Dynamic imports avoid the issue entirely (preferred in tests)
 
+### Custom Resource Cleanup (CRITICAL)
+
+**Problem**: Custom resources that register global state (event listeners, timers, file watchers) can cause tests to hang indefinitely if not properly cleaned up.
+
+**Required Pattern**:
+
+```typescript
+class MetricsClient {
+  private flushTimer: NodeJS.Timeout | undefined
+  private shutdownHandler: (() => void) | undefined
+
+  constructor(config: MetricsConfig) {
+    // ✅ Store handler reference for cleanup
+    this.shutdownHandler = () => { /* ... */ }
+    process.on('SIGTERM', this.shutdownHandler)
+
+    // ✅ Store timer reference for cleanup
+    this.flushTimer = setInterval(() => { /* ... */ }, 1000)
+  }
+
+  // ✅ MUST be async and remove ALL listeners/timers
+  async shutdown(): Promise<void> {
+    if (this.flushTimer) {
+      clearInterval(this.flushTimer)
+      this.flushTimer = undefined
+    }
+    if (this.shutdownHandler) {
+      process.removeListener('SIGTERM', this.shutdownHandler)
+      this.shutdownHandler = undefined
+    }
+    await this.flush()  // Await async operations
+  }
+}
+
+// ✅ Track in array and cleanup in afterEach
+describe('Tests', () => {
+  const clients: Array<{ shutdown: () => Promise<void> }> = []
+
+  afterEach(async () => {
+    for (const client of clients) {
+      try {
+        await client.shutdown()
+      } catch {
+        // Intentionally ignore errors during cleanup
+      }
+    }
+    clients.length = 0
+  })
+
+  it('should work', async () => {
+    const client = new MetricsClient(config)
+    clients.push(client)  // ✅ Track for cleanup
+  })
+})
+```
+
+**Checklist** (before implementing any custom resource class):
+
+- [ ] `shutdown()` returns `Promise<void>`
+- [ ] All `process.on()` paired with `process.removeListener()`
+- [ ] All `setInterval()` paired with `clearInterval()`
+- [ ] All `fs.watch()` paired with `watcher.close()`
+- [ ] Resource tracked in array for cleanup
+- [ ] `shutdown()` called in `afterEach` for ALL test files
+- [ ] Cleanup uses try-catch to prevent cascade failures
+
+**Symptoms of violation**:
+- ⚠️ Vitest never exits (requires Ctrl+C)
+- ⚠️ "Tests completed but process not exiting" warning
+- ⚠️ Tests pass but CI hangs indefinitely
+
+**See**: `.claude/rules/testkit-tdd-guide.md` → Custom Resource Cleanup Patterns section
+
+---
+
 ### Code Quality Checklist
 
 Before committing, verify:
 
+- [ ] **Custom resources** have async `shutdown()` and are tracked for cleanup
 - [ ] **No non-null assertions** unless after explicit null check
 - [ ] **All relative imports** include `.js` extension
 - [ ] **Array access** uses length assertion first OR optional chaining
@@ -467,5 +545,5 @@ Before committing, verify:
 
 ---
 
-**Last Updated**: 2025-10-06
+**Last Updated**: 2025-10-07 - Added Custom Resource Cleanup section (CRITICAL)
 **Maintained By**: Nathan Vale & AI Agents

@@ -1,6 +1,6 @@
 {
   "manifest_hash": "d18c2638898a4a5d1e0cfbece98dfdd889490bfc5d257e65cce7cdfe58bb6691",
-  "last_updated": "2025-10-06T22:51:00Z",
+  "last_updated": "2025-10-07T01:15:00Z",
   "tasks": {
     "MONOREPO_STRUCTURE--T01": {
       "status": "completed",
@@ -46,6 +46,38 @@
       "acs_completed": ["SQLITE_SCHEMA-AC07"],
       "acs_remaining": [],
       "notes": "Completed database integrity check implementation following strict TDD (Red-Green-Refactor). AC07: PRAGMA integrity_check validation passes on clean databases, file-based databases, and databases with data. 69/69 tests passing (65 existing + 4 new). Files created: integrity-check.spec.ts (4 tests). Modified: schema.ts (added verifyIntegrity() function with proper type guards), schema/index.ts and src/index.ts (exported verifyIntegrity). Build successful. Implementation uses PRAGMA integrity_check to validate table structure, index consistency, row data validity, and B-tree structure correctness."
+    },
+    "METRICS_INFRASTRUCTURE--T01": {
+      "status": "completed",
+      "started_at": "2025-10-07T00:00:00Z",
+      "completed_at": "2025-10-07T01:15:00Z",
+      "acs_completed": [
+        "METRICS_INFRASTRUCTURE-AC01",
+        "METRICS_INFRASTRUCTURE-AC02",
+        "METRICS_INFRASTRUCTURE-AC03",
+        "METRICS_INFRASTRUCTURE-AC04",
+        "METRICS_INFRASTRUCTURE-AC05",
+        "METRICS_INFRASTRUCTURE-AC06",
+        "METRICS_INFRASTRUCTURE-AC07",
+        "METRICS_INFRASTRUCTURE-AC08"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed METRICS_INFRASTRUCTURE--T01: Local Metrics Collection (NDJSON) following strict TDD (Red-Green-Refactor cycle via wallaby-tdd-agent). All 8 ACs satisfied: AC01: NDJSON writer for .metrics/YYYY-MM-DD.ndjson with buffered writes. AC02: Daily log rotation at midnight UTC. AC03: Opt-in activation via CAPTURE_METRICS=1 environment variable. AC04: Core metrics defined (capture_staging_ms, dedup_hits_total, export_failures_total, transcription_duration_ms). AC05: Monotonic timing using performance.now(). AC06: ISO 8601 UTC timestamps in all records. AC07: Schema version field (1.0.0) in every file. AC08: Local-only verification (no network calls). 11/11 tests passing. Coverage: 68.67% overall (MetricsClient: 73.49%, NDJSONWriter: 60.42%). Files created: types.ts, writer.ts, client.ts, index.ts, metrics-client.test.ts. Production-ready features: buffered writes (100 events), auto-flush (5s intervals), graceful shutdown, proper cleanup sequences."
+    },
+    "TESTKIT_INTEGRATION--T01": {
+      "status": "completed",
+      "started_at": "2025-10-07T00:30:00Z",
+      "completed_at": "2025-10-07T00:45:00Z",
+      "acs_completed": [
+        "TESTKIT_INTEGRATION-AC01",
+        "TESTKIT_INTEGRATION-AC02",
+        "TESTKIT_INTEGRATION-AC03",
+        "TESTKIT_INTEGRATION-AC04",
+        "TESTKIT_INTEGRATION-AC05",
+        "TESTKIT_INTEGRATION-AC06"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed TESTKIT_INTEGRATION--T01: TestKit Integration & Test Infrastructure - Core Implementation. All 6 ACs verified: AC01: @orchestr8/testkit@2.0.0 installed and configured in foundation package. AC02: In-memory SQLite fixtures working with createMemoryUrl() and :memory: databases across 13 test files. AC03: MSW setup for API mocks configured with setupMSW() and http handlers for Gmail API simulation. AC04: Auto-cleanup verified via test-setup.ts with setupResourceCleanup() and cleanupAllResources() in afterAll hook. AC05: Parallel test execution working with fork pool (maxForks: 6, singleFork: false). AC06: Test suite runs in 8.74s (well under 30s target) with 318/318 tests passing. No documentation changes needed - all patterns already implemented and verified in production tests."
     }
   }
 }
