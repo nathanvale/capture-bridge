@@ -39,7 +39,7 @@ expect(results[0].property).toBe(value) // TS2532: Object is possibly 'undefined
 // Pattern 1: Assert length first (preferred in tests)
 const results = db.prepare("SELECT ...").all() as SomeType[]
 expect(results).toHaveLength(1)
-const result = results[0] // Now TypeScript knows it exists
+const result = results[0]! // Safe - we verified length
 expect(result.property).toBe(value)
 
 // Pattern 2: Optional chaining (for production code)
