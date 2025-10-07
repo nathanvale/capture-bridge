@@ -267,16 +267,18 @@ Per-task enrichment fields (timestamps, PR links, verification) are now owned by
    - Prefer High risk before Medium before Low
 8. Recommend advancing eligible `pending` tasks whose dependencies are all `completed`
 9. Surface top N high-risk idle tasks
-10. **READ ALL CONTEXT FOR SELECTED TASK** (MANDATORY before delegation):
-    - Read EVERY file in task's `related_specs` array (arch/tech/test specs)
-    - Read EVERY ADR in task's `related_adrs` array
-    - Read EVERY guide in task's `related_guides` array
-    - Review all acceptance_criteria (id + text) for the task
-    - Review `test_verification` paths
-11. Validate context completeness:
-    - If any related_specs/adrs/guides missing or unreadable: BLOCK and report GAP
+10. **EXTRACT CONTEXT REFERENCES FOR SELECTED TASK** (Light validation only):
+    - Extract file paths from task's `related_specs` array
+    - Extract file paths from task's `related_adrs` array
+    - Extract file paths from task's `related_guides` array
+    - Extract all acceptance_criteria (id + text) from VTM
+    - Extract `test_verification` paths
+    - **DO NOT read the full content** - task-implementer will do deep reading
+11. Validate context completeness (file existence only):
+    - If any related_specs/adrs/guides files don't exist: BLOCK and report GAP
     - If High risk task lacks test spec reference: BLOCK
     - If acceptance_criteria array is empty: BLOCK
+    - Use lightweight checks (file existence, not full reads)
 12. **Determine TDD Requirements** (CRITICAL for delegation):
     - Check task risk level: High = TDD MANDATORY
     - Per TestKit TDD Guide (`.claude/rules/testkit-tdd-guide.md`):
@@ -285,16 +287,16 @@ Per-task enrichment fields (timestamps, PR links, verification) are now owned by
       - **Low Risk (P2)**: TDD Optional - general-purpose acceptable
 13. **Prepare Implementation Guidance Block and ask user to proceed:**
 
-    After validating all context, prepare a comprehensive guidance block with:
+    After extracting context references, prepare a lightweight guidance block with:
     - Task ID and title
     - Full acceptance_criteria array (all id + text pairs)
     - **MANDATORY PRE-WORK INSTRUCTION**: Explicit directive for task-implementer to READ all references
-    - Key requirements extracted from related_specs (summary only)
-    - Architectural constraints from related_adrs (summary only)
-    - Implementation patterns from related_guides (summary only)
+    - **Complete file paths** from related_specs (for task-implementer to read)
+    - **Complete file paths** from related_adrs (for task-implementer to read)
+    - **Complete file paths** from related_guides (for task-implementer to read)
     - Test verification expectations from test_verification paths
     - Required TDD approach based on risk level
-    - **Complete file paths** for task-implementer to read independently
+    - **NO SUMMARIES** - task-implementer does the deep reading
 
     Then **ASK THE USER**:
 
@@ -323,16 +325,29 @@ Per-task enrichment fields (timestamps, PR links, verification) are now owned by
        [List all files from related_guides array with full paths]
 
     **Why this matters:**
-    - The orchestrator has read these and provided summaries below
-    - You MUST read the full files yourself to catch nuances
+    - You are responsible for understanding ALL context deeply
     - wallaby-tdd-agent needs complete context for proper TDD implementation
     - Missing critical details leads to incorrect implementation
+    - The orchestrator has only validated file existence, not read content
 
-    **Do NOT skip this step. Do NOT rely only on summaries.**
+    **Do NOT skip this step. There are NO summaries - you must read everything.**
 
     ---
 
-    [Full context package prepared above - summaries only]
+    ## Task Details
+
+    **Task ID**: [TASK_ID]
+    **Title**: [TASK_TITLE]
+    **Risk Level**: [High/Medium/Low]
+    **Size**: [S/M/L]
+
+    **Acceptance Criteria**:
+    [List all AC IDs and text from VTM]
+
+    **Test Verification Paths**:
+    [List from test_verification array]
+
+    ---
 
     ## CRITICAL: TDD Agent Delegation Requirement
 
@@ -350,13 +365,14 @@ Per-task enrichment fields (timestamps, PR links, verification) are now owned by
     - Reports test status back to you for task state updates
 
     **Your responsibilities**:
-    1. **READ all references above FIRST** (use Read tool)
-    2. Coordinate sub-agent delegation (wallaby-tdd-agent for TDD work)
-    3. Update task-state.json with progress
-    4. Ensure all acceptance criteria are met
-    5. Report completion status back to orchestrator
+    1. **READ all references above FIRST** (use Read tool for every file)
+    2. Understand the full context from those files
+    3. Coordinate sub-agent delegation (wallaby-tdd-agent for TDD work)
+    4. Update task-state.json with progress
+    5. Ensure all acceptance criteria are met
+    6. Report completion status back to orchestrator
 
-    [Remaining context...]
+    **That's it. Now go read the files and implement the task.**
     </parameter>
     </invoke>
     ```
