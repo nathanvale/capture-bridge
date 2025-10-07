@@ -33,6 +33,7 @@ export interface MetricsClient {
   histogram: (name: string, value: number, tags?: MetricTags) => void
   isEnabled: () => boolean
   flush: () => Promise<void>
+  shutdown: () => Promise<void>
 }
 
 export interface TimeRange {

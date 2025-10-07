@@ -32,6 +32,7 @@ export class MetricsClient implements IMetricsClient {
   private readonly writer: NDJSONWriter
   private readonly buffer: MetricEvent[] = []
   private flushTimer: NodeJS.Timeout | undefined = undefined
+  private shutdownHandler: (() => void) | undefined = undefined
   private enabled: boolean
   private initialized = false
 
@@ -77,11 +78,11 @@ export class MetricsClient implements IMetricsClient {
   }
 
   private setupShutdownHook(): void {
-    const shutdownHandler = createShutdownHandler(this)
+    this.shutdownHandler = createShutdownHandler(this)
 
-    process.on('SIGTERM', shutdownHandler)
-    process.on('SIGINT', shutdownHandler)
-    process.on('beforeExit', shutdownHandler)
+    process.on('SIGTERM', this.shutdownHandler)
+    process.on('SIGINT', this.shutdownHandler)
+    process.on('beforeExit', this.shutdownHandler)
   }
 
   emit(metric: MetricEvent): void {
@@ -175,8 +176,28 @@ export class MetricsClient implements IMetricsClient {
       if (events.length > 0) {
         this.buffer.unshift(...events)
       }
+      // eslint-disable-next-line no-console -- Error logging is intentional for metrics failure
       console.error('Failed to write metrics:', error)
     }
+  }
+
+  async shutdown(): Promise<void> {
+    // Clear flush timer
+    if (this.flushTimer) {
+      clearInterval(this.flushTimer)
+      this.flushTimer = undefined
+    }
+
+    // Remove shutdown hooks
+    if (this.shutdownHandler) {
+      process.removeListener('SIGTERM', this.shutdownHandler)
+      process.removeListener('SIGINT', this.shutdownHandler)
+      process.removeListener('beforeExit', this.shutdownHandler)
+      this.shutdownHandler = undefined
+    }
+
+    // Final flush (await to ensure completion)
+    await this.flush()
   }
 
   private isValidMetric(metric: MetricEvent): boolean {
