@@ -4,8 +4,8 @@
  * AC01-AC08: NDJSON writer, rotation, activation, core metrics, etc.
  */
 
-import { rmSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
+import { existsSync, rmSync } from 'node:fs'
+import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { performance } from 'node:perf_hooks'
 
@@ -493,5 +493,175 @@ describe('Metrics Client - AC08: No External Network Calls', () => {
 
     expect(event).toBeDefined()
     expect(event.metric).toBe('test.local_only')
+  })
+})
+
+describe('Metrics Client - Query Methods (Stubs)', () => {
+  let testDir: string
+  let metricsDir: string
+
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
+    metricsDir = join(testDir, '.metrics')
+    process.env['CAPTURE_METRICS'] = '1'
+  })
+
+  afterEach(async () => {
+    delete process.env['CAPTURE_METRICS']
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    try {
+      rmSync(testDir, { recursive: true, force: true })
+      // eslint-disable-next-line sonarjs/no-ignored-exceptions -- Safe in cleanup
+    } catch {
+      // Ignore cleanup errors
+    }
+    if (global.gc) global.gc()
+  })
+
+  it('should return empty array from query() stub', async () => {
+    const { MetricsClient } = await import('../metrics/client.js')
+    const client = new MetricsClient({ metricsDir })
+
+    const result = await client.query('test.*')
+
+    expect(result).toEqual([])
+  })
+
+  it('should return dummy result from aggregate() stub', async () => {
+    const { MetricsClient } = await import('../metrics/client.js')
+    const client = new MetricsClient({ metricsDir })
+
+    const result = await client.aggregate('test.*', 'sum')
+
+    expect(result).toMatchObject({
+      metric: 'test.*',
+      aggregation: 'sum',
+      value: 0,
+      count: 0,
+    })
+    expect(result.timeRange).toBeDefined()
+  })
+
+  it('should return undefined from latest() stub', async () => {
+    const { MetricsClient } = await import('../metrics/client.js')
+    const client = new MetricsClient({ metricsDir })
+
+    const result = await client.latest('test.metric')
+
+    expect(result).toBeUndefined()
+  })
+})
+
+describe('Metrics Writer - Utility Methods', () => {
+  let testDir: string
+  let metricsDir: string
+
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
+    metricsDir = join(testDir, '.metrics')
+  })
+
+  afterEach(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    try {
+      rmSync(testDir, { recursive: true, force: true })
+      // eslint-disable-next-line sonarjs/no-ignored-exceptions -- Safe in cleanup
+    } catch {
+      // Ignore cleanup errors
+    }
+    if (global.gc) global.gc()
+  })
+
+  it('should rotate to new file when rotate() called', async () => {
+    const { NDJSONWriter } = await import('../metrics/writer.js')
+
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2025-01-15T23:59:59Z'))
+
+    const writer = new NDJSONWriter({ metricsDir, rotation: 'daily', retentionDays: 30 })
+    await writer.initialize()
+
+    await writer.write([
+      {
+        timestamp: new Date().toISOString(),
+        metric: 'test.before',
+        value: 1,
+        type: 'counter',
+        version: '1.0.0',
+      },
+    ])
+
+    vi.setSystemTime(new Date('2025-01-16T00:00:01Z'))
+    writer.rotate()
+
+    await writer.write([
+      {
+        timestamp: new Date().toISOString(),
+        metric: 'test.after',
+        value: 2,
+        type: 'counter',
+        version: '1.0.0',
+      },
+    ])
+
+    vi.useRealTimers()
+
+    const beforeFile = join(metricsDir, '2025-01-15.ndjson')
+    const afterFile = join(metricsDir, '2025-01-16.ndjson')
+
+    expect(existsSync(beforeFile)).toBe(true)
+    expect(existsSync(afterFile)).toBe(true)
+  })
+
+  it('should cleanup old files when cleanup() called', async () => {
+    const { NDJSONWriter } = await import('../metrics/writer.js')
+
+    const writer = new NDJSONWriter({ metricsDir, rotation: 'daily', retentionDays: 30 })
+    await writer.initialize()
+
+    // Create old files (31+ days ago)
+    const oldDate = new Date()
+    oldDate.setDate(oldDate.getDate() - 31)
+    const oldFile = join(metricsDir, `${oldDate.toISOString().split('T')[0]}.ndjson`)
+    await writeFile(oldFile, '{"test": "old"}')
+
+    // Create recent file
+    const recentDate = new Date()
+    recentDate.setDate(recentDate.getDate() - 5)
+    const recentFile = join(metricsDir, `${recentDate.toISOString().split('T')[0]}.ndjson`)
+    await writeFile(recentFile, '{"test": "recent"}')
+
+    // Cleanup files older than 30 days
+    await writer.cleanup(30)
+
+    expect(existsSync(oldFile)).toBe(false)
+    expect(existsSync(recentFile)).toBe(true)
+  })
+
+  it('should return current file size from getCurrentFileSize()', async () => {
+    const { NDJSONWriter } = await import('../metrics/writer.js')
+
+    const writer = new NDJSONWriter({ metricsDir, rotation: 'daily', retentionDays: 30 })
+    await writer.initialize()
+
+    const initialSize = await writer.getCurrentFileSize()
+    expect(initialSize).toBe(0)
+
+    await writer.write([
+      {
+        timestamp: new Date().toISOString(),
+        metric: 'test.size',
+        value: 1,
+        type: 'counter',
+        version: '1.0.0',
+      },
+    ])
+
+    const afterWriteSize = await writer.getCurrentFileSize()
+    expect(afterWriteSize).toBeGreaterThan(0)
   })
 })
