@@ -3,7 +3,6 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": ".",
-    "composite": true,
     "paths": {
       "@capture-bridge/*": ["../*/src"]
     }
@@ -11,6 +10,7 @@
   "include": [
     "src/**/*.ts",
     "src/**/__tests__/**/*.ts",
+    "src/hash/**/*.ts",
     "**/*.test.ts",
     "**/*.spec.ts",
     "test-setup.ts",
