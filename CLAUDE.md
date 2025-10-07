@@ -175,7 +175,7 @@ Before committing, verify:
 - [ ] **Array access** uses length assertion first OR optional chaining
 - [ ] **Catch blocks** use underscore prefix OR inline disable with justification
 - [ ] **Unknown types** have type assertions or guards
-- [ ] **better-sqlite3 types** use `Database.Database` namespace or dynamic imports
+- [ ] **better-sqlite3 types** use default import type or dynamic imports
 - [ ] **File formatted** with Prettier (`pnpm format`)
 - [ ] **No TypeScript errors** (`pnpm typecheck`)
 - [ ] **No ESLint errors** (`pnpm lint`)

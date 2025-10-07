@@ -328,13 +328,13 @@ When importing types from better-sqlite3:
 import type { Database } from "better-sqlite3" // TS2305: Module has no exported member 'Database'
 ```
 
-**✅ CORRECT - Import default and use namespace:**
+**✅ CORRECT - Import default type:**
 
 ```typescript
 import type Database from "better-sqlite3"
 
 // Then use as type
-const db: Database.Database = new Database(":memory:")
+const db: Database = new Database(":memory:")
 ```
 
 **✅ ALSO CORRECT - Dynamic import pattern (TestKit):**
@@ -347,7 +347,7 @@ const db = new Database(":memory:")
 
 **Rationale:**
 - better-sqlite3 exports a default class, not named exports
-- TypeScript type is accessed via `Database.Database` namespace
+- The imported default type `Database` is used directly as the type annotation
 - Dynamic imports avoid the issue entirely (preferred in tests)
 
 ---
