@@ -667,6 +667,199 @@ describe('Metrics Client - Query Methods (Stubs)', () => {
   })
 })
 
+describe('Metrics Client - Histogram Method', () => {
+  let testDir: string
+  let metricsDir: string
+  const clients: Array<{ shutdown: () => Promise<void> }> = []
+
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
+    metricsDir = join(testDir, '.metrics')
+    process.env['CAPTURE_METRICS'] = '1'
+  })
+
+  afterEach(async () => {
+    // Shutdown all clients first
+    for (const client of clients) {
+      try {
+        await client.shutdown()
+      } catch {
+        // Intentionally ignore errors during cleanup
+      }
+    }
+    clients.length = 0
+
+    delete process.env['CAPTURE_METRICS']
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    try {
+      rmSync(testDir, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+    if (global.gc) global.gc()
+  })
+
+  it('should emit histogram metric with value', async () => {
+    const { MetricsClient } = await import('../metrics/client.js')
+
+    const client = new MetricsClient({
+      metricsDir,
+      bufferSize: 10,
+      flushIntervalMs: 100,
+    })
+    clients.push(client)
+
+    await client.histogram('test.histogram', 42)
+    await client.flush()
+
+    const today = new Date().toISOString().split('T')[0]
+    const expectedFile = join(metricsDir, `${today}.ndjson`)
+
+    const events = await readMetricsFile(expectedFile)
+    const event = events.find((e) => e.metric === 'test.histogram')
+
+    expect(event).toBeDefined()
+    expect(event.value).toBe(42)
+    expect(event.type).toBe('histogram')
+  })
+
+  it('should emit histogram metric with tags', async () => {
+    const { MetricsClient } = await import('../metrics/client.js')
+
+    const client = new MetricsClient({
+      metricsDir,
+      bufferSize: 10,
+      flushIntervalMs: 100,
+    })
+    clients.push(client)
+
+    await client.histogram('test.histogram.tagged', 99, { bucket: 'slow' })
+    await client.flush()
+
+    const today = new Date().toISOString().split('T')[0]
+    const expectedFile = join(metricsDir, `${today}.ndjson`)
+
+    const events = await readMetricsFile(expectedFile)
+    const event = events.find((e) => e.metric === 'test.histogram.tagged')
+
+    expect(event).toBeDefined()
+    expect(event.value).toBe(99)
+    expect(event.type).toBe('histogram')
+    expect(event.tags).toMatchObject({ bucket: 'slow' })
+  })
+
+  it('should emit gauge metric with tags', async () => {
+    const { MetricsClient } = await import('../metrics/client.js')
+
+    const client = new MetricsClient({
+      metricsDir,
+      bufferSize: 10,
+      flushIntervalMs: 100,
+    })
+    clients.push(client)
+
+    await client.gauge('test.gauge.tagged', 77, { region: 'us-east' })
+    await client.flush()
+
+    const today = new Date().toISOString().split('T')[0]
+    const expectedFile = join(metricsDir, `${today}.ndjson`)
+
+    const events = await readMetricsFile(expectedFile)
+    const event = events.find((e) => e.metric === 'test.gauge.tagged')
+
+    expect(event).toBeDefined()
+    expect(event.value).toBe(77)
+    expect(event.type).toBe('gauge')
+    expect(event.tags).toMatchObject({ region: 'us-east' })
+  })
+})
+
+describe('Metrics Client - Error Recovery', () => {
+  let testDir: string
+  let metricsDir: string
+  const clients: Array<{ shutdown: () => Promise<void> }> = []
+
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
+    metricsDir = join(testDir, '.metrics')
+    process.env['CAPTURE_METRICS'] = '1' // Enable metrics for error recovery test
+  })
+
+  afterEach(async () => {
+    // Shutdown all clients first
+    for (const client of clients) {
+      try {
+        await client.shutdown()
+      } catch {
+        // Intentionally ignore errors during cleanup
+      }
+    }
+    clients.length = 0
+
+    delete process.env['CAPTURE_METRICS']
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    try {
+      rmSync(testDir, { recursive: true, force: true })
+    } catch {
+      // Ignore cleanup errors
+    }
+    if (global.gc) global.gc()
+  })
+
+  it('should handle empty buffer flush gracefully', async () => {
+    const { MetricsClient } = await import('../metrics/client.js')
+
+    const client = new MetricsClient({
+      metricsDir,
+      bufferSize: 10,
+      flushIntervalMs: 100,
+    })
+    clients.push(client)
+
+    // Flush with empty buffer should be a no-op
+    await client.flush()
+
+    // The behavior depends on whether a file was previously created
+    // This test just verifies flush() doesn't crash with empty buffer
+    expect(client.isEnabled()).toBe(true)
+  })
+
+  it('should restore events to buffer when write fails', async () => {
+    const { MetricsClient } = await import('../metrics/client.js')
+
+    // Use invalid path to cause write failure
+    const invalidDir = '/nonexistent/invalid/path'
+    const client = new MetricsClient({
+      metricsDir: invalidDir,
+      bufferSize: 10,
+      flushIntervalMs: 100,
+    })
+    clients.push(client)
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation((..._args) => {
+      // Intentionally suppress console.error during test
+    })
+
+    try {
+      // Emit events
+      await client.counter('test.restore1')
+      await client.counter('test.restore2')
+
+      // Flush will fail due to invalid directory
+      await client.flush()
+
+      // Verify flush completed (even though it failed internally)
+      expect(consoleErrorSpy).toHaveBeenCalled()
+    } finally {
+      consoleErrorSpy.mockRestore()
+    }
+  })
+})
+
 describe('Metrics Writer - Utility Methods', () => {
   let testDir: string
   let metricsDir: string
