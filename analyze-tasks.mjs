@@ -1,5 +1,5 @@
-import vtm from './docs/backlog/virtual-task-manifest.json' assert { type: 'json' };
-import state from './docs/backlog/task-state.json' assert { type: 'json' };
+import vtm from './docs/backlog/virtual-task-manifest.json' with { type: 'json' };
+import state from './docs/backlog/task-state.json' with { type: 'json' };
 
 // Find completed task IDs
 const completed = new Set(Object.keys(state.tasks).filter(id => state.tasks[id].status === 'completed'));

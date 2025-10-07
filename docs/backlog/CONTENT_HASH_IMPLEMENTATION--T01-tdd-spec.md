@@ -11,7 +11,7 @@ This task implements the foundation hash utilities for content deduplication in 
 
 ## Package Structure
 
-```
+```text
 packages/foundation/src/hash/
 ├── __tests__/
 │   ├── normalize.test.ts
