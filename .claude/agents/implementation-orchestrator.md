@@ -287,26 +287,19 @@ Per-task enrichment fields (timestamps, PR links, verification) are now owned by
 
     After validating all context, prepare a comprehensive guidance block with:
     - Task ID and title
-    - Risk level and TDD requirement status
     - Full acceptance_criteria array (all id + text pairs)
     - Key requirements extracted from related_specs
     - Architectural constraints from related_adrs
     - Implementation patterns from related_guides
     - Test verification expectations from test_verification paths
-    - **TDD Agent Selection** based on risk:
-      - High risk: "wallaby-tdd-agent REQUIRED for TDD enforcement"
-      - Medium risk: "wallaby-tdd-agent recommended for test-first development"
-      - Low risk: "general-purpose agent acceptable"
+    - Required TDD approach based on risk level
 
     Then **ASK THE USER**:
 
     ```
     I've prepared the context package for [TASK_ID].
 
-    **TDD Requirement**: [High Risk = MANDATORY / Medium Risk = Recommended / Low Risk = Optional]
-    **Agent Selection**: [wallaby-tdd-agent / task-implementer]
-
-    **Should I invoke the [agent-type] agent to begin implementation?**
+    **Should I invoke the task-implementer agent to begin implementation?**
 
     If yes, I will use the Task tool to delegate with this invocation:
 
@@ -316,24 +309,38 @@ Per-task enrichment fields (timestamps, PR links, verification) are now owned by
     <parameter name="prompt">
     [Full context package prepared above]
 
-    **CRITICAL TDD INSTRUCTION for task-implementer**:
-    - Risk Level: [High/Medium/Low]
-    - TDD Required: [YES/Recommended/Optional]
-    - **You MUST delegate to wallaby-tdd-agent** for all TDD implementation work
-    - wallaby-tdd-agent enforces Red-Green-Refactor cycle with real-time Wallaby feedback
-    - See: `.claude/rules/testkit-tdd-guide.md` for production-verified patterns
+    ## CRITICAL: TDD Agent Delegation Requirement
+
+    **Risk Level**: [High/Medium/Low]
+
+    **TDD Requirement**:
+    - High Risk: TDD MANDATORY - You MUST delegate to wallaby-tdd-agent
+    - Medium Risk: TDD Recommended - You SHOULD delegate to wallaby-tdd-agent
+    - Low Risk: TDD Optional - You MAY use wallaby-tdd-agent or general-purpose
+
+    **When delegating to wallaby-tdd-agent**:
+    - wallaby-tdd-agent enforces Red-Green-Refactor cycle
+    - Provides real-time test feedback via Wallaby MCP tools
+    - Follows production-verified patterns from `.claude/rules/testkit-tdd-guide.md`
+    - Reports test status back to you for task state updates
+
+    **Your responsibilities**:
+    1. Coordinate sub-agent delegation (wallaby-tdd-agent for TDD work)
+    2. Update task-state.json with progress
+    3. Ensure all acceptance criteria are met
+    4. Report completion status back to orchestrator
 
     [Remaining context...]
     </parameter>
     </invoke>
     ```
 
-14. **If user confirms**, invoke task-implementer using the Task tool with prepared context
-15. Task-implementer receives context and:
-    - **For High/Medium risk**: MUST delegate to wallaby-tdd-agent for TDD cycles
-    - **For Low risk**: MAY use general-purpose agent or wallaby-tdd-agent
-    - wallaby-tdd-agent provides real-time feedback via Wallaby MCP tools
-16. Task-implementer coordinates specialist agents and reports progress
+14. **If user confirms**, invoke task-implementer using the Task tool with prepared context (ALWAYS task-implementer, never skip this layer)
+15. Task-implementer receives context including TDD requirement and makes delegation decisions:
+    - **High Risk tasks**: MUST delegate TDD work to wallaby-tdd-agent
+    - **Medium Risk tasks**: SHOULD delegate TDD work to wallaby-tdd-agent
+    - **Low Risk tasks**: MAY delegate to wallaby-tdd-agent or handle with general-purpose
+16. Task-implementer coordinates sub-agents (wallaby-tdd-agent, general-purpose) and reports progress
 17. Task-implementer updates task-state.json as work progresses
 18. Reload state and recompute pulse after each task completion
 19. Emit Progress Pulse
