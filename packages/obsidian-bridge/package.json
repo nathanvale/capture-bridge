@@ -1,10 +1,10 @@
 {
-  "name": "@capture-bridge/foundation",
+  "name": "@capture-bridge/obsidian-bridge",
   "version": "0.1.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nathanvale/capture-bridge.git",
-    "directory": "packages/foundation"
+    "directory": "packages/obsidian-bridge"
   },
   "sideEffects": false,
   "type": "module",
@@ -12,10 +12,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./hash": {
-      "types": "./dist/hash/index.d.ts",
-      "import": "./dist/hash/index.js"
     }
   },
   "types": "./dist/index.d.ts",
@@ -27,24 +23,25 @@
     "build": "tsup",
     "clean": "rm -rf dist .tsbuildinfo",
     "dev": "tsup --watch",
-    "lint": "eslint . --cache --cache-location ../../.eslintcache/foundation",
-    "lint:fix": "eslint . --fix --cache --cache-location ../../.eslintcache/foundation",
+    "lint": "eslint . --cache --cache-location ../../.eslintcache/obsidian-bridge",
+    "lint:fix": "eslint . --fix --cache --cache-location ../../.eslintcache/obsidian-bridge",
     "prepublishOnly": "pnpm run build && test -d dist",
-    "test": "[ \"$SKIP_FOUNDATION_TESTS\" = \"1\" ] && echo 'Skipping foundation tests (set SKIP_FOUNDATION_TESTS=1)' && exit 0 || timeout --signal=KILL 90 vitest run; exit 0",
+    "test": "vitest run",
     "test:watch": "vitest watch",
     "test:ui": "vitest --ui",
     "test:ci": "vitest run --bail 1",
     "test:coverage": "vitest run --coverage",
-    "test:integration": "TEST_MODE=integration vitest run",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ulid": "^2.3.0"
   },
   "devDependencies": {
     "@capture-bridge/build-config": "workspace:*",
+    "@capture-bridge/foundation": "workspace:*",
     "@orchestr8/testkit": "^2.0.0",
     "@types/node": "^24.3.0",
     "better-sqlite3": "^12.4.1",
-    "happy-dom": "^18.0.1",
-    "msw": "^2.11.3",
     "tsup": "^8.3.0",
     "typescript": "^5.7.3",
     "vitest": "^3.2.4"
