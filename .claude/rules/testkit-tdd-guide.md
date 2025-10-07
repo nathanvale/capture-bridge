@@ -61,7 +61,7 @@ When implementing TDD task:
 - [Security Testing](#security-testing-patterns) - Attack vectors
 - [Memory Leak Detection](#memory-leak-detection-patterns) - GC patterns
 - [Global Setup](#global-test-setup) - test-setup.ts configuration
-- [Legacy Patterns](#️-legacy-patterns) - tmpdir() pattern (still supported)
+- [Legacy Patterns](#⚠️-legacy-patterns) - tmpdir() pattern (still supported)
 
 ---
 

@@ -21,7 +21,9 @@ export class NDJSONWriter {
 
   async initialize(): Promise<void> {
     // Ensure metrics directory exists
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- metricsDir from validated config
     if (!existsSync(this.metricsDir)) {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- metricsDir from validated config
       await mkdir(this.metricsDir, { recursive: true })
     }
     this.updateCurrentFile()
@@ -49,8 +51,10 @@ export class NDJSONWriter {
     // Write schema version as first event in new file
     if (!this.hasWrittenSchemaVersion) {
       let fileHasContent = false
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- currentFile derived from validated metricsDir
       if (existsSync(this.currentFile)) {
         try {
+          // eslint-disable-next-line security/detect-non-literal-fs-filename -- currentFile derived from validated metricsDir
           const stats = await stat(this.currentFile)
           fileHasContent = stats.size > 0
         } catch {
@@ -84,6 +88,7 @@ export class NDJSONWriter {
 
     // Atomic append with newline delimiter
     const content = lines.join('\n') + '\n'
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- currentFile derived from validated metricsDir
     await appendFile(this.currentFile, content, 'utf8')
   }
 
@@ -92,9 +97,14 @@ export class NDJSONWriter {
   }
 
   async cleanup(retentionDays: number): Promise<void> {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- metricsDir from validated config
     const files = await readdir(this.metricsDir)
     const cutoff = new Date()
     cutoff.setDate(cutoff.getDate() - retentionDays)
+
+    // Validate Date before using it
+    if (Number.isNaN(cutoff.getTime())) return
+
     const cutoffStr = cutoff.toISOString().split('T')[0]
 
     if (!cutoffStr) return
@@ -104,16 +114,25 @@ export class NDJSONWriter {
         const dateStr = file.replace('.ndjson', '')
         if (dateStr < cutoffStr) {
           const filePath = join(this.metricsDir, file)
-          await unlink(filePath)
+          try {
+            // eslint-disable-next-line security/detect-non-literal-fs-filename -- filePath constructed from validated metricsDir
+            await unlink(filePath)
+          } catch (_error) {
+            // eslint-disable-next-line no-console -- Intentional logging for cleanup failures
+            console.error(`Failed to delete old metrics file ${file}:`, _error)
+            // Continue cleanup loop despite individual file failures
+          }
         }
       }
     }
   }
 
   async getCurrentFileSize(): Promise<number> {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- currentFile derived from validated metricsDir
     if (!this.currentFile || !existsSync(this.currentFile)) {
       return 0
     }
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- currentFile derived from validated metricsDir
     const stats = await stat(this.currentFile)
     return stats.size
   }

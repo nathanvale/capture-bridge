@@ -300,28 +300,35 @@ describe('Metrics Client - AC05: Monotonic Clock', () => {
   it('should use performance.now() for duration measurements', async () => {
     const { MetricsClient } = await import('../metrics/client.js')
 
-    const client = new MetricsClient({
-      metricsDir,
-      bufferSize: 10,
-      flushIntervalMs: 100,
-    })
+    // Mock performance.now() for deterministic test
+    const performanceSpy = vi.spyOn(performance, 'now')
+    try {
+      performanceSpy.mockReturnValueOnce(1000) // Start time
+      performanceSpy.mockReturnValueOnce(1087) // End time (87ms later)
 
-    const start = performance.now()
-    await new Promise((resolve) => setTimeout(resolve, 50))
-    const duration = performance.now() - start
+      const client = new MetricsClient({
+        metricsDir,
+        bufferSize: 10,
+        flushIntervalMs: 100,
+      })
 
-    await client.duration('test.operation_ms', Math.round(duration))
-    await client.flush()
+      const start = performance.now()
+      const duration = performance.now() - start
 
-    const today = new Date().toISOString().split('T')[0]
-    const expectedFile = join(metricsDir, `${today}.ndjson`)
+      await client.duration('test.operation_ms', Math.round(duration))
+      await client.flush()
 
-    const events = await readMetricsFile(expectedFile)
-    const event = events.find((e) => e.metric === 'test.operation_ms')
+      const today = new Date().toISOString().split('T')[0]
+      const expectedFile = join(metricsDir, `${today}.ndjson`)
 
-    expect(event).toBeDefined()
-    expect(event.value).toBeGreaterThanOrEqual(45)
-    expect(event.value).toBeLessThanOrEqual(100)
+      const events = await readMetricsFile(expectedFile)
+      const event = events.find((e) => e.metric === 'test.operation_ms')
+
+      expect(event).toBeDefined()
+      expect(event.value).toBe(87)
+    } finally {
+      performanceSpy.mockRestore()
+    }
   })
 })
 
