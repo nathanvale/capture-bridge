@@ -288,11 +288,13 @@ Per-task enrichment fields (timestamps, PR links, verification) are now owned by
     After validating all context, prepare a comprehensive guidance block with:
     - Task ID and title
     - Full acceptance_criteria array (all id + text pairs)
-    - Key requirements extracted from related_specs
-    - Architectural constraints from related_adrs
-    - Implementation patterns from related_guides
+    - **MANDATORY PRE-WORK INSTRUCTION**: Explicit directive for task-implementer to READ all references
+    - Key requirements extracted from related_specs (summary only)
+    - Architectural constraints from related_adrs (summary only)
+    - Implementation patterns from related_guides (summary only)
     - Test verification expectations from test_verification paths
     - Required TDD approach based on risk level
+    - **Complete file paths** for task-implementer to read independently
 
     Then **ASK THE USER**:
 
@@ -307,7 +309,30 @@ Per-task enrichment fields (timestamps, PR links, verification) are now owned by
     <parameter name="subagent_type">task-implementer</parameter>
     <parameter name="description">Implement [TASK_ID]</parameter>
     <parameter name="prompt">
-    [Full context package prepared above]
+    ## MANDATORY PRE-WORK: READ ALL REFERENCES FIRST
+
+    **BEFORE starting any implementation work, you MUST:**
+
+    1. **Read EVERY related spec** using the Read tool:
+       [List all files from related_specs array with full paths]
+
+    2. **Read EVERY related ADR** using the Read tool:
+       [List all files from related_adrs array with full paths]
+
+    3. **Read EVERY related guide** using the Read tool:
+       [List all files from related_guides array with full paths]
+
+    **Why this matters:**
+    - The orchestrator has read these and provided summaries below
+    - You MUST read the full files yourself to catch nuances
+    - wallaby-tdd-agent needs complete context for proper TDD implementation
+    - Missing critical details leads to incorrect implementation
+
+    **Do NOT skip this step. Do NOT rely only on summaries.**
+
+    ---
+
+    [Full context package prepared above - summaries only]
 
     ## CRITICAL: TDD Agent Delegation Requirement
 
@@ -325,10 +350,11 @@ Per-task enrichment fields (timestamps, PR links, verification) are now owned by
     - Reports test status back to you for task state updates
 
     **Your responsibilities**:
-    1. Coordinate sub-agent delegation (wallaby-tdd-agent for TDD work)
-    2. Update task-state.json with progress
-    3. Ensure all acceptance criteria are met
-    4. Report completion status back to orchestrator
+    1. **READ all references above FIRST** (use Read tool)
+    2. Coordinate sub-agent delegation (wallaby-tdd-agent for TDD work)
+    3. Update task-state.json with progress
+    4. Ensure all acceptance criteria are met
+    5. Report completion status back to orchestrator
 
     [Remaining context...]
     </parameter>
