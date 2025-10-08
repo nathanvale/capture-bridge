@@ -182,9 +182,10 @@
     "VOICE_POLLING_ICLOUD--T01": {
       "status": "in-progress",
       "started_at": "2025-10-08T06:00:00Z",
-      "acs_completed": [],
+      "acs_completed": [
+        "VOICE_POLLING_ICLOUD-AC01"
+      ],
       "acs_remaining": [
-        "VOICE_POLLING_ICLOUD-AC01",
         "VOICE_POLLING_ICLOUD-AC02",
         "VOICE_POLLING_ICLOUD-AC03",
         "VOICE_POLLING_ICLOUD-AC04",
