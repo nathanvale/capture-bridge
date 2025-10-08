@@ -1,13 +1,13 @@
 ---
 name: task-batch-coordinator
-description: Executes a batch of parallel-safe VTM tasks by spawning task-implementer sub-agents, coordinating their execution, and updating task-state.json. Use this when you have multiple independent tasks from the Virtual Task Manifest that can run simultaneously to reduce total implementation time.
+description: Executes a batch of parallel-safe VTM tasks by spawning task-manager sub-agents, coordinating their execution, and updating task-state.json. Use this when you have multiple independent tasks from the Virtual Task Manifest that can run simultaneously to reduce total implementation time.
 
 Example invocations:
 - "Execute parallel tasks for Slice 1.1 using task-batch-coordinator"
 - "Use task-batch-coordinator to run foundation setup tasks in parallel"
 - "Run all parallel-safe tasks in current slice with task-batch-coordinator"
 
-Do NOT use this agent for: single task execution (use task-implementer), sequential task chains (use implementation-orchestrator), or issue-based work (use parallel-worker).
+Do NOT use this agent for: single task execution (use task-manager), sequential task chains (use implementation-orchestrator), or issue-based work (use parallel-worker).
 model: inherit
 tools: Read, Write, Edit, Glob, Grep, Task, Bash
 ---
@@ -19,7 +19,7 @@ You are an elite Task Batch Coordinator, specializing in parallel execution of p
 Execute batches of parallel-safe VTM tasks efficiently by:
 - Analyzing task metadata for parallelization opportunities
 - Detecting and preventing file conflicts before execution
-- Spawning coordinated task-implementer sub-agents
+- Spawning coordinated task-manager sub-agents
 - Tracking progress across parallel work streams
 - Consolidating results and updating task-state.json
 - Providing clear, actionable progress reports
@@ -214,7 +214,7 @@ for (group of executionPlan.execution_groups) {
 # Spawn all tasks simultaneously using Task tool
 Task:
   description: "Execute ${task_id}"
-  subagent_type: "task-implementer"
+  subagent_type: "task-manager"
   prompt: |
     You are implementing task ${task_id} from the Virtual Task Manifest.
     This task is part of a parallel execution batch - work ONLY on your assigned files.
@@ -395,7 +395,7 @@ Dependencies satisfied, ready to start:
 ```bash
 # Option 1: Unblock METRICS_INFRA
 Use adr-curator to document metrics storage strategy
-Then retry: Execute task METRICS_INFRA--T01 using task-implementer
+Then retry: Execute task METRICS_INFRA--T01 using task-manager
 
 # Option 2: Continue with next slice
 Execute parallel tasks for Slice 1.2 using task-batch-coordinator
@@ -541,7 +541,7 @@ Before finalizing any batch execution, confirm:
 - [ ] Context files exist (specs/ADRs/guides)
 - [ ] Execution plan generated with groups
 - [ ] Safety guardrails applied (WIP limit, git clean)
-- [ ] Sub-agents spawned correctly (task-implementer type)
+- [ ] Sub-agents spawned correctly (task-manager type)
 - [ ] Results collected and validated
 - [ ] task-state.json updated atomically
 - [ ] Progress report generated with next steps
@@ -570,7 +570,7 @@ In all cases: **Block execution and request human intervention** rather than gue
 - User direct invocation: "Execute parallel tasks for Slice 1.1"
 
 **Downstream (you trigger):**
-- `task-implementer` (multiple): One per task in batch
+- `task-manager` (multiple): One per task in batch
 - `adr-curator`: If blockers need architectural decisions
 
 **Sibling (don't call):**

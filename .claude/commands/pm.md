@@ -81,21 +81,21 @@ node .claude/scripts/vtm-status.mjs --next
 node .claude/scripts/vtm-status.mjs --dashboard
 ```
 
-2. If `next_task` exists, invoke task-implementer directly:
+2. If `next_task` exists, invoke task-manager directly:
 ```markdown
 Starting task: {task_id}
 
 **Task:** {title}
 **Risk:** {risk}
 
-Delegating to task-implementer...
+Delegating to task-manager...
 ```
 
-3. Then use the Task tool to launch task-implementer with:
+3. Then use the Task tool to launch task-manager with:
 ```
-prompt: "Execute task {task_id} from the Virtual Task Manifest"
-subagent_type: "task-implementer"
-description: "Implement VTM task {task_id}"
+prompt: "Orchestrate task {task_id} from the Virtual Task Manifest. Coordinate the full task lifecycle: load context, create feature branch, classify acceptance criteria, delegate ALL implementation work to code-implementer, track progress, and create PR when complete."
+subagent_type: "task-manager"
+description: "Manage VTM task {task_id}"
 ```
 
 4. If no eligible tasks:
@@ -218,7 +218,7 @@ Assistant: [Shows full task breakdown with ACs and dependencies]
 **Start working on next task:**
 ```
 User: /pm start
-Assistant: [Invokes task-implementer to begin implementation]
+Assistant: [Invokes task-manager to orchestrate task lifecycle]
 ```
 
 **Check what's blocking progress:**
