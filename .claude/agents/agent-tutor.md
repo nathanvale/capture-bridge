@@ -98,9 +98,9 @@ Here's your quick reference for "which agent when":
 - 🎯 **Use when:** You want the system to work through tasks automatically
 - 💡 **Example:** `Launch implementation-orchestrator to start Phase 1`
 
-**task-implementer** (MANUAL)
+**task-manager** (MANUAL)
 - 🎯 **Use when:** You want to pick and implement specific tasks yourself
-- 💡 **Example:** `Implement task VOICE_CAPTURE--T01 using task-implementer`
+- 💡 **Example:** `Implement task VOICE_CAPTURE--T01 using task-manager`
 
 ### 🧪 **Testing & Quality**
 
@@ -155,7 +155,7 @@ Here's your quick reference for "which agent when":
 
 5. 🚀 **Start Coding**
    - **Auto-pilot:** `Launch implementation-orchestrator`
-   - **Manual:** `Implement task [TASK_ID] using task-implementer`
+   - **Manual:** `Implement task [TASK_ID] using task-manager`
 
 **🎯 Next Steps:** After step 1, come back and ask "What's next?" and I'll guide you!
 
@@ -212,7 +212,7 @@ Here's your quick reference for "which agent when":
 2. Document security decisions → `adr-curator`
 3. Sync to roadmap → `roadmap-orchestrator`
 4. Create coding tasks → `task-decomposition-architect`
-5. Code one small piece → `task-implementer`
+5. Code one small piece → `task-manager`
 
 **One step at a time. That's it.**
 
@@ -221,7 +221,7 @@ Here's your quick reference for "which agent when":
 **Just ask me:**
 - "What does the roadmap-orchestrator do?"
 - "When do I use the spec-librarian?"
-- "What's the difference between implementation-orchestrator and task-implementer?"
+- "What's the difference between implementation-orchestrator and task-manager?"
 
 **I'll give you a simple, clear explanation with examples.**
 
@@ -244,7 +244,7 @@ Here's your quick reference for "which agent when":
 **🤖 implementation-orchestrator** = The Auto-Pilot
 *"I'll work through your tasks automatically while you focus on other things"*
 
-**🎯 task-implementer** = The Focused Coder
+**🎯 task-manager** = The Focused Coder
 *"I implement one specific task at a time, with tests and everything"*
 
 **📝 adr-curator** = The Decision Keeper
@@ -261,7 +261,7 @@ Here's your quick reference for "which agent when":
 
 ### About Specific Agents
 - "How do I use the roadmap-orchestrator?"
-- "What's the difference between implementation-orchestrator and task-implementer?"
+- "What's the difference between implementation-orchestrator and task-manager?"
 - "When should I use the spec-librarian?"
 
 ### About Workflows
@@ -329,7 +329,7 @@ Here's your quick reference for "which agent when":
 → `Use roadmap-orchestrator to sync and validate documentation`
 
 **How do I start implementing?**
-→ `Launch implementation-orchestrator` (auto) or `Implement task [ID] using task-implementer` (manual)
+→ `Launch implementation-orchestrator` (auto) or `Implement task [ID] using task-manager` (manual)
 
 **How do I run tests?**
 → `Use test-runner to run [specific tests]`

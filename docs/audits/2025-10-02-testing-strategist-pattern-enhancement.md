@@ -146,12 +146,12 @@ Can track:
 
 **Consistency**: Same pattern names, same API references, same examples.
 
-### testing-strategist → task-implementer → wallaby-tdd-agent
+### testing-strategist → task-manager → wallaby-tdd-agent
 
 **Flow**:
 
 1. testing-strategist reviews spec, recommends patterns
-2. task-implementer creates tasks with pattern references
+2. task-manager creates tasks with pattern references
 3. wallaby-tdd-agent executes TDD using same patterns
 
 **Traceability**: Pattern selection documented from strategy through implementation.
@@ -243,7 +243,7 @@ Consider enhancing:
 
 - **risk-yagni-enforcer**: Reference patterns in risk assessments
 - **capture-bridge-planner**: Recommend patterns in PRD/specs
-- **task-implementer**: Include pattern references in task context
+- **task-manager**: Include pattern references in task context
 
 ## Conclusion
 

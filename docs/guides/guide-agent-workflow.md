@@ -17,7 +17,7 @@ This guide explains how to use the ADHD Brain agent system to go from planning d
 | `docs/features/*/prd-*.md`                | Feature-specific requirements       | capture-bridge-planner + roadmap-orchestrator  |
 | `docs/features/*/spec-*.md`               | Technical specifications            | capture-bridge-planner + spec-librarian        |
 | `docs/backlog/virtual-task-manifest.json` | Decomposed task list (68 tasks)     | task-decomposition-architect                   |
-| `docs/backlog/task-state.json`            | Execution progress tracking         | task-implementer + implementation-orchestrator |
+| `docs/backlog/task-state.json`            | Execution progress tracking         | task-manager + implementation-orchestrator |
 | `docs/adr/*.md`                           | Architectural decisions             | adr-curator                                    |
 | `docs/guides/*.md`                        | Implementation patterns             | capture-bridge-planner + spec-librarian        |
 
@@ -45,7 +45,7 @@ This guide explains how to use the ADHD Brain agent system to go from planning d
 
 6a. implementation-orchestrator: Auto-pilot (sequential execution)
     OR
-6b. task-implementer: Manual (pick specific tasks)
+6b. task-manager: Manual (pick specific tasks)
 ```
 
 ---
@@ -248,7 +248,7 @@ Launch implementation-orchestrator to start Phase 1 Slice 1.1
 2. Finds next eligible task (dependencies satisfied, pending status)
 3. Reads ALL context (specs/ADRs/guides) for that task
 4. Validates context completeness (blocks if missing)
-5. Delegates to task-implementer sub-agent
+5. Delegates to task-manager sub-agent
 6. Tracks progress in task-state.json
 7. Generates progress pulse after each task
 8. Moves to next task automatically
@@ -262,7 +262,7 @@ Reads: spec-foundation-monorepo-tech.md, ADR-0019, guide-monorepo-mppp.md
   ↓
 Validates: All context present, dependencies satisfied
   ↓
-Delegates to task-implementer
+Delegates to task-manager
   ↓
 Task-implementer: Implements with TDD, updates task-state.json
   ↓
@@ -311,12 +311,12 @@ Repeat
 
 ### Option B: Manual Task-by-Task (For Granular Control)
 
-**Use:** `task-implementer`
+**Use:** `task-manager`
 
 **Command:**
 
 ```
-Implement task MONOREPO_STRUCTURE--T01 using task-implementer
+Implement task MONOREPO_STRUCTURE--T01 using task-manager
 ```
 
 **What it does:**
@@ -440,7 +440,7 @@ Execute parallel tasks for Slice 1.1 using task-batch-coordinator
 1. Reads VTM and identifies tasks in batch
 2. Validates parallel safety (checks `parallel`, `conflicts_with`, `file_scope`)
 3. Detects conflicts and groups tasks (parallel vs serial)
-4. Spawns task-implementer sub-agents for each task in parallel groups
+4. Spawns task-manager sub-agents for each task in parallel groups
 5. Coordinates execution, consolidates results
 6. Updates task-state.json with all task completions
 7. Reports overall progress and next steps
@@ -457,15 +457,15 @@ Coordinator analyzes:
   → Group 3 (parallel): 2 tasks (utilities)
 
 Coordinator executes:
-  Group 1: Spawns 3 task-implementer agents in parallel
+  Group 1: Spawns 3 task-manager agents in parallel
     ├─ MONOREPO_STRUCTURE--T01 completes in 15 mins ✅
     ├─ CONTENT_HASH--T01 completes in 12 mins ✅
     └─ ATOMIC_WRITER--T01 completes in 18 mins ✅
 
-  Group 2: Spawns 1 task-implementer (High risk, serialized)
+  Group 2: Spawns 1 task-manager (High risk, serialized)
     └─ SQLITE_SCHEMA--T01 completes in 32 mins ✅
 
-  Group 3: Spawns 2 task-implementer agents in parallel
+  Group 3: Spawns 2 task-manager agents in parallel
     ├─ TESTKIT_INTEGRATION--T01 completes in 10 mins ✅
     └─ METRICS_INFRA--T01 blocked after 8 mins ⚠️
 
@@ -490,11 +490,11 @@ Time savings: 47 minutes (41% reduction)
 | Scenario                                           | Recommended Mode                                |
 | -------------------------------------------------- | ----------------------------------------------- |
 | Starting new slice with multiple independent tasks | **Parallel** (task-batch-coordinator)           |
-| High-risk tasks requiring careful TDD              | **Sequential** (task-implementer one at a time) |
+| High-risk tasks requiring careful TDD              | **Sequential** (task-manager one at a time) |
 | Tasks with file conflicts or shared state          | **Sequential** (orchestrator handles ordering)  |
 | Learning new codebase area                         | **Sequential** (better for understanding)       |
 | Time-sensitive delivery                            | **Parallel** (maximize throughput)              |
-| Single task or tightly coupled chain               | **Sequential** (task-implementer)               |
+| Single task or tightly coupled chain               | **Sequential** (task-manager)               |
 
 **Safety features:**
 
@@ -611,7 +611,7 @@ cat docs/backlog/virtual-task-manifest.json | jq '.tasks[] | select(.task_id=="S
 cat docs/backlog/task-state.json | jq '.tasks["MONOREPO_STRUCTURE--T01"].status'
 
 # 3. Implement task
-"Implement task SQLITE_SCHEMA--T01 using task-implementer"
+"Implement task SQLITE_SCHEMA--T01 using task-manager"
 ```
 
 ### Scenario 3: Resuming After Interruption
@@ -688,7 +688,7 @@ Want to implement specific independent tasks in parallel?
   → Use task-batch-coordinator with task ID list
 
 Want to implement specific task manually?
-  → Use task-implementer
+  → Use task-manager
 
 Need to document architectural decision?
   → Use adr-curator
@@ -819,7 +819,7 @@ cat docs/backlog/task-state.json | jq '.tasks[] | select(.status=="in-progress")
 | Fix doc issues              | `Use spec-librarian to fix [issue]`                                                              |
 | Generate tasks              | `Use task-decomposition-architect to generate VTM`                                               |
 | Auto-pilot implementation   | `Launch implementation-orchestrator`                                                             |
-| Implement specific task     | `Implement task TASK_ID using task-implementer`                                                  |
+| Implement specific task     | `Implement task TASK_ID using task-manager`                                                  |
 | Check progress              | `cat docs/backlog/task-state.json \| jq '.tasks \| map(select(.status=="completed")) \| length'` |
 | Resume work                 | `Resume implementation-orchestrator` or `Continue task TASK_ID`                                  |
 
@@ -899,7 +899,7 @@ After reading this guide:
 1. 🔬 Research & plan features: `capture-bridge-planner` (PRIMARY - start here!)
 2. ✅ Validate your roadmap: `roadmap-orchestrator assessment`
 3. ✅ Generate VTM: `task-decomposition-architect`
-4. ✅ Start implementing: Choose orchestrator (auto) or task-implementer (manual)
+4. ✅ Start implementing: Choose orchestrator (auto) or task-manager (manual)
 5. 📊 Monitor progress via task-state.json
 6. 🎯 Complete Phase 1 Slice 1.1 (6 tasks)
 

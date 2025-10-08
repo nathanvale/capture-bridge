@@ -621,7 +621,7 @@ AI agent specifications for documentation maintenance. See [README-agents-usage.
 - **[spec-librarian.md](../agents/spec-librarian.md)** - Documentation organization
 - **[spec-orchrestrator.md](../agents/spec-orchrestrator.md)** - Spec coordination
 - **[task-decomposition-agent.md](../agents/task-decomposition-agent.md)** - Breaking down tasks
-- **[task-implementer.md](../agents/task-implementer.md)** - Task implementation execution
+- **[task-manager.md](../agents/task-manager.md)** - Task implementation execution
 - **[task-manager.md](../agents/task-manager.md)** - Task tracking and management
 - **[test-strategist.md](../agents/test-strategist.md)** - Testing strategy
 - **[virtual-backlog-contract.md](../agents/virtual-backlog-contract.md)** - Virtual backlog contract specification
