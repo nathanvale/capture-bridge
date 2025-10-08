@@ -1564,4 +1564,143 @@ describe('VoicePoller', () => {
       expect(newFiles).toEqual([])
     })
   })
+
+  describe('Audio Fingerprinting [VOICE_POLLING_ICLOUD-AC07]', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+      vi.resetModules()
+    })
+
+    it('should compute audio fingerprint before staging', async () => {
+      // Arrange
+      const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+      const tempDir = await createTempDirectory()
+      const fs = await import('node:fs/promises')
+      const path = await import('node:path')
+
+      // Create a test audio file with known content
+      const audioFile = path.join(tempDir.path, 'test-recording.m4a')
+      const audioContent = Buffer.alloc(100, 'test-audio-data')
+      await fs.writeFile(audioFile, audioContent)
+
+      const mockDb: DatabaseClient = {
+        query: vi.fn().mockReturnValue(undefined), // No last poll timestamp
+        run: vi.fn(),
+      }
+
+      const mockDedup: DeduplicationService = {
+        isDuplicate: vi.fn().mockResolvedValue(false),
+        addFingerprint: vi.fn(),
+      }
+
+      // Mock execFile to simulate file already downloaded
+      const childProcess = await import('node:child_process')
+      vi.spyOn(childProcess, 'execFile').mockImplementation(((_cmd: string, _args: string[], callback: any) => {
+        callback(null, {
+          stdout: 'Status: downloaded\nhasUnresolvedConflicts: false',
+          stderr: '',
+        })
+        return {} as any
+      }) as any)
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const config: VoicePollerConfig = {
+        folderPath: tempDir.path,
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDb, mockDedup, config)
+      pollers.push(poller)
+
+      // Spy on stageCapture to capture the fingerprint argument
+      // @ts-expect-error - accessing private method for testing
+      const stageSpy = vi.spyOn(poller, 'stageCapture').mockResolvedValue(undefined)
+
+      // Act
+      const result = await poller.pollOnce()
+
+      // Assert
+      expect(result.filesFound).toBe(1)
+      expect(result.filesProcessed).toBe(1)
+      expect(result.errors).toEqual([])
+
+      // Verify stageCapture was called with a valid SHA-256 fingerprint
+      expect(stageSpy).toHaveBeenCalledTimes(1)
+      expect(stageSpy).toHaveBeenCalledWith(
+        audioFile,
+        expect.stringMatching(/^[a-f0-9]{64}$/) // SHA-256 is 64 hex characters
+      )
+
+      // Verify the fingerprint is consistent (deterministic)
+      const { calls } = stageSpy.mock
+      expect(calls).toHaveLength(1)
+      // After length assertion, we know calls[0] exists
+      const firstCall = calls[0] as unknown as [string, string]
+      const capturedFingerprint = firstCall[1]
+      expect(capturedFingerprint).toBeDefined()
+      expect(capturedFingerprint).toHaveLength(64)
+    })
+
+    it('should handle fingerprint computation errors', async () => {
+      // Arrange
+      const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+      const tempDir = await createTempDirectory()
+      const path = await import('node:path')
+
+      // Create a path to a non-existent file
+      const missingFile = path.join(tempDir.path, 'missing-audio.m4a')
+
+      const mockDb: DatabaseClient = {
+        query: vi.fn().mockReturnValue(undefined),
+        run: vi.fn(),
+      }
+
+      const mockDedup: DeduplicationService = {
+        isDuplicate: vi.fn().mockResolvedValue(false),
+        addFingerprint: vi.fn(),
+      }
+
+      // Mock execFile to simulate file downloaded
+      const childProcess = await import('node:child_process')
+      vi.spyOn(childProcess, 'execFile').mockImplementation(((_cmd: string, _args: string[], callback: any) => {
+        callback(null, {
+          stdout: 'Status: downloaded\nhasUnresolvedConflicts: false',
+          stderr: '',
+        })
+        return {} as any
+      }) as any)
+
+      // Mock readdir to return the missing file
+      const fs = await import('node:fs/promises')
+      vi.spyOn(fs, 'readdir').mockResolvedValue([{ name: 'missing-audio.m4a', isFile: () => true } as any])
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const config: VoicePollerConfig = {
+        folderPath: tempDir.path,
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDb, mockDedup, config)
+      pollers.push(poller)
+
+      // Spy on stageCapture - should NOT be called when fingerprinting fails
+      // @ts-expect-error - accessing private method for testing
+      const stageSpy = vi.spyOn(poller, 'stageCapture').mockResolvedValue(undefined)
+
+      // Act
+      const result = await poller.pollOnce()
+
+      // Assert
+      expect(result.filesFound).toBe(1)
+      expect(result.filesProcessed).toBe(0) // File should not be processed
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors[0]).toMatchObject({
+        filePath: missingFile,
+        error: expect.stringContaining('ENOENT'), // File not found error
+      })
+
+      // Verify stageCapture was NOT called
+      expect(stageSpy).not.toHaveBeenCalled()
+    })
+  })
 })

@@ -90,13 +90,11 @@ export class VoicePoller {
   /**
    * Compute fingerprint for an audio file
    * @param filePath Path to the audio file
-   * @returns Fingerprint string
-   * @internal Stub implementation for now
+   * @returns SHA-256 fingerprint string (64 hex characters)
    */
-  private computeFingerprint(filePath: string): Promise<string> {
-    // Placeholder implementation - will be replaced with actual fingerprinting
-    // For now, return a placeholder based on file path
-    return Promise.resolve(`fingerprint_${filePath.replace(/[^a-zA-Z0-9]/g, '_')}`)
+  private async computeFingerprint(filePath: string): Promise<string> {
+    const { computeAudioFingerprint } = await import('@capture-bridge/foundation')
+    return computeAudioFingerprint(filePath)
   }
 
   /**
