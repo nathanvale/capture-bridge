@@ -790,7 +790,8 @@ describe('VoicePoller', () => {
         callback: any
       ) => {
         if (args[0] === 'check') {
-          callback(null, { stdout: 'Status: downloaded', stderr: '' })
+          // File is downloaded and has no conflicts
+          callback(null, { stdout: 'Status: downloaded\nhasUnresolvedConflicts: false', stderr: '' })
         }
         return {} as any
       }) as any)
@@ -812,8 +813,8 @@ describe('VoicePoller', () => {
       // @ts-expect-error - accessing private method for testing
       await poller.ensureFileDownloaded(testFile)
 
-      // Assert - only check was called, no download
-      expect(execFileSpy).toHaveBeenCalledTimes(1)
+      // Assert - two check calls (one for dataless, one for conflicts), no download
+      expect(execFileSpy).toHaveBeenCalledTimes(2)
       expect(execFileSpy).toHaveBeenCalledWith('icloudctl', ['check', testFile], expect.any(Function))
       expect(execFileSpy).not.toHaveBeenCalledWith('icloudctl', ['download', testFile], expect.any(Function))
     })
@@ -924,6 +925,150 @@ describe('VoicePoller', () => {
       expect(args[0]).toBe('check')
       // Path should be passed as-is without escaping needed (execFile handles it safely)
       expect(args[1]).toBe(maliciousPath)
+    })
+  })
+
+  describe('iCloud Conflict Detection [VOICE_POLLING_ICLOUD-AC06]', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+      vi.resetModules()
+    })
+
+    it('should skip files with iCloud conflicts and log error prominently', async () => {
+      // Arrange
+      const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+      const tempDir = await createTempDirectory()
+      const fs = await import('node:fs/promises')
+      const path = await import('node:path')
+
+      // Create test files
+      const normalFile = path.join(tempDir.path, 'Recording1.m4a')
+      const conflictFile = path.join(tempDir.path, 'Recording2.m4a')
+      await fs.writeFile(normalFile, Buffer.alloc(100))
+      await fs.writeFile(conflictFile, Buffer.alloc(100))
+
+      const mockDbClient: DatabaseClient = {
+        query: vi.fn().mockReturnValue(undefined), // No last poll timestamp
+        run: vi.fn(),
+      }
+
+      const mockDedup: DeduplicationService = {
+        isDuplicate: vi.fn().mockResolvedValue(false),
+        addFingerprint: vi.fn(),
+      }
+
+      // Mock execFile to simulate iCloud status checks
+      const childProcess = await import('node:child_process')
+      vi.spyOn(childProcess, 'execFile').mockImplementation(((_cmd: string, args: string[], callback: any) => {
+        const filePath = args[1]
+        if (args[0] === 'check' && filePath === conflictFile) {
+          // Simulate file with conflicts
+          callback(null, {
+            stdout: 'Status: downloaded\nhasUnresolvedConflicts: true',
+            stderr: '',
+          })
+        } else if (args[0] === 'check') {
+          // Normal file - already downloaded
+          callback(null, {
+            stdout: 'Status: downloaded\nhasUnresolvedConflicts: false',
+            stderr: '',
+          })
+        }
+        return {} as any
+      }) as any)
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const config: VoicePollerConfig = {
+        folderPath: tempDir.path,
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDbClient, mockDedup, config)
+      pollers.push(poller)
+
+      // Mock fingerprinting and staging for normal file
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'computeFingerprint').mockResolvedValue('fingerprint123')
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'stageCapture').mockResolvedValue(undefined)
+
+      // Act
+      const result = await poller.pollOnce()
+
+      // Assert
+      expect(result.filesFound).toBe(2)
+      expect(result.filesProcessed).toBe(1) // Only normalFile processed
+      expect(result.duplicatesSkipped).toBe(0)
+      expect(result.errors).toHaveLength(1)
+
+      // Verify the error message is prominent
+      const conflictError = result.errors[0]
+      expect(conflictError).toBeDefined()
+      if (conflictError) {
+        expect(conflictError.filePath).toBe(conflictFile)
+        expect(conflictError.error).toContain('iCloud conflict detected')
+        expect(conflictError.error).toContain(conflictFile)
+        expect(conflictError.error).toContain('skipping')
+      }
+    })
+
+    it('should handle icloudctl failure gracefully when checking conflicts [VOICE_POLLING_ICLOUD-AC06]', async () => {
+      // Arrange
+      const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+      const tempDir = await createTempDirectory()
+      const fs = await import('node:fs/promises')
+      const path = await import('node:path')
+
+      const file = path.join(tempDir.path, 'Recording.m4a')
+      await fs.writeFile(file, Buffer.alloc(100))
+
+      const mockDbClient: DatabaseClient = {
+        query: vi.fn().mockReturnValue(undefined),
+        run: vi.fn(),
+      }
+
+      const mockDedup: DeduplicationService = {
+        isDuplicate: vi.fn().mockResolvedValue(false),
+        addFingerprint: vi.fn(),
+      }
+
+      // Mock execFile to fail on conflict check but succeed on dataless check
+      let callCount = 0
+      const childProcess = await import('node:child_process')
+      vi.spyOn(childProcess, 'execFile').mockImplementation(((_cmd: string, _args: string[], callback: any) => {
+        callCount++
+        if (callCount === 1) {
+          // First call - checkIfDataless succeeds
+          callback(null, { stdout: 'Status: downloaded', stderr: '' })
+        } else {
+          // Second call - checkForConflicts fails
+          callback(new Error('icloudctl not available'), null, 'icloudctl: command not found')
+        }
+        return {} as any
+      }) as any)
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const config: VoicePollerConfig = {
+        folderPath: tempDir.path,
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDbClient, mockDedup, config)
+      pollers.push(poller)
+
+      // Mock fingerprinting and staging
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'computeFingerprint').mockResolvedValue('fingerprint123')
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'stageCapture').mockResolvedValue(undefined)
+
+      // Act
+      const result = await poller.pollOnce()
+
+      // Assert - should process file normally when conflict check fails
+      expect(result.filesFound).toBe(1)
+      expect(result.filesProcessed).toBe(1) // File processed despite icloudctl failure
+      expect(result.errors).toHaveLength(0) // No error because we assume no conflicts on failure
     })
   })
 
