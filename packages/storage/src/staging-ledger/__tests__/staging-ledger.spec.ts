@@ -71,9 +71,9 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
 
       // Setup: Insert original capture and export it
       const originalId = ulid()
-      const contentHash = 'sha256:abcd1234'
+      const contentHash = `sha256:test-${ulid()}`
 
-      // Insert original capture
+      // Insert original capture in 'transcribed' state (email content is already extracted)
       db.prepare(
         `
         INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
@@ -84,11 +84,11 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
         'email',
         'Original content',
         contentHash,
-        'staged',
-        JSON.stringify({ channel: 'email', channel_native_id: 'msg-001' })
+        'transcribed', // Email content is already extracted, so it starts in 'transcribed'
+        JSON.stringify({ channel: 'email', channel_native_id: `msg-${originalId}` })
       )
 
-      // Record initial export
+      // Record initial export (this also updates status to 'exported')
       await ledger.recordExport(originalId, {
         vault_path: `inbox/${originalId}.md`,
         hash_at_export: contentHash,
@@ -96,11 +96,22 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
         error_flag: false,
       })
 
-      // Update status to exported
-      db.prepare('UPDATE captures SET status = ? WHERE id = ?').run('exported', originalId)
+      // Act: Check for duplicate BEFORE inserting new capture
+      const duplicateCheck = await ledger.checkDuplicate(contentHash)
 
-      // Insert duplicate capture with same hash
+      // Assert: Duplicate detected
+      expect(duplicateCheck.is_duplicate).toBe(true)
+      expect(duplicateCheck.original_capture_id).toBe(originalId)
+
+      // In real workflow, when duplicate is detected, we would:
+      // 1. For email: Skip inserting the capture entirely
+      // 2. For voice: Insert with NULL hash, then after transcription when we detect duplicate,
+      //    we DON'T update the hash (to avoid UNIQUE constraint violation)
+
+      // For this test, simulate a voice capture that was transcribed and found to be duplicate
       const duplicateId = ulid()
+      const duplicateHash = `sha256:duplicate-${ulid()}` // Different hash to avoid constraint
+
       db.prepare(
         `
         INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
@@ -108,25 +119,18 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
       `
       ).run(
         duplicateId,
-        'email',
-        'Duplicate content',
-        contentHash,
+        'voice',
+        'Duplicate voice content (transcribed)',
+        duplicateHash, // Use a different hash to avoid UNIQUE constraint
         'staged',
-        JSON.stringify({ channel: 'email', channel_native_id: 'msg-002' })
+        JSON.stringify({ channel: 'voice', channel_native_id: `voice-${duplicateId}` })
       )
-
-      // Act: Check for duplicate
-      const duplicateCheck = await ledger.checkDuplicate(contentHash)
-
-      // Assert: Duplicate detected
-      expect(duplicateCheck.is_duplicate).toBe(true)
-      expect(duplicateCheck.existing_capture_id).toBe(originalId)
 
       // Act: Record duplicate skip export
       await ledger.recordExport(duplicateId, {
         mode: 'duplicate_skip',
         vault_path: '', // No vault write for duplicates
-        hash_at_export: contentHash,
+        hash_at_export: duplicateHash, // Use the duplicate's hash
         error_flag: false,
       })
 
@@ -137,7 +141,7 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
         capture_id: duplicateId,
         mode: 'duplicate_skip',
         vault_path: '',
-        hash_at_export: contentHash,
+        hash_at_export: duplicateHash, // Check the duplicate's hash
         error_flag: 0,
       })
 
@@ -151,7 +155,7 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
       const ledger = new StagingLedger(db)
 
       const captureId = ulid()
-      const contentHash = 'sha256:efgh5678'
+      const contentHash = `sha256:test-${ulid()}`
 
       // Insert capture in staged status
       db.prepare(
@@ -165,7 +169,7 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
         'Voice content',
         contentHash,
         'staged',
-        JSON.stringify({ channel: 'voice', channel_native_id: 'voice-001' })
+        JSON.stringify({ channel: 'voice', channel_native_id: `voice-${captureId}` })
       )
 
       // Should allow staged → exported_duplicate transition
@@ -188,7 +192,7 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
       const ledger = new StagingLedger(db)
 
       const captureId = ulid()
-      const contentHash = 'sha256:ijkl9012'
+      const contentHash = `sha256:test-${ulid()}`
 
       // Insert capture in transcribed status
       db.prepare(
@@ -202,7 +206,7 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
         'Transcribed voice content',
         contentHash,
         'transcribed',
-        JSON.stringify({ channel: 'voice', channel_native_id: 'voice-002' })
+        JSON.stringify({ channel: 'voice', channel_native_id: `voice-${captureId}-2` })
       )
 
       // Should allow transcribed → exported_duplicate transition
@@ -233,7 +237,7 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
 
       // Setup: Create original
       const originalId = ulid()
-      const contentHash = 'sha256:metric1234'
+      const contentHash = `sha256:test-${ulid()}`
 
       // Insert original
       db.prepare(
@@ -247,7 +251,7 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
         'Original for metrics',
         contentHash,
         'exported',
-        JSON.stringify({ channel: 'email', channel_native_id: 'msg-003' })
+        JSON.stringify({ channel: 'email', channel_native_id: `msg-${originalId}` })
       )
 
       // Check for duplicate
@@ -274,14 +278,14 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
       const { StagingLedger } = await import('../staging-ledger.js')
       const ledger = new StagingLedger(db)
 
-      const uniqueHash = 'sha256:unique9999'
+      const uniqueHash = `sha256:unique-${ulid()}`
 
       // Act: Check for non-existent duplicate
       const duplicateCheck = await ledger.checkDuplicate(uniqueHash)
 
       // Assert: No duplicate found
       expect(duplicateCheck.is_duplicate).toBe(false)
-      expect(duplicateCheck.existing_capture_id).toBeUndefined()
+      expect(duplicateCheck.original_capture_id).toBeUndefined()
     })
 
     it('should throw error when trying to transition from terminal state', async () => {
@@ -289,7 +293,7 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
       const ledger = new StagingLedger(db)
 
       const captureId = ulid()
-      const contentHash = 'sha256:terminal123'
+      const contentHash = `sha256:test-${ulid()}`
 
       // Insert capture already in terminal state
       db.prepare(
@@ -303,7 +307,7 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
         'Already exported',
         contentHash,
         'exported_duplicate', // Terminal state
-        JSON.stringify({ channel: 'email', channel_native_id: 'msg-004' })
+        JSON.stringify({ channel: 'email', channel_native_id: `msg-${captureId}` })
       )
 
       // Should throw when trying to transition from terminal state
@@ -324,6 +328,7 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
       const captureId = ulid()
 
       // Insert capture with invalid status to force transition error
+      const invalidHash = `sha256:test-${ulid()}`
       db.prepare(
         `
         INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
@@ -333,9 +338,9 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
         captureId,
         'email',
         'Invalid transition test',
-        'sha256:invalid123',
+        invalidHash,
         'failed_transcription', // Cannot transition to exported_duplicate from this state
-        JSON.stringify({ channel: 'email', channel_native_id: 'msg-005' })
+        JSON.stringify({ channel: 'email', channel_native_id: `msg-${captureId}` })
       )
 
       // Act: Try to record export (should fail)
@@ -343,7 +348,7 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
         ledger.recordExport(captureId, {
           mode: 'duplicate_skip',
           vault_path: '',
-          hash_at_export: 'sha256:invalid123',
+          hash_at_export: invalidHash,
           error_flag: false,
         })
       ).rejects.toThrow()
@@ -367,7 +372,7 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
       const maliciousHash = "'; DROP TABLE captures; --"
 
       // Should safely handle without SQL injection
-      await expect(ledger.checkDuplicate(maliciousHash)).resolves.toEqual({
+      expect(ledger.checkDuplicate(maliciousHash)).toEqual({
         is_duplicate: false,
       })
 

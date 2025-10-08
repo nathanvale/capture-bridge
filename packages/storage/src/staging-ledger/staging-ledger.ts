@@ -16,13 +16,14 @@ type Database = ReturnType<typeof DatabaseConstructor>
 export interface ExportAudit {
   vault_path: string
   hash_at_export: string | null
-  mode: 'initial' | 'duplicate_skip' | 'placeholder'
+  mode: 'initial' | 'duplicate_skip'
   error_flag: boolean
 }
 
 export interface DuplicateCheckResult {
   is_duplicate: boolean
-  existing_capture_id?: string
+  original_capture_id?: string
+  original_export_path?: string
 }
 
 export interface MetricsEmitter {
@@ -70,9 +71,22 @@ export class StagingLedger {
 
     try {
       // Use parameterized query to prevent SQL injection
+      // Also fetch the export path if it exists
       const result = this.db
-        .prepare('SELECT id FROM captures WHERE content_hash = ? LIMIT 1')
-        .get(content_hash) as { id: string } | undefined
+        .prepare(
+          `
+          SELECT
+            c.id,
+            ea.vault_path
+          FROM captures c
+          LEFT JOIN exports_audit ea ON ea.capture_id = c.id
+          WHERE c.content_hash = ?
+            AND c.status IN ('exported', 'exported_duplicate')
+          ORDER BY c.created_at ASC
+          LIMIT 1
+        `
+        )
+        .get(content_hash) as { id: string; vault_path: string | null } | undefined
 
       // Emit timing metric
       const duration = performance.now() - startTime
@@ -89,10 +103,16 @@ export class StagingLedger {
           labels: { layer: 'content_hash' },
         })
 
-        return {
+        const duplicateResult: DuplicateCheckResult = {
           is_duplicate: true,
-          existing_capture_id: result.id,
+          original_capture_id: result.id,
         }
+
+        if (result.vault_path) {
+          duplicateResult.original_export_path = result.vault_path
+        }
+
+        return duplicateResult
       }
 
       // No duplicate
@@ -112,7 +132,8 @@ export class StagingLedger {
   /**
    * Record an export to the audit trail and update capture status
    */
-  recordExport(capture_id: string, audit: ExportAudit): void {
+  // eslint-disable-next-line require-await -- API designed for future async operations
+  async recordExport(capture_id: string, audit: ExportAudit): Promise<void> {
     // Use transaction for atomicity
     const transaction = this.db.transaction(() => {
       // 1. Fetch current capture
@@ -124,11 +145,11 @@ export class StagingLedger {
         throw new StagingLedgerError('Capture not found', 'NOT_FOUND')
       }
 
-      // 2. Determine next status based on mode
+      // 2. Determine next status based on mode and error_flag
       let nextStatus: string
       if (audit.mode === 'duplicate_skip') {
         nextStatus = 'exported_duplicate'
-      } else if (audit.mode === 'placeholder') {
+      } else if (audit.error_flag) {
         nextStatus = 'exported_placeholder'
       } else {
         nextStatus = 'exported'
@@ -170,7 +191,7 @@ export class StagingLedger {
         labels: { mode: audit.mode },
       })
 
-      if (audit.mode === 'placeholder') {
+      if (audit.error_flag) {
         this.emitMetric({
           name: 'placeholder_exports_total',
           value: 1,
