@@ -12,3 +12,7 @@ export {
   verifyPragmas,
   verifyIntegrity,
 } from './schema.js'
+
+export { validateTransition, getValidTransitions, isTerminalState } from './state-machine.js'
+
+export type { CaptureStatus } from './state-machine.js'
