@@ -1,6 +1,6 @@
 {
   "manifest_hash": "d18c2638898a4a5d1e0cfbece98dfdd889490bfc5d257e65cce7cdfe58bb6691",
-  "last_updated": "2025-10-07T22:05:00Z",
+  "last_updated": "2025-10-08T07:39:04.291Z",
   "tasks": {
     "MONOREPO_STRUCTURE--T01": {
       "status": "completed",
@@ -43,7 +43,9 @@
       "status": "completed",
       "started_at": "2025-10-06T22:00:00Z",
       "completed_at": "2025-10-06T23:57:00Z",
-      "acs_completed": ["SQLITE_SCHEMA-AC07"],
+      "acs_completed": [
+        "SQLITE_SCHEMA-AC07"
+      ],
       "acs_remaining": [],
       "notes": "Completed database integrity check implementation following strict TDD (Red-Green-Refactor). AC07: PRAGMA integrity_check validation passes on clean databases, file-based databases, and databases with data. 69/69 tests passing (65 existing + 4 new). Files created: integrity-check.spec.ts (4 tests). Modified: schema.ts (added verifyIntegrity() function with proper type guards), schema/index.ts and src/index.ts (exported verifyIntegrity). Build successful. Implementation uses PRAGMA integrity_check to validate table structure, index consistency, row data validity, and B-tree structure correctness."
     },
@@ -131,16 +133,16 @@
       "notes": "Completed content hash validation following strict TDD principles. AC05: 100% determinism verified (16 tests) - normalizeText(), computeSHA256(), computeAudioFingerprint(), computeEmailHash() all produce identical outputs across 50-100 runs. AC06: Hash collision detection (13 tests) - theoretical collision scenarios tested, error handling verified with helper functions, SHA-256 collision resistance validated across 1000+ sequential inputs. AC07: Performance benchmarks exceeded targets (9 tests) - 1KB text: p95=0.01ms (99.9% faster than 10ms target), 4MB audio: p95=6.13ms (87.7% faster than 50ms target), 4MB buffer: p95=1.48ms, email hash: p95=0.00ms. Total 38 new tests passing. Files created: determinism.spec.ts, collision-detection.spec.ts, performance.spec.ts. TypeScript compilation successful. Zero test failures. Coverage: 82.14%."
     },
     "CAPTURE_STATE_MACHINE--T01": {
-      "status": "in-progress",
+      "status": "completed",
       "started_at": "2025-10-08T02:00:00Z",
-      "completed_at": null,
-      "acs_completed": [],
-      "acs_remaining": [
+      "completed_at": "2025-10-08T07:39:04.291Z",
+      "acs_completed": [
         "CAPTURE_STATE_MACHINE-AC01",
         "CAPTURE_STATE_MACHINE-AC02",
         "CAPTURE_STATE_MACHINE-AC03"
       ],
-      "notes": "Started implementation - task manager orchestrating TDD implementation via code-implementer"
+      "acs_remaining": [],
+      "notes": "Completed capture status state machine implementation following strict TDD. All 3 ACs satisfied with single implementation: AC01 (staged → transcribed → exported), AC02 (staged → failed_transcription → exported_placeholder), AC03 (staged → exported_duplicate). 20/20 state machine tests passing, 89/89 total tests passing. Files created: state-machine.ts with validateTransition(), getValidTransitions(), isTerminalState(). Exports added to schema/index.ts and src/index.ts. TypeScript compilation and build successful."
     }
   }
 }
