@@ -1,4 +1,4 @@
-import { exec } from 'node:child_process'
+import { execFile } from 'node:child_process'
 import { readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -13,12 +13,10 @@ import type {
 const DEFAULT_POLL_INTERVAL = 30000 // 30 seconds
 const VOICE_MEMOS_EXTENSION = '.m4a'
 const SYNC_STATE_KEY = 'voice_last_poll'
-const ICLOUDCTL_CHECK_COMMAND = 'icloudctl check'
-const ICLOUDCTL_DOWNLOAD_COMMAND = 'icloudctl download'
 const DOWNLOAD_MAX_WAIT_MS = 30000 // 30 seconds max wait for download
 
-// Helper to execute shell commands
-const execAsync = promisify(exec)
+// Helper to execute binary commands safely without shell interpretation
+const execFileAsync = promisify(execFile)
 
 export class VoicePoller {
   private intervalId: NodeJS.Timeout | undefined = undefined
@@ -231,12 +229,8 @@ export class VoicePoller {
    * @internal Exposed for testing
    */
   private async checkIfDataless(filePath: string): Promise<boolean> {
-    // Escape the file path to prevent command injection
-    // Escape both double quotes and backticks, and use single quotes for the outer shell
-    const escapedPath = filePath.replace(/'/g, "'\\''")
-    const command = `${ICLOUDCTL_CHECK_COMMAND} '${escapedPath}'`
-
-    const { stdout } = await execAsync(command)
+    // Use execFile to prevent shell injection - arguments passed directly to binary
+    const { stdout } = await execFileAsync('icloudctl', ['check', filePath])
     return stdout.includes('dataless')
   }
 
@@ -246,11 +240,8 @@ export class VoicePoller {
    * @internal Exposed for testing
    */
   private async triggerDownload(filePath: string): Promise<void> {
-    // Escape the file path to prevent command injection
-    const escapedPath = filePath.replace(/"/g, '\\"')
-    const command = `${ICLOUDCTL_DOWNLOAD_COMMAND} "${escapedPath}"`
-
-    await execAsync(command)
+    // Use execFile to prevent shell injection - arguments passed directly to binary
+    await execFileAsync('icloudctl', ['download', filePath])
   }
 
   /**
@@ -273,13 +264,16 @@ export class VoicePoller {
         return // Download complete
       }
 
-      // Exponential backoff: 1s, 2s, 4s, max 5s
+      // Exponential backoff between checks: 1s, 2s, 4s, then 5s (capped)
+      // Total max wait time: 30s (DOWNLOAD_MAX_WAIT_MS)
       const waitMs = Math.min(1000 * Math.pow(2, attempts), 5000)
       await new Promise((resolve) => setTimeout(resolve, waitMs))
       attempts++
     }
 
-    throw new Error(`iCloud download timeout: ${filePath}`)
+    throw new Error(
+      `iCloud download timeout after ${attempts} attempts (${maxWaitMs}ms): ${filePath}`
+    )
   }
 
   /**
