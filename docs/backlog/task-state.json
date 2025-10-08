@@ -197,6 +197,12 @@
       "acs_completed": ["DEDUPLICATION_LOGIC-AC06", "DEDUPLICATION_LOGIC-AC07", "DEDUPLICATION_LOGIC-AC08", "DEDUPLICATION_LOGIC-AC09"],
       "acs_remaining": [],
       "notes": "All 4 ACs implemented together in AC06 as they are tightly coupled: AC06: exports_audit with mode='duplicate_skip' + status transition to exported_duplicate. AC07: Empty vault_path for duplicates (line 132 in test). AC08: < 10ms performance via indexed query (checkDuplicate uses captures_content_hash_idx). AC09: dedup_hits_total metric emission (line 254-270 test validates). 10/10 tests passing. Coverage: 80.85%."
+    },
+    "VOICE_POLLING_ICLOUD--T02": {
+      "status": "in-progress",
+      "started_at": "2025-10-09T07:00:00Z",
+      "acs_completed": [],
+      "acs_remaining": ["VOICE_POLLING_ICLOUD-AC06", "VOICE_POLLING_ICLOUD-AC07", "VOICE_POLLING_ICLOUD-AC08", "VOICE_POLLING_ICLOUD-AC09", "VOICE_POLLING_ICLOUD-AC10"]
     }
   }
 }
