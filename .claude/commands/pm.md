@@ -76,34 +76,44 @@ node .claude/scripts/vtm-status.mjs --next
 
 ### /pm start
 
-1. Run dashboard check first:
-```bash
-node .claude/scripts/vtm-status.mjs --dashboard
+**Purpose:** Start the next eligible VTM task using the unified task-manager orchestrator.
+
+**Important:** task-manager now handles EVERYTHING - VTM query, git validation, context loading, AC execution, and PR creation. No need for separate orchestrator.
+
+1. Invoke task-manager directly using Task tool:
+
+```typescript
+Task({
+  subagent_type: "task-manager",
+  description: "Execute next VTM task",
+  prompt: `Execute the next eligible task from the Virtual Task Manifest.
+
+**Your Responsibilities (Complete Workflow)**:
+1. Phase 0: Query VTM for next task + validate git state (main branch, clean)
+2. Phase 1: Read all context files (specs, ADRs, guides)
+3. Phase 2-3: Create feature branch + initialize task state
+4. Phase 4-5: Classify ACs + delegate each to code-implementer
+5. Phase 6: Validate completion + create PR
+6. Phase 7: Report completion with VTM progress
+
+**No user input needed** - you query VTM directly with:
+\`\`\`bash
+node .claude/scripts/vtm-status.mjs --next
+\`\`\`
+
+If no eligible tasks, report what's blocking and stop.
+
+Proceed automatically with full lifecycle.`
+})
 ```
 
-2. If `next_task` exists, invoke task-manager directly:
-```markdown
-Starting task: {task_id}
+2. The task-manager will handle everything and return a completion report showing:
+   - Task completion status
+   - PR URL
+   - VTM progress (X/Y tasks)
+   - Next eligible task
 
-**Task:** {title}
-**Risk:** {risk}
-
-Delegating to task-manager...
-```
-
-3. Then use the Task tool to launch task-manager with:
-```
-prompt: "Orchestrate task {task_id} from the Virtual Task Manifest. Coordinate the full task lifecycle: load context, create feature branch, classify acceptance criteria, delegate ALL implementation work to code-implementer, track progress, and create PR when complete."
-subagent_type: "task-manager"
-description: "Manage VTM task {task_id}"
-```
-
-4. If no eligible tasks:
-```markdown
-❌ No eligible tasks available.
-
-Run `/pm blocked` to see what's blocking progress.
-```
+3. If task-manager reports no eligible tasks, it will show blocked task details.
 
 ### /pm status
 
