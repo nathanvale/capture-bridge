@@ -39,6 +39,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS captures_channel_native_uid
     json_extract(meta_json, '$.channel_native_id')
   );
 
+-- P0: Status index required for crash recovery query performance
+-- Recovery query: WHERE status IN ('staged', 'transcribed', 'failed_transcription')
+-- Target: < 50ms p95 (ADR-0004, spec-staging-arch.md §8.1)
 CREATE INDEX IF NOT EXISTS captures_status_idx
   ON captures(status);
 
