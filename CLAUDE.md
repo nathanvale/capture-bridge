@@ -127,6 +127,49 @@ When documenting features:
 
 See @.claude/rules/agent-coordination.md for multi-agent workflows
 
+### VTM Task Orchestration
+
+**Primary Orchestrator**: `task-manager` agent (v4.0.0+)
+
+**Invocation**: Use `/pm start` command to start next VTM task
+
+**Complete Workflow**:
+1. **Phase 0**: VTM query + git validation (main branch, clean)
+2. **Phase 1**: Context loading (specs, ADRs, guides)
+3. **Phase 2-3**: Feature branch creation + task state initialization
+4. **Phase 4-5**: AC classification + delegation to code-implementer
+5. **Phase 6**: Test validation + PR creation
+6. **Phase 7**: Completion reporting + VTM progress
+
+**Agent Delegation Chain**:
+```
+/pm start → task-manager → code-implementer
+             (orchestrate)  (implement)
+```
+
+**⚠️ Platform Limitation - Nested Agent Delegation**:
+
+Claude Code has a known platform limitation (GitHub issue #4182): **sub-agents cannot spawn their own sub-agents**. When an agent is invoked via the Task tool, it loses access to the Task tool at runtime, even if its configuration declares it.
+
+**Impact**: Multi-tier agent architectures (orchestrator → manager → worker) don't work.
+
+**Solution**: Flatten to single-tier delegation:
+- ✅ task-manager delegates to code-implementer (works)
+- ❌ orchestrator delegates to task-manager delegates to code-implementer (broken)
+
+**Architecture Evolution**:
+```
+# v3.x (broken):
+implementation-orchestrator → task-manager → code-implementer
+     (VTM query)                (route)        (implement)
+
+# v4.0+ (working):
+task-manager → code-implementer
+(VTM query + route)  (implement)
+```
+
+**Historical Note**: `implementation-orchestrator.md` archived on 2025-10-08. Functionality merged into task-manager v4.0.0.
+
 ---
 
 ## Code Quality & Type Safety
