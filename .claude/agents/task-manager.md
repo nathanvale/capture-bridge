@@ -390,3 +390,69 @@ Report exact error, suggest resolution, BLOCK further progress.
 - Blocker encountered
 
 **Commit immediately** after each update.
+
+---
+
+## Example: Verbatim Context Extraction
+
+### ❌ WRONG: Summarizing Spec Pseudocode
+
+```markdown
+**Context from Specs**:
+- State machine validates transitions
+- Terminal states cannot transition
+- Staged can go to transcribed, failed, or duplicate
+```
+
+**Problem**: Code-implementer must guess implementation details
+
+### ✅ CORRECT: Verbatim Pseudocode
+
+```markdown
+**Implementation Pseudocode from Specs** (spec-staging-arch.md:538-564):
+\`\`\`typescript
+function validateTransition(current: Status, next: Status): boolean {
+  // Terminal states cannot transition
+  if (current.startsWith("exported")) {
+    return false
+  }
+
+  // Staged can go to transcribed, failed, or duplicate
+  if (current === "staged") {
+    return ["transcribed", "failed_transcription", "exported_duplicate"].includes(next)
+  }
+
+  // Transcribed can only go to exported states
+  if (current === "transcribed") {
+    return ["exported", "exported_duplicate"].includes(next)
+  }
+
+  // Failed transcription can only go to placeholder export
+  if (current === "failed_transcription") {
+    return next === "exported_placeholder"
+  }
+
+  return false
+}
+\`\`\`
+
+**Test Pseudocode from Specs** (spec-staging-test.md:15-30):
+\`\`\`typescript
+describe('State Machine Validation', () => {
+  it('should allow staged → transcribed', () => {
+    expect(validateTransition('staged', 'transcribed')).toBe(true)
+  })
+
+  it('should reject exported → any', () => {
+    expect(validateTransition('exported', 'staged')).toBe(false)
+  })
+})
+\`\`\`
+```
+
+**Result**: Code-implementer has exact blueprint, implements in minutes not hours
+
+---
+
+**Version**: 3.1.0 (Smart Context Extraction)
+**Token Count**: ~2,100 tokens (added verbatim extraction + Phase 4.5)
