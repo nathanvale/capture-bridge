@@ -191,10 +191,12 @@
       "acs_remaining": []
     },
     "DEDUPLICATION_LOGIC--T02": {
-      "status": "in-progress",
+      "status": "blocked",
       "started_at": "2025-10-09T05:45:00Z",
       "acs_completed": [],
-      "acs_remaining": ["DEDUPLICATION_LOGIC-AC06", "DEDUPLICATION_LOGIC-AC07", "DEDUPLICATION_LOGIC-AC08", "DEDUPLICATION_LOGIC-AC09"]
+      "acs_remaining": ["DEDUPLICATION_LOGIC-AC06", "DEDUPLICATION_LOGIC-AC07", "DEDUPLICATION_LOGIC-AC08", "DEDUPLICATION_LOGIC-AC09"],
+      "blocked_reason": "AC06 tests in RED phase - need GREEN phase implementation fixes",
+      "blocker_details": "7/10 tests failing due to: (1) recordExport should be async, (2) checkDuplicate is sync but tests expect async, (3) test setup manually sets status='exported' which breaks state machine"
     }
   }
 }
