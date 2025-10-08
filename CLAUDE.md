@@ -16,7 +16,8 @@ Welcome to the Capture Bridge monorepo! This file contains essential context and
 
 When writing tests for this project, **always follow test-driven development** practices using @orchestr8/testkit v2.0.0.
 
-**📚 Complete TDD Guide**: @.claude/rules/testkit-tdd-guide.md
+**📚 Complete TDD Guide**: @.claude/rules/testkit-tdd-guide-condensed.md
+**📖 Full TDD Guide**: `.claude/rules/testkit-tdd-guide.md` (read on-demand for detailed examples)
 
 ### Quick Rules
 
@@ -47,7 +48,8 @@ capture-bridge/
 
 - **ADRs**: @docs/adr/ - Architectural decisions
 - **PRDs**: @docs/features/ - Product requirements
-- **Master PRD**: @docs/master/prd-master.md - Overall product vision
+- **Master PRD (Quick Ref)**: @.claude/rules/prd-master-condensed.md - Essential product context
+- **Master PRD (Full)**: `docs/master/prd-master.md` (read on-demand for complete schemas)
 - **Test Guide**: @packages/foundation/src/**tests**/README.md
 
 ---
@@ -78,12 +80,13 @@ pnpm test:coverage     # With coverage report
 
 When implementing tests:
 
-1. Import TestKit TDD guide: @.claude/rules/testkit-tdd-guide.md
+1. Import TestKit TDD guide: @.claude/rules/testkit-tdd-guide-condensed.md
 2. Follow Red-Green-Refactor cycle
 3. Use appropriate TestKit sub-exports
-4. Implement 4-step cleanup in afterEach
+4. Implement 5-step cleanup in afterEach
 5. Add security tests for any input handling
 6. Check memory leaks for loop operations
+7. Read full guide (`.claude/rules/testkit-tdd-guide.md`) on-demand for complete templates
 
 ### Code Review Agent
 
@@ -158,6 +161,7 @@ expect(results).toHaveLength(1)
 expect(results[0].property).toBe(value)
 ```
 
+**Quick fixes:** `.claude/rules/typescript-patterns-condensed.md`
 **Full patterns with detailed examples:** `.claude/rules/typescript-patterns.md`
 
 **Auto-fixed by hooks:** Formatting, linting
@@ -184,14 +188,33 @@ Before committing, verify:
 
 ## Additional Resources
 
+### Quick Reference (In Memory)
+- **Context Map**: @.claude/context-map.md - Navigation guide for condensed vs full docs
 - **Testing Config**: @.claude/testing-config.md
-- **TypeScript Patterns**: @.claude/rules/typescript-patterns.md
-- **TestKit TDD Guide**: @.claude/rules/testkit-tdd-guide.md
+- **TypeScript Quick Fixes**: @.claude/rules/typescript-patterns-condensed.md
+- **TestKit TDD Quick Ref**: @.claude/rules/testkit-tdd-guide-condensed.md
+- **Master PRD Quick Ref**: @.claude/rules/prd-master-condensed.md
 - **Agent Coordination**: @.claude/rules/agent-coordination.md
-- **All Rules**: @.claude/rules/
-- **All Agents**: @.claude/agents/
+
+### Full Documentation (Read On-Demand Only)
+- **TypeScript Patterns (Full)**: `.claude/rules/typescript-patterns.md`
+- **TestKit TDD Guide (Full)**: `.claude/rules/testkit-tdd-guide.md`
+- **Master PRD (Full)**: `docs/master/prd-master.md`
+- **All Rules**: `.claude/rules/`
+- **All Agents**: `.claude/agents/`
 
 ---
 
-**Last Updated**: 2025-10-08 - Refactored code quality patterns into separate guide for better maintainability
+**Last Updated**: 2025-10-08 - Memory optimization: Condensed documentation (26k → 8.9k tokens, 66% reduction)
 **Maintained By**: Nathan Vale & AI Agents
+
+---
+
+## Memory Optimization
+
+This project uses a **two-tier documentation system** for AI agent efficiency:
+
+1. **Condensed versions** (~8.9k tokens total) - Always in memory via CLAUDE.md
+2. **Full versions** (~26k tokens total) - Read on-demand when implementing complex patterns
+
+See **@.claude/context-map.md** for navigation guide on when to use condensed vs full docs.
