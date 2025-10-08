@@ -174,7 +174,10 @@ After ALL ACs done:
 1. **Validate**:
    - All ACs in `acs_completed`
    - `acs_remaining` is empty
-   - All tests passing
+   - Use Task tool with subagent_type="test-runner" to make sure all tests
+     passing
+   - Use Task tool with subagent_type="quality-check-fixer" to make sure there are
+    no link or typescript errors
    - No uncommitted changes
 
 2. **Update state** to completed:
