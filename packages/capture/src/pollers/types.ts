@@ -17,10 +17,12 @@ export interface VoicePollResult {
 }
 
 // Stub interfaces for dependencies (will be implemented later)
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Stub for future implementation
 export interface DatabaseClient {
   // Database methods will be added in future ACs
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Stub for future implementation
 export interface DeduplicationService {
   // Deduplication methods will be added in future ACs
 }
