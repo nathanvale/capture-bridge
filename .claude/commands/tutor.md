@@ -76,7 +76,7 @@ Task({
 # Agent questions
 /tutor which agent should I use for planning?
 /tutor how do I use the roadmap-orchestrator?
-/tutor what's the difference between implementation-orchestrator and task-implementer?
+/tutor what's the difference between implementation-orchestrator and task-manager?
 /tutor when should I use resilience-strategist?
 
 # When stuck
