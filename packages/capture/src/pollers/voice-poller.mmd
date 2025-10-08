@@ -1,0 +1,57 @@
+---
+id: 78fc41e3-b215-44d6-9f8c-648909735f53
+---
+sequenceDiagram
+    autonumber
+    actor User as Caller
+    participant VP as VoicePoller
+    participant FS as Filesystem
+    participant IC as icloudctl
+    participant DS as DeduplicationService
+    participant DB as Database (sync_state)
+
+    User->>VP: startContinuous(config)
+    activate VP
+    VP->>VP: pollOnce()
+    loop Every pollInterval
+      VP->>VP: pollOnce()
+    end
+
+    rect rgb(235, 245, 255)
+    note over VP: pollOnce
+    VP->>DB: getLastPollTimestamp()
+    DB-->>VP: lastPoll?
+    VP->>FS: scanVoiceMemos(folder)
+    FS-->>VP: [.m4a paths]
+    VP->>VP: filterNewFiles(lastPoll)
+    end
+
+    loop For each file (sequential)
+      alt File is dataless
+        VP->>IC: check(file)
+        IC-->>VP: dataless=true
+        VP->>IC: download(file)
+        VP->>VP: waitForDownload(backoff)
+      else Already downloaded
+        VP->>IC: check(file)
+        IC-->>VP: dataless=false
+      end
+
+      VP->>VP: computeFingerprint(file)  Note over VP: placeholder
+      VP->>DS: isDuplicate(fingerprint)
+      DS-->>VP: boolean
+      alt Duplicate
+        VP->>VP: increment duplicatesSkipped
+      else New
+        VP->>VP: stageCapture(file)  Note over VP: placeholder
+        VP->>VP: increment filesProcessed
+      end
+      opt Per-file error
+        VP->>VP: record error {path, message}
+      end
+    end
+
+    VP->>DB: updateLastPollTimestamp(now)
+    DB-->>VP: ok
+    VP-->>User: VoicePollResult
+    deactivate VP

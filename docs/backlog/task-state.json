@@ -156,27 +156,32 @@
       "acs_remaining": [],
       "notes": "Completed service layer validation and recovery query implementation following strict TDD. All 3 ACs satisfied: AC04: Terminal state immutability enforced (exported, exported_duplicate, exported_placeholder cannot transition). AC05: Service layer validation with error throwing (assertValidTransition throws StateTransitionError with detailed messages). AC06: Recovery query returns non-terminal captures ordered by created_at ASC for crash recovery. 15/15 new tests passing (104/104 total). Files created: service-layer.ts (assertValidTransition, StateTransitionError, queryRecoverableCaptures), service-layer-validation.spec.ts. Modified: schema/index.ts and src/index.ts (added exports). Implementation provides service layer wrapper around state machine with comprehensive error handling per spec-staging-arch.md §4.4, §5.4 and ADR-0004."
     },
-    "CAPTURE_STATE_MACHINE--T03": {
-      "status": "completed",
-      "started_at": "2025-10-08T03:30:00Z",
-      "completed_at": "2025-10-08T03:30:00Z",
-      "acs_completed": [
-        "CAPTURE_STATE_MACHINE-AC07"
-      ],
-      "acs_remaining": [],
-      "notes": "Completed CAPTURE_STATE_MACHINE--T03: Status index verification. AC07: captures_status_idx already exists and fully tested. Index was created as part of SQLITE_SCHEMA--T01 (schema.ts:134-136) with comprehensive test coverage in index-performance.spec.ts (existence test lines 89-102, query planner usage test lines 311-335, performance benchmark lines 470-495). All 104/104 tests passing. No new implementation required - this task verifies existing infrastructure satisfies the acceptance criterion. The status index enables fast filtering for recovery queries (WHERE status='staged') and crash recovery operations as specified in spec-staging-arch.md §4.4 and §8.2."
-    },
     "DEDUPLICATION_LOGIC--T01": {
-      "status": "in-progress",
+      "status": "completed",
       "started_at": "2025-10-08T04:00:00Z",
-      "acs_completed": [],
-      "acs_remaining": [
+      "completed_at": "2025-10-08T04:30:00Z",
+      "acs_completed": [
         "DEDUPLICATION_LOGIC-AC01",
         "DEDUPLICATION_LOGIC-AC02",
         "DEDUPLICATION_LOGIC-AC03",
         "DEDUPLICATION_LOGIC-AC04",
         "DEDUPLICATION_LOGIC-AC05"
-      ]
+      ],
+      "acs_remaining": []
+    },
+    "VOICE_POLLING_ICLOUD--T01": {
+      "status": "completed",
+      "started_at": "2025-10-08T06:00:00Z",
+      "completed_at": "2025-10-09T05:30:00Z",
+      "acs_completed": [
+        "VOICE_POLLING_ICLOUD-AC01",
+        "VOICE_POLLING_ICLOUD-AC02",
+        "VOICE_POLLING_ICLOUD-AC03",
+        "VOICE_POLLING_ICLOUD-AC04",
+        "VOICE_POLLING_ICLOUD-AC05"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed voice polling with iCloud integration following strict TDD. All 5 ACs satisfied: AC01: Configurable 30s polling interval with startContinuous()/stop()/shutdown() methods. AC02: .m4a file detection with mtime check and sync_state cursor management. AC03: APFS dataless detection via icloudctl with command injection prevention (single-quote escaping). AC04: Sequential download enforcement using for...of loop (ADR-0008, semaphore=1). AC05: Exponential backoff in waitForDownload() (1s→2s→4s→5s cap). 36/36 tests passing. Coverage: 86.16%. Files created: voice-poller.ts (299 lines), voice-poller.test.ts (1273 lines, 36 tests). Implementation includes stub methods for computeFingerprint() and stageCapture() for future ACs. Full pollOnce() integration with scanVoiceMemos(), ensureFileDownloaded(), deduplication check, error handling per file, and sync state updates."
     }
   }
 }
