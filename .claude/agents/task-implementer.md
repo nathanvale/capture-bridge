@@ -281,26 +281,64 @@ AC03: "Package resolution works correctly (verified by import test)"
 
 ## Operational Protocol
 
-### Phase 1: Readiness Gate
+### Phase 1: Readiness Gate (AUTOMATIC - NO USER CONFIRMATION NEEDED)
+
+**⚠️ CRITICAL: This entire phase executes AUTOMATICALLY. DO NOT ask user for confirmation.**
+
 Before starting any task:
-1. Read task from `docs/backlog/virtual-task-manifest.json` using task_id
-2. Extract task record including task_id, capability_id, phase, risk level, and acceptance_criteria array
-3. **READ ALL CONTEXT DOCUMENTS** (this is MANDATORY before any implementation):
-   - Read EVERY file in `related_specs` array (arch/tech/test specs)
-   - Read EVERY ADR referenced in `related_adrs` array
-   - Read EVERY guide in `related_guides` array
-   - Review `test_verification` file paths to understand expected test structure
-   - Read acceptance_criteria array completely (all ids + text)
-4. Read or create `docs/backlog/task-state.json`
-5. Verify ALL dependencies in `depends_on_tasks` are in `completed` state in task-state.json
-6. If dependencies incomplete: REFUSE to start and report blocking dependencies clearly
-7. If any related_specs/adrs/guides files are missing or unreadable: REFUSE to start and report GAP
-8. Only proceed if explicit override flag is provided AND policy permits (rare exception)
-9. Initialize task state entry if first time starting this task
-10. Update state: status=in-progress, started_at=<timestamp>
-11. **CLASSIFY ALL ACs** using the decision tree above
-12. **REPORT EXECUTION PLAN** showing mode for each AC before implementation
-13. Summarize understanding of task based on ALL context read (ACs + specs + ADRs + guides)
+
+1. **Read VTM task definition:**
+   - Load `docs/backlog/virtual-task-manifest.json`
+   - Find task by task_id
+   - Extract: task_id, capability_id, phase, risk, acceptance_criteria, related_specs, related_adrs, related_guides, test_verification, depends_on_tasks
+
+2. **Verify dependencies:**
+   - Load `docs/backlog/task-state.json`
+   - Check ALL tasks in `depends_on_tasks` array have status='completed'
+   - If ANY dependency not completed: BLOCK and report missing dependencies
+   - If dependencies satisfied: Continue automatically
+
+3. **READ ALL CONTEXT DOCUMENTS USING Read TOOL** (MANDATORY - NO EXCEPTIONS):
+
+   **For each file in related_specs array:**
+   ```xml
+   <invoke name="Read">
+   <parameter name="file_path">[full path from related_specs]</parameter>
+   </invoke>
+   ```
+   Store content for later extraction and inclusion in wallaby-tdd-agent prompt.
+
+   **For each ADR in related_adrs array:**
+   ```xml
+   <invoke name="Read">
+   <parameter name="file_path">docs/adr/[derived from ADR reference]</parameter>
+   </invoke>
+   ```
+   Store content for later extraction and inclusion in wallaby-tdd-agent prompt.
+
+   **For each guide in related_guides array:**
+   ```xml
+   <invoke name="Read">
+   <parameter name="file_path">[full path from related_guides]</parameter>
+   </invoke>
+   ```
+   Store content for later extraction and inclusion in wallaby-tdd-agent prompt.
+
+   **⚠️ If ANY file is missing or unreadable: BLOCK and report GAP.**
+
+4. **Initialize task state:**
+   - Create state entry if first time starting this task
+   - Update: status='in-progress', started_at=<current timestamp>
+   - Write changes to `docs/backlog/task-state.json`
+
+5. **Classify all ACs** using the decision tree (TDD Mode / Setup Mode / Documentation Mode)
+
+6. **Report execution plan:**
+   - Show which mode each AC will use
+   - Summarize understanding from context read
+   - List files read and key points extracted
+
+7. **Proceed to Phase 2 AUTOMATICALLY** (work planning & routing)
 
 ### Phase 2: Work Planning & Routing
 **Route each AC to appropriate execution mode based on classification**
@@ -326,7 +364,35 @@ For each acceptance criterion:
    - Related specs, ADRs, and guides content
    - Expected test structure from test_verification paths
 
-3. **Invoke wallaby-tdd-agent using the Task tool:**
+3. **Extract context from all reference documents** (MANDATORY - DO NOT SKIP):
+
+   **BEFORE invoking wallaby-tdd-agent, you MUST:**
+
+   a. **Read EVERY related_specs file using Read tool:**
+      ```
+      For each file in task.related_specs:
+        - Use Read tool to get full content
+        - Extract relevant sections (state machine, transitions, validation rules, etc.)
+        - Keep architectural context intact
+      ```
+
+   b. **Read EVERY related_adrs file using Read tool:**
+      ```
+      For each ADR in task.related_adrs:
+        - Use Read tool to get full ADR content
+        - Extract decision, rationale, and consequences
+        - Note any implementation constraints
+      ```
+
+   c. **Read EVERY related_guides file using Read tool:**
+      ```
+      For each guide in task.related_guides:
+        - Use Read tool to get full guide content
+        - Extract relevant patterns and examples
+        - Note TestKit-specific requirements
+      ```
+
+4. **Invoke wallaby-tdd-agent using the Task tool** (AUTOMATICALLY - DO NOT ASK USER):
 
    Use the Task tool with this exact invocation:
    ```typescript
@@ -346,20 +412,39 @@ For each acceptance criterion:
 
    **Test Example:** [File path and line numbers from foundation tests]
 
-   **Context:**
-   [relevant specs/ADRs/guides summary]
+   **Context from Related Specs:**
+   [PASTE EXTRACTED CONTENT FROM EACH SPEC FILE HERE]
+   [Include: state machine architecture, transition rules, validation logic, etc.]
+
+   **Context from Related ADRs:**
+   [PASTE EXTRACTED CONTENT FROM EACH ADR HERE]
+   [Include: decisions, constraints, implementation requirements]
+
+   **Context from Related Guides:**
+   [PASTE EXTRACTED CONTENT FROM EACH GUIDE HERE]
+   [Include: testing patterns, TestKit examples, cleanup sequences]
+
+   **Expected Test Location:**
+   [File path from test_verification array]
+
+   **Expected Implementation Location:**
+   [Derived from test path or task description]
 
    **Instructions:**
    1. RED: Write failing tests using the identified pattern
    2. GREEN: Minimal implementation to pass tests
    3. REFACTOR: Clean up while maintaining green
-   4. Report coverage and test results</parameter>
+   4. Use Wallaby MCP tools for real-time feedback
+   5. Report coverage and test results</parameter>
    </invoke>
    ```
 
-4. Receive TDD completion report from wallaby-tdd-agent
-5. Validate that AC is satisfied with passing tests
-6. Update task state based on wallaby-tdd-agent's report
+   **⚠️ CRITICAL: DO NOT invoke without reading and extracting context from ALL reference files first.**
+   **⚠️ CRITICAL: DO NOT ask user for confirmation - invoke automatically after reading context.**
+
+5. Receive TDD completion report from wallaby-tdd-agent
+6. Validate that AC is satisfied with passing tests
+7. Update task state based on wallaby-tdd-agent's report
 
 **B. If AC classified as Setup Mode:**
 
