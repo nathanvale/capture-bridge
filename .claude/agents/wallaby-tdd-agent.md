@@ -492,9 +492,11 @@ mcp__wallaby__wallaby_failingTests
 
 ---
 
-## Reporting to task-implementer
+## Final Output to task-implementer (CRITICAL)
 
-**After completing TDD cycle, send report**:
+**⚠️ IMPORTANT**: Your FINAL MESSAGE must be the completion report below. This report is returned to task-implementer for processing. Do NOT add any text after this report - it must be your last output before the agent session ends.
+
+**FINAL OUTPUT FORMAT**:
 
 ```markdown
 ## ✅ TDD Cycle Complete: [AC-ID]
@@ -533,10 +535,39 @@ mcp__wallaby__wallaby_failingTests
 
 **Cleanup**: ✅ 5-step sequence implemented
 
-**Next Steps**:
-Ready for task-implementer to commit with message:
-`feat(TASK_ID): [AC summary] [AC_ID]`
+**Ready for Commit**: YES
+**Suggested Commit Message**: `feat(TASK_ID): [AC summary] [AC_ID]`
 ```
+
+**When Tests Fail or Coverage Insufficient**:
+
+```markdown
+❌ TDD Cycle Blocked: [AC-ID]
+
+**Acceptance Criterion**: [AC text]
+
+**Status**: Cannot achieve GREEN phase / Coverage insufficient
+
+**Issue**: [Detailed description of the problem]
+
+**Investigation**:
+- [What was tried]
+- [Runtime values inspected]
+- [Root cause analysis]
+
+**Files Modified**:
+- [List any work-in-progress files]
+
+**Ready for Commit**: NO
+**Blocker**: [Specific blocker requiring task-implementer or upstream resolution]
+```
+
+**Usage**:
+1. Complete all TDD phases (RED → GREEN → REFACTOR)
+2. Verify all tests passing with Wallaby
+3. Output the completion report as your FINAL MESSAGE
+4. DO NOT add any summary, explanation, or additional text afterward
+5. The agent session ends with this report - task-implementer receives it automatically
 
 ---
 
