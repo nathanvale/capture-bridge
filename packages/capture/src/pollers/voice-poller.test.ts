@@ -598,6 +598,298 @@ describe('VoicePoller', () => {
     })
   })
 
+  describe('APFS Dataless Detection [VOICE_POLLING_ICLOUD-AC03]', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+      vi.resetModules()
+    })
+
+    it('should call icloudctl check command to detect dataless files', async () => {
+      // Arrange
+      const childProcess = await import('node:child_process')
+      vi.spyOn(childProcess, 'exec').mockImplementation(((_cmd: string, callback: any) => {
+        callback(null, { stdout: 'Status: dataless', stderr: '' })
+        return {} as any
+      }) as any)
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const mockDb = {} as DatabaseClient
+      const mockDedup = {} as DeduplicationService
+      const config: VoicePollerConfig = {
+        folderPath: '/test/path',
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDb, mockDedup, config)
+      pollers.push(poller)
+
+      const testFile = '/test/path/Recording.m4a'
+
+      // Act
+      // @ts-expect-error - accessing private method for testing
+      const isDataless = await poller.checkIfDataless(testFile)
+
+      // Assert
+      expect(isDataless).toBe(true)
+    })
+
+    it('should return true when icloudctl output includes "dataless"', async () => {
+      // Arrange
+      const childProcess = await import('node:child_process')
+      vi.spyOn(childProcess, 'exec').mockImplementation(((_cmd: string, callback: any) => {
+        callback(null, { stdout: 'File: Recording.m4a\nStatus: dataless\nSize: 0', stderr: '' })
+        return {} as any
+      }) as any)
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const mockDb = {} as DatabaseClient
+      const mockDedup = {} as DeduplicationService
+      const config: VoicePollerConfig = {
+        folderPath: '/test/path',
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDb, mockDedup, config)
+      pollers.push(poller)
+
+      // Act
+      // @ts-expect-error - accessing private method for testing
+      const isDataless = await poller.checkIfDataless('/test/file.m4a')
+
+      // Assert
+      expect(isDataless).toBe(true)
+    })
+
+    it('should return false when file is already downloaded', async () => {
+      // Arrange
+      const childProcess = await import('node:child_process')
+      vi.spyOn(childProcess, 'exec').mockImplementation(((_cmd: string, callback: any) => {
+        callback(null, { stdout: 'File: Recording.m4a\nStatus: downloaded\nSize: 1048576', stderr: '' })
+        return {} as any
+      }) as any)
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const mockDb = {} as DatabaseClient
+      const mockDedup = {} as DeduplicationService
+      const config: VoicePollerConfig = {
+        folderPath: '/test/path',
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDb, mockDedup, config)
+      pollers.push(poller)
+
+      // Act
+      // @ts-expect-error - accessing private method for testing
+      const isDataless = await poller.checkIfDataless('/test/file.m4a')
+
+      // Assert
+      expect(isDataless).toBe(false)
+    })
+
+    it('should call icloudctl download command to trigger download', async () => {
+      // Arrange
+      const childProcess = await import('node:child_process')
+      const execSpy = vi.spyOn(childProcess, 'exec').mockImplementation(((_cmd: string, callback: any) => {
+        callback(null, { stdout: 'Download started', stderr: '' })
+        return {} as any
+      }) as any)
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const mockDb = {} as DatabaseClient
+      const mockDedup = {} as DeduplicationService
+      const config: VoicePollerConfig = {
+        folderPath: '/test/path',
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDb, mockDedup, config)
+      pollers.push(poller)
+
+      const testFile = '/test/path/Recording.m4a'
+
+      // Act
+      // @ts-expect-error - accessing private method for testing
+      await poller.triggerDownload(testFile)
+
+      // Assert - verify icloudctl download was called
+      expect(execSpy).toHaveBeenCalledWith(expect.stringContaining('icloudctl download'), expect.any(Function))
+    })
+
+    it('should check and download file if dataless in ensureFileDownloaded', async () => {
+      // Arrange
+      let checkCallCount = 0
+      const childProcess = await import('node:child_process')
+      const execSpy = vi.spyOn(childProcess, 'exec').mockImplementation(((cmd: string, callback: any) => {
+        if (cmd.includes('check')) {
+          checkCallCount++
+          // First check returns dataless, subsequent checks return downloaded
+          const status = checkCallCount === 1 ? 'Status: dataless' : 'Status: downloaded'
+          callback(null, { stdout: status, stderr: '' })
+        } else if (cmd.includes('download')) {
+          callback(null, { stdout: 'Download started', stderr: '' })
+        }
+        return {} as any
+      }) as any)
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const mockDb = {} as DatabaseClient
+      const mockDedup = {} as DeduplicationService
+      const config: VoicePollerConfig = {
+        folderPath: '/test/path',
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDb, mockDedup, config)
+      pollers.push(poller)
+
+      const testFile = '/test/path/Recording.m4a'
+
+      // Act
+      // @ts-expect-error - accessing private method for testing
+      await poller.ensureFileDownloaded(testFile)
+
+      // Assert
+      // Should have called check once initially, download once, then check again during wait
+      expect(execSpy).toHaveBeenCalledWith(expect.stringContaining('icloudctl check'), expect.any(Function))
+      expect(execSpy).toHaveBeenCalledWith(expect.stringContaining('icloudctl download'), expect.any(Function))
+    })
+
+    it('should skip download if file is already available', async () => {
+      // Arrange
+      const childProcess = await import('node:child_process')
+      const execSpy = vi.spyOn(childProcess, 'exec').mockImplementation(((cmd: string, callback: any) => {
+        if (cmd.includes('check')) {
+          callback(null, { stdout: 'Status: downloaded', stderr: '' })
+        }
+        return {} as any
+      }) as any)
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const mockDb = {} as DatabaseClient
+      const mockDedup = {} as DeduplicationService
+      const config: VoicePollerConfig = {
+        folderPath: '/test/path',
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDb, mockDedup, config)
+      pollers.push(poller)
+
+      const testFile = '/test/path/Recording.m4a'
+
+      // Act
+      // @ts-expect-error - accessing private method for testing
+      await poller.ensureFileDownloaded(testFile)
+
+      // Assert - only check was called, no download
+      expect(execSpy).toHaveBeenCalledTimes(1)
+      expect(execSpy).toHaveBeenCalledWith(expect.stringContaining('icloudctl check'), expect.any(Function))
+      expect(execSpy).not.toHaveBeenCalledWith(expect.stringContaining('icloudctl download'), expect.any(Function))
+    })
+
+    it('should wait for download completion with timeout', { timeout: 15000 }, async () => {
+      // Use real timers for this test since it tests actual waiting behavior
+      vi.useRealTimers()
+
+      // Arrange
+      let checkCallCount = 0
+      const childProcess = await import('node:child_process')
+      const execSpy = vi.spyOn(childProcess, 'exec').mockImplementation(((cmd: string, callback: any) => {
+        if (cmd.includes('check')) {
+          checkCallCount++
+          // First check: dataless, second check: still dataless, third: downloaded
+          const status = checkCallCount <= 2 ? 'Status: dataless' : 'Status: downloaded'
+          callback(null, { stdout: status, stderr: '' })
+        } else if (cmd.includes('download')) {
+          callback(null, { stdout: 'Download started', stderr: '' })
+        }
+        return {} as any
+      }) as any)
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const mockDb = {} as DatabaseClient
+      const mockDedup = {} as DeduplicationService
+      const config: VoicePollerConfig = {
+        folderPath: '/test/path',
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDb, mockDedup, config)
+      pollers.push(poller)
+
+      // Act
+      // @ts-expect-error - accessing private method for testing
+      await poller.ensureFileDownloaded('/test/path/Recording.m4a')
+
+      // Assert - multiple checks during wait
+      const checkCalls = execSpy.mock.calls.filter((call: any[]) => call[0].includes('check'))
+      expect(checkCalls.length).toBeGreaterThanOrEqual(2) // Initial + at least one during wait
+
+      // Restore fake timers for other tests
+      vi.useFakeTimers()
+    })
+
+    it('should handle error when icloudctl is not available', async () => {
+      // Arrange
+      const childProcess = await import('node:child_process')
+      vi.spyOn(childProcess, 'exec').mockImplementation(((_cmd: string, callback: any) => {
+        callback(new Error('icloudctl: command not found'), '', 'icloudctl: command not found')
+        return {} as any
+      }) as any)
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const mockDb = {} as DatabaseClient
+      const mockDedup = {} as DeduplicationService
+      const config: VoicePollerConfig = {
+        folderPath: '/test/path',
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDb, mockDedup, config)
+      pollers.push(poller)
+
+      // Act & Assert
+      // @ts-expect-error - accessing private method for testing
+      await expect(poller.checkIfDataless('/test/file.m4a')).rejects.toThrow('icloudctl: command not found')
+    })
+
+    it('should escape file paths to prevent command injection', async () => {
+      // Arrange
+      const childProcess = await import('node:child_process')
+      const execSpy = vi.spyOn(childProcess, 'exec').mockImplementation(((_cmd: string, callback: any) => {
+        callback(null, { stdout: 'Status: downloaded', stderr: '' })
+        return {} as any
+      }) as any)
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const mockDb = {} as DatabaseClient
+      const mockDedup = {} as DeduplicationService
+      const config: VoicePollerConfig = {
+        folderPath: '/test/path',
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDb, mockDedup, config)
+      pollers.push(poller)
+
+      // File path with potential command injection
+      const maliciousPath = '/test/path/file"; rm -rf /'
+
+      // Act
+      // @ts-expect-error - accessing private method for testing
+      await poller.checkIfDataless(maliciousPath)
+
+      // Assert - path should be properly escaped with quotes
+      const commandCall = execSpy.mock.calls[0]?.[0] as string
+      expect(commandCall).toBeDefined()
+      // Should have escaped quotes in the path
+      expect(commandCall).toContain('icloudctl check')
+      // Verify the malicious part is inside single quotes (making it safe)
+      expect(commandCall).toMatch(/icloudctl check '.*rm -rf.*'/)
+    })
+  })
+
   describe('New File Filtering [VOICE_POLLING_ICLOUD-AC02]', () => {
     it('should filter files with mtime greater than last poll timestamp', async () => {
       // Arrange

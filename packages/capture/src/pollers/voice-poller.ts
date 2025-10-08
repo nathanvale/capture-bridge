@@ -1,5 +1,7 @@
+import { exec } from 'node:child_process'
 import { readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
+import { promisify } from 'node:util'
 
 import type {
   VoicePollerConfig,
@@ -11,6 +13,12 @@ import type {
 const DEFAULT_POLL_INTERVAL = 30000 // 30 seconds
 const VOICE_MEMOS_EXTENSION = '.m4a'
 const SYNC_STATE_KEY = 'voice_last_poll'
+const ICLOUDCTL_CHECK_COMMAND = 'icloudctl check'
+const ICLOUDCTL_DOWNLOAD_COMMAND = 'icloudctl download'
+const DOWNLOAD_MAX_WAIT_MS = 30000 // 30 seconds max wait for download
+
+// Helper to execute shell commands
+const execAsync = promisify(exec)
 
 export class VoicePoller {
   private intervalId: NodeJS.Timeout | undefined = undefined
@@ -156,5 +164,78 @@ export class VoicePoller {
     }
 
     return newFiles
+  }
+
+  /**
+   * Check if a file is APFS dataless (iCloud placeholder)
+   * @param filePath Path to the file to check
+   * @returns True if file is dataless (needs download), false otherwise
+   * @internal Exposed for testing
+   */
+  private async checkIfDataless(filePath: string): Promise<boolean> {
+    // Escape the file path to prevent command injection
+    // Escape both double quotes and backticks, and use single quotes for the outer shell
+    const escapedPath = filePath.replace(/'/g, "'\\''")
+    const command = `${ICLOUDCTL_CHECK_COMMAND} '${escapedPath}'`
+
+    const { stdout } = await execAsync(command)
+    return stdout.includes('dataless')
+  }
+
+  /**
+   * Trigger iCloud download for a dataless file
+   * @param filePath Path to the file to download
+   * @internal Exposed for testing
+   */
+  private async triggerDownload(filePath: string): Promise<void> {
+    // Escape the file path to prevent command injection
+    const escapedPath = filePath.replace(/"/g, '\\"')
+    const command = `${ICLOUDCTL_DOWNLOAD_COMMAND} "${escapedPath}"`
+
+    await execAsync(command)
+  }
+
+  /**
+   * Wait for a file to finish downloading from iCloud
+   * @param filePath Path to the file being downloaded
+   * @param maxWaitMs Maximum time to wait in milliseconds
+   * @internal
+   */
+  private async waitForDownload(
+    filePath: string,
+    maxWaitMs: number = DOWNLOAD_MAX_WAIT_MS
+  ): Promise<void> {
+    const startTime = Date.now()
+    let attempts = 0
+
+    while (Date.now() - startTime < maxWaitMs) {
+      const isDataless = await this.checkIfDataless(filePath)
+
+      if (!isDataless) {
+        return // Download complete
+      }
+
+      // Exponential backoff: 1s, 2s, 4s, max 5s
+      const waitMs = Math.min(1000 * Math.pow(2, attempts), 5000)
+      await new Promise((resolve) => setTimeout(resolve, waitMs))
+      attempts++
+    }
+
+    throw new Error(`iCloud download timeout: ${filePath}`)
+  }
+
+  /**
+   * Ensure a file is downloaded from iCloud if it's dataless
+   * @param filePath Path to the file to check and download
+   * @internal Exposed for testing
+   */
+  // @ts-expect-error - Method is used in tests
+  private async ensureFileDownloaded(filePath: string): Promise<void> {
+    const isDataless = await this.checkIfDataless(filePath)
+
+    if (isDataless) {
+      await this.triggerDownload(filePath)
+      await this.waitForDownload(filePath)
+    }
   }
 }
