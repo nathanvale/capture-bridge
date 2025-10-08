@@ -280,53 +280,73 @@ Per-task enrichment fields (timestamps, PR links, verification) are now owned by
 4. Validate structural integrity (unique task_ids, dependency closure, no cycles)
 5. Initialize state file if first run (all tasks default to pending)
 6. Verify manifest_hash in state file matches VTM (if mismatch, warn about stale state)
-7. Select next eligible task:
+7. **GIT VALIDATION (CRITICAL - BLOCKS ALL WORK):**
+   - Check current branch: MUST be `main` or `master`
+   - Check git status: MUST be clean (no uncommitted changes, no staged files)
+   - If branch check fails: emit `BLOCKED::NOT-ON-MAIN-BRANCH` and abort
+   - If status check fails: emit `BLOCKED::DIRTY-GIT-STATUS` and abort
+   - **Why**: Task-implementer will create feature branches (feat/{TASK_ID}). Starting on a feature branch leads to nested branches and merge conflicts.
+   - **Commands to run**:
+     ```bash
+     # Check branch
+     current_branch=$(git branch --show-current)
+     if [[ "$current_branch" != "main" && "$current_branch" != "master" ]]; then
+       echo "BLOCKED::NOT-ON-MAIN-BRANCH - Current: $current_branch"
+       exit 1
+     fi
+
+     # Check status
+     if [[ -n $(git status --porcelain) ]]; then
+       echo "BLOCKED::DIRTY-GIT-STATUS"
+       git status
+       exit 1
+     fi
+     ```
+8. **Select next eligible task using vtm-status.mjs script:**
+
+   ```bash
+   node .claude/scripts/vtm-status.mjs --next
+   ```
+
+   This script analyzes VTM and task-state.json to find the next eligible task:
    - State = pending (from task-state.json)
    - All tasks in `depends_on_tasks` array have status=completed
-   - Not risk=High with missing related_specs
-   - Prefer High risk before Medium before Low
-8. Recommend advancing eligible `pending` tasks whose dependencies are all `completed`
-9. Surface top N high-risk idle tasks
-10. **EXTRACT CONTEXT REFERENCES FOR SELECTED TASK** (Light validation only):
-    - Extract file paths from task's `related_specs` array
-    - Extract file paths from task's `related_adrs` array
-    - Extract file paths from task's `related_guides` array
-    - Extract all acceptance_criteria (id + text) from VTM
-    - Extract `test_verification` paths
-    - **DO NOT read the full content** - task-implementer will do deep reading
-11. Validate context completeness (file existence only):
-    - If any related_specs/adrs/guides files don't exist: BLOCK and report GAP
-    - If High risk task lacks test spec reference: BLOCK
-    - If acceptance_criteria array is empty: BLOCK
-    - Use lightweight checks (file existence, not full reads)
-12. **Determine TDD Requirements** (CRITICAL for delegation):
+   - Prefers High risk > Medium > Low
+   - Returns complete task data (ACs, related docs, test paths)
+
+   **If no eligible tasks:**
+   - Script exits with code 1 and returns error JSON
+   - Check `--blocked` to see blocking dependencies:
+     ```bash
+     node .claude/scripts/vtm-status.mjs --blocked
+     ```
+   - Report to user and stop execution
+
+   **Parse the JSON output to extract:**
+   - task_id, title, description, risk, phase, slice, size
+   - acceptance_criteria array (all {id, text} pairs)
+   - related_specs, related_adrs, related_guides arrays
+   - test_verification paths
+   - depends_on_tasks (should be empty or all completed at this point)
+
+9. **Validate context completeness** (file existence only):
+   - For each file path in related_specs: check exists, abort if missing
+   - For each file path in related_adrs: check exists, abort if missing
+   - For each file path in related_guides: check exists, abort if missing
+   - If High risk task lacks test spec reference: emit BLOCKED::SPEC-REF-GAP
+   - If acceptance_criteria array is empty: emit BLOCKED::EMPTY-AC
+   - **DO NOT read file contents** - task-implementer does deep reading
+10. **Determine TDD Requirements** (CRITICAL for delegation):
     - Check task risk level: High = TDD MANDATORY
     - Per TestKit TDD Guide (`.claude/rules/testkit-tdd-guide.md`):
       - **High Risk (P0)**: TDD REQUIRED - wallaby-tdd-agent MANDATORY
       - **Medium Risk (P1)**: TDD Recommended - wallaby-tdd-agent preferred
       - **Low Risk (P2)**: TDD Optional - general-purpose acceptable
-13. **Prepare Implementation Guidance Block and ask user to proceed:**
+11. **Invoke task-implementer with context package** (NO USER CONFIRMATION - AUTOMATED):
 
-    After extracting context references, prepare a lightweight guidance block with:
-    - Task ID and title
-    - Full acceptance_criteria array (all id + text pairs)
-    - **MANDATORY PRE-WORK INSTRUCTION**: Explicit directive for task-implementer to READ all references
-    - **Complete file paths** from related_specs (for task-implementer to read)
-    - **Complete file paths** from related_adrs (for task-implementer to read)
-    - **Complete file paths** from related_guides (for task-implementer to read)
-    - Test verification expectations from test_verification paths
-    - Required TDD approach based on risk level
-    - **NO SUMMARIES** - task-implementer does the deep reading
+    Immediately invoke task-implementer using the Task tool with this delegation prompt:
 
-    Then **ASK THE USER**:
-
-    ```
-    I've prepared the context package for [TASK_ID].
-
-    **Should I invoke the task-implementer agent to begin implementation?**
-
-    If yes, I will use the Task tool to delegate with this invocation:
-
+    ```xml
     <invoke name="Task">
     <parameter name="subagent_type">task-implementer</parameter>
     <parameter name="description">Implement [TASK_ID]</parameter>
@@ -387,25 +407,40 @@ Per-task enrichment fields (timestamps, PR links, verification) are now owned by
     **Your responsibilities**:
     1. **READ all references above FIRST** (use Read tool for every file)
     2. Understand the full context from those files
-    3. Coordinate sub-agent delegation (wallaby-tdd-agent for TDD work)
-    4. Update task-state.json with progress
-    5. Ensure all acceptance criteria are met
-    6. Report completion status back to orchestrator
+    3. **CREATE FEATURE BRANCH** (feat/{TASK_ID}) before any work
+    4. **LOOP THROUGH ACs** using TodoWrite for visual progress tracking
+    5. Coordinate sub-agent delegation (wallaby-tdd-agent for TDD work)
+    6. **COMMIT ONCE PER AC** with message: feat(TASK_ID): {AC summary}
+    7. Update task-state.json with progress
+    8. **CREATE PR** at end with title: feat(TASK_ID): {task title}
+    9. Report completion status back to orchestrator
+
+    **Git Workflow**:
+    - Current state: On main branch with clean status (orchestrator verified)
+    - Your job: Create feat/{TASK_ID}, implement ACs, commit per AC, push, create PR
+    - User will manually review and merge PR before continuing to next task
 
     **That's it. Now go read the files and implement the task.**
     </parameter>
     </invoke>
     ```
 
-14. **If user confirms**, invoke task-implementer using the Task tool with prepared context (ALWAYS task-implementer, never skip this layer)
-15. Task-implementer receives context including TDD requirement and makes delegation decisions:
-    - **High Risk tasks**: MUST delegate TDD work to wallaby-tdd-agent
-    - **Medium Risk tasks**: SHOULD delegate TDD work to wallaby-tdd-agent
-    - **Low Risk tasks**: MAY delegate to wallaby-tdd-agent or handle with general-purpose
-16. Task-implementer coordinates sub-agents (wallaby-tdd-agent, general-purpose) and reports progress
-17. Task-implementer updates task-state.json as work progresses
-18. Reload state and recompute pulse after each task completion
-19. Emit Progress Pulse
+12. Task-implementer executes:
+    - Creates feature branch (feat/{TASK_ID})
+    - Reads all context files deeply
+    - Sets up TodoWrite loop for ACs
+    - Delegates TDD work per risk requirement:
+      - **High Risk tasks**: MUST delegate to wallaby-tdd-agent
+      - **Medium Risk tasks**: SHOULD delegate to wallaby-tdd-agent
+      - **Low Risk tasks**: MAY delegate to wallaby-tdd-agent or general-purpose
+    - Commits once per AC
+    - Creates PR at end
+13. Task-implementer coordinates sub-agents (wallaby-tdd-agent, general-purpose) and reports progress
+14. Task-implementer updates task-state.json as work progresses
+15. User manually reviews and merges PR
+16. User invokes orchestrator again for next task
+17. Reload state and recompute pulse after each task completion
+18. Emit Progress Pulse
 
 ## Progress Pulse (Simplified)
 
@@ -442,6 +477,8 @@ Generated from `docs/backlog/task-state.json`:
 ## GAP & Anomaly Codes
 
 - `BLOCKED::MASTER-PRD-STALE`
+- `BLOCKED::NOT-ON-MAIN-BRANCH` - Current branch is not main/master (git validation failed)
+- `BLOCKED::DIRTY-GIT-STATUS` - Uncommitted changes or staged files present (git validation failed)
 - `BLOCKED::MISSING-CONTEXT::<task-id>` - related_specs/adrs/guides files missing or unreadable
 - `BLOCKED::MISSING-TESTS::<task-id>`
 - `BLOCKED::DEPENDENCY-NOT-DONE::<task-id>`
