@@ -2,7 +2,7 @@
 
 _Status: Authoritative Source of Truth_
 _Version: 3.0.0 (Generated from Complete Documentation Analysis)_
-_Last Updated: 2025-09-28_
+_Last Updated: 2025-10-09_
 _Master PRD Alignment: v2.3.0-MPPP_
 _Implementation Status: Phase 1, Slice 1.1 in progress (1/6 capabilities complete)_
 
@@ -1122,15 +1122,62 @@ Each capability includes:
 
 ---
 
+## Technical Debt Backlog
+
+**Purpose**: Track P2 quality improvements that don't block MPPP delivery
+
+**Prioritization**: Address post-Phase 1 completion or when developer capacity allows
+
+### TEST_DB_CLEANUP_MIGRATION
+
+- **Title**: Test Database Cleanup - In-Memory Migration
+- **Category**: foundation (test infrastructure)
+- **Priority**: P2 (Developer Experience)
+- **Risk**: Medium
+- **TDD**: Optional (test infrastructure improvement)
+- **Dependencies**: [TESTKIT_INTEGRATION, MONOREPO_STRUCTURE]
+- **Description**: Migrate 9 storage package test files from shared memory SQLite (`createMemoryUrl()`) to true in-memory databases (`:memory:`) to eliminate 55+ file handle leaks that prevent Vitest from exiting cleanly.
+- **Acceptance Criteria**:
+  - [ ] All 114 storage package tests pass after migration
+  - [ ] Vitest exits cleanly without timeout wrapper (`timeout --signal=KILL 30`)
+  - [ ] Zero file handles remain after test completion (`lsof` count = 0)
+  - [ ] No test execution time regression (≤ baseline performance)
+  - [ ] All 9 test files migrated to `:memory:` pattern
+  - [ ] No flaky tests in 5 consecutive runs
+  - [ ] Cleanup sequence remains 5-step compliant (TestKit pattern)
+  - [ ] Code simplified (removed dynamic imports where possible)
+- **Related Specs**:
+  - docs/features/testing/spec-test-db-cleanup-tech.md
+  - docs/cross-cutting/spec-foundation-monorepo-test.md
+  - docs/features/staging-ledger/spec-staging-tech.md
+- **Related ADRs**: (none directly - could create ADR-0031: True In-Memory Databases for Test Isolation)
+- **Related Guides**:
+  - .claude/rules/testkit-tdd-guide-condensed.md (5-step cleanup pattern)
+  - docs/guides/guide-testkit.md (TestKit usage patterns)
+  - docs/guides/guide-phase1-testing-patterns.md
+- **Test Verification**:
+  - All 9 migrated test files in packages/storage/src/__tests__/
+  - Verification: `lsof -p $(pgrep -f vitest) | grep -i sqlite | wc -l` should return 0
+- **Trigger to Escalate**:
+  - Developer friction becomes significant (multiple complaints)
+  - Vitest hang causes CI/CD failures
+  - File handle leak spreads to other packages
+  - Phase 1 extends beyond Week 4 (capacity becomes available)
+- **Implementation Window**: Post-Phase 1 completion OR opportunistically during Phase 1 if high developer friction
+- **Estimated Effort**: 1-2 hours (simple find/replace migration per spec)
+
+---
+
 ## Capability Summary Statistics
 
-**Total Capabilities**: 29
+**Total Capabilities**: 29 (MPPP) + 1 (Technical Debt)
 
 **By Phase**:
 
 - Phase 1: 20 capabilities (69.0%)
 - Phase 2: 9 capabilities (31.0%)
 - Phase 3+: Deferred (out of scope)
+- Technical Debt: 1 capability (non-blocking)
 
 **By Category**:
 
@@ -1332,6 +1379,13 @@ Each capability includes:
 
 ## Revision History
 
+- **v3.0.1** (2025-10-09): Added Technical Debt Backlog section
+  - Integrated TEST_DB_CLEANUP_MIGRATION capability from spec-test-db-cleanup-tech.md
+  - Classified as P2 (non-blocking developer experience improvement)
+  - Linked to TESTKIT_INTEGRATION and monorepo foundation
+  - Documented triggers for priority escalation
+  - Cross-referenced with TestKit guides and storage specs
+
 - **v3.0.0** (2025-09-28): Complete roadmap rebuild from documentation analysis
   - Generated from comprehensive PRD/spec/ADR/guide analysis
   - 29 capabilities across 2 phases (Phase 1: 20, Phase 2: 9)
@@ -1379,6 +1433,11 @@ Each capability includes:
    - All tests green
    - Zero data loss proven
    - Documentation complete
+
+6. **Technical Debt Cleanup** (Post-Phase 1, optional):
+   - Migrate storage tests to `:memory:` databases
+   - Eliminate Vitest file handle leaks
+   - Improve developer experience
 
 ---
 

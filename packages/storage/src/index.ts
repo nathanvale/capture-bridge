@@ -38,3 +38,11 @@ export {
   StateTransitionError,
   queryRecoverableCaptures,
 } from './schema/service-layer.js'
+
+// Staging ledger module
+export {
+  StagingLedger,
+  type ExportAudit,
+  type DuplicateCheckResult,
+  StagingLedgerError,
+} from './staging-ledger/staging-ledger.js'
