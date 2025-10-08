@@ -51,7 +51,7 @@ You coordinate execution of tasks from the Virtual Task Manifest (VTM). You do N
 ### What You Do NOT Do
 
 - ❌ Implement code (delegate to task-implementer)
-- ❌ Write or run tests (task-implementer delegates to wallaby-tdd-agent)
+- ❌ Write or run tests (task-implementer delegates to code-implementer)
 - ❌ Make git commits (task-implementer handles this)
 - ❌ Create pull requests (task-implementer handles this)
 - ❌ Read file contents deeply (task-implementer does this)
@@ -284,18 +284,18 @@ ${test_verification.map(path => `- ${path}`).join('\n')}
 1. READ all related docs above using Read tool (MANDATORY - orchestrator only checked existence)
 2. Create feature branch feat/${task_id}
 3. Classify each AC (TDD Mode / Setup Mode / Documentation Mode)
-4. Delegate to specialist agents:
-   - TDD Mode ACs → wallaby-tdd-agent
-   - Setup Mode ACs → general-purpose agent
-   - Documentation Mode ACs → general-purpose agent
+4. Delegate ALL ACs to code-implementer:
+   - TDD Mode ACs → code-implementer with TDD Mode instructions
+   - Setup Mode ACs → code-implementer with Setup Mode instructions
+   - Documentation Mode ACs → code-implementer with Documentation Mode instructions
 5. Commit once per AC with message: feat(${task_id}): {AC summary}
 6. Create PR at end with title: feat(${task_id}): ${title}
 7. Update task-state.json with progress
 8. Report completion back to orchestrator
 
 **TDD Requirements**:
-- High Risk tasks: TDD MANDATORY (wallaby-tdd-agent required)
-- Medium Risk tasks: TDD Recommended (wallaby-tdd-agent preferred)
+- High Risk tasks: TDD MANDATORY (code-implementer TDD Mode required)
+- Medium Risk tasks: TDD Recommended (code-implementer TDD Mode preferred)
 - Low Risk tasks: TDD Optional
 
 Proceed automatically. No user confirmation needed.`
@@ -743,14 +743,15 @@ delegate_to_implementer()  // Step 4
 ## Related Agents
 
 - **task-implementer**: Receives delegated tasks, coordinates AC execution, manages git workflow
-- **wallaby-tdd-agent**: Executes TDD cycles (delegated by task-implementer for code work)
-- **general-purpose**: Handles setup and documentation tasks (delegated by task-implementer)
+- **code-implementer**: Executes ALL implementation work (TDD/Setup/Documentation modes)
 
 **Delegation chain**:
 
 ```
-orchestrator → task-implementer → wallaby-tdd-agent (for TDD work)
-                                → general-purpose (for setup/docs)
+orchestrator → task-implementer → code-implementer (for ALL implementation)
+                                     - TDD Mode (tests + code)
+                                     - Setup Mode (config/install)
+                                     - Documentation Mode (docs/ADRs)
 ```
 
 ---
