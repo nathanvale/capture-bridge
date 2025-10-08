@@ -1,6 +1,6 @@
 {
   "manifest_hash": "d18c2638898a4a5d1e0cfbece98dfdd889490bfc5d257e65cce7cdfe58bb6691",
-  "last_updated": "2025-10-08T02:00:00Z",
+  "last_updated": "2025-10-08T03:00:00Z",
   "tasks": {
     "MONOREPO_STRUCTURE--T01": {
       "status": "completed",
@@ -142,7 +142,19 @@
         "CAPTURE_STATE_MACHINE-AC03"
       ],
       "acs_remaining": [],
-      "notes": "Completed capture status state machine implementation following strict TDD. All 3 ACs satisfied: AC01: Happy path transitions (staged → transcribed → exported). AC02: Failure path transitions (staged → failed_transcription → exported_placeholder). AC03: Duplicate path transitions (staged/transcribed → exported_duplicate). 20/20 tests passing. Coverage: 100% (lines/branches/functions). Files created: state-machine.ts (validateTransition, getValidTransitions, isTerminalState functions). Modified: schema/index.ts and src/index.ts (added exports). Implementation enforces immutable terminal states (exported*) and validates all state transitions per ADR-0004 and ADR-0014."
+      "notes": "Completed capture status state machine implementation following strict TDD. All 3 ACs satisfied: AC01: Happy path transitions (staged \u2192 transcribed \u2192 exported). AC02: Failure path transitions (staged \u2192 failed_transcription \u2192 exported_placeholder). AC03: Duplicate path transitions (staged/transcribed \u2192 exported_duplicate). 20/20 tests passing. Coverage: 100% (lines/branches/functions). Files created: state-machine.ts (validateTransition, getValidTransitions, isTerminalState functions). Modified: schema/index.ts and src/index.ts (added exports). Implementation enforces immutable terminal states (exported*) and validates all state transitions per ADR-0004 and ADR-0014."
+    },
+    "CAPTURE_STATE_MACHINE--T02": {
+      "status": "completed",
+      "started_at": "2025-10-08T02:30:00Z",
+      "completed_at": "2025-10-08T03:00:00Z",
+      "acs_completed": [
+        "CAPTURE_STATE_MACHINE-AC04",
+        "CAPTURE_STATE_MACHINE-AC05",
+        "CAPTURE_STATE_MACHINE-AC06"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed service layer validation and recovery query implementation following strict TDD. All 3 ACs satisfied: AC04: Terminal state immutability enforced (exported, exported_duplicate, exported_placeholder cannot transition). AC05: Service layer validation with error throwing (assertValidTransition throws StateTransitionError with detailed messages). AC06: Recovery query returns non-terminal captures ordered by created_at ASC for crash recovery. 15/15 new tests passing (104/104 total). Files created: service-layer.ts (assertValidTransition, StateTransitionError, queryRecoverableCaptures), service-layer-validation.spec.ts. Modified: schema/index.ts and src/index.ts (added exports). Implementation provides service layer wrapper around state machine with comprehensive error handling per spec-staging-arch.md \u00a74.4, \u00a75.4 and ADR-0004."
     }
   }
 }

@@ -31,3 +31,10 @@ export {
   getValidTransitions,
   isTerminalState,
 } from './schema/state-machine.js'
+
+// Service layer module
+export {
+  assertValidTransition,
+  StateTransitionError,
+  queryRecoverableCaptures,
+} from './schema/service-layer.js'
