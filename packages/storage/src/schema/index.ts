@@ -12,3 +12,10 @@ export {
   verifyPragmas,
   verifyIntegrity,
 } from './schema.js'
+
+export {
+  validateTransition,
+  getValidTransitions,
+  isTerminalState,
+  type CaptureStatus,
+} from './state-machine.js'

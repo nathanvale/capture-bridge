@@ -22,4 +22,8 @@ export {
   verifySchema,
   verifyPragmas,
   verifyIntegrity,
+  validateTransition,
+  getValidTransitions,
+  isTerminalState,
+  type CaptureStatus,
 } from './schema/index.js'
