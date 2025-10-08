@@ -23,7 +23,8 @@ export interface DatabaseClient {
   run: (sql: string, params?: unknown[]) => Promise<void>
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Stub for future implementation
 export interface DeduplicationService {
-  // Deduplication methods will be added in future ACs
+  // Deduplication methods - minimal interface for current implementation
+  isDuplicate: (params: { audioFp: string }) => Promise<boolean>
+  addFingerprint: (fingerprint: string) => Promise<void>
 }

@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
+import { VoicePoller } from './voice-poller.js'
+
 import type { VoicePollerConfig, DatabaseClient, DeduplicationService } from './types.js'
 
 describe('VoicePoller', () => {
@@ -81,7 +83,9 @@ describe('VoicePoller', () => {
   it('should have pollOnce method that returns VoicePollResult [VOICE_POLLING_ICLOUD-AC01]', async () => {
     // Arrange
     const { VoicePoller } = await import('./voice-poller.js')
-    const mockDb = {} as DatabaseClient
+    const mockDb = {
+      run: vi.fn(),
+    } as unknown as DatabaseClient
     const mockDedup = {} as DeduplicationService
     const config: VoicePollerConfig = {
       folderPath: '/test/voice/memos',
@@ -91,6 +95,11 @@ describe('VoicePoller', () => {
     // Act
     const poller = new VoicePoller(mockDb, mockDedup, config)
     pollers.push(poller)
+
+    // Mock scanVoiceMemos to return empty array to avoid ENOENT error
+    // @ts-expect-error - accessing private method for testing
+    vi.spyOn(poller, 'scanVoiceMemos').mockResolvedValue([])
+
     const result = await poller.pollOnce()
 
     // Assert
@@ -268,11 +277,20 @@ describe('VoicePoller', () => {
 
   it('should implement async shutdown method for resource cleanup [VOICE_POLLING_ICLOUD-AC01]', async () => {
     // Arrange
+    const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+    const tempDir = await createTempDirectory()
+
     const { VoicePoller } = await import('./voice-poller.js')
-    const mockDb = {} as DatabaseClient
-    const mockDedup = {} as DeduplicationService
+    const mockDb = {
+      query: vi.fn().mockReturnValue(undefined),
+      run: vi.fn(),
+    } as unknown as DatabaseClient
+    const mockDedup = {
+      isDuplicate: vi.fn().mockResolvedValue(false),
+      addFingerprint: vi.fn(),
+    } as unknown as DeduplicationService
     const config: VoicePollerConfig = {
-      folderPath: '/test/voice/memos',
+      folderPath: tempDir.path,
       pollInterval: 1000,
       sequential: true,
     }
@@ -887,6 +905,377 @@ describe('VoicePoller', () => {
       expect(commandCall).toContain('icloudctl check')
       // Verify the malicious part is inside single quotes (making it safe)
       expect(commandCall).toMatch(/icloudctl check '.*rm -rf.*'/)
+    })
+  })
+
+  describe('Poll Once Integration [VOICE_POLLING_ICLOUD-AC04/AC05]', () => {
+    it('should scan voice memos folder when polling', async () => {
+      // Arrange
+      const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+      const tempDir = await createTempDirectory()
+      const fs = await import('node:fs/promises')
+      const path = await import('node:path')
+
+      // Create test files
+      await fs.writeFile(path.join(tempDir.path, 'Recording1.m4a'), Buffer.alloc(100))
+      await fs.writeFile(path.join(tempDir.path, 'Recording2.m4a'), Buffer.alloc(100))
+
+      const mockDbClient: DatabaseClient = {
+        query: vi.fn().mockReturnValue(undefined), // No last poll timestamp
+        run: vi.fn(),
+      }
+
+      const mockDedup: DeduplicationService = {
+        isDuplicate: vi.fn().mockResolvedValue(false),
+        addFingerprint: vi.fn(),
+      }
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const config: VoicePollerConfig = {
+        folderPath: tempDir.path,
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDbClient, mockDedup, config)
+      pollers.push(poller)
+
+      // Mock ensureFileDownloaded to avoid actual iCloud calls
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'ensureFileDownloaded').mockResolvedValue(undefined)
+
+      // Act
+      const result = await poller.pollOnce()
+
+      // Assert
+      expect(result.filesFound).toBe(2)
+    })
+
+    it('should ensure files are downloaded before processing', async () => {
+      // Arrange
+      const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+      const tempDir = await createTempDirectory()
+      const fs = await import('node:fs/promises')
+      const path = await import('node:path')
+
+      const file1 = path.join(tempDir.path, 'Recording1.m4a')
+      const file2 = path.join(tempDir.path, 'Recording2.m4a')
+      await fs.writeFile(file1, Buffer.alloc(100))
+      await fs.writeFile(file2, Buffer.alloc(100))
+
+      const mockDbClient: DatabaseClient = {
+        query: vi.fn().mockReturnValue(undefined),
+        run: vi.fn(),
+      }
+
+      const mockDedup: DeduplicationService = {
+        isDuplicate: vi.fn().mockResolvedValue(false),
+        addFingerprint: vi.fn(),
+      }
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const config: VoicePollerConfig = {
+        folderPath: tempDir.path,
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDbClient, mockDedup, config)
+      pollers.push(poller)
+
+      const ensureFileDownloadedSpy = vi.fn().mockResolvedValue(undefined)
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'ensureFileDownloaded').mockImplementation(ensureFileDownloadedSpy)
+
+      // Act
+      await poller.pollOnce()
+
+      // Assert - should call ensureFileDownloaded for each file
+      expect(ensureFileDownloadedSpy).toHaveBeenCalledTimes(2)
+      expect(ensureFileDownloadedSpy).toHaveBeenCalledWith(file1)
+      expect(ensureFileDownloadedSpy).toHaveBeenCalledWith(file2)
+    })
+
+    it('should process files sequentially not in parallel', { timeout: 10000 }, async () => {
+      // Use real timers for this async test
+      vi.useRealTimers()
+
+      // Arrange
+      const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+      const tempDir = await createTempDirectory()
+      const fs = await import('node:fs/promises')
+      const path = await import('node:path')
+
+      // Create test files
+      await fs.writeFile(path.join(tempDir.path, 'Recording1.m4a'), Buffer.alloc(100))
+      await fs.writeFile(path.join(tempDir.path, 'Recording2.m4a'), Buffer.alloc(100))
+      await fs.writeFile(path.join(tempDir.path, 'Recording3.m4a'), Buffer.alloc(100))
+
+      const mockDbClient: DatabaseClient = {
+        query: vi.fn().mockReturnValue(undefined),
+        run: vi.fn(),
+      }
+
+      const mockDedup: DeduplicationService = {
+        isDuplicate: vi.fn().mockResolvedValue(false),
+        addFingerprint: vi.fn(),
+      }
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const config: VoicePollerConfig = {
+        folderPath: tempDir.path,
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDbClient, mockDedup, config)
+      pollers.push(poller)
+
+      const downloadOrder: string[] = []
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'ensureFileDownloaded').mockImplementation(async (filePath: string) => {
+        downloadOrder.push(path.basename(filePath))
+        // Add delay to ensure sequential processing is detectable
+        // eslint-disable-next-line sonarjs/no-nested-functions -- Test mock function
+        await new Promise((resolve) => setTimeout(resolve, 10))
+      })
+
+      // Act
+      const startTime = Date.now()
+      await poller.pollOnce()
+      const duration = Date.now() - startTime
+
+      // Assert
+      // Files should be processed in alphabetical order (due to sort)
+      expect(downloadOrder).toEqual(['Recording1.m4a', 'Recording2.m4a', 'Recording3.m4a'])
+      // Sequential processing should take at least 30ms (3 files * 10ms each)
+      expect(duration).toBeGreaterThanOrEqual(30)
+
+      // Restore fake timers for other tests
+      vi.useFakeTimers()
+    })
+
+    it('should return correct VoicePollResult with counts and duration', async () => {
+      // Use real timers for this async test
+      vi.useRealTimers()
+
+      // Arrange
+      const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+      const tempDir = await createTempDirectory()
+      const fs = await import('node:fs/promises')
+      const path = await import('node:path')
+
+      await fs.writeFile(path.join(tempDir.path, 'Recording1.m4a'), Buffer.alloc(100))
+      await fs.writeFile(path.join(tempDir.path, 'Recording2.m4a'), Buffer.alloc(100))
+      await fs.writeFile(path.join(tempDir.path, 'Recording3.m4a'), Buffer.alloc(100))
+
+      const mockDbClient: DatabaseClient = {
+        query: vi.fn().mockReturnValue(undefined),
+        run: vi.fn(),
+      }
+
+      const mockDedup: DeduplicationService = {
+        isDuplicate: vi
+          .fn()
+          .mockResolvedValueOnce(false) // Recording1 - not duplicate
+          .mockResolvedValueOnce(true) // Recording2 - duplicate
+          .mockResolvedValueOnce(false), // Recording3 - not duplicate
+        addFingerprint: vi.fn(),
+      }
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const config: VoicePollerConfig = {
+        folderPath: tempDir.path,
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDbClient, mockDedup, config)
+      pollers.push(poller)
+
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'ensureFileDownloaded').mockImplementation(() => {
+        // Add small delay to ensure duration > 0
+        // eslint-disable-next-line sonarjs/no-nested-functions -- Test mock delay
+        return new Promise((resolve) => setTimeout(resolve, 1))
+      })
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'computeFingerprint').mockResolvedValue('fingerprint123')
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'stageCapture').mockResolvedValue(undefined)
+
+      // Act
+      const result = await poller.pollOnce()
+
+      // Assert
+      expect(result).toMatchObject({
+        filesFound: 3,
+        filesProcessed: 2, // 2 non-duplicates
+        duplicatesSkipped: 1, // 1 duplicate
+        errors: [],
+        duration: expect.any(Number),
+      })
+      expect(result.duration).toBeGreaterThanOrEqual(1)
+
+      // Restore fake timers for other tests
+      vi.useFakeTimers()
+    })
+
+    it('should handle errors per file without stopping the loop', async () => {
+      // Arrange
+      const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+      const tempDir = await createTempDirectory()
+      const fs = await import('node:fs/promises')
+      const path = await import('node:path')
+
+      const file1 = path.join(tempDir.path, 'Recording1.m4a')
+      const file2 = path.join(tempDir.path, 'Recording2.m4a')
+      const file3 = path.join(tempDir.path, 'Recording3.m4a')
+      await fs.writeFile(file1, Buffer.alloc(100))
+      await fs.writeFile(file2, Buffer.alloc(100))
+      await fs.writeFile(file3, Buffer.alloc(100))
+
+      const mockDbClient: DatabaseClient = {
+        query: vi.fn().mockReturnValue(undefined),
+        run: vi.fn(),
+      }
+
+      const mockDedup: DeduplicationService = {
+        isDuplicate: vi.fn().mockResolvedValue(false),
+        addFingerprint: vi.fn(),
+      }
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const config: VoicePollerConfig = {
+        folderPath: tempDir.path,
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDbClient, mockDedup, config)
+      pollers.push(poller)
+
+      // Mock ensureFileDownloaded to fail for file2
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'ensureFileDownloaded').mockImplementation((filePath: string) => {
+        if (filePath === file2) {
+          return Promise.reject(new Error('iCloud download failed'))
+        }
+        return Promise.resolve()
+      })
+
+      // Mock other methods
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'computeFingerprint').mockResolvedValue('fingerprint123')
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'stageCapture').mockResolvedValue(undefined)
+
+      // Act
+      const result = await poller.pollOnce()
+
+      // Assert
+      expect(result.filesFound).toBe(3)
+      expect(result.filesProcessed).toBe(2) // Only file1 and file3 processed
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors[0]).toEqual({
+        filePath: file2,
+        error: 'iCloud download failed',
+      })
+    })
+
+    it('should update sync state after processing all files', async () => {
+      // Arrange
+      const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+      const tempDir = await createTempDirectory()
+      const fs = await import('node:fs/promises')
+      const path = await import('node:path')
+
+      await fs.writeFile(path.join(tempDir.path, 'Recording1.m4a'), Buffer.alloc(100))
+
+      const mockDbClient: DatabaseClient = {
+        query: vi.fn().mockReturnValue(undefined),
+        run: vi.fn(),
+      }
+
+      const mockDedup: DeduplicationService = {
+        isDuplicate: vi.fn().mockResolvedValue(false),
+        addFingerprint: vi.fn(),
+      }
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const config: VoicePollerConfig = {
+        folderPath: tempDir.path,
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDbClient, mockDedup, config)
+      pollers.push(poller)
+
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'ensureFileDownloaded').mockResolvedValue(undefined)
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'computeFingerprint').mockResolvedValue('fingerprint123')
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'stageCapture').mockResolvedValue(undefined)
+
+      const updateTimestampSpy = vi.fn()
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'updateLastPollTimestamp').mockImplementation(updateTimestampSpy)
+
+      // Act
+      await poller.pollOnce()
+
+      // Assert
+      expect(updateTimestampSpy).toHaveBeenCalledTimes(1)
+      expect(updateTimestampSpy).toHaveBeenCalledWith(expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/))
+    })
+
+    it('should use exponential backoff when waiting for download', async () => {
+      // This test verifies that waitForDownload uses exponential backoff
+      // The actual backoff logic is already implemented in waitForDownload
+      // We just need to verify it's called as part of ensureFileDownloaded
+
+      // Use real timers for this test
+      vi.useRealTimers()
+
+      // Arrange
+      const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+      const tempDir = await createTempDirectory()
+
+      const mockDb = {} as DatabaseClient
+      const mockDedup = {} as DeduplicationService
+
+      const config: VoicePollerConfig = {
+        folderPath: tempDir.path,
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDb, mockDedup, config)
+      pollers.push(poller)
+
+      let checkCallCount = 0
+
+      // Mock checkIfDataless to return true for first 3 calls, then false
+      vi.spyOn(poller, 'checkIfDataless' as any).mockImplementation(() => {
+        checkCallCount++
+        // Return dataless (true) for first 3 checks, then downloaded (false)
+        return Promise.resolve(checkCallCount <= 3)
+      })
+
+      // Mock triggerDownload to just resolve
+      vi.spyOn(poller, 'triggerDownload' as any).mockResolvedValue(undefined)
+
+      const startTime = Date.now()
+
+      // Act
+      // Call ensureFileDownloaded which will use the mocked methods
+      await (poller as any).ensureFileDownloaded('/test/Recording.m4a')
+
+      const totalTime = Date.now() - startTime
+
+      // Assert
+      // With exponential backoff: 1s + 2s + 4s = 7s minimum
+      // But the implementation caps at 5s, so it's 1s + 2s + 4s (capped at 5s) = at least 3s
+      expect(totalTime).toBeGreaterThanOrEqual(3000)
+      expect(checkCallCount).toBeGreaterThanOrEqual(4) // Initial + 3 during wait
+
+      // Restore fake timers
+      vi.useFakeTimers()
     })
   })
 

@@ -26,8 +26,6 @@ export class VoicePoller {
 
   constructor(
     private db: DatabaseClient,
-    // @ts-expect-error - Will be used in future ACs
-
     private dedup: DeduplicationService,
     config: VoicePollerConfig
   ) {
@@ -41,16 +39,78 @@ export class VoicePoller {
   /**
    * Single poll cycle - returns immediately after processing
    */
-  // eslint-disable-next-line require-await -- Will have await in future implementation
   async pollOnce(): Promise<VoicePollResult> {
-    // Stub implementation for now
-    return Promise.resolve({
-      filesFound: 0,
-      filesProcessed: 0,
-      duplicatesSkipped: 0,
-      errors: [],
-      duration: 100,
-    })
+    const startTime = Date.now()
+    const errors: Array<{ filePath: string; error: string }> = []
+
+    // 1. Scan iCloud folder for .m4a files
+    const files = await this.scanVoiceMemos()
+
+    // 2. Process each file sequentially (for...of ensures sequential)
+    let filesProcessed = 0
+    let duplicatesSkipped = 0
+
+    for (const filePath of files) {
+      try {
+        // Check APFS dataless status and download if needed
+        await this.ensureFileDownloaded(filePath)
+
+        // Compute fingerprint (placeholder implementation for now)
+        const fingerprint = await this.computeFingerprint(filePath)
+
+        // Dedup check using dedup service
+        const isDupe = await this.dedup.isDuplicate({ audioFp: fingerprint })
+        if (isDupe) {
+          duplicatesSkipped++
+          continue
+        }
+
+        // Stage capture (placeholder implementation for now)
+        await this.stageCapture(filePath, fingerprint)
+
+        filesProcessed++
+      } catch (error) {
+        errors.push({
+          filePath,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+
+    // 3. Update sync state with current timestamp
+    await this.updateLastPollTimestamp(new Date().toISOString())
+
+    return {
+      filesFound: files.length,
+      filesProcessed,
+      duplicatesSkipped,
+      errors,
+      duration: Date.now() - startTime,
+    }
+  }
+
+  /**
+   * Compute fingerprint for an audio file
+   * @param filePath Path to the audio file
+   * @returns Fingerprint string
+   * @internal Stub implementation for now
+   */
+  private computeFingerprint(filePath: string): Promise<string> {
+    // Placeholder implementation - will be replaced with actual fingerprinting
+    // For now, return a placeholder based on file path
+    return Promise.resolve(`fingerprint_${filePath.replace(/[^a-zA-Z0-9]/g, '_')}`)
+  }
+
+  /**
+   * Stage a capture in the database
+   * @param filePath Path to the audio file
+   * @param fingerprint Audio fingerprint
+   * @internal Stub implementation for now
+   */
+  private async stageCapture(_filePath: string, _fingerprint: string): Promise<void> {
+    // Placeholder implementation - will be replaced with actual database staging
+    // For now, this is a no-op
+    await Promise.resolve()
   }
 
   /**
@@ -98,7 +158,6 @@ export class VoicePoller {
    * @returns Array of absolute file paths, sorted alphabetically
    * @internal Exposed for testing
    */
-  // @ts-expect-error - Method is used in tests
   private async scanVoiceMemos(): Promise<string[]> {
     // eslint-disable-next-line security/detect-non-literal-fs-filename -- Folder path from config
     const files = await readdir(this.config.folderPath)
@@ -127,7 +186,6 @@ export class VoicePoller {
    * @param timestamp ISO timestamp string
    * @internal Exposed for testing
    */
-  // @ts-expect-error - Method is used in tests
   private async updateLastPollTimestamp(timestamp: string): Promise<void> {
     await this.db.run(
       'INSERT OR REPLACE INTO sync_state (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)',
@@ -229,7 +287,6 @@ export class VoicePoller {
    * @param filePath Path to the file to check and download
    * @internal Exposed for testing
    */
-  // @ts-expect-error - Method is used in tests
   private async ensureFileDownloaded(filePath: string): Promise<void> {
     const isDataless = await this.checkIfDataless(filePath)
 
