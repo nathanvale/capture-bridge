@@ -128,9 +128,13 @@ Decision: GROUP all 3 ACs, delegate ONCE with complete pseudocode
 
 #### TDD Mode (Code Logic)
 
+**IMMEDIATELY invoke code-implementer using Task tool**:
+
 ```typescript
-Use Task tool with subagent_type="code-implementer"
-Prompt: `**EXECUTION MODE: TDD Mode**
+Task({
+  subagent_type: "code-implementer",
+  description: `TDD Mode: ${task_id} - ${ac.id}`,
+  prompt: `**EXECUTION MODE: TDD Mode**
 
 Execute TDD cycle for ${task_id} - ${ac.id}:
 
@@ -170,6 +174,8 @@ Proceed with TDD cycle.`
 })
 ```
 
+**After Task tool completes**: Wait for code-implementer to finish and return completion report.
+
 **Parse completion report**:
 
 - Success: `✅ TDD Cycle Complete` + `Ready for Commit: YES`
@@ -190,9 +196,13 @@ Update task-state.json `acs_completed`, mark TodoWrite complete.
 
 #### Setup Mode (Config/Installation)
 
+**IMMEDIATELY invoke code-implementer using Task tool**:
+
 ```typescript
-Use Task tool with subagent_type="code-implementer"
-Prompt: `**EXECUTION MODE: Setup Mode**
+Task({
+  subagent_type: "code-implementer",
+  description: `Setup Mode: ${task_id} - ${ac.id}`,
+  prompt: `**EXECUTION MODE: Setup Mode**
 
 Execute setup operation for ${task_id} - ${ac.id}:
 
@@ -204,13 +214,19 @@ Execute and report outcome.`
 })
 ```
 
+**After Task tool completes**: Wait for completion report.
+
 Commit: `chore(${task_id}): ${operation} [${ac.id}]`
 
 #### Documentation Mode (Docs/ADRs)
 
+**IMMEDIATELY invoke code-implementer using Task tool**:
+
 ```typescript
-Use Task tool with subagent_type="code-implementer"
-Prompt: `**EXECUTION MODE: Documentation Mode**
+Task({
+  subagent_type: "code-implementer",
+  description: `Documentation Mode: ${task_id} - ${ac.id}`,
+  prompt: `**EXECUTION MODE: Documentation Mode**
 
 Create/update documentation for ${task_id} - ${ac.id}:
 
@@ -223,6 +239,8 @@ Create documentation and report.`
 })
 ```
 
+**After Task tool completes**: Wait for completion report.
+
 Commit: `docs(${task_id}): ${doc_description} [${ac.id}]`
 
 ---
@@ -234,10 +252,8 @@ After ALL ACs done:
 1. **Validate**:
    - All ACs in `acs_completed`
    - `acs_remaining` is empty
-   - Use Task tool with subagent_type="test-runner" to make sure all tests
-     passing
-   - Use Task tool with subagent_type="quality-check-fixer" to make sure there are
-    no lint or typescript errors
+   - **Invoke test-runner**: `Task({ subagent_type: "test-runner", description: "Run all tests for ${task_id}", prompt: "Run all tests and report results" })`
+   - **Invoke quality-check-fixer**: `Task({ subagent_type: "quality-check-fixer", description: "Check code quality for ${task_id}", prompt: "Check for lint and TypeScript errors, fix if possible" })`
    - No uncommitted changes
 
 2. **Update state** to completed:
@@ -454,5 +470,10 @@ describe('State Machine Validation', () => {
 
 ---
 
-**Version**: 3.1.0 (Smart Context Extraction)
-**Token Count**: ~2,100 tokens (added verbatim extraction + Phase 4.5)
+**Version**: 3.2.0 (Fixed Delegation Anti-Pattern)
+**Last Updated**: 2025-10-08
+**Token Count**: ~2,100 tokens
+
+**Changelog**:
+- v3.2.0: Fixed Anti-Pattern 2 - Replaced pseudocode templates with actual Task() invocations
+- v3.1.0: Added verbatim context extraction + Phase 4.5
