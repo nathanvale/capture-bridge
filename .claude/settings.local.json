@@ -59,5 +59,9 @@
       "Bash(python3:*)",
       "Read(//Users/nathanvale/code/bun-changesets-template/**)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "wallaby"
+  ]
 }
