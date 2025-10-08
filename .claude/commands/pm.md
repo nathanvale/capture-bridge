@@ -1,3 +1,8 @@
+---
+allowed-tools: Task, Bash(node:*), Bash(git:*), Read, Write, TodoWrite
+description: Execute VTM tasks - unified interface for task orchestration
+---
+
 # Project Manager (PM) Command
 
 **Purpose:** Unified interface for Virtual Task Manifest (VTM) operations
@@ -5,7 +10,7 @@
 **Usage:**
 - `/pm` - Show dashboard (progress overview + next task)
 - `/pm next` - Show next eligible task details
-- `/pm start` - Start next task (auto-invoke orchestrator)
+- `/pm start` - Start next task (direct orchestration)
 - `/pm status` - Show detailed progress breakdown
 - `/pm blocked` - Show blocked tasks
 
@@ -76,44 +81,256 @@ node .claude/scripts/vtm-status.mjs --next
 
 ### /pm start
 
-**Purpose:** Start the next eligible VTM task using the unified task-manager orchestrator.
+**Purpose:** Start the next eligible VTM task with direct orchestration.
 
-**Important:** task-manager now handles EVERYTHING - VTM query, git validation, context loading, AC execution, and PR creation. No need for separate orchestrator.
+**Architecture Note:** This slash command executes in the main conversation and has access to the Task tool. It orchestrates the full workflow and directly delegates to code-implementer for each AC. This pattern avoids the platform limitation (GitHub #4182) where sub-agents cannot use the Task tool.
 
-1. Invoke task-manager directly using Task tool:
+**Workflow:**
+
+#### Phase 0: Query VTM & Validate Git State
+
+```bash
+# Get next task
+node .claude/scripts/vtm-status.mjs --next
+```
+
+If error (exit code 1):
+```markdown
+❌ No eligible tasks available.
+
+Run: /pm blocked
+```
+
+**Git validation:**
+```bash
+# Check current branch
+current_branch=$(git branch --show-current)
+
+if [[ "$current_branch" != "main" ]]; then
+  echo "❌ BLOCKED: Not on main branch (currently on: $current_branch)"
+  echo "Return to main: git checkout main"
+  exit 1
+fi
+
+# Check working directory
+if [[ -n $(git status --porcelain) ]]; then
+  echo "❌ BLOCKED: Uncommitted changes detected"
+  git status
+  exit 1
+fi
+```
+
+#### Phase 1: Read All Context Files
+
+Read EVERY file in task's `related_specs`, `related_adrs`, `related_guides`:
 
 ```typescript
-Task({
-  subagent_type: "task-manager",
-  description: "Execute next VTM task",
-  prompt: `Execute the next eligible task from the Virtual Task Manifest.
+const contextFiles = [
+  ...task.related_specs,
+  ...task.related_adrs,
+  ...task.related_guides,
+  '.claude/rules/testkit-tdd-guide-condensed.md'
+]
 
-**Your Responsibilities (Complete Workflow)**:
-1. Phase 0: Query VTM for next task + validate git state (main branch, clean)
-2. Phase 1: Read all context files (specs, ADRs, guides)
-3. Phase 2-3: Create feature branch + initialize task state
-4. Phase 4-5: Classify ACs + delegate each to code-implementer
-5. Phase 6: Validate completion + create PR
-6. Phase 7: Report completion with VTM progress
+for (const filePath of contextFiles) {
+  Read({ file_path: filePath })
+  // Store content for delegation
+}
+```
 
-**No user input needed** - you query VTM directly with:
-\`\`\`bash
-node .claude/scripts/vtm-status.mjs --next
-\`\`\`
+#### Phase 2: Create Feature Branch
 
-If no eligible tasks, report what's blocking and stop.
+```bash
+git checkout -b feat/${task_id}
+```
 
-Proceed automatically with full lifecycle.`
+#### Phase 3: Initialize Task State
+
+Update `docs/backlog/task-state.json`:
+
+```json
+{
+  "tasks": {
+    "${task_id}": {
+      "status": "in-progress",
+      "started_at": "${ISO8601}",
+      "acs_completed": [],
+      "acs_remaining": ["AC01", "AC02", ...]
+    }
+  }
+}
+```
+
+Commit:
+```bash
+git add docs/backlog/task-state.json
+git commit -m "chore(${task_id}): initialize task state"
+```
+
+#### Phase 4: Classify ACs & Create TodoWrite
+
+**Classification Rules:**
+1. Task risk = High? → TDD Mode (mandatory)
+2. AC mentions test/verify/validate? → TDD Mode
+3. AC describes code logic? → TDD Mode
+4. AC mentions install/configure? → Setup Mode
+5. AC mentions document/README? → Documentation Mode
+6. Uncertain? → TDD Mode (default to safety)
+
+**Create TodoWrite:**
+```typescript
+TodoWrite({
+  todos: task.acceptance_criteria.map(ac => ({
+    content: ac.text,
+    status: 'pending',
+    activeForm: `Implementing ${ac.id}`
+  }))
 })
 ```
 
-2. The task-manager will handle everything and return a completion report showing:
-   - Task completion status
-   - PR URL
-   - VTM progress (X/Y tasks)
-   - Next eligible task
+#### Phase 5: Execute Each AC
 
-3. If task-manager reports no eligible tasks, it will show blocked task details.
+**For EACH AC in sequence:**
+
+1. Mark AC as `in_progress` in TodoWrite
+
+2. **Directly invoke code-implementer** using Task tool:
+
+```typescript
+Task({
+  subagent_type: "code-implementer",
+  description: `${ac.mode} Mode: ${task_id} - ${ac.id}`,
+  prompt: `**EXECUTION MODE: ${ac.mode}**
+
+Execute ${ac.mode} cycle for ${task_id} - ${ac.id}:
+
+**Acceptance Criterion**: ${ac.text}
+**Risk Level**: ${task.risk}
+
+**Context from Specs** (VERBATIM):
+${extracted_verbatim_content}
+
+**Type Definitions**:
+${extracted_type_definitions}
+
+**Decision Context from ADRs**:
+${extracted_adr_content}
+
+**Error Handling from Guides**:
+${extracted_guide_patterns}
+
+**Instructions**:
+${mode_specific_instructions}
+
+**Git State**: On branch feat/${task_id}
+
+Proceed with ${ac.mode} cycle.`
+})
+```
+
+3. Wait for code-implementer completion report
+
+4. If success:
+   ```bash
+   git add ${changed_files}
+   git commit -m "${commit_type}(${task_id}): ${ac_summary} [${ac.id}]
+
+   Co-Authored-By: Claude <noreply@anthropic.com>"
+   ```
+
+5. Update task-state.json (add to `acs_completed`)
+
+6. Mark AC as `completed` in TodoWrite
+
+7. Move to next AC
+
+#### Phase 6: Complete Task & Create PR
+
+After all ACs done:
+
+1. Validate completion:
+   - All ACs in `acs_completed`
+   - `acs_remaining` is empty
+   - No uncommitted changes
+
+2. Update task-state.json:
+   ```json
+   {
+     "status": "completed",
+     "completed_at": "${ISO8601}"
+   }
+   ```
+
+3. Commit final state:
+   ```bash
+   git add docs/backlog/task-state.json
+   git commit -m "chore(${task_id}): mark task completed"
+   ```
+
+4. Push and create PR:
+   ```bash
+   git push -u origin feat/${task_id}
+
+   gh pr create \
+     --title "feat(${task_id}): ${task.title}" \
+     --body "$(cat <<'EOF'
+   ## Summary
+   Completed ${ac_count} acceptance criteria for ${task_id}
+
+   ${for_each_ac}
+   - ✅ ${ac.id}: ${ac.text}
+   ${end_for}
+
+   ## Test Verification
+   ${test_files_list}
+
+   ## Related Documentation
+   - Specs: ${related_specs}
+   - ADRs: ${related_adrs}
+
+   🤖 Generated with Claude Code
+   EOF
+   )"
+   ```
+
+#### Phase 7: Report Completion
+
+Query VTM progress:
+```bash
+node .claude/scripts/vtm-status.mjs --dashboard
+```
+
+**Output:**
+
+```markdown
+## ✅ Task ${task_id} - COMPLETED
+
+**Title**: ${title}
+**Risk**: ${risk}
+**Duration**: ${duration}
+
+**Acceptance Criteria**: ${ac_count} ✓
+
+**Tests Added**: ${test_count}
+**Coverage**: ${coverage}
+**Branch**: feat/${task_id}
+**PR**: ${pr_url}
+
+**Status**: Ready for review
+
+---
+
+**VTM Progress**: ${completed}/${total} tasks (${percentage}%)
+**Next Eligible Task**: ${next_task_id or "None - run /pm blocked"}
+
+**Next Steps**:
+1. Review PR: ${pr_url}
+2. Merge when ready
+3. Return to main: git checkout main
+4. Run `/pm start` for next task
+```
+
+---
 
 ### /pm status
 
@@ -176,22 +393,48 @@ node .claude/scripts/vtm-status.mjs --blocked
 
 ## Error Handling
 
-If vtm-status.mjs returns an error (exit code 1):
+### Phase 0 Errors
 
+**Git Not on Main:**
 ```markdown
-❌ VTM Status Error
+❌ BLOCKED: Not on main branch (currently on: ${branch})
 
-{error message from JSON}
-
-**Paths checked:**
-- VTM: {vtm_path}
-- State: {state_path}
-
-**Troubleshooting:**
-1. Verify files exist at the paths above
-2. Check JSON syntax is valid
-3. Ensure task-state.json has proper schema
+**Action Required**:
+1. Complete/abandon current work
+2. Return to main: git checkout main
+3. Retry: /pm start
 ```
+
+**Uncommitted Changes:**
+```markdown
+❌ BLOCKED: Uncommitted changes detected
+
+${git status output}
+
+**Action Required**:
+Commit or stash changes, then retry /pm start
+```
+
+**No Eligible Tasks:**
+```markdown
+❌ No eligible tasks available.
+
+**Blocking Details**: ${from vtm-status.mjs --blocked}
+
+Run: /pm blocked
+```
+
+### AC Execution Errors
+
+If code-implementer reports failure:
+- Mark AC as failed in TodoWrite
+- Update task-state.json status to 'blocked'
+- Report blocker to user
+- STOP execution (don't proceed to next AC)
+
+### Git Operation Errors
+
+Report exact error and stop execution.
 
 ---
 
@@ -203,11 +446,7 @@ If vtm-status.mjs returns an error (exit code 1):
 - Virtual Task Manifest: `docs/backlog/virtual-task-manifest.json`
 - Task State: `docs/backlog/task-state.json`
 
-**Output Format:** All vtm-status.mjs commands return JSON to stdout
-
-**Percentage Calculation:** `(completed / total * 100).toFixed(1)`
-
-**Risk Priority:** High > Medium > Low (for next task selection)
+**Key Pattern:** This slash command orchestrates directly and uses Task tool to spawn code-implementer for each AC. This avoids nested agent delegation (platform limitation GitHub #4182).
 
 ---
 
@@ -228,11 +467,11 @@ Assistant: [Shows full task breakdown with ACs and dependencies]
 **Start working on next task:**
 ```
 User: /pm start
-Assistant: [Invokes task-manager to orchestrate task lifecycle]
+Assistant: [Executes full workflow: git validation → context loading → AC execution → PR creation]
 ```
 
 **Check what's blocking progress:**
 ```
 User: /pm blocked
-Assistant: [Lists all tasks waiting on dependencies or explicitly blocked]
+Assistant: [Lists all tasks waiting on dependencies]
 ```
