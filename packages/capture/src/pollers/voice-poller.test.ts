@@ -4,6 +4,11 @@ import { VoicePoller } from './voice-poller.js'
 
 import type { VoicePollerConfig, DatabaseClient, DeduplicationService } from './types.js'
 
+// Mock the foundation module
+vi.mock('@capture-bridge/foundation', () => ({
+  computeAudioFingerprint: vi.fn(),
+}))
+
 describe('VoicePoller', () => {
   const pollers: Array<{ shutdown: () => Promise<void> }> = []
   const databases: Array<{ close: () => void }> = []
@@ -1562,6 +1567,253 @@ describe('VoicePoller', () => {
 
       // Assert - file with exact same mtime should be excluded
       expect(newFiles).toEqual([])
+    })
+  })
+
+  describe('Channel Native ID Storage [VOICE_POLLING_ICLOUD-AC08]', () => {
+    it('should store file path as channel_native_id in meta_json', async () => {
+      // Arrange
+      const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+      const tempDir = await createTempDirectory()
+      const fs = await import('node:fs/promises')
+      const path = await import('node:path')
+      const crypto = await import('node:crypto')
+
+      // Create test audio file
+      const audioPath = path.join(tempDir.path, 'test-audio.m4a')
+      const audioData = Buffer.from('fake audio data')
+      await fs.writeFile(audioPath, audioData)
+
+      // Calculate expected fingerprint
+      const expectedFingerprint = crypto.createHash('sha256').update(audioData).digest('hex')
+
+      // Set up the mock to return the expected fingerprint
+      const foundation = await import('@capture-bridge/foundation')
+      vi.mocked(foundation.computeAudioFingerprint).mockResolvedValue(expectedFingerprint)
+
+      // Create real SQLite database with schema
+      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
+      const Database = (await import('better-sqlite3')).default
+      const db = new Database(createMemoryUrl())
+      databases.push(db)
+
+      // Create captures table with proper schema
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS captures (
+          id TEXT PRIMARY KEY,
+          source TEXT NOT NULL CHECK(source IN ('voice', 'email', 'text', 'web')),
+          raw_content TEXT,
+          content_hash TEXT,
+          status TEXT NOT NULL CHECK(status IN (
+            'staged', 'transcribed', 'failed_transcription',
+            'exported', 'exported_duplicate', 'exported_placeholder'
+          )) DEFAULT 'staged',
+          meta_json TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_captures_channel_native_id
+        ON captures((json_extract(meta_json, '$.channel')), (json_extract(meta_json, '$.channel_native_id')));
+      `)
+
+      const mockDbClient: DatabaseClient = {
+        query: vi.fn(),
+        run: vi.fn((sql: string, params?: unknown[]) => {
+          const stmt = db.prepare(sql)
+          stmt.run(...(params ?? []))
+          return Promise.resolve()
+        }),
+      }
+
+      const mockDedup = {
+        isDuplicate: vi.fn().mockResolvedValue(false),
+        addFingerprint: vi.fn(),
+      } as unknown as DeduplicationService
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const config: VoicePollerConfig = {
+        folderPath: tempDir.path,
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDbClient, mockDedup, config)
+      pollers.push(poller)
+
+      // Act
+      await poller.pollOnce()
+
+      // Assert - verify the database contains the correct meta_json structure
+      const result = db
+        .prepare(
+          `
+        SELECT meta_json FROM captures
+        WHERE json_extract(meta_json, '$.channel') = 'voice'
+      `
+        )
+        .get() as { meta_json: string }
+
+      expect(result).toBeDefined()
+      const metaJson = JSON.parse(result.meta_json)
+      expect(metaJson.channel).toBe('voice')
+      expect(metaJson.channel_native_id).toBe(audioPath) // Absolute path
+      expect(metaJson.audio_fp).toBeDefined() // SHA-256 fingerprint
+      expect(metaJson.audio_fp).toMatch(/^[a-f0-9]{64}$/) // Valid SHA-256 hex
+    })
+
+    it('should reject duplicate file paths (channel_native_id uniqueness)', async () => {
+      // Arrange
+      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
+      const Database = (await import('better-sqlite3')).default
+      const db = new Database(createMemoryUrl())
+      databases.push(db)
+
+      // Create schema (without unique constraint - we're testing duplicate handling)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS captures (
+          id TEXT PRIMARY KEY,
+          source TEXT NOT NULL,
+          raw_content TEXT,
+          content_hash TEXT,
+          status TEXT NOT NULL DEFAULT 'staged',
+          meta_json TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_captures_channel_native_id
+        ON captures((json_extract(meta_json, '$.channel')), (json_extract(meta_json, '$.channel_native_id')));
+      `)
+
+      const testPath = '/test/voice/recording.m4a'
+      const fingerprint = 'abc123def456' // Dummy fingerprint
+
+      // Insert first capture with this path
+      const firstId = `test-id-${Date.now()}`
+      const metaJson = JSON.stringify({
+        channel: 'voice',
+        channel_native_id: testPath,
+        audio_fp: fingerprint,
+      })
+
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, status, meta_json, raw_content)
+        VALUES (?, 'voice', 'staged', ?, '')
+      `
+      ).run(firstId, metaJson)
+
+      // Create mocked database client that uses the real database
+      const mockDbClient: DatabaseClient = {
+        query: vi.fn().mockImplementation((sql: string, params?: unknown[]) => {
+          const stmt = db.prepare(sql)
+          const result = stmt.get(...(params ?? []))
+          return Promise.resolve(result)
+        }),
+        run: vi.fn((sql: string, params?: unknown[]) => {
+          const stmt = db.prepare(sql)
+          stmt.run(...(params ?? []))
+          return Promise.resolve()
+        }),
+      }
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const mockDedup = {} as DeduplicationService
+      const config: VoicePollerConfig = {
+        folderPath: '/test/voice',
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDbClient, mockDedup, config)
+      pollers.push(poller)
+
+      // Act - try to stage the same file again (should skip due to duplicate)
+      // @ts-expect-error - accessing private method for testing
+      await poller.stageCapture(testPath, fingerprint)
+
+      // Assert - should still have only one row for this file path
+      const count = db
+        .prepare(
+          `
+        SELECT COUNT(*) as count FROM captures
+        WHERE json_extract(meta_json, '$.channel_native_id') = ?
+      `
+        )
+        .get(testPath) as { count: number }
+
+      expect(count.count).toBe(1) // Only the original row, duplicate was skipped
+    })
+
+    it('should allow same filename in different directories', async () => {
+      // Arrange
+      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
+      const Database = (await import('better-sqlite3')).default
+      const db = new Database(createMemoryUrl())
+      databases.push(db)
+
+      // Create schema
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS captures (
+          id TEXT PRIMARY KEY,
+          source TEXT NOT NULL,
+          raw_content TEXT,
+          content_hash TEXT,
+          status TEXT NOT NULL DEFAULT 'staged',
+          meta_json TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+      `)
+
+      const mockDbClient: DatabaseClient = {
+        query: vi.fn().mockImplementation((sql: string, params?: unknown[]) => {
+          const stmt = db.prepare(sql)
+          const result = stmt.get(...(params ?? []))
+          return Promise.resolve(result)
+        }),
+        run: vi.fn((sql: string, params?: unknown[]) => {
+          const stmt = db.prepare(sql)
+          stmt.run(...(params ?? []))
+          return Promise.resolve()
+        }),
+      }
+
+      const { VoicePoller } = await import('./voice-poller.js')
+      const mockDedup = {} as DeduplicationService
+      const config: VoicePollerConfig = {
+        folderPath: '/test',
+        sequential: true,
+      }
+
+      const poller = new VoicePoller(mockDbClient, mockDedup, config)
+      pollers.push(poller)
+
+      // Act - stage two files with same name but different paths
+      const path1 = '/test/folder1/recording.m4a'
+      const path2 = '/test/folder2/recording.m4a'
+      const fingerprint1 = 'aaa111bbb222'
+      const fingerprint2 = 'ccc333ddd444'
+
+      // @ts-expect-error - accessing private method for testing
+      await poller.stageCapture(path1, fingerprint1)
+      // @ts-expect-error - accessing private method for testing
+      await poller.stageCapture(path2, fingerprint2)
+
+      // Assert - both files should be staged
+      const results = db
+        .prepare(
+          `
+        SELECT json_extract(meta_json, '$.channel_native_id') as path
+        FROM captures
+        WHERE json_extract(meta_json, '$.channel') = 'voice'
+        ORDER BY path
+      `
+        )
+        .all() as Array<{ path: string }>
+
+      expect(results).toHaveLength(2)
+      expect(results[0]?.path).toBe(path1)
+      expect(results[1]?.path).toBe(path2)
     })
   })
 

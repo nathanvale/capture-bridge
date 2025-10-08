@@ -100,13 +100,40 @@ export class VoicePoller {
   /**
    * Stage a capture in the database
    * @param filePath Path to the audio file
-   * @param fingerprint Audio fingerprint
-   * @internal Stub implementation for now
+   * @param fingerprint Audio fingerprint (SHA-256 hex)
+   * @internal Implements channel-native-id storage [AC08]
    */
-  private async stageCapture(_filePath: string, _fingerprint: string): Promise<void> {
-    // Placeholder implementation - will be replaced with actual database staging
-    // For now, this is a no-op
-    await Promise.resolve()
+  private async stageCapture(filePath: string, fingerprint: string): Promise<void> {
+    // Check if this file is already staged (Layer 1 deduplication)
+    const existing = await this.db.query<{ id: string }>(
+      `SELECT id FROM captures
+       WHERE json_extract(meta_json, '$.channel') = ?
+       AND json_extract(meta_json, '$.channel_native_id') = ?`,
+      ['voice', filePath]
+    )
+
+    if (existing) {
+      // Already staged, skip duplicate
+      return
+    }
+
+    // Generate ULID for capture ID (import dynamically to avoid issues)
+    const { ulid } = await import('ulid')
+    const captureId = ulid()
+
+    // Create meta_json structure
+    const metaJson = JSON.stringify({
+      channel: 'voice',
+      channel_native_id: filePath, // Absolute path as unique identifier
+      audio_fp: fingerprint, // SHA-256 fingerprint
+    })
+
+    // Insert into captures table
+    await this.db.run(
+      `INSERT INTO captures (id, source, status, meta_json, raw_content, created_at, updated_at)
+       VALUES (?, 'voice', 'staged', ?, '', datetime('now'), datetime('now'))`,
+      [captureId, metaJson]
+    )
   }
 
   /**
