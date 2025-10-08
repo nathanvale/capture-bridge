@@ -17,9 +17,10 @@ export interface VoicePollResult {
 }
 
 // Stub interfaces for dependencies (will be implemented later)
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Stub for future implementation
 export interface DatabaseClient {
   // Database methods will be added in future ACs
+  query: <T>(sql: string, params?: unknown[]) => Promise<T | undefined>
+  run: (sql: string, params?: unknown[]) => Promise<void>
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Stub for future implementation
