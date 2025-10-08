@@ -1,6 +1,6 @@
 {
   "manifest_hash": "d18c2638898a4a5d1e0cfbece98dfdd889490bfc5d257e65cce7cdfe58bb6691",
-  "last_updated": "2025-10-08T03:30:00Z",
+  "last_updated": "2025-10-08T04:00:00Z",
   "tasks": {
     "MONOREPO_STRUCTURE--T01": {
       "status": "completed",
@@ -165,6 +165,18 @@
       ],
       "acs_remaining": [],
       "notes": "Completed CAPTURE_STATE_MACHINE--T03: Status index verification. AC07: captures_status_idx already exists and fully tested. Index was created as part of SQLITE_SCHEMA--T01 (schema.ts:134-136) with comprehensive test coverage in index-performance.spec.ts (existence test lines 89-102, query planner usage test lines 311-335, performance benchmark lines 470-495). All 104/104 tests passing. No new implementation required - this task verifies existing infrastructure satisfies the acceptance criterion. The status index enables fast filtering for recovery queries (WHERE status='staged') and crash recovery operations as specified in spec-staging-arch.md §4.4 and §8.2."
+    },
+    "DEDUPLICATION_LOGIC--T01": {
+      "status": "in-progress",
+      "started_at": "2025-10-08T04:00:00Z",
+      "acs_completed": [],
+      "acs_remaining": [
+        "DEDUPLICATION_LOGIC-AC01",
+        "DEDUPLICATION_LOGIC-AC02",
+        "DEDUPLICATION_LOGIC-AC03",
+        "DEDUPLICATION_LOGIC-AC04",
+        "DEDUPLICATION_LOGIC-AC05"
+      ]
     }
   }
 }
