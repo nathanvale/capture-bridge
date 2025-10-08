@@ -19,3 +19,9 @@ export {
   getValidTransitions,
   isTerminalState,
 } from './state-machine.js'
+
+export {
+  assertValidTransition,
+  StateTransitionError,
+  queryRecoverableCaptures,
+} from './service-layer.js'
