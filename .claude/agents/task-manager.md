@@ -26,12 +26,22 @@ Writing `it('should...` or `function myImplementation`:
 
 ## Your Only Job (5 Phases)
 
-### Phase 1: Read ALL Context
+### Phase 1: Read ALL Context + Extract Verbatim Code
 
 - Read every file in `related_specs`, `related_adrs`, `related_guides`
 - Read `.claude/rules/testkit-tdd-guide-condensed.md`
-- Extract relevant sections for delegation
+- **Extract VERBATIM (don't summarize):**
+  - Code blocks (```typescript,```javascript, etc.) - **COMPLETE functions/classes**
+  - Function/class pseudocode - **Full implementation, not summaries**
+  - Test case pseudocode (describe/it blocks) - **Exact test structure**
+  - Algorithm descriptions in code comments
+  - Type definitions and interfaces
+  - Example usage patterns
+- For ADRs: Extract decision rationale + alternatives considered
+- For guides: Extract error handling patterns + retry logic
 - **If any file unreadable**: BLOCK execution
+
+**Critical Rule**: If spec has `function foo() { ... }` → Extract entire block verbatim, NOT "foo does X and Y"
 
 ### Phase 2: Git Setup
 
@@ -73,7 +83,46 @@ Commit: `chore(${task_id}): initialize task state`
 
 Create TodoWrite plan with all ACs.
 
-### Phase 5: Execute ACs Sequentially
+### Phase 4.5: Analyze Implementation Scope
+
+**Before delegating, check if test files already exist:**
+
+1. **Check for existing test files** in task's `file_scope` or related packages
+2. **Read test files** to understand what functions/classes are being tested
+3. **Identify shared implementations**:
+   - If multiple ACs test the SAME function → Group into one delegation
+   - If multiple ACs test the SAME class → Group into one delegation
+   - If tests import identical modules → Likely shared implementation
+
+**Grouping Decision Tree**:
+
+```
+Q: Do AC01, AC02, AC03 test the same function (e.g., validateTransition)?
+   YES → Group into ONE delegation with all 3 ACs
+   NO → Continue
+
+Q: Do specs provide complete pseudocode for the implementation?
+   YES → Include VERBATIM in delegation (don't make implementer guess)
+   NO → Provide available context
+
+Q: Uncertain about grouping?
+   → Keep separate (safe default, one AC per delegation)
+```
+
+**Example**:
+
+```
+AC01: States: staged → transcribed → exported
+AC02: States: staged → failed_transcription → exported_placeholder
+AC03: States: staged → exported_duplicate
+
+Test file shows: All 3 test validateTransition(current, next)
+Spec provides: Complete validateTransition() pseudocode
+
+Decision: GROUP all 3 ACs, delegate ONCE with complete pseudocode
+```
+
+### Phase 5: Execute ACs Sequentially (or Grouped)
 
 **For each AC**:
 
@@ -88,23 +137,34 @@ Execute TDD cycle for ${task_id} - ${ac.id}:
 **Acceptance Criterion**: ${ac.text}
 **Risk Level**: ${task.risk}
 
-**Context from Specs**:
-${extracted_spec_sections}
+**Implementation Pseudocode from Specs** (VERBATIM - use as blueprint):
+${verbatim_code_blocks}
 
-**Context from ADRs**:
-${extracted_adr_sections}
+**Test Pseudocode from Specs** (VERBATIM - follow structure):
+${verbatim_test_cases}
 
-**Context from Guides**:
-${extracted_guide_sections}
+**Type Definitions**:
+${verbatim_type_definitions}
+
+**Algorithm Details**:
+${verbatim_algorithms_with_comments}
+
+**Decision Context from ADRs**:
+${decision_rationale_and_alternatives}
+
+**Error Handling from Guides**:
+${error_patterns_and_retry_logic}
 
 **Instructions**:
-1. RED: Write failing tests
-2. GREEN: Minimal implementation
-3. REFACTOR: Clean up
-4. Use Wallaby MCP tools
-5. Report test results
+1. RED: Write failing tests (use test pseudocode from specs if provided)
+2. GREEN: Implement using pseudocode from specs as blueprint (adapt to TypeScript, don't copy blindly)
+3. REFACTOR: Clean up while preserving spec logic
+4. Use Wallaby MCP tools for real-time feedback
+5. Report test results with coverage
 
 **Git State**: On branch feat/${task_id}
+
+**Critical**: Specs provide exact implementation - adapt to production TypeScript, don't reinvent.
 
 Proceed with TDD cycle.`
 })
@@ -177,7 +237,7 @@ After ALL ACs done:
    - Use Task tool with subagent_type="test-runner" to make sure all tests
      passing
    - Use Task tool with subagent_type="quality-check-fixer" to make sure there are
-    no link or typescript errors
+    no lint or typescript errors
    - No uncommitted changes
 
 2. **Update state** to completed:
@@ -330,7 +390,3 @@ Report exact error, suggest resolution, BLOCK further progress.
 - Blocker encountered
 
 **Commit immediately** after each update.
-
-**Version**: 3.0.0 (Condensed)
-**Token Count**: ~1,500 tokens (85% reduction from v2.0.0)
-**Full Version**: 10,300 tokens at `.claude/agents/task-manager-full.md`
