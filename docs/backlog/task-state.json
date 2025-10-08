@@ -156,16 +156,6 @@
       "acs_remaining": [],
       "notes": "Completed service layer validation and recovery query implementation following strict TDD. All 3 ACs satisfied: AC04: Terminal state immutability enforced (exported, exported_duplicate, exported_placeholder cannot transition). AC05: Service layer validation with error throwing (assertValidTransition throws StateTransitionError with detailed messages). AC06: Recovery query returns non-terminal captures ordered by created_at ASC for crash recovery. 15/15 new tests passing (104/104 total). Files created: service-layer.ts (assertValidTransition, StateTransitionError, queryRecoverableCaptures), service-layer-validation.spec.ts. Modified: schema/index.ts and src/index.ts (added exports). Implementation provides service layer wrapper around state machine with comprehensive error handling per spec-staging-arch.md §4.4, §5.4 and ADR-0004."
     },
-    "CAPTURE_STATE_MACHINE--T03": {
-      "status": "completed",
-      "started_at": "2025-10-08T03:30:00Z",
-      "completed_at": "2025-10-08T03:30:00Z",
-      "acs_completed": [
-        "CAPTURE_STATE_MACHINE-AC07"
-      ],
-      "acs_remaining": [],
-      "notes": "Completed CAPTURE_STATE_MACHINE--T03: Status index verification. AC07: captures_status_idx already exists and fully tested. Index was created as part of SQLITE_SCHEMA--T01 (schema.ts:134-136) with comprehensive test coverage in index-performance.spec.ts (existence test lines 89-102, query planner usage test lines 311-335, performance benchmark lines 470-495). All 104/104 tests passing. No new implementation required - this task verifies existing infrastructure satisfies the acceptance criterion. The status index enables fast filtering for recovery queries (WHERE status='staged') and crash recovery operations as specified in spec-staging-arch.md §4.4 and §8.2."
-    },
     "DEDUPLICATION_LOGIC--T01": {
       "status": "completed",
       "started_at": "2025-10-08T04:00:00Z",
