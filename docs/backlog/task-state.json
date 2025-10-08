@@ -189,6 +189,12 @@
       "completed_at": "2025-10-09T05:40:00Z",
       "acs_completed": ["CAPTURE_STATE_MACHINE-AC07"],
       "acs_remaining": []
+    },
+    "DEDUPLICATION_LOGIC--T02": {
+      "status": "in-progress",
+      "started_at": "2025-10-09T05:45:00Z",
+      "acs_completed": [],
+      "acs_remaining": ["DEDUPLICATION_LOGIC-AC06", "DEDUPLICATION_LOGIC-AC07", "DEDUPLICATION_LOGIC-AC08", "DEDUPLICATION_LOGIC-AC09"]
     }
   }
 }
