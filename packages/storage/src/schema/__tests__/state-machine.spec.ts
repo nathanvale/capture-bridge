@@ -20,9 +20,7 @@ describe('State Machine Transition Validation', () => {
   beforeEach(async () => {
     // Dynamic import following TestKit pattern
     const stateMachine = await import('../state-machine.js')
-    validateTransition = stateMachine.validateTransition
-    getValidTransitions = stateMachine.getValidTransitions
-    isTerminalState = stateMachine.isTerminalState
+    ;({ validateTransition, getValidTransitions, isTerminalState } = stateMachine)
   })
 
   describe('AC01: Happy path transitions', () => {

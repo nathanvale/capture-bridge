@@ -23,3 +23,11 @@ export {
   verifyPragmas,
   verifyIntegrity,
 } from './schema/index.js'
+
+// State machine module
+export {
+  type CaptureStatus,
+  validateTransition,
+  getValidTransitions,
+  isTerminalState,
+} from './schema/state-machine.js'
