@@ -184,10 +184,11 @@
       "notes": "Completed voice polling with iCloud integration following strict TDD. All 5 ACs satisfied: AC01: Configurable 30s polling interval with startContinuous()/stop()/shutdown() methods. AC02: .m4a file detection with mtime check and sync_state cursor management. AC03: APFS dataless detection via icloudctl with command injection prevention (single-quote escaping). AC04: Sequential download enforcement using for...of loop (ADR-0008, semaphore=1). AC05: Exponential backoff in waitForDownload() (1s→2s→4s→5s cap). 36/36 tests passing. Coverage: 86.16%. Files created: voice-poller.ts (299 lines), voice-poller.test.ts (1273 lines, 36 tests). Implementation includes stub methods for computeFingerprint() and stageCapture() for future ACs. Full pollOnce() integration with scanVoiceMemos(), ensureFileDownloaded(), deduplication check, error handling per file, and sync state updates."
     },
     "CAPTURE_STATE_MACHINE--T03": {
-      "status": "in-progress",
+      "status": "completed",
       "started_at": "2025-10-09T05:35:00Z",
-      "acs_completed": [],
-      "acs_remaining": ["CAPTURE_STATE_MACHINE-AC07"]
+      "completed_at": "2025-10-09T05:40:00Z",
+      "acs_completed": ["CAPTURE_STATE_MACHINE-AC07"],
+      "acs_remaining": []
     }
   }
 }
