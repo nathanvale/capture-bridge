@@ -11,7 +11,7 @@ import type Database from 'better-sqlite3'
  *
  * A capture is eligible for export if:
  * 1. Its status is 'transcribed'
- * 2. It hasn't been successfully exported yet (not in exports_audit with error_flag=0)
+ * 2. It has NOT been exported yet (not in exports_audit)
  *
  * @param captureId - ULID of the capture to check
  * @param db - SQLite database instance
@@ -22,13 +22,12 @@ export const shouldExport = (captureId: string, db: Database.Database): boolean 
     .prepare(
       `
       SELECT COUNT(*) as count
-      FROM captures
-      WHERE id = ?
-        AND status = 'transcribed'
-        AND id NOT IN (
-          SELECT capture_id
-          FROM exports_audit
-          WHERE error_flag = 0
+      FROM captures c
+      WHERE c.id = ?
+        AND c.status = 'transcribed'
+        AND NOT EXISTS (
+          SELECT 1 FROM exports_audit ea
+          WHERE ea.capture_id = c.id
         )
     `
     )
@@ -82,13 +81,13 @@ export const exportToVault = async (
   vaultPath: string
 ): Promise<ExportResult> => {
   try {
-    // Check if should export
+    // Check if should export (status must be 'transcribed')
     if (!shouldExport(captureId, db)) {
       return {
         success: false,
         error: {
-          code: 'ALREADY_EXPORTED',
-          message: 'Capture already exported or not eligible',
+          code: 'NOT_ELIGIBLE',
+          message: 'Capture is not in transcribed status',
         },
       }
     }
@@ -141,7 +140,10 @@ export const exportToVault = async (
       }
     }
 
-    // Insert exports_audit record
+    // Determine mode: duplicate_skip if skipped, initial if actually written
+    const mode = writeResult.skipped ? 'duplicate_skip' : 'initial'
+
+    // Insert exports_audit record (record both initial writes and duplicate skips)
     const auditId = generateULID()
     db.prepare(
       `INSERT INTO exports_audit (id, capture_id, vault_path, hash_at_export, exported_at, mode, error_flag)
@@ -152,14 +154,14 @@ export const exportToVault = async (
       writeResult.export_path,
       capture.content_hash,
       new Date().toISOString(),
-      'initial',
+      mode,
       0
     )
 
     return {
       success: true,
       export_path: writeResult.export_path,
-      mode: 'initial',
+      mode,
     }
   } catch (error) {
     return {
