@@ -294,8 +294,8 @@ export class VoicePoller {
    * @internal Exposed for testing
    */
   private async checkIfDataless(filePath: string): Promise<boolean> {
-    const info = await this.runIcloudCheck(filePath)
-    return info.isDataless
+    const { isDataless } = await this.runIcloudCheck(filePath)
+    return isDataless
   }
 
   /**
@@ -342,8 +342,8 @@ export class VoicePoller {
    * @internal
    */
   private async checkForConflicts(filePath: string): Promise<boolean> {
-    const info = await this.runIcloudCheck(filePath)
-    return info.hasConflicts
+    const { hasConflicts } = await this.runIcloudCheck(filePath)
+    return hasConflicts
   }
 
   /**
@@ -370,7 +370,7 @@ export class VoicePoller {
     let attempts = 0
 
     while (Date.now() - startTime < maxWaitMs) {
-      const isDataless = await this.checkIfDataless(filePath)
+      const { isDataless } = await this.runIcloudCheck(filePath)
 
       if (!isDataless) {
         return // Download complete
@@ -396,26 +396,26 @@ export class VoicePoller {
    * @internal Exposed for testing
    */
   private async ensureFileDownloaded(filePath: string): Promise<void> {
-    const isDataless = await this.checkIfDataless(filePath)
+    // Initial status check
+    const first = await this.runIcloudCheck(filePath)
 
-    if (isDataless) {
+    if (first.isDataless) {
       await this.triggerDownload(filePath)
       await this.waitForDownload(filePath)
     }
 
-    // After ensuring file is downloaded, check for conflicts
-    const hasConflicts = await this.checkForConflicts(filePath)
-    if (hasConflicts) {
+    // Check conflicts after ensuring availability
+    const conflictStatus = await this.runIcloudCheck(filePath)
+    if (conflictStatus.hasConflicts) {
       throw new Error(`iCloud conflict detected: ${filePath} - skipping`)
     }
   }
 
   /**
    * Run a single icloudctl check and parse both dataless and conflict flags
+   * @internal Exposed for testing
    */
-  private async runIcloudCheck(
-    filePath: string
-  ): Promise<{ isDataless: boolean; hasConflicts: boolean }> {
+  async runIcloudCheck(filePath: string): Promise<{ isDataless: boolean; hasConflicts: boolean }> {
     // Use execFile to prevent shell injection - arguments passed directly to binary
     return await this.executeWithRetry(async () => {
       const { stdout } = await execFileAsync('icloudctl', ['check', filePath])

@@ -230,7 +230,50 @@ Proceed with ${ac.mode} cycle.`
 
 3. Wait for code-implementer completion report
 
-4. If success:
+4. **MANDATORY: Verify Test Success Before Proceeding**
+
+   **Invoke test-runner agent** to execute tests and analyze results:
+
+   ```typescript
+   Task({
+     subagent_type: "test-runner",
+     description: "Verify AC${ac.number} tests",
+     prompt: `Run tests for ${affected_package} and analyze results for AC${ac.number}.
+
+**Context**: Just completed implementation of ${ac.id}: ${ac.text}
+
+**Package**: packages/${affected_package}
+
+**Expected**: All tests passing, coverage ≥80% (High risk task)
+
+**Instructions**:
+1. Execute test suite using optimized test runner
+2. Capture comprehensive logs
+3. Analyze for failures, errors, or coverage gaps
+4. Report surface-level summary with actionable insights
+
+If failures detected, provide exact error details for code-implementer to fix.`
+   })
+   ```
+
+   **Wait for test-runner completion report**
+
+   **Success Criteria** (from test-runner report):
+   - ✅ All tests passing (X/X shown in report)
+   - ✅ No test failures or errors
+   - ✅ Coverage thresholds met (if High risk: ≥80%)
+   - ✅ TypeScript compilation successful
+
+   **BLOCKING CHECKPOINT - If test-runner reports ANY failures**:
+   - ❌ STOP - Do NOT mark AC as completed
+   - ❌ Do NOT proceed to next AC
+   - ❌ Do NOT commit code
+   - 🔧 Extract failure details from test-runner report
+   - 🔧 Re-invoke code-implementer with: `**TEST FAILURES DETECTED - Fix required before proceeding**\n\n${test_runner_failure_summary}`
+   - 🔧 Continue Red-Green-Refactor cycle until test-runner reports all green
+   - ⚠️  NEVER proceed to next AC without green test-runner report
+
+5. If success (ONLY after test verification passes):
    ```bash
    git add ${changed_files}
    git commit -m "${commit_type}(${task_id}): ${ac_summary} [${ac.id}]
@@ -238,11 +281,11 @@ Proceed with ${ac.mode} cycle.`
    Co-Authored-By: Claude <noreply@anthropic.com>"
    ```
 
-5. Update task-state.json (add to `acs_completed`)
+6. Update task-state.json (add to `acs_completed`)
 
-6. Mark AC as `completed` in TodoWrite
+7. Mark AC as `completed` in TodoWrite
 
-7. Move to next AC
+8. Move to next AC
 
 #### Phase 6: Complete Task & Create PR
 
