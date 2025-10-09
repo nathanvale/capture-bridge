@@ -895,15 +895,15 @@ Target: **< 50ms p95** for 1KB markdown file
 
 **Breakdown:**
 
-| Operation           | Target     | Justification                        |
-| ------------------- | ---------- | ------------------------------------ |
-| Path resolution     | < 1ms      | String concatenation only            |
-| Collision detection | < 5ms      | Single fs.existsSync + optional read |
-| Temp file write     | < 10ms     | Sequential write, no buffering       |
-| **fsync call**      | < 15ms     | **Critical:** Flush OS cache to disk |
-| Atomic rename       | < 5ms      | POSIX syscall, atomic on same FS     |
-| Audit log write     | < 10ms     | Single SQLite INSERT                 |
-| **Total**           | **< 46ms** | 4ms buffer for variability           |
+| Operation           | Target     | Justification                             |
+| ------------------- | ---------- | ----------------------------------------- |
+| Path resolution     | < 1ms      | String concatenation only                 |
+| Collision detection | < 5ms      | Async file read + hash comparison         |
+| Temp file write     | < 10ms     | Sequential write, no buffering            |
+| **fsync call**      | < 15ms     | **Critical:** Flush OS cache to disk      |
+| Atomic rename       | < 5ms      | POSIX syscall, atomic on same FS          |
+| Audit log write     | < 10ms     | Single SQLite INSERT                      |
+| **Total**           | **< 46ms** | 4ms buffer for variability                |
 
 **Throughput Constraints:**
 
@@ -973,22 +973,22 @@ adhd doctor
 
 1. **Vault Path Exists:**
    - Severity: CRITICAL
-   - Check: `fs.exists(vault_path)`
+   - Check: `await fs.access(vault_path, fs.constants.F_OK)`
    - Remediation: "Configure vault path: `adhd config set vault_path /path/to/vault`"
 
 2. **Vault Writable:**
    - Severity: CRITICAL
-   - Check: `fs.access(vault_path, fs.constants.W_OK)`
+   - Check: `await fs.access(vault_path, fs.constants.W_OK)`
    - Remediation: "Check vault permissions: `chmod u+w /path/to/vault`"
 
 3. **Inbox Directory Exists:**
    - Severity: WARNING
-   - Check: `fs.exists(vault_path/inbox)`
+   - Check: `await fs.access(path.join(vault_path, 'inbox'), fs.constants.F_OK)`
    - Remediation: "Run export to create inbox/ directory (auto-created on first export)"
 
 4. **Trash Directory Exists:**
    - Severity: WARNING
-   - Check: `fs.exists(vault_path/.trash)`
+   - Check: `await fs.access(path.join(vault_path, '.trash'), fs.constants.F_OK)`
    - Remediation: "Run export to create .trash/ directory (auto-created on first export)"
 
 5. **Orphaned Temp Files:**
