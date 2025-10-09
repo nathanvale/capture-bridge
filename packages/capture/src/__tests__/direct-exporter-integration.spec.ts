@@ -232,4 +232,61 @@ describe('Direct Exporter Integration [AC03+AC04]', () => {
     }
     expect(afterFailedExport.status).toBe('transcribed')
   })
+
+  it('[AC06] should export in less than 1 second', async () => {
+    // Setup temp vault directory
+    const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+    const tempDir = await createTempDirectory()
+    tempDirs.push(tempDir)
+    const vaultPath = tempDir.path
+
+    // Setup database
+    const db = new Database(':memory:')
+    databases.push(db)
+
+    // Create schema
+    db.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        status TEXT NOT NULL,
+        raw_content TEXT,
+        content_hash TEXT,
+        meta_json TEXT DEFAULT '{}',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    db.exec(`
+      CREATE TABLE exports_audit (
+        id TEXT PRIMARY KEY,
+        capture_id TEXT NOT NULL,
+        vault_path TEXT NOT NULL,
+        hash_at_export TEXT,
+        exported_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        mode TEXT,
+        error_flag INTEGER DEFAULT 0,
+        FOREIGN KEY (capture_id) REFERENCES captures(id) ON DELETE CASCADE
+      )
+    `)
+
+    // Insert test capture
+    const captureId = '01HZVM8YWRQT5J3M3K7YPTXFZ4'
+    db.prepare(
+      `INSERT INTO captures (id, source, status, raw_content, content_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(captureId, 'voice', 'transcribed', 'Test content for performance', 'hash456', '2025-10-10T00:00:00.000Z')
+
+    // Measure export time
+    const { exportToVault } = await import('../export/direct-exporter.js')
+    const startTime = performance.now()
+    const result = await exportToVault(captureId, db, vaultPath)
+    const endTime = performance.now()
+    const durationMs = endTime - startTime
+
+    // AC06: Verify export completed successfully
+    expect(result.success).toBe(true)
+
+    // AC06: Verify export time < 1000ms (1 second)
+    expect(durationMs).toBeLessThan(1000)
+  })
 })

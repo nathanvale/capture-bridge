@@ -258,9 +258,8 @@
     "DIRECT_EXPORT_VOICE--T02": {
       "status": "in-progress",
       "started_at": "2025-10-10T00:00:00Z",
-      "acs_completed": [],
+      "acs_completed": ["DIRECT_EXPORT_VOICE-AC05"],
       "acs_remaining": [
-        "DIRECT_EXPORT_VOICE-AC05",
         "DIRECT_EXPORT_VOICE-AC06",
         "DIRECT_EXPORT_VOICE-AC07",
         "DIRECT_EXPORT_VOICE-AC08"
