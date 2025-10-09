@@ -256,13 +256,17 @@
       "notes": "Completed direct export implementation following strict TDD. AC01: Export trigger logic (shouldExport) checking status='transcribed' and not in exports_audit. AC02: Markdown formatter with frontmatter (id, source, captured_at, content_hash). AC03: Atomic write using obsidian-bridge's writeAtomic() to inbox/{capture.id}.md. AC04: exports_audit insertion with ULID generation, mode='initial', error_flag=0. 4/4 tests passing. Files created: direct-exporter.ts, direct-export-trigger.spec.ts, markdown-formatter.ts, markdown-formatter.spec.ts, direct-exporter-integration.spec.ts. Quality fixes applied: arrow functions, nullish coalescing, obsidian-bridge integration. Bundling configuration fixed in obsidian-bridge (bundle: true)."
     },
     "DIRECT_EXPORT_VOICE--T02": {
-      "status": "in-progress",
+      "status": "completed",
       "started_at": "2025-10-10T00:00:00Z",
-      "acs_completed": ["DIRECT_EXPORT_VOICE-AC05", "DIRECT_EXPORT_VOICE-AC06"],
-      "acs_remaining": [
+      "completed_at": "2025-10-10T01:00:00Z",
+      "acs_completed": [
+        "DIRECT_EXPORT_VOICE-AC05",
+        "DIRECT_EXPORT_VOICE-AC06",
         "DIRECT_EXPORT_VOICE-AC07",
         "DIRECT_EXPORT_VOICE-AC08"
-      ]
+      ],
+      "acs_remaining": [],
+      "notes": "Completed direct export enhancements following strict TDD. AC05: Status update to 'exported' after successful export. AC06: Performance validation < 1s. AC07: Zero partial writes verified with crash testing. AC08: export_write_ms histogram metric emission. All 6/6 tests passing in direct-exporter-integration.spec.ts. Fixed foundation package build: added metrics/index entry to tsup.config.ts, updated src/index.ts to export hash utilities from bundled hash/index.js. Implementation uses MetricsClient.histogram() to record export duration when metrics client provided (optional parameter)."
     }
   }
 }

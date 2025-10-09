@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 
+import type { MetricsClient } from '@capture-bridge/foundation'
 import { writeAtomic } from '@capture-bridge/obsidian-bridge'
 
 import { formatMarkdown } from './markdown-formatter.js'
@@ -73,13 +74,17 @@ export interface ExportResult {
  * @param captureId - ULID of capture to export
  * @param db - SQLite database instance
  * @param vaultPath - Absolute path to Obsidian vault root
+ * @param metricsClient - Optional metrics client for recording export duration
  * @returns Export result with success status
  */
 export const exportToVault = async (
   captureId: string,
   db: Database.Database,
-  vaultPath: string
+  vaultPath: string,
+  metricsClient?: MetricsClient
 ): Promise<ExportResult> => {
+  const startTime = performance.now()
+
   try {
     // Check if should export (status must be 'transcribed')
     if (!shouldExport(captureId, db)) {
@@ -160,6 +165,12 @@ export const exportToVault = async (
 
     // AC05: Update capture status to 'exported' after successful export
     db.prepare(`UPDATE captures SET status = ? WHERE id = ?`).run('exported', captureId)
+
+    // AC08: Record export duration metric if metrics client provided
+    if (metricsClient) {
+      const durationMs = performance.now() - startTime
+      metricsClient.histogram('export_write_ms', durationMs)
+    }
 
     return {
       success: true,

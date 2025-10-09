@@ -366,4 +366,89 @@ describe('Direct Exporter Integration [AC03+AC04]', () => {
     // - Rapid sequential writes without temp files
     // - No corruption of existing files
   })
+
+  it('[AC08] should emit export_write_ms histogram metric when metrics enabled', async () => {
+    // Setup temp vault and metrics directories
+    const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+    const tempDir = await createTempDirectory()
+    const metricsDir = await createTempDirectory()
+    tempDirs.push(tempDir, metricsDir)
+    const vaultPath = tempDir.path
+
+    // Setup database
+    const db = new Database(':memory:')
+    databases.push(db)
+
+    db.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        status TEXT NOT NULL,
+        raw_content TEXT,
+        content_hash TEXT,
+        meta_json TEXT DEFAULT '{}',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    db.exec(`
+      CREATE TABLE exports_audit (
+        id TEXT PRIMARY KEY,
+        capture_id TEXT NOT NULL,
+        vault_path TEXT NOT NULL,
+        hash_at_export TEXT,
+        exported_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        mode TEXT,
+        error_flag INTEGER DEFAULT 0,
+        FOREIGN KEY (capture_id) REFERENCES captures(id) ON DELETE CASCADE
+      )
+    `)
+
+    // Insert test capture
+    const captureId = '01HZVM8YWRQT5J3M3K7YPTXFZ6'
+    db.prepare(
+      `INSERT INTO captures (id, source, status, raw_content, content_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(captureId, 'voice', 'transcribed', 'Test metrics content', 'hashABC', '2025-10-10T00:00:00.000Z')
+
+    // Create metrics client
+    const { MetricsClient } = await import('@capture-bridge/foundation')
+    const metricsClient = new MetricsClient({
+      enabled: true,
+      metricsDir: metricsDir.path,
+    })
+
+    // Export with metrics
+    const { exportToVault } = await import('../export/direct-exporter.js')
+    const result = await exportToVault(captureId, db, vaultPath, metricsClient)
+
+    expect(result.success).toBe(true)
+
+    // Flush metrics
+    await metricsClient.flush()
+
+    // AC08: Verify export_write_ms metric was emitted
+    const fs = await import('node:fs/promises')
+    const path = await import('node:path')
+    const files = await fs.readdir(metricsDir.path)
+    const metricsFiles = files.filter((f) => f.endsWith('.ndjson'))
+
+    expect(metricsFiles.length).toBeGreaterThan(0)
+
+    const firstFile = metricsFiles[0]
+    if (!firstFile) throw new Error('No metrics file found')
+
+    const metricsContent = await fs.readFile(path.join(metricsDir.path, firstFile), 'utf-8')
+    const metrics = metricsContent
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line))
+
+    const exportMetric = metrics.find((m: any) => m.metric === 'export_write_ms')
+    expect(exportMetric).toBeDefined()
+    expect(exportMetric.type).toBe('histogram')
+    expect(exportMetric.value).toBeGreaterThan(0)
+
+    // Cleanup
+    await metricsClient.shutdown()
+  })
 })

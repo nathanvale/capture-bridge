@@ -9,12 +9,14 @@ export const getFoundationVersion = (): string => {
   return foundationVersion
 }
 
-// Export metrics infrastructure
+// Export metrics infrastructure (bundled)
 export { MetricsClient } from './metrics/index.js'
 export type { MetricEvent, MetricsConfig, MetricTags, MetricType } from './metrics/index.js'
 
-// Hash utilities (CONTENT_HASH_IMPLEMENTATION--T01)
-export { normalizeText } from './hash/text-normalization.js'
-export { computeSHA256 } from './hash/sha256-hash.js'
-export { computeAudioFingerprint } from './hash/audio-fingerprint.js'
-export { computeEmailHash } from './hash/email.js'
+// Hash utilities (CONTENT_HASH_IMPLEMENTATION--T01) - exported via bundled hash/index
+export {
+  normalizeText,
+  computeSHA256,
+  computeAudioFingerprint,
+  computeEmailHash,
+} from './hash/index.js'
