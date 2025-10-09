@@ -728,6 +728,16 @@ async function checkCollision(
 | **ENETDOWN** | Network mount     | Yes         | Retry with backoff (Phase 2)                   |
 | **EUNKNOWN** | Unknown error     | No          | Log and fail                                   |
 
+**Phase 1 vs Phase 2 Retry Semantics:**
+
+Per [ADR-0013 (MPPP Direct Export Pattern)](../../adr/0013-mppp-direct-export-pattern.md), Phase 1 uses **fail-fast semantics** with no automatic retry logic:
+
+- **Phase 1 (MPPP)**: All export failures return immediately with `success: false`. The `recoverable` flag indicates whether the error **could** be retried in Phase 2, but **no automatic retry happens in Phase 1**. Manual intervention required for all failures.
+
+- **Phase 2 (Future)**: Recoverable errors (EACCES, ENETDOWN) will be automatically retried with exponential backoff. Non-recoverable errors (ENOSPC, EROFS) will still halt processing immediately.
+
+**Rationale**: MPPP scope prioritizes simplicity and immediate feedback over automated retry complexity. The `recoverable` flag is forward-looking metadata that Phase 2 error handlers will use to determine retry eligibility.
+
 **Error Handling Flow:**
 
 ```typescript
