@@ -170,6 +170,30 @@ task-manager → code-implementer
 
 **Historical Note**: `implementation-orchestrator.md` archived on 2025-10-08. Functionality merged into task-manager v4.0.0.
 
+**⚠️ Platform Issue - code-implementer Agent Interruption (2025-10-10)**:
+
+**Issue**: `code-implementer` agent type gets `[Request interrupted by user]` errors when spawned via Task tool, blocking the `/pm start` workflow.
+
+**Workaround**: task-manager now uses `general-purpose` agent type with embedded TDD workflow instead of `code-implementer`. This preserves all TDD discipline and Wallaby MCP tool access while avoiding the interruption bug.
+
+**What Changed**:
+- task-manager.md lines 223-500: Changed from `code-implementer` to `general-purpose` with full embedded TDD instructions
+- Embedded workflow includes: RED-GREEN-REFACTOR phases, Wallaby MCP tool usage, TestKit patterns, security/memory tests
+- Token cost: +1,200 tokens per delegation (necessary trade-off to unblock workflow)
+
+**What's Preserved**:
+- ✅ Wallaby MCP tools for real-time test feedback (validated working)
+- ✅ Complete TDD discipline (RED → GREEN → REFACTOR)
+- ✅ TestKit patterns and 5-step cleanup
+- ✅ Risk-based coverage requirements
+- ✅ Security and memory leak testing
+
+**Reference Docs**:
+- `.claude/reference/task-manager-general-purpose-patch.md` - Detailed patch documentation
+- `.claude/reference/general-purpose-tdd-template.md` - Template for TDD delegations
+
+**Revert Path**: When platform fixes code-implementer interruption, change task-manager.md line 223 back to `code-implementer` and restore short delegation prompt.
+
 ---
 
 ## Code Quality & Type Safety

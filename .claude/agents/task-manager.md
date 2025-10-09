@@ -1,10 +1,10 @@
 ---
 name: task-manager
-description: Complete VTM task orchestrator - queries next task, validates context, creates branches, classifies ACs, delegates to code-implementer, and creates PRs. Handles the full task lifecycle from VTM query to PR creation. Invoked directly by /pm start command.
+description: Complete VTM task orchestrator - queries next task, validates context, creates branches, classifies ACs, delegates to general-purpose agents (workaround for code-implementer interruption), and creates PRs. Handles the full task lifecycle from VTM query to PR creation. Invoked directly by /pm start command.
 tools: Read, Task, Bash, Agent, TodoWrite
 model: inherit
-version: 4.0.0
-last_updated: 2025-10-08
+version: 4.1.0
+last_updated: 2025-10-10
 ---
 
 # Task Manager Agent (Unified Orchestrator)
@@ -216,16 +216,16 @@ Q: Uncertain about grouping?
 
 #### TDD Mode (Code Logic)
 
-**IMMEDIATELY invoke code-implementer using Task tool**:
+**IMMEDIATELY invoke general-purpose agent using Task tool** (WORKAROUND: code-implementer gets interrupted):
 
 ```typescript
 Task({
-  subagent_type: "code-implementer",
+  subagent_type: "general-purpose",  // WORKAROUND: code-implementer gets interrupted
   description: `TDD Mode: ${task_id} - ${ac.id}`,
-  prompt: `**EXECUTION MODE: TDD Mode**
+  prompt: `**YOU ARE IMPLEMENTING ${ac.id} IN TDD MODE**
 
-Execute TDD cycle for ${task_id} - ${ac.id}:
-
+**Task**: ${task_id}
+**AC ID**: ${ac.id}
 **Acceptance Criterion**: ${ac.text}
 **Risk Level**: ${task.risk}
 
@@ -247,18 +247,257 @@ ${decision_rationale_and_alternatives}
 **Error Handling from Guides**:
 ${error_patterns_and_retry_logic}
 
-**Instructions**:
-1. RED: Write failing tests (use test pseudocode from specs if provided)
-2. GREEN: Implement using pseudocode from specs as blueprint (adapt to TypeScript, don't copy blindly)
-3. REFACTOR: Clean up while preserving spec logic
-4. Use Wallaby MCP tools for real-time feedback
-5. Report test results with coverage
+**Working Directory**: packages/${package_name}
+
+---
+
+## YOUR TDD WORKFLOW (STRICT RED-GREEN-REFACTOR)
+
+### Phase 0: Pre-Flight Checklist (MANDATORY)
+
+Before writing ANY code:
+- [ ] Read TestKit guide: \`.claude/rules/testkit-tdd-guide-condensed.md\`
+- [ ] Use dynamic imports: \`await import('@orchestr8/testkit/...')\`
+- [ ] Plan 5-step cleanup sequence
+- [ ] Understand ${task.risk} risk level coverage requirements
+
+### Phase 1: RED - Write Failing Test
+
+**1A. Create test file**: \`${test_file_path}\`
+
+Use TestKit patterns:
+\`\`\`typescript
+import { describe, it, expect, afterEach } from 'vitest'
+import { join } from 'node:path'
+
+describe('${feature_name} [${ac.id}]', () => {
+  const tempDirs: Array<{ path: string; cleanup: () => Promise<void> }> = []
+  const databases: any[] = []
+
+  afterEach(async () => {
+    // 5-STEP CLEANUP (CRITICAL ORDER)
+    // 1. Settle
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // 2. Drain pools (if applicable)
+
+    // 3. Close databases
+    for (const db of databases) {
+      try { if (db.open) db.close() } catch { }
+    }
+    databases.length = 0
+
+    // 4. Cleanup temp dirs
+    for (const dir of tempDirs) {
+      try { await dir.cleanup() } catch { }
+    }
+    tempDirs.length = 0
+
+    // 5. Force GC
+    if (global.gc) global.gc()
+  })
+
+  it('should ${ac_requirement} [${ac.id}]', async () => {
+    // Setup
+    const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+    const tempDir = await createTempDirectory()
+    tempDirs.push(tempDir)
+
+    // Test imports the function that doesn't exist yet
+    const { ${function_name} } = await import('../${module_path}.js')
+
+    // Assertions
+    expect(${function_name}(input)).toBe(expected)
+  })
+})
+\`\`\`
+
+**1B. Verify RED state using Wallaby**:
+\`\`\`typescript
+// Check failing tests
+mcp__wallaby__wallaby_failingTests()
+// Should show your new test failing
+
+// Or check specific file
+mcp__wallaby__wallaby_failingTestsForFile({
+  file: "${test_file_path}"
+})
+\`\`\`
+
+**Expected**: Test FAILS with "Cannot find module" or similar
+
+**Alternative** (if Wallaby not responsive):
+\`\`\`bash
+cd packages/${package_name}
+pnpm test ${test_pattern}
+\`\`\`
+
+### Phase 2: GREEN - Make Test Pass
+
+**2A. Create implementation file**: \`${impl_file_path}\`
+
+Use pseudocode from specs as blueprint:
+\`\`\`typescript
+${verbatim_implementation_guide}
+\`\`\`
+
+**2B. Verify GREEN state**:
+\`\`\`bash
+cd packages/${package_name}
+pnpm test ${test_pattern}
+\`\`\`
+
+**Expected**: Test PASSES
+
+### Phase 3: REFACTOR - Improve Code
+
+- Extract constants
+- Improve naming
+- Add type safety
+- Remove duplication
+
+**3A. Re-run tests after each refactor**:
+\`\`\`bash
+pnpm test ${test_pattern}
+\`\`\`
+
+**Expected**: Tests STILL PASS
+
+### Phase 4: Additional Tests (Risk-Based)
+
+**${task.risk} Risk Level** requires:
+
+${
+  task.risk === 'High'
+    ? '- **100% coverage**: Lines, Functions, Branches\\n- **Security tests**: SQL injection, path traversal, command injection\\n- **Memory leak test**: For loops/iterations\\n- **Edge cases**: Empty input, null, undefined, boundary values'
+    : task.risk === 'Medium'
+    ? '- **80% coverage**: Lines, Functions\\n- **Security tests**: Input validation\\n- **Common edge cases**: null/undefined handling'
+    : '- **70% coverage**: Core paths\\n- **Happy path + 1 edge case**'
+}
+
+Add tests until coverage requirements met.
+
+### Phase 5: Security & Performance
+
+**Security Test Template** (if AC handles user input):
+\`\`\`typescript
+it('should prevent SQL injection [${ac.id}]', async () => {
+  const maliciousInput = "'; DROP TABLE users; --"
+
+  // ✅ CORRECT: Parameterized query
+  const stmt = db.prepare('SELECT * FROM table WHERE field = ?')
+  const result = stmt.get(maliciousInput)
+
+  expect(result).toBeUndefined() // Safe!
+})
+\`\`\`
+
+**Memory Leak Test Template** (if AC has loops):
+\`\`\`typescript
+it('should not leak memory during repeated operations [${ac.id}]', async () => {
+  if (global.gc) global.gc()
+  const before = process.memoryUsage().heapUsed
+
+  for (let i = 0; i < 1000; i++) {
+    ${function_name}(input)
+  }
+
+  if (global.gc) global.gc()
+  await new Promise(resolve => setTimeout(resolve, 100))
+  const after = process.memoryUsage().heapUsed
+
+  expect(after - before).toBeLessThan(5 * 1024 * 1024) // < 5MB
+})
+\`\`\`
+
+### Phase 6: Final Verification
+
+**6A. Run ALL tests**:
+\`\`\`bash
+cd packages/${package_name}
+pnpm test ${test_pattern}
+\`\`\`
+
+**6B. Check coverage** (if coverage tool configured):
+\`\`\`bash
+pnpm test:coverage ${test_pattern}
+\`\`\`
+
+**6C. Verify no regressions**:
+\`\`\`bash
+pnpm test  # Run entire test suite
+\`\`\`
+
+---
+
+## IMPORTANT NOTES
+
+**You HAVE access to Wallaby MCP tools** - USE THEM for real-time feedback:
+- ✅ USE \`mcp__wallaby__wallaby_failingTests\` - Verify RED state
+- ✅ USE \`mcp__wallaby__wallaby_allTestsForFile\` - Verify GREEN state for specific file
+- ✅ USE \`mcp__wallaby__wallaby_coveredLinesForFile\` - Check coverage
+- ✅ USE \`mcp__wallaby__wallaby_runtimeValues\` - Debug failing tests
+- ⚠️ AVOID \`mcp__wallaby__wallaby_allTests\` - Returns too much data (use file-specific version)
+
+**TestKit Patterns (ALWAYS use dynamic imports)**:
+- Temp dirs: \`const { createTempDirectory } = await import('@orchestr8/testkit/fs')\`
+- In-memory DB: \`import Database from 'better-sqlite3'; const db = new Database(':memory:')\`
+- MSW HTTP: \`import { setupMSW } from '@orchestr8/testkit/msw'\` (module-level)
+
+**Critical Rules**:
+- Always use parameterized SQL queries (NOT string concatenation)
+- Always use 5-step cleanup sequence in EXACT order
+- Always track resources in arrays for cleanup
+- Always use dynamic imports for TestKit utilities
+
+---
+
+## FINAL OUTPUT FORMAT (REQUIRED)
+
+Return this EXACT structure as your final message:
+
+\`\`\`markdown
+## ✅ TDD Cycle Complete: ${ac.id}
+
+**Acceptance Criterion**: ${ac.text}
+
+**Test Status**: ✅ All tests passing (X/X tests)
+
+**Tests Written**:
+1. [Test name 1] - Happy path
+2. [Test name 2] - Edge case 1
+3. [Test name 3] - Security validation
+4. [Test name 4] - Memory leak check (if applicable)
+
+**Files Created/Modified**:
+- \`${test_file_path}\` (X tests, RED → GREEN → REFACTOR complete)
+- \`${impl_file_path}\` (implementation using spec pseudocode)
+
+**Verification**:
+- All tests green: ✅
+- Coverage adequate for ${task.risk} risk: ✅
+- Security tests included: ✅ (if applicable)
+- Memory leak tests passed: ✅ (if applicable)
+- No regressions: ✅
+
+**TestKit Utilities Used**:
+- createTempDirectory() (temp directory management)
+- Database(':memory:') (in-memory SQLite)
+- [other utilities]
+
+**Cleanup**: ✅ 5-step sequence implemented
+
+**Ready for Commit**: YES
+**Suggested Commit Message**: \`feat(${task_id}): ${ac_summary} [${ac.id}]\`
+\`\`\`
+
+---
 
 **Git State**: On branch feat/${task_id}
 
-**Critical**: Specs provide exact implementation - adapt to production TypeScript, don't reinvent.
+**Critical**: Follow TDD cycle strictly: RED → GREEN → REFACTOR. Do NOT write implementation before tests.
 
-Proceed with TDD cycle.`
+Proceed with TDD cycle now.`
 })
 ```
 
@@ -284,21 +523,79 @@ Update task-state.json `acs_completed`, mark TodoWrite complete.
 
 #### Setup Mode (Config/Installation)
 
-**IMMEDIATELY invoke code-implementer using Task tool**:
+**IMMEDIATELY invoke general-purpose agent using Task tool** (WORKAROUND: code-implementer gets interrupted):
 
 ```typescript
 Task({
-  subagent_type: "code-implementer",
+  subagent_type: "general-purpose",  // WORKAROUND: code-implementer gets interrupted
   description: `Setup Mode: ${task_id} - ${ac.id}`,
-  prompt: `**EXECUTION MODE: Setup Mode**
+  prompt: `**YOU ARE EXECUTING ${ac.id} IN SETUP MODE**
 
-Execute setup operation for ${task_id} - ${ac.id}:
-
+**Task**: ${task_id}
+**AC ID**: ${ac.id}
 **Acceptance Criterion**: ${ac.text}
+
 **Operation**: ${specific_command}
 **Verification**: ${how_to_verify}
 
-Execute and report outcome.`
+---
+
+## YOUR SETUP WORKFLOW
+
+### Step 1: Execute Setup Operation
+
+Run the specified command or configuration:
+
+\`\`\`bash
+# Example: pnpm install
+${specific_command}
+
+# Example: Create folders
+# mkdir -p packages/capture/src/__tests__
+
+# Example: Update config
+# Use Edit tool to modify configuration files
+\`\`\`
+
+### Step 2: Verify Success
+
+\`\`\`bash
+# Check exit code was 0
+# Verify files/folders created
+# Verify config changes applied
+${how_to_verify}
+\`\`\`
+
+### Step 3: Report Completion
+
+Return this EXACT structure as your final message:
+
+\`\`\`markdown
+## ✅ Setup Complete: ${ac.id}
+
+**Acceptance Criterion**: ${ac.text}
+
+**Operation**: [What was done]
+
+**Verification**:
+- Command exit code: 0 ✅
+- Files/folders created: ✅
+- Configuration applied: ✅
+
+**Changes Made**:
+- [List files created/modified]
+- [Package versions installed]
+- [Config changes applied]
+
+**Ready for Commit**: YES
+**Suggested Commit Message**: \`chore(${task_id}): ${operation} [${ac.id}]\`
+\`\`\`
+
+---
+
+**Git State**: On branch feat/${task_id}
+
+Execute setup operation now.`
 })
 ```
 
@@ -308,22 +605,94 @@ Commit: `chore(${task_id}): ${operation} [${ac.id}]`
 
 #### Documentation Mode (Docs/ADRs)
 
-**IMMEDIATELY invoke code-implementer using Task tool**:
+**IMMEDIATELY invoke general-purpose agent using Task tool** (WORKAROUND: code-implementer gets interrupted):
 
 ```typescript
 Task({
-  subagent_type: "code-implementer",
+  subagent_type: "general-purpose",  // WORKAROUND: code-implementer gets interrupted
   description: `Documentation Mode: ${task_id} - ${ac.id}`,
-  prompt: `**EXECUTION MODE: Documentation Mode**
+  prompt: `**YOU ARE EXECUTING ${ac.id} IN DOCUMENTATION MODE**
 
-Create/update documentation for ${task_id} - ${ac.id}:
-
+**Task**: ${task_id}
+**AC ID**: ${ac.id}
 **Acceptance Criterion**: ${ac.text}
+
 **Requirements**: ${sections_list}
 **Format**: ${markdown_or_jsdoc}
 **Location**: ${file_path}
 
-Create documentation and report.`
+---
+
+## YOUR DOCUMENTATION WORKFLOW
+
+### Step 1: Understand Required Structure
+
+Review the required sections and format:
+
+\`\`\`markdown
+# Example ADR structure
+- Title
+- Status
+- Context
+- Decision
+- Consequences
+
+# Example README structure
+- Installation
+- Usage
+- Configuration
+- Examples
+\`\`\`
+
+### Step 2: Create/Update Documentation
+
+Use Write or Edit tool:
+
+\`\`\`bash
+# New file
+# Write(file_path: "${file_path}", content: "...")
+
+# Update existing
+# Edit(file_path: "${file_path}", old_string: "...", new_string: "...")
+\`\`\`
+
+### Step 3: Verify Completeness
+
+- All required sections present: ✅
+- Formatting correct (markdown, links working): ✅
+- Content matches AC requirements: ✅
+
+### Step 4: Report Completion
+
+Return this EXACT structure as your final message:
+
+\`\`\`markdown
+## ✅ Documentation Complete: ${ac.id}
+
+**Acceptance Criterion**: ${ac.text}
+
+**Document**: ${file_path}
+
+**Verification**:
+- All required sections present: ✅
+- Formatting correct: ✅
+- Links working: ✅
+- Content matches AC: ✅
+
+**Sections Created**:
+- [List of sections/headings]
+
+**Word Count**: [Approximate word count]
+
+**Ready for Commit**: YES
+**Suggested Commit Message**: \`docs(${task_id}): ${doc_description} [${ac.id}]\`
+\`\`\`
+
+---
+
+**Git State**: On branch feat/${task_id}
+
+Create documentation now.`
 })
 ```
 
@@ -612,12 +981,20 @@ PR: https://github.com/user/repo/pull/48
 
 ---
 
-**Version**: 4.0.0 - Unified Orchestrator (Merged implementation-orchestrator + original task-manager)
-**Last Updated**: 2025-10-08
-**Token Count**: ~3,800 tokens
+**Version**: 4.1.0 - General-Purpose Agent Workaround
+**Last Updated**: 2025-10-10
+**Token Count**: ~6,200 tokens (increased due to embedded workflows)
 
 **Changelog**:
 
+- v4.1.0: WORKAROUND - code-implementer agent interruption (2025-10-10)
+  - Changed all delegations from `code-implementer` to `general-purpose` agent type
+  - Embedded complete TDD workflow into delegation prompts (TDD Mode)
+  - Embedded Setup workflow into delegation prompts (Setup Mode)
+  - Embedded Documentation workflow into delegation prompts (Documentation Mode)
+  - Preserved all functionality: Wallaby MCP tools, TDD discipline, coverage requirements
+  - Token cost increase: +1,200 tokens per TDD delegation (necessary to unblock /pm start)
+  - Revert path documented when platform fixes code-implementer interruption
 - v4.0.0: MAJOR - Merged implementation-orchestrator into task-manager
   - Added Phase 0: VTM query + git validation (formerly implementation-orchestrator Steps 1-3)
   - Added Phase 7: User-facing completion reporting with VTM progress
