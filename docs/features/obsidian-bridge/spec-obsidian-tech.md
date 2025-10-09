@@ -252,6 +252,11 @@ content_hash: { SHA-256 hex }
            │
            ▼
 ┌──────────────────────┐
+│ fs.fsync(parent_dir) │  ← **CRITICAL**: Persist directory entry after rename
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
 │ recordAudit()        │  ← Insert into exports_audit table
 └──────────┬───────────┘
            │
@@ -268,12 +273,21 @@ content_hash: { SHA-256 hex }
 1. **Write to temp file** (`fs.writeFile(temp_path, content)`)
 2. **Force fsync** (`fs.fsync(temp_fd)`) ← **MUST happen before rename**
 3. **Atomic rename** (`fs.rename(temp_path, export_path)`)
+4. **Directory fsync** (`fs.fsync(parent_dir_fd)`) ← **MUST happen after rename** to persist directory entry
 
 **Why fsync Before Rename**:
 
 - Without fsync: Rename succeeds, but content may still be in OS cache
 - Crash scenario: File appears in vault but is empty or truncated
 - fsync guarantee: Content is on disk BEFORE file becomes visible to Obsidian
+
+**Why Directory fsync After Rename**:
+
+- On POSIX filesystems, `rename()` modifies the parent directory's metadata (adds new entry, removes old entry)
+- Without directory fsync: Rename operation metadata may still be in OS cache
+- Crash scenario: File data is on disk, but directory entry is missing (file effectively lost)
+- Directory fsync guarantee: Directory entry is persisted, making the renamed file discoverable after crash
+- Reference: SQLite, PostgreSQL, and ext4 robustness guides recommend this for full crash-safety
 
 **Implementation**:
 
@@ -283,26 +297,37 @@ async function writeAtomicWithFsync(
   export_path: string,
   content: string
 ): Promise<void> {
-  let fd: number | undefined
+  let fd: fs.FileHandle | undefined
+  let dirFd: fs.FileHandle | undefined
 
   try {
     // 1. Write content to temp file
     fd = await fs.open(temp_path, "w")
-    await fs.write(fd, content, 0, "utf-8")
+    await fd.writeFile(content, "utf-8")
 
     // 2. CRITICAL: fsync before rename
-    await fs.fsync(fd)
+    await fd.sync()
 
     // 3. Close file descriptor
-    await fs.close(fd)
+    await fd.close()
     fd = undefined
 
     // 4. Atomic rename (now safe because content is on disk)
     await fs.rename(temp_path, export_path)
+
+    // 5. CRITICAL: fsync parent directory to persist directory entry
+    const parentDir = path.dirname(export_path)
+    dirFd = await fs.open(parentDir, "r")
+    await dirFd.sync()
+    await dirFd.close()
+    dirFd = undefined
   } catch (error) {
     // Cleanup temp file on any error
     if (fd !== undefined) {
-      await fs.close(fd).catch(() => {})
+      await fd.close().catch(() => {})
+    }
+    if (dirFd !== undefined) {
+      await dirFd.close().catch(() => {})
     }
     await cleanupTempFile(temp_path)
     throw error

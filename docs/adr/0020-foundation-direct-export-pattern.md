@@ -46,9 +46,12 @@ We will implement the **Direct Export Pattern** with synchronous atomic writes.
 **Write Process:**
 
 1. Write content to `.trash/{ULID}.tmp`
-2. **fsync() to flush OS cache to disk**
+2. **fsync() temp file to flush OS cache to disk**
 3. **rename() to `inbox/{ULID}.md`** (atomic operation)
-4. Record export in `exports_audit` table
+4. **fsync() parent directory to persist directory entry** (rename durability)
+5. Record export in `exports_audit` table
+
+**Note on Directory fsync:** Step 4 ensures the directory entry is persisted after rename(). Without this, a power loss could leave the file data on disk but the directory entry unpersisted, making the file effectively lost. This follows SQLite/PostgreSQL robustness practices for full crash-safety.
 
 **Error Handling:**
 

@@ -76,7 +76,15 @@ export const writeAtomic = async (
     await fs.mkdir(path.dirname(exportPath), { recursive: true })
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     await fs.rename(tempPath, exportPath)
-    // Successfully renamed, no longer a temp file
+
+    // Durability: fsync parent directory to persist the directory entry
+    // Without this, a power loss after rename could leave the directory entry
+    // unpersisted even though the file data was flushed (SQLite/robustness practice)
+    const parentDir = path.dirname(exportPath)
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    const dirFd = await fs.open(parentDir, 'r')
+    await dirFd.sync()
+    await dirFd.close()
 
     return {
       success: true,
