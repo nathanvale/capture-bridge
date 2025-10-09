@@ -370,11 +370,11 @@ async function checkCollision(
 
 **Collision Handling Policy**:
 
-| Collision Type   | Action                                            | Rationale                                                        |
-| ---------------- | ------------------------------------------------- | ---------------------------------------------------------------- |
-| **NO_COLLISION** | Proceed with atomic write                         | Normal case, file doesn't exist                                  |
-| **DUPLICATE**    | Skip write, mark as `exported_duplicate` in audit | Idempotent retry, same content already exported                  |
-| **CONFLICT**     | **HALT**, log CRITICAL error to `errors_log`      | ULID collision with different content = data integrity violation |
+| Collision Type   | Action                                         | Rationale                                                        |
+| ---------------- | ---------------------------------------------- | ---------------------------------------------------------------- |
+| **NO_COLLISION** | Proceed with atomic write                      | Normal case, file doesn't exist                                  |
+| **DUPLICATE**    | Skip write, audit with `mode='duplicate_skip'` | Idempotent retry, same content already exported                  |
+| **CONFLICT**     | **HALT**, log CRITICAL error to `errors_log`   | ULID collision with different content = data integrity violation |
 
 **Conflict Resolution**:
 
@@ -582,17 +582,24 @@ writeAtomic(capture_id, content, vault_path) can be called N times safely
 
 1. **Deterministic filename**: `captures.id` (ULID) → `{ULID}.md` (no timestamp prefix)
 2. **Content hash dedup**: If file exists with same `content_hash`, skip write and return success
-3. **Audit trail**: Duplicate exports recorded as `exported_duplicate` in `exports_audit`
+3. **Audit trail**: Duplicate exports recorded with `mode='duplicate_skip'` in `exports_audit`
 4. **Retry safety**: Crash during export → retry is safe (temp file cleaned up, no partial writes)
 
 **Retry Scenarios**:
 
-| Scenario                               | Behavior                          | Audit Record                                      |
-| -------------------------------------- | --------------------------------- | ------------------------------------------------- |
-| First export succeeds                  | File written, audit created       | `status = exported`                               |
-| Retry with same content                | File exists, skip write           | `status = exported_duplicate`                     |
-| Crash mid-write, then retry            | Temp file cleaned, retry succeeds | `status = exported` (only 1 record)               |
-| Collision conflict (different content) | **HALT**, manual investigation    | `status = failed_export`, notes = "ULID conflict" |
+| Scenario                               | Behavior                          | Audit Record                                 |
+| -------------------------------------- | --------------------------------- | -------------------------------------------- |
+| First export succeeds                  | File written, audit created       | `mode = 'initial'`                           |
+| Retry with same content                | File exists, skip write           | `mode = 'duplicate_skip'`                    |
+| Crash mid-write, then retry            | Temp file cleaned, retry succeeds | `mode = 'initial'` (only 1 record)           |
+| Collision conflict (different content) | **HALT**, manual investigation    | No audit record (error logged to errors_log) |
+
+**Allowed Mode Values**:
+
+| Mode Value          | Meaning                                     | When Used                       |
+| ------------------- | ------------------------------------------- | ------------------------------- |
+| `'initial'`         | First successful export of this capture    | Normal export completion        |
+| `'duplicate_skip'`  | Duplicate detected, write skipped           | Idempotent retry with same hash |
 
 **Implementation**:
 
