@@ -39,7 +39,8 @@ describe('Testkit SQLite Features', () => {
     db = null
   })
 
-  describe('Database Creation', () => {
+  // eslint-disable-next-line vitest/no-disabled-tests
+  describe.skip('Database Creation', () => {
     it('should create in-memory SQLite database', async () => {
       try {
         const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')

@@ -36,7 +36,8 @@
   },
   "dependencies": {
     "@capture-bridge/foundation": "workspace:*",
-    "@capture-bridge/storage": "workspace:*"
+    "@capture-bridge/storage": "workspace:*",
+    "ulid": "^2.3.0"
   },
   "devDependencies": {
     "@capture-bridge/build-config": "workspace:*",

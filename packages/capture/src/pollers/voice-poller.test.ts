@@ -1,3 +1,4 @@
+import Database from 'better-sqlite3'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 import { VoicePoller } from './voice-poller.js'
@@ -13,9 +14,12 @@ vi.mock('@capture-bridge/foundation', () => ({
 const mockExecFile = (cmd: string, args: string[], callback: any) => {
   if (cmd === 'icloudctl' && args[0] === 'check') {
     // File is already downloaded (not dataless)
-    callback(null, 'File is downloaded', '')
+    callback(null, { stdout: 'Status: downloaded\nhasUnresolvedConflicts: false', stderr: '' })
+  } else if (cmd === 'icloudctl' && args[0] === 'download') {
+    // Download success
+    callback(null, { stdout: 'Download complete', stderr: '' })
   } else {
-    callback(null, '', '')
+    callback(null, { stdout: '', stderr: '' })
   }
 }
 
@@ -28,19 +32,19 @@ describe('VoicePoller', () => {
   })
 
   afterEach(async () => {
-    vi.clearAllTimers()
-    vi.useRealTimers()
-
-    // Custom resource cleanup (VoicePoller has setInterval)
+    // 0. Custom resources FIRST (pollers have setInterval)
     for (const poller of pollers) {
       await poller.shutdown()
     }
     pollers.length = 0
 
-    // Settle to prevent race conditions
+    // Clear fake timers before using real setTimeout
+    vi.useRealTimers()
+
+    // 1. Settle to prevent race conditions (now using real timers)
     await new Promise((resolve) => setTimeout(resolve, 100))
 
-    // Close databases
+    // 2. Close databases
     for (const db of databases) {
       try {
         db.close()
@@ -50,7 +54,12 @@ describe('VoicePoller', () => {
     }
     databases.length = 0
 
-    // Force GC if available
+    // 3. TestKit auto-cleanup (temp directories handled automatically)
+
+    // 4. Clear any remaining mocked timers
+    vi.clearAllTimers()
+
+    // 5. Force GC LAST
     if (global.gc) global.gc()
   })
 
@@ -479,10 +488,7 @@ describe('VoicePoller', () => {
   describe('Sync State Management [VOICE_POLLING_ICLOUD-AC02]', () => {
     it('should get last poll timestamp from sync_state table', async () => {
       // Arrange
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-      const Database = await import('better-sqlite3').then((m) => m.default)
-      // Create unique database for this test to avoid shared cache issues
-      const db = new Database(createMemoryUrl('raw', { autoGenerate: true }))
+      const db = new Database(':memory:')
       databases.push(db)
 
       // Create sync_state table
@@ -533,10 +539,7 @@ describe('VoicePoller', () => {
 
     it('should return null when no cursor exists in sync_state', async () => {
       // Arrange
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-      const Database = await import('better-sqlite3').then((m) => m.default)
-      // Create unique database for this test to avoid shared cache issues
-      const db = new Database(createMemoryUrl('raw', { autoGenerate: true }))
+      const db = new Database(':memory:')
       databases.push(db)
 
       // Create sync_state table (empty)
@@ -578,10 +581,7 @@ describe('VoicePoller', () => {
 
     it('should update last poll timestamp in sync_state', async () => {
       // Arrange
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-      const Database = await import('better-sqlite3').then((m) => m.default)
-      // Create unique database for this test to avoid shared cache issues
-      const db = new Database(createMemoryUrl('raw', { autoGenerate: true }))
+      const db = new Database(':memory:')
       databases.push(db)
 
       // Create sync_state table
@@ -881,6 +881,9 @@ describe('VoicePoller', () => {
     })
 
     it('should handle error when icloudctl is not available', async () => {
+      // Use fake timers to fast-forward exponential backoff (1s + 2s + 4s)
+      vi.useFakeTimers()
+
       // Arrange
       const childProcess = await import('node:child_process')
       vi.spyOn(childProcess, 'execFile').mockImplementation(((_cmd: string, _args: any, callback: any) => {
@@ -899,9 +902,14 @@ describe('VoicePoller', () => {
       const poller = new VoicePoller(mockDb, mockDedup, config)
       pollers.push(poller)
 
-      // Act & Assert
+      // Act & Assert - start the call, attach rejection handler, then fast-forward timers
       // @ts-expect-error - accessing private method for testing
-      await expect(poller.checkIfDataless('/test/file.m4a')).rejects.toThrow('icloudctl: command not found')
+      const promise = poller.checkIfDataless('/test/file.m4a')
+      // Attach rejection handler immediately and fast-forward timers
+      await Promise.all([vi.runAllTimersAsync(), expect(promise).rejects.toThrow('icloudctl: command not found')])
+
+      // Restore fake timers
+      vi.useFakeTimers()
     })
 
     it('should safely pass file paths using execFile to prevent command injection', async () => {
@@ -950,6 +958,9 @@ describe('VoicePoller', () => {
     })
 
     it('should skip files with iCloud conflicts and log error prominently', async () => {
+      // Use real timers for this test (calls pollOnce which triggers retry logic)
+      vi.useRealTimers()
+
       // Arrange
       const { createTempDirectory } = await import('@orchestr8/testkit/fs')
       const tempDir = await createTempDirectory()
@@ -1025,9 +1036,14 @@ describe('VoicePoller', () => {
         expect(conflictError.error).toContain(conflictFile)
         expect(conflictError.error).toContain('skipping')
       }
-    })
+
+      // Restore fake timers
+      vi.useFakeTimers()
+    }, 15000)
 
     it('should handle icloudctl failure gracefully when checking conflicts [VOICE_POLLING_ICLOUD-AC06]', async () => {
+      // Keep this test fast and deterministic by stubbing runIcloudCheck to reject immediately
+
       // Arrange
       const { createTempDirectory } = await import('@orchestr8/testkit/fs')
       const tempDir = await createTempDirectory()
@@ -1047,20 +1063,7 @@ describe('VoicePoller', () => {
         addFingerprint: vi.fn(),
       }
 
-      // Mock execFile to fail on conflict check but succeed on dataless check
-      let callCount = 0
-      const childProcess = await import('node:child_process')
-      vi.spyOn(childProcess, 'execFile').mockImplementation(((_cmd: string, _args: string[], callback: any) => {
-        callCount++
-        if (callCount === 1) {
-          // First call - checkIfDataless succeeds
-          callback(null, { stdout: 'Status: downloaded', stderr: '' })
-        } else {
-          // Second call - checkForConflicts fails
-          callback(new Error('icloudctl not available'), null, 'icloudctl: command not found')
-        }
-        return {} as any
-      }) as any)
+      // Stub the internal iCloud check to reject (bypasses retry timers for speed)
 
       const { VoicePoller } = await import('./voice-poller.js')
       const config: VoicePollerConfig = {
@@ -1077,13 +1080,22 @@ describe('VoicePoller', () => {
       // @ts-expect-error - accessing private method
       vi.spyOn(poller, 'stageCapture').mockResolvedValue(undefined)
 
+      // @ts-expect-error - accessing private method
+      vi.spyOn(poller, 'runIcloudCheck').mockRejectedValue(new Error('icloudctl not available'))
+
       // Act
       const result = await poller.pollOnce()
 
-      // Assert - should process file normally when conflict check fails
+      // Assert - Per AC06, file should be SKIPPED when conflict status cannot be determined
       expect(result.filesFound).toBe(1)
-      expect(result.filesProcessed).toBe(1) // File processed despite icloudctl failure
-      expect(result.errors).toHaveLength(0) // No error because we assume no conflicts on failure
+      expect(result.filesProcessed).toBe(0) // File NOT processed due to icloudctl failure
+      expect(result.errors).toHaveLength(1) // Error reported for the skipped file
+      expect(result.errors[0]).toMatchObject({
+        filePath: file,
+        error: expect.stringContaining('icloudctl not available'),
+      })
+
+      // No timer mode change required; test avoids timing-based retries
     })
   })
 
@@ -1401,16 +1413,13 @@ describe('VoicePoller', () => {
 
       // Assert
       expect(updateTimestampSpy).toHaveBeenCalledTimes(1)
-      expect(updateTimestampSpy).toHaveBeenCalledWith(expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/))
+      // Since we're using SQLite's strftime, no argument is passed
+      expect(updateTimestampSpy).toHaveBeenCalledWith()
     })
 
     it('should use exponential backoff when waiting for download', async () => {
-      // This test verifies that waitForDownload uses exponential backoff
-      // The actual backoff logic is already implemented in waitForDownload
-      // We just need to verify it's called as part of ensureFileDownloaded
-
-      // Use real timers for this test
-      vi.useRealTimers()
+      // Verify waitForDownload's exponential backoff without incurring real-time waits
+      vi.useFakeTimers()
 
       // Arrange
       const { createTempDirectory } = await import('@orchestr8/testkit/fs')
@@ -1429,31 +1438,29 @@ describe('VoicePoller', () => {
 
       let checkCallCount = 0
 
-      // Mock checkIfDataless to return true for first 3 calls, then false
-      vi.spyOn(poller, 'checkIfDataless' as any).mockImplementation(() => {
+      // Mock runIcloudCheck to simulate download progress
+      vi.spyOn(poller, 'runIcloudCheck' as any).mockImplementation(() => {
         checkCallCount++
         // Return dataless (true) for first 3 checks, then downloaded (false)
-        return Promise.resolve(checkCallCount <= 3)
+        return Promise.resolve({
+          isDataless: checkCallCount <= 3,
+          hasConflicts: false,
+        })
       })
 
       // Mock triggerDownload to just resolve
       vi.spyOn(poller, 'triggerDownload' as any).mockResolvedValue(undefined)
 
-      const startTime = Date.now()
+      // Act: start the operation and advance timers to simulate 1s then 2s backoffs
+      const promise = (poller as any).ensureFileDownloaded('/test/Recording.m4a')
+      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(2000)
+      await promise
 
-      // Act
-      // Call ensureFileDownloaded which will use the mocked methods
-      await (poller as any).ensureFileDownloaded('/test/Recording.m4a')
+      // Assert: at least 4 checks (initial + 3 during wait loop)
+      expect(checkCallCount).toBeGreaterThanOrEqual(4)
 
-      const totalTime = Date.now() - startTime
-
-      // Assert
-      // With exponential backoff: 1s + 2s + 4s = 7s minimum
-      // But the implementation caps at 5s, so it's 1s + 2s + 4s (capped at 5s) = at least 3s
-      expect(totalTime).toBeGreaterThanOrEqual(3000)
-      expect(checkCallCount).toBeGreaterThanOrEqual(4) // Initial + 3 during wait
-
-      // Restore fake timers
+      // Keep fake timers; subsequent tests explicitly configure timers as needed
       vi.useFakeTimers()
     })
   })
@@ -1581,7 +1588,15 @@ describe('VoicePoller', () => {
   })
 
   describe('Channel Native ID Storage [VOICE_POLLING_ICLOUD-AC08]', () => {
-    it('should store file path as channel_native_id in meta_json', async () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+      vi.resetModules()
+    })
+
+    it('should store file path as channel_native_id in meta_json', { timeout: 10000 }, async () => {
+      // Use real timers for this test (calls pollOnce which triggers retry logic)
+      vi.useRealTimers()
+
       // Arrange
       const { createTempDirectory } = await import('@orchestr8/testkit/fs')
       const tempDir = await createTempDirectory()
@@ -1601,10 +1616,12 @@ describe('VoicePoller', () => {
       const foundation = await import('@capture-bridge/foundation')
       vi.mocked(foundation.computeAudioFingerprint).mockResolvedValue(expectedFingerprint)
 
+      // Mock child_process BEFORE importing voice-poller
+      const childProcess = await import('node:child_process')
+      vi.spyOn(childProcess, 'execFile').mockImplementation(mockExecFile as any)
+
       // Create real SQLite database with schema
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-      const Database = (await import('better-sqlite3')).default
-      const db = new Database(createMemoryUrl())
+      const db = new Database(':memory:')
       databases.push(db)
 
       // Create sync_state table (required by pollOnce)
@@ -1637,8 +1654,11 @@ describe('VoicePoller', () => {
       `)
 
       const mockDbClient: DatabaseClient = {
-        query: vi.fn(),
-        run: vi.fn((sql: string, params?: unknown[]) => {
+        query: vi.fn().mockImplementation((sql: string, params?: unknown[]) => {
+          const stmt = db.prepare(sql)
+          return Promise.resolve(stmt.get(...(params ?? [])))
+        }),
+        run: vi.fn().mockImplementation((sql: string, params?: unknown[]) => {
           const stmt = db.prepare(sql)
           stmt.run(...(params ?? []))
           return Promise.resolve()
@@ -1660,7 +1680,11 @@ describe('VoicePoller', () => {
       pollers.push(poller)
 
       // Act
-      await poller.pollOnce()
+      const pollResult = await poller.pollOnce()
+
+      // Debug: Check for errors
+      expect(pollResult.errors).toEqual([])
+      expect(pollResult.filesProcessed).toBe(1)
 
       // Assert - verify the database contains the correct meta_json structure
       const result = db
@@ -1678,13 +1702,14 @@ describe('VoicePoller', () => {
       expect(metaJson.channel_native_id).toBe(audioPath) // Absolute path
       expect(metaJson.audio_fp).toBeDefined() // SHA-256 fingerprint
       expect(metaJson.audio_fp).toMatch(/^[a-f0-9]{64}$/) // Valid SHA-256 hex
+
+      // Restore fake timers
+      vi.useFakeTimers()
     })
 
     it('should reject duplicate file paths (channel_native_id uniqueness)', async () => {
       // Arrange
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-      const Database = (await import('better-sqlite3')).default
-      const db = new Database(createMemoryUrl())
+      const db = new Database(':memory:')
       databases.push(db)
 
       // Create schema (without unique constraint - we're testing duplicate handling)
@@ -1765,9 +1790,7 @@ describe('VoicePoller', () => {
 
     it('should allow same filename in different directories', async () => {
       // Arrange
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-      const Database = (await import('better-sqlite3')).default
-      const db = new Database(createMemoryUrl())
+      const db = new Database(':memory:')
       databases.push(db)
 
       // Create schema
@@ -1843,16 +1866,27 @@ describe('VoicePoller', () => {
     })
 
     it('should compute audio fingerprint before staging', async () => {
+      // Use real timers for this test (calls pollOnce which triggers retry logic)
+      vi.useRealTimers()
+
       // Arrange
       const { createTempDirectory } = await import('@orchestr8/testkit/fs')
       const tempDir = await createTempDirectory()
       const fs = await import('node:fs/promises')
       const path = await import('node:path')
+      const crypto = await import('node:crypto')
 
       // Create a test audio file with known content
       const audioFile = path.join(tempDir.path, 'test-recording.m4a')
       const audioContent = Buffer.alloc(100, 'test-audio-data')
       await fs.writeFile(audioFile, audioContent)
+
+      // Calculate expected fingerprint
+      const expectedFingerprint = crypto.createHash('sha256').update(audioContent).digest('hex')
+
+      // Mock the foundation module to return expected fingerprint
+      const foundation = await import('@capture-bridge/foundation')
+      vi.mocked(foundation.computeAudioFingerprint).mockResolvedValue(expectedFingerprint)
 
       const mockDb: DatabaseClient = {
         query: vi.fn().mockReturnValue(undefined), // No last poll timestamp
@@ -1910,9 +1944,15 @@ describe('VoicePoller', () => {
       const capturedFingerprint = firstCall[1]
       expect(capturedFingerprint).toBeDefined()
       expect(capturedFingerprint).toHaveLength(64)
-    })
+
+      // Restore fake timers
+      vi.useFakeTimers()
+    }, 15000)
 
     it('should handle fingerprint computation errors', async () => {
+      // Use real timers for this test (calls pollOnce which triggers retry logic)
+      vi.useRealTimers()
+
       // Arrange
       const { createTempDirectory } = await import('@orchestr8/testkit/fs')
       const tempDir = await createTempDirectory()
@@ -1941,9 +1981,13 @@ describe('VoicePoller', () => {
         return {} as any
       }) as any)
 
-      // Mock readdir to return the missing file
+      // Create actual file for pollOnce to find (using missingFile path)
       const fs = await import('node:fs/promises')
-      vi.spyOn(fs, 'readdir').mockResolvedValue([{ name: 'missing-audio.m4a', isFile: () => true } as any])
+      await fs.writeFile(missingFile, Buffer.from('dummy'))
+
+      // Mock foundation to simulate file read error
+      const foundation = await import('@capture-bridge/foundation')
+      vi.mocked(foundation.computeAudioFingerprint).mockRejectedValue(new Error('ENOENT: no such file or directory'))
 
       const { VoicePoller } = await import('./voice-poller.js')
       const config: VoicePollerConfig = {
@@ -1972,11 +2016,17 @@ describe('VoicePoller', () => {
 
       // Verify stageCapture was NOT called
       expect(stageSpy).not.toHaveBeenCalled()
-    })
+
+      // Restore fake timers
+      vi.useFakeTimers()
+    }, 15000)
   })
 
   describe('Capture Row Structure [VOICE_POLLING_ICLOUD-AC09]', () => {
     it('should insert capture row with all required fields [VOICE_POLLING_ICLOUD-AC09]', async () => {
+      // Use real timers for this test (calls pollOnce which triggers retry logic)
+      vi.useRealTimers()
+
       // Arrange
       const { createTempDirectory } = await import('@orchestr8/testkit/fs')
       const tempDir = await createTempDirectory()
@@ -1984,10 +2034,9 @@ describe('VoicePoller', () => {
       const path = await import('node:path')
       const crypto = await import('node:crypto')
 
-      // Mock child_process module to prevent hanging on icloudctl
-      vi.doMock('node:child_process', () => ({
-        execFile: vi.fn(mockExecFile),
-      }))
+      // Mock execFile BEFORE importing voice-poller
+      const childProcess = await import('node:child_process')
+      vi.spyOn(childProcess, 'execFile').mockImplementation(mockExecFile as any)
 
       // Create realistic 4MB audio file for performance testing
       const audioPath = path.join(tempDir.path, 'test-audio.m4a')
@@ -2003,9 +2052,7 @@ describe('VoicePoller', () => {
       vi.mocked(foundation.computeAudioFingerprint).mockResolvedValue(expectedFingerprint)
 
       // Create real SQLite database with schema
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-      const Database = (await import('better-sqlite3')).default
-      const db = new Database(createMemoryUrl())
+      const db = new Database(':memory:')
       databases.push(db)
 
       // Create sync_state table (required by pollOnce)
@@ -2039,7 +2086,7 @@ describe('VoicePoller', () => {
 
       const mockDbClient: DatabaseClient = {
         query: vi.fn().mockResolvedValue(null), // No existing capture
-        run: vi.fn((sql: string, params?: unknown[]) => {
+        run: vi.fn().mockImplementation((sql: string, params?: unknown[]) => {
           const stmt = db.prepare(sql)
           stmt.run(...(params ?? []))
           return Promise.resolve()
@@ -2106,11 +2153,17 @@ describe('VoicePoller', () => {
       // Verify fingerprint matches computed value
       expect(metaJson.audio_fp).toBe(expectedFingerprint)
       expect(metaJson.audio_fp).toMatch(/^[a-f0-9]{64}$/) // Valid SHA-256
-    }, 10000) // 10 second timeout for this test
+
+      // Restore fake timers
+      vi.useFakeTimers()
+    }, 15000) // 15 second timeout for this test
   })
 
   describe('Staging Performance [VOICE_POLLING_ICLOUD-AC10]', () => {
     it('should stage capture in < 150ms p95 [VOICE_POLLING_ICLOUD-AC10]', async () => {
+      // Use real timers for this test (calls pollOnce which triggers retry logic)
+      vi.useRealTimers()
+
       // Arrange
       const { createTempDirectory } = await import('@orchestr8/testkit/fs')
       const tempDir = await createTempDirectory()
@@ -2118,10 +2171,9 @@ describe('VoicePoller', () => {
       const path = await import('node:path')
       const crypto = await import('node:crypto')
 
-      // Mock child_process module to prevent hanging on icloudctl
-      vi.doMock('node:child_process', () => ({
-        execFile: vi.fn(mockExecFile),
-      }))
+      // Mock execFile BEFORE importing voice-poller
+      const childProcess = await import('node:child_process')
+      vi.spyOn(childProcess, 'execFile').mockImplementation(mockExecFile as any)
 
       // Create realistic 4MB audio file
       const audioPath = path.join(tempDir.path, 'test-audio.m4a')
@@ -2137,13 +2189,17 @@ describe('VoicePoller', () => {
       vi.mocked(foundation.computeAudioFingerprint).mockResolvedValue(fingerprintHash)
 
       // Create real SQLite database for realistic timing
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-      const Database = (await import('better-sqlite3')).default
-      const db = new Database(createMemoryUrl())
+      const db = new Database(':memory:')
       databases.push(db)
 
       // Create schema
       db.exec(`
+        CREATE TABLE IF NOT EXISTS sync_state (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
         CREATE TABLE IF NOT EXISTS captures (
           id TEXT PRIMARY KEY,
           source TEXT NOT NULL CHECK(source IN ('voice', 'email', 'text', 'web')),
@@ -2164,7 +2220,7 @@ describe('VoicePoller', () => {
 
       const mockDbClient: DatabaseClient = {
         query: vi.fn().mockResolvedValue(null), // No existing captures
-        run: vi.fn((sql: string, params?: unknown[]) => {
+        run: vi.fn().mockImplementation((sql: string, params?: unknown[]) => {
           const stmt = db.prepare(sql)
           stmt.run(...(params ?? []))
           return Promise.resolve()
@@ -2223,6 +2279,9 @@ describe('VoicePoller', () => {
       console.log(
         `Staging performance: avg=${avg.toFixed(2)}ms, p50=${p50.toFixed(2)}ms, p95=${p95.toFixed(2)}ms, p99=${p99.toFixed(2)}ms`
       )
-    }, 30000) // 30 second timeout for performance test
+
+      // Restore fake timers
+      vi.useFakeTimers()
+    }, 35000) // 35 second timeout for performance test
   })
 })

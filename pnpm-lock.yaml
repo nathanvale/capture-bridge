@@ -107,6 +107,9 @@ importers:
       '@capture-bridge/storage':
         specifier: workspace:*
         version: link:../storage
+      ulid:
+        specifier: ^2.3.0
+        version: 2.4.0
     devDependencies:
       '@capture-bridge/build-config':
         specifier: workspace:*
