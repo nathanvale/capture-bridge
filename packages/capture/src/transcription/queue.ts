@@ -182,6 +182,66 @@ export class TranscriptionQueue {
   // Note: Retry policy is external; queue no longer decides retriability
 
   /**
+   * Compute SHA256 hash using foundation package with crypto fallback
+   */
+  private async computeContentHash(text: string): Promise<string> {
+    try {
+      const mod: unknown = await import('@capture-bridge/foundation')
+      if (
+        mod &&
+        typeof mod === 'object' &&
+        'computeSHA256' in mod &&
+        typeof (mod as { computeSHA256?: unknown }).computeSHA256 === 'function'
+      ) {
+        return (mod as { computeSHA256: (s: string) => string }).computeSHA256(text)
+      }
+      throw new Error('foundation.computeSHA256 not available')
+    } catch {
+      const hash = createHash('sha256')
+      hash.update(text)
+      return hash.digest('hex')
+    }
+  }
+
+  /**
+   * Update database with successful transcription result
+   */
+  private updateDatabaseWithTranscription(
+    db: Database,
+    captureId: string,
+    text: string,
+    contentHash: string
+  ): void {
+    db.prepare(
+      `UPDATE captures
+       SET status = 'transcribed',
+           raw_content = ?,
+           content_hash = ?,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`
+    ).run(text, contentHash, captureId)
+  }
+
+  /**
+   * Handle transcription errors and update job status
+   */
+  private handleTranscriptionError(job: TranscriptionJob, error: unknown): never {
+    // Set error message (normalize timeout for test detection)
+    if (error instanceof TimeoutError) {
+      job.errorMessage = 'timeout'
+    } else {
+      job.errorMessage = error instanceof Error ? error.message : String(error)
+    }
+
+    // Mark as failed and propagate error
+    job.status = 'failed'
+    job.completedAt = new Date()
+
+    // Propagate to allow observers/spies to detect timeout/failure
+    throw error instanceof Error ? error : new Error(String(error))
+  }
+
+  /**
    * Transcribe a single job with timeout, retry, and database update
    */
   async transcribeJob(job: TranscriptionJob): Promise<void> {
@@ -211,56 +271,14 @@ export class TranscriptionQueue {
 
       // Success! Update database if available
       if (this.db) {
-        // Try to use foundation hash, fallback to local crypto if unavailable
-        let contentHash: string
-        try {
-          const mod: unknown = await import('@capture-bridge/foundation')
-          if (
-            mod &&
-            typeof mod === 'object' &&
-            'computeSHA256' in mod &&
-            typeof (mod as { computeSHA256?: unknown }).computeSHA256 === 'function'
-          ) {
-            contentHash = (mod as { computeSHA256: (s: string) => string }).computeSHA256(
-              result.text
-            )
-          } else {
-            throw new Error('foundation.computeSHA256 not available')
-          }
-        } catch {
-          const hash = createHash('sha256')
-          hash.update(result.text)
-          contentHash = hash.digest('hex')
-        }
-
-        this.db
-          .prepare(
-            `UPDATE captures
-           SET status = 'transcribed',
-               raw_content = ?,
-               content_hash = ?,
-               updated_at = CURRENT_TIMESTAMP
-           WHERE id = ?`
-          )
-          .run(result.text, contentHash, job.captureId)
+        const contentHash = await this.computeContentHash(result.text)
+        this.updateDatabaseWithTranscription(this.db, job.captureId, result.text, contentHash)
       }
 
       job.status = 'completed'
       job.completedAt = new Date()
     } catch (error) {
-      // Set error message (normalize timeout for test detection)
-      if (error instanceof TimeoutError) {
-        job.errorMessage = 'timeout'
-      } else {
-        job.errorMessage = error instanceof Error ? error.message : String(error)
-      }
-
-      // Mark as failed and propagate error; retry policy is handled by callers/tests
-      job.status = 'failed'
-      job.completedAt = new Date()
-
-      // Propagate to allow observers/spies to detect timeout/failure
-      throw error instanceof Error ? error : new Error(String(error))
+      this.handleTranscriptionError(job, error)
     }
   }
 
