@@ -234,6 +234,7 @@ CREATE TABLE exports_audit (
     id TEXT PRIMARY KEY,
     capture_id TEXT NOT NULL,
     vault_path TEXT NOT NULL,       -- Format: "inbox/{ULID}.md"
+                                     -- ⚠️ Technical debt: Should be export_path (historical naming)
     hash_at_export TEXT,            -- Content hash at time of export
     exported_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     mode TEXT,                      -- 'initial' | 'duplicate_skip'
@@ -245,6 +246,10 @@ CREATE TABLE exports_audit (
 CREATE INDEX idx_exports_capture ON exports_audit(capture_id);
 CREATE INDEX idx_exports_timestamp ON exports_audit(exported_at);
 ```
+
+**Field Naming Note:**
+
+The `vault_path` field is named for historical reasons (early implementation used "vault_path" term). Semantically, it stores the **export path relative to vault root** (e.g., `inbox/{ULID}.md`), so `export_path` would be more accurate. However, renaming would require a schema migration which is deferred to avoid disrupting existing audit data. Documentation uses both terms interchangeably, with preference for `export_path` in new code.
 
 **Audit Record Lifecycle:**
 
