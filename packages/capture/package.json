@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@capture-bridge/foundation": "workspace:*",
+    "@capture-bridge/obsidian-bridge": "workspace:*",
     "@capture-bridge/storage": "workspace:*",
     "ulid": "^2.3.0"
   },

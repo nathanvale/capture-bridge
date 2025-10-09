@@ -9,5 +9,5 @@ export default createDefinedTsupConfig('src/index.ts', {
       composite: false,
     },
   },
-  bundle: false,
+  bundle: true,
 })
