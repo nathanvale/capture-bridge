@@ -260,15 +260,21 @@ describe('Transcription Placeholder Export [AC08]', () => {
         await exportPlaceholder(db, captureId, 'oom', testDir)
 
         // Verify atomic write pattern was used
-        const tempPath = join(testDir, '.trash', `${captureId}.tmp`)
+        const tempDir = join(testDir, '.trash')
         const finalPath = join(testDir, 'inbox', `${captureId}.md`)
 
-        // Should write to temp first, then rename
-        expect(fsOperations).toContain(`write:${tempPath}`)
+        // Should write to temp first, then rename (temp file includes timestamp)
+        const writeOp = fsOperations.find(
+          (op) => op.startsWith(`write:${tempDir}/${captureId}-`) && op.endsWith('.tmp')
+        )
+        expect(writeOp).toBeDefined()
+        if (!writeOp) throw new Error('Write operation not found')
+
+        const tempPath = writeOp.replace('write:', '')
         expect(fsOperations).toContain(`rename:${tempPath}:${finalPath}`)
 
         // Verify order: write before rename
-        const writeIndex = fsOperations.findIndex((op) => op.startsWith(`write:${tempPath}`))
+        const writeIndex = fsOperations.findIndex((op) => op.startsWith(`write:${tempDir}/${captureId}-`))
         const renameIndex = fsOperations.findIndex((op) => op.startsWith(`rename:${tempPath}`))
         expect(writeIndex).toBeLessThan(renameIndex)
       } finally {

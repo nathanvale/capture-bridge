@@ -5,6 +5,7 @@
  * Implements AC08: Placeholder export on failure
  */
 
+import { randomBytes } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
@@ -29,17 +30,19 @@ export interface TranscriptionFailureResult {
 /**
  * Generate a ULID (Universally Unique Lexicographically Sortable Identifier)
  * Format: 26-character string (10 chars timestamp + 16 chars randomness)
+ * Uses cryptographically secure randomness via crypto.randomBytes()
  */
 const generateULID = (): string => {
   const timestamp = Date.now()
   const timestampStr = timestamp.toString(36).toUpperCase().padStart(10, '0')
 
-  const randomStr = Array.from({ length: 16 }, () =>
-    // eslint-disable-next-line sonarjs/pseudo-random -- ULID generation requires randomness, not crypto-secure
-    Math.floor(Math.random() * 36)
-      .toString(36)
-      .toUpperCase()
-  ).join('')
+  // Use crypto.randomBytes for cryptographically secure randomness
+  const bytes = randomBytes(10) // 10 bytes for randomness
+  const randomStr = Array.from(bytes)
+    .map((byte) => (byte % 36).toString(36).toUpperCase())
+    .slice(0, 16)
+    .join('')
+    .padEnd(16, '0')
 
   return timestampStr + randomStr
 }
@@ -189,16 +192,26 @@ For manual recovery, see: docs/guides/guide-error-recovery.md
   // eslint-disable-next-line security/detect-non-literal-fs-filename -- vaultRoot is controlled, .trash is constant
   await fs.mkdir(tempDir, { recursive: true })
 
-  const tempPath = join(tempDir, `${captureId}.tmp`)
+  const tempPath = join(tempDir, `${captureId}-${Date.now()}.tmp`)
   const finalPath = join(inboxDir, `${captureId}.md`)
 
-  // Write to temp file
-  // eslint-disable-next-line security/detect-non-literal-fs-filename -- tempPath constructed from controlled inputs
-  await fs.writeFile(tempPath, placeholder, 'utf-8')
+  try {
+    // Write to temp file
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- tempPath constructed from controlled inputs
+    await fs.writeFile(tempPath, placeholder, 'utf-8')
 
-  // Atomic rename
-  // eslint-disable-next-line security/detect-non-literal-fs-filename -- paths constructed from controlled inputs
-  await fs.rename(tempPath, finalPath)
+    // Atomic rename
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- paths constructed from controlled inputs
+    await fs.rename(tempPath, finalPath)
+  } finally {
+    // Cleanup temp file if rename failed
+    try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- tempPath constructed from controlled inputs
+      await fs.unlink(tempPath)
+    } catch {
+      // Ignore - file may have been successfully renamed
+    }
+  }
 
   // Update capture status to exported_placeholder
   db.prepare(
@@ -264,20 +277,23 @@ export const handleTranscriptionFailure = async (
     },
   }
 
-  // Update capture status to failed_transcription
-  // Keep content_hash as NULL per ADR-0006 (late hash binding)
-  const stmt = db.prepare(
-    `UPDATE captures
-     SET status = ?,
-         meta_json = ?,
-         updated_at = CURRENT_TIMESTAMP
-     WHERE id = ?`
-  )
+  // Wrap in transaction for atomicity
+  const updateTransaction = db.transaction(() => {
+    // Update capture status to failed_transcription
+    // Keep content_hash as NULL per ADR-0006 (late hash binding)
+    db.prepare(
+      `UPDATE captures
+       SET status = ?,
+           meta_json = ?,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`
+    ).run('failed_transcription', JSON.stringify(updatedMeta), captureId)
 
-  stmt.run('failed_transcription', JSON.stringify(updatedMeta), captureId)
+    // Insert error log entry
+    insertErrorLog(db, captureId, error, errorType, attemptCount, existingMeta)
+  })
 
-  // Insert error log entry
-  insertErrorLog(db, captureId, error, errorType, attemptCount, existingMeta)
+  updateTransaction()
 
   // Emit metrics after error logging but before returning
   if (metricsClient) {
@@ -286,7 +302,32 @@ export const handleTranscriptionFailure = async (
 
   // Export placeholder for permanent errors when vaultRoot is provided
   if (vaultRoot && isPermanentError(errorType)) {
-    await exportPlaceholder(db, captureId, errorType, vaultRoot)
+    try {
+      await exportPlaceholder(db, captureId, errorType, vaultRoot)
+    } catch (exportError) {
+      // Log export failure
+      const exportErrorId = generateULID()
+      db.prepare(
+        `INSERT INTO errors_log (
+          id, capture_id, operation, error_type, error_message,
+          stack_trace, context_json, attempt_count, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).run(
+        exportErrorId,
+        captureId,
+        'export',
+        'export_failure',
+        exportError instanceof Error ? exportError.message : String(exportError),
+        exportError instanceof Error ? exportError.stack : undefined,
+        JSON.stringify({ originalError: errorType }),
+        1,
+        new Date().toISOString()
+      )
+      // Re-throw to notify caller
+      throw new Error(
+        `Failed to export placeholder after ${errorType}: ${exportError instanceof Error ? exportError.message : String(exportError)}`
+      )
+    }
   }
 
   return {
