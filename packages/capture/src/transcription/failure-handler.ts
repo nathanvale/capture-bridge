@@ -1,6 +1,7 @@
 /**
  * Handles transcription failures by updating capture status and metadata
  * Implements AC06: Update capture status='failed_transcription' on failure
+ * Implements AC07: Insert errors_log on failure
  */
 
 import type { Database } from 'better-sqlite3'
@@ -19,6 +20,24 @@ export interface TranscriptionFailureResult {
   success: false
   errorType: TranscriptionErrorType
   captureId: string
+}
+
+/**
+ * Generate a ULID (Universally Unique Lexicographically Sortable Identifier)
+ * Format: 26-character string (10 chars timestamp + 16 chars randomness)
+ */
+const generateULID = (): string => {
+  const timestamp = Date.now()
+  const timestampStr = timestamp.toString(36).toUpperCase().padStart(10, '0')
+
+  const randomStr = Array.from({ length: 16 }, () =>
+    // eslint-disable-next-line sonarjs/pseudo-random -- ULID generation requires randomness, not crypto-secure
+    Math.floor(Math.random() * 36)
+      .toString(36)
+      .toUpperCase()
+  ).join('')
+
+  return timestampStr + randomStr
 }
 
 /**
@@ -46,6 +65,60 @@ const classifyError = (error: Error): TranscriptionErrorType => {
   if (message.includes('memory') || message.includes('heap')) return 'oom'
 
   return 'unknown'
+}
+
+/**
+ * Determine if error is permanent (should go to DLQ)
+ */
+const isPermanentError = (errorType: TranscriptionErrorType): boolean => {
+  return errorType === 'oom' || errorType === 'corrupt_audio'
+}
+
+/**
+ * Get escalation action for error type
+ */
+const getEscalationAction = (errorType: TranscriptionErrorType): string | undefined => {
+  if (isPermanentError(errorType)) {
+    return 'export_placeholder'
+  }
+  return undefined // Retriable errors have no escalation action yet
+}
+
+/**
+ * Insert error log entry
+ */
+const insertErrorLog = (
+  db: Database,
+  captureId: string,
+  error: Error,
+  errorType: TranscriptionErrorType,
+  attemptCount: number,
+  contextMeta: Record<string, unknown>
+): void => {
+  const errorId = generateULID()
+  const escalationAction = getEscalationAction(errorType)
+  const dlq = isPermanentError(errorType) ? 1 : 0
+
+  const stmt = db.prepare(
+    `INSERT INTO errors_log (
+      id, capture_id, operation, error_type, error_message,
+      stack_trace, context_json, attempt_count, escalation_action, dlq, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  )
+
+  stmt.run(
+    errorId,
+    captureId,
+    'transcribe',
+    errorType,
+    error.message,
+    error.stack ?? undefined,
+    JSON.stringify(contextMeta),
+    attemptCount,
+    escalationAction,
+    dlq,
+    new Date().toISOString()
+  )
 }
 
 /**
@@ -94,6 +167,9 @@ export const handleTranscriptionFailure = (
   )
 
   stmt.run('failed_transcription', JSON.stringify(updatedMeta), captureId)
+
+  // Insert error log entry
+  insertErrorLog(db, captureId, error, errorType, attemptCount, existingMeta)
 
   return {
     success: false,
