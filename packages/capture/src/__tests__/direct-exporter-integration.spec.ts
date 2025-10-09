@@ -79,14 +79,9 @@ describe('Direct Exporter Integration [AC03+AC04]', () => {
     const contentHash = 'abc123def456'
     const createdAt = '2025-10-09T21:00:00.000Z'
 
-    db.prepare(`INSERT INTO captures (id, source, status, raw_content, content_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)`).run(
-      captureId,
-      'voice',
-      'transcribed',
-      rawContent,
-      contentHash,
-      createdAt
-    )
+    db.prepare(
+      `INSERT INTO captures (id, source, status, raw_content, content_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(captureId, 'voice', 'transcribed', rawContent, contentHash, createdAt)
 
     // Import and execute exporter
     const { exportToVault } = await import('../export/direct-exporter.js')
@@ -98,8 +93,8 @@ describe('Direct Exporter Integration [AC03+AC04]', () => {
     expect(result.export_path).toBe(`inbox/${captureId}.md`)
 
     // Verify file exists
-    const fs = await import('fs/promises')
-    const { join } = await import('path')
+    const fs = await import('node:fs/promises')
+    const { join } = await import('node:path')
     const exportPath = join(vaultPath, 'inbox', `${captureId}.md`)
     const fileContent = await fs.readFile(exportPath, 'utf-8')
 
@@ -110,9 +105,7 @@ describe('Direct Exporter Integration [AC03+AC04]', () => {
     expect(fileContent).toContain(contentHash)
 
     // AC04: Verify exports_audit record inserted
-    const auditRecord = db
-      .prepare('SELECT * FROM exports_audit WHERE capture_id = ?')
-      .get(captureId) as
+    const auditRecord = db.prepare('SELECT * FROM exports_audit WHERE capture_id = ?').get(captureId) as
       | {
           id: string
           capture_id: string

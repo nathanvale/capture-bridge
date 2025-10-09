@@ -1,6 +1,6 @@
 /**
  * Format a capture record as markdown with frontmatter
- * 
+ *
  * Output format:
  * ---
  * id: {ULID}
@@ -8,19 +8,19 @@
  * captured_at: {ISO8601}
  * content_hash: {SHA-256}
  * ---
- * 
+ *
  * {raw_content}
- * 
+ *
  * @param capture - Capture record from database
  * @returns Formatted markdown string
  */
-export function formatMarkdown(capture: {
+export const formatMarkdown = (capture: {
   id: string
   source: string
   raw_content: string
   content_hash: string
   created_at: string
-}): string {
+}): string => {
   const frontmatter = `---
 id: ${capture.id}
 source: ${capture.source}
