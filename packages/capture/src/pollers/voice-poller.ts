@@ -397,16 +397,16 @@ export class VoicePoller {
    */
   private async ensureFileDownloaded(filePath: string): Promise<void> {
     // Initial status check
-    const first = await this.runIcloudCheck(filePath)
+    const firstIsDataless = await this.checkIfDataless(filePath)
 
-    if (first.isDataless) {
+    if (firstIsDataless) {
       await this.triggerDownload(filePath)
       await this.waitForDownload(filePath)
     }
 
     // Check conflicts after ensuring availability
-    const conflictStatus = await this.runIcloudCheck(filePath)
-    if (conflictStatus.hasConflicts) {
+    const hasConflicts = await this.checkForConflicts(filePath)
+    if (hasConflicts) {
       throw new Error(`iCloud conflict detected: ${filePath} - skipping`)
     }
   }

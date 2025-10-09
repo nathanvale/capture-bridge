@@ -1080,8 +1080,7 @@ describe('VoicePoller', () => {
       // @ts-expect-error - accessing private method
       vi.spyOn(poller, 'stageCapture').mockResolvedValue(undefined)
 
-      // @ts-expect-error - accessing private method
-      vi.spyOn(poller, 'runIcloudCheck').mockRejectedValue(new Error('icloudctl not available'))
+      vi.spyOn(poller, 'runIcloudCheck' as keyof typeof poller).mockRejectedValue(new Error('icloudctl not available'))
 
       // Act
       const result = await poller.pollOnce()

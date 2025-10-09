@@ -290,14 +290,15 @@ describe('TranscriptionQueue', () => {
       queues.push(queue)
 
       // Mock transcribeJob to fail for specific job
-      const mockFailSpecific = (job: TranscriptionJob) => {
+      const mockFailSpecific = (job: TranscriptionJob): Promise<void> => {
         if (job.captureId === 'fail-job') {
           job.status = 'failed'
           job.errorMessage = 'Transcription failed'
-          throw new Error('Transcription failed')
+          return Promise.reject(new Error('Transcription failed'))
         }
         job.status = 'completed'
         job.completedAt = new Date()
+        return Promise.resolve()
       }
       queue.transcribeJob = vi.fn(mockFailSpecific)
 
@@ -347,15 +348,16 @@ describe('TranscriptionQueue', () => {
       const processedJobs: string[] = []
 
       // Mock transcribeJob to fail for second job
-      const mockFailSecondJob = (job: TranscriptionJob) => {
+      const mockFailSecondJob = (job: TranscriptionJob): Promise<void> => {
         processedJobs.push(job.captureId)
 
         if (job.captureId === 'job-2') {
           job.status = 'failed'
-          throw new Error('Job 2 failed')
+          return Promise.reject(new Error('Job 2 failed'))
         }
 
         job.status = 'completed'
+        return Promise.resolve()
       }
       queue.transcribeJob = vi.fn(mockFailSecondJob)
 
