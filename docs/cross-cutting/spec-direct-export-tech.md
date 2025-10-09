@@ -234,6 +234,7 @@ CREATE TABLE exports_audit (
     id TEXT PRIMARY KEY,
     capture_id TEXT NOT NULL,
     vault_path TEXT NOT NULL,       -- Format: "inbox/{ULID}.md"
+                                     -- ⚠️ Technical debt: Should be export_path (historical naming)
     hash_at_export TEXT,            -- Content hash at time of export
     exported_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     mode TEXT,                      -- 'initial' | 'duplicate_skip'
@@ -245,6 +246,10 @@ CREATE TABLE exports_audit (
 CREATE INDEX idx_exports_capture ON exports_audit(capture_id);
 CREATE INDEX idx_exports_timestamp ON exports_audit(exported_at);
 ```
+
+**Field Naming Note:**
+
+The `vault_path` field is named for historical reasons (early implementation used "vault_path" term). Semantically, it stores the **export path relative to vault root** (e.g., `inbox/{ULID}.md`), so `export_path` would be more accurate. However, renaming would require a schema migration which is deferred to avoid disrupting existing audit data. Documentation uses both terms interchangeably, with preference for `export_path` in new code.
 
 **Audit Record Lifecycle:**
 
@@ -305,10 +310,13 @@ DirectExporter.exportToVault(capture)
     ├─► Format markdown content
     │   └─► Build frontmatter + body
     │
-    ├─► Check duplicate (collision detection)
-    │   ├─► Query: SELECT id FROM exports_audit WHERE capture_id = ?
-    │   ├─► If found: return { success: true, mode: 'duplicate_skip' }
-    │   └─► If not found: continue
+    ├─► Check duplicate (filesystem-first idempotency)
+    │   ├─► Read vault file: {vault_path}/inbox/{ULID}.md
+    │   ├─► If missing: continue with export
+    │   ├─► If exists: compute content hash
+    │   │   ├─► If hash matches: return { success: true, mode: 'duplicate_skip' }
+    │   │   └─► If hash differs: return { success: false, error: 'CONFLICT' }
+    │   └─► **Self-heal:** If audit says exported but file missing, re-export
     │
     ├─► Ensure directories exist
     │   ├─► mkdir -p {vault_path}/.trash
@@ -325,6 +333,11 @@ DirectExporter.exportToVault(capture)
     │   ├─► dst = {vault_path}/inbox/{ULID}.md
     │   └─► **fs.rename(src, dst)** ◄── Atomic operation (POSIX)
     │
+    ├─► **Durability:** fsync parent directory
+    │   ├─► fd = fs.open({vault_path}/inbox, 'r')
+    │   ├─► **fs.fsync(fd)** ◄── Persist directory entry
+    │   └─► fs.close(fd)
+    │
     ├─► Record audit
     │   └─► INSERT INTO exports_audit (...)
     │
@@ -336,7 +349,7 @@ DirectExporter.exportToVault(capture)
 **Ordering Contract:**
 
 ```typescript
-// CRITICAL: fsync MUST happen before rename
+// CRITICAL: fsync MUST happen before rename, and directory fsync after
 async function atomicWriteWithFsync(
   temp_path: string,
   export_path: string,
@@ -349,7 +362,7 @@ async function atomicWriteWithFsync(
     fd = await fs.open(temp_path, "w")
     await fs.write(fd, content, 0, "utf-8")
 
-    // 2. **CRITICAL**: fsync before rename
+    // 2. **CRITICAL**: fsync file before rename
     //    Ensures content is on disk BEFORE file becomes visible
     await fs.fsync(fd)
 
@@ -359,6 +372,13 @@ async function atomicWriteWithFsync(
 
     // 4. Atomic rename (safe because content is on disk)
     await fs.rename(temp_path, export_path)
+
+    // 5. **CRITICAL**: fsync parent directory after rename
+    //    Ensures directory entry is persisted (SQLite/PostgreSQL robustness practice)
+    const parentDir = path.dirname(export_path)
+    const dirFd = await fs.open(parentDir, 'r')
+    await fs.fsync(dirFd)
+    await fs.close(dirFd)
   } catch (error) {
     // Cleanup temp file on any error
     if (fd !== undefined) {
@@ -370,11 +390,18 @@ async function atomicWriteWithFsync(
 }
 ```
 
-**Why fsync Before Rename:**
+**Why fsync File Before Rename:**
 
 - **Without fsync:** Rename succeeds, but content may still be in OS cache
 - **Crash scenario:** File appears in vault but is empty or truncated
 - **fsync guarantee:** Content is on disk BEFORE file becomes visible to Obsidian Sync
+
+**Why fsync Directory After Rename:**
+
+- **Without directory fsync:** Rename updates directory entry, but entry may not be persisted
+- **Crash scenario:** File data is on disk, but directory entry is lost → file effectively disappears
+- **Directory fsync guarantee:** Directory entry is durable, file remains accessible after crash
+- **Source:** SQLite/PostgreSQL robustness guides (industry best practice for crash-safety)
 
 ---
 
@@ -469,7 +496,8 @@ This code handles critical durability guarantees for user data export to Obsidia
 **Idempotency Contract:**
 
 - ✅ Retry same capture → same file, no duplicates in vault
-- ✅ Retry same capture → no duplicate audit records (single entry)
+- ✅ Duplicate exports logged with `mode='duplicate_skip'` (filesystem-first check)
+- ✅ **Self-heal test:** File deleted externally → retry re-exports (2nd audit record with `mode='initial'`)
 - ✅ Crash → retry → recovery successful with audit trail
 - ✅ Concurrent retries (Phase 2) → last-write-wins semantic
 
@@ -622,7 +650,9 @@ WHERE status = 'transcribed'  -- Only export after transcription
 
 ### 6.1 Conflict Resolution (DUPLICATE vs CONFLICT)
 
-**Collision Detection Strategy:**
+**Collision Detection Strategy (Filesystem-First):**
+
+The collision detector **always checks the actual vault file first**, ignoring the audit table. This enables self-healing when files are externally deleted.
 
 ```typescript
 enum CollisionResult {
@@ -635,23 +665,37 @@ async function checkCollision(
   export_path: string,
   content_hash: string
 ): Promise<CollisionResult> {
-  const exists = await fs.exists(export_path)
+  // ⚠️ CRITICAL: Check filesystem FIRST, not audit table
+  // This enables self-heal when files are externally deleted
+  try {
+    // Try to read the existing file from vault
+    const existing_content = await fs.readFile(export_path, "utf-8")
 
-  if (!exists) {
-    return CollisionResult.NO_COLLISION
-  }
+    // File exists, check if content matches
+    const existing_hash = computeSHA256(existing_content)
 
-  // File exists, check if content matches
-  const existing_content = await fs.readFile(export_path, "utf-8")
-  const existing_hash = computeSHA256(existing_content)
+    if (existing_hash === content_hash) {
+      return CollisionResult.DUPLICATE
+    } else {
+      return CollisionResult.CONFLICT
+    }
+  } catch (error) {
+    // If file doesn't exist (ENOENT), no collision
+    if (error.code === 'ENOENT') {
+      return CollisionResult.NO_COLLISION
+    }
 
-  if (existing_hash === content_hash) {
-    return CollisionResult.DUPLICATE
-  } else {
+    // Other errors (EACCES, etc.) treated as conflicts for safety
     return CollisionResult.CONFLICT
   }
 }
 ```
+
+**Why Filesystem-First?**
+
+- **Self-healing:** If audit says exported but file missing → re-export automatically
+- **Source of truth:** Vault filesystem is reality, audit is just a log
+- **Idempotency:** Safe to retry exports even if audit state is stale
 
 **Collision Handling Policy:**
 
@@ -683,6 +727,16 @@ async function checkCollision(
 | **EROFS**    | Read-only FS      | No          | **HALT** worker, alert immediately             |
 | **ENETDOWN** | Network mount     | Yes         | Retry with backoff (Phase 2)                   |
 | **EUNKNOWN** | Unknown error     | No          | Log and fail                                   |
+
+**Phase 1 vs Phase 2 Retry Semantics:**
+
+Per [ADR-0013 (MPPP Direct Export Pattern)](../../adr/0013-mppp-direct-export-pattern.md), Phase 1 uses **fail-fast semantics** with no automatic retry logic:
+
+- **Phase 1 (MPPP)**: All export failures return immediately with `success: false`. The `recoverable` flag indicates whether the error **could** be retried in Phase 2, but **no automatic retry happens in Phase 1**. Manual intervention required for all failures.
+
+- **Phase 2 (Future)**: Recoverable errors (EACCES, ENETDOWN) will be automatically retried with exponential backoff. Non-recoverable errors (ENOSPC, EROFS) will still halt processing immediately.
+
+**Rationale**: MPPP scope prioritizes simplicity and immediate feedback over automated retry complexity. The `recoverable` flag is forward-looking metadata that Phase 2 error handlers will use to determine retry eligibility.
 
 **Error Handling Flow:**
 
@@ -820,18 +874,24 @@ exportToVault(capture) can be called N times safely
 **Key Properties:**
 
 1. **Deterministic filename:** `captures.id` (ULID) → `{ULID}.md` (no timestamp prefix)
-2. **Content hash dedup:** If file exists with same `content_hash`, skip write and return success
-3. **Audit trail:** Duplicate exports recorded as `mode='duplicate_skip'`
-4. **Retry safety:** Crash during export → retry is safe (temp file cleaned up, no partial writes)
+2. **Filesystem-first dedup:** Collision detection reads actual vault file, not audit table (enables self-healing)
+3. **Content hash comparison:** If file exists with same `content_hash`, skip write and return success
+4. **Audit trail:** Duplicate exports recorded as `mode='duplicate_skip'`
+5. **Retry safety:** Crash during export → retry is safe (temp file cleaned up, no partial writes)
+
+**Self-Healing Behavior:**
+
+If the audit table says a capture was exported but the vault file is missing (external deletion, sync conflict, filesystem corruption), the next export attempt will **re-export the file** instead of skipping. This is because collision detection checks the actual filesystem first, not the audit table.
 
 **Retry Scenarios:**
 
-| Scenario                               | Behavior                          | Audit Record                     |
-| -------------------------------------- | --------------------------------- | -------------------------------- |
-| First export succeeds                  | File written, audit created       | `mode='initial'`                 |
-| Retry with same content                | File exists, skip write           | `mode='duplicate_skip'`          |
-| Crash mid-write, then retry            | Temp file cleaned, retry succeeds | `mode='initial'` (only 1 record) |
-| Collision conflict (different content) | **HALT**, manual investigation    | No audit record (error log only) |
+| Scenario                               | Behavior                                | Audit Record                                  |
+| -------------------------------------- | --------------------------------------- | --------------------------------------------- |
+| First export succeeds                  | File written, audit created             | `mode='initial'`                              |
+| Retry with same content                | File exists, skip write                 | `mode='duplicate_skip'`                       |
+| Crash mid-write, then retry            | Temp file cleaned, retry succeeds       | `mode='initial'` (only 1 record)              |
+| File deleted externally, then retry    | **Self-heal**: File re-exported         | New `mode='initial'` record (2nd audit entry) |
+| Collision conflict (different content) | **HALT**, manual investigation required | No audit record (error log only)              |
 
 ---
 
@@ -845,15 +905,15 @@ Target: **< 50ms p95** for 1KB markdown file
 
 **Breakdown:**
 
-| Operation           | Target     | Justification                        |
-| ------------------- | ---------- | ------------------------------------ |
-| Path resolution     | < 1ms      | String concatenation only            |
-| Collision detection | < 5ms      | Single fs.existsSync + optional read |
-| Temp file write     | < 10ms     | Sequential write, no buffering       |
-| **fsync call**      | < 15ms     | **Critical:** Flush OS cache to disk |
-| Atomic rename       | < 5ms      | POSIX syscall, atomic on same FS     |
-| Audit log write     | < 10ms     | Single SQLite INSERT                 |
-| **Total**           | **< 46ms** | 4ms buffer for variability           |
+| Operation           | Target     | Justification                             |
+| ------------------- | ---------- | ----------------------------------------- |
+| Path resolution     | < 1ms      | String concatenation only                 |
+| Collision detection | < 5ms      | Async file read + hash comparison         |
+| Temp file write     | < 10ms     | Sequential write, no buffering            |
+| **fsync call**      | < 15ms     | **Critical:** Flush OS cache to disk      |
+| Atomic rename       | < 5ms      | POSIX syscall, atomic on same FS          |
+| Audit log write     | < 10ms     | Single SQLite INSERT                      |
+| **Total**           | **< 46ms** | 4ms buffer for variability                |
 
 **Throughput Constraints:**
 
@@ -923,22 +983,22 @@ adhd doctor
 
 1. **Vault Path Exists:**
    - Severity: CRITICAL
-   - Check: `fs.exists(vault_path)`
+   - Check: `await fs.access(vault_path, fs.constants.F_OK)`
    - Remediation: "Configure vault path: `adhd config set vault_path /path/to/vault`"
 
 2. **Vault Writable:**
    - Severity: CRITICAL
-   - Check: `fs.access(vault_path, fs.constants.W_OK)`
+   - Check: `await fs.access(vault_path, fs.constants.W_OK)`
    - Remediation: "Check vault permissions: `chmod u+w /path/to/vault`"
 
 3. **Inbox Directory Exists:**
    - Severity: WARNING
-   - Check: `fs.exists(vault_path/inbox)`
+   - Check: `await fs.access(path.join(vault_path, 'inbox'), fs.constants.F_OK)`
    - Remediation: "Run export to create inbox/ directory (auto-created on first export)"
 
 4. **Trash Directory Exists:**
    - Severity: WARNING
-   - Check: `fs.exists(vault_path/.trash)`
+   - Check: `await fs.access(path.join(vault_path, '.trash'), fs.constants.F_OK)`
    - Remediation: "Run export to create .trash/ directory (auto-created on first export)"
 
 5. **Orphaned Temp Files:**
@@ -1096,9 +1156,58 @@ function resolveTempPath(vault_path: string, capture_id: string): string {
 
 **Vault Path Validation:**
 
-- Must be absolute path
-- Must be within user's home directory (prevent writing to system directories)
-- Must not be symlink (prevent symlink attacks)
+```typescript
+import { realpath, lstat } from 'node:fs/promises'
+import { homedir } from 'node:os'
+
+async function validateVaultPath(vault_path: string): Promise<void> {
+  // 1. Must be absolute path
+  if (!path.isAbsolute(vault_path)) {
+    throw new Error(`Vault path must be absolute: ${vault_path}`)
+  }
+
+  // 2. Resolve symlinks to canonical path
+  const canonicalPath = await realpath(vault_path)
+
+  // 3. Verify resolved path is still within user's home directory
+  const userHome = homedir()
+  if (!canonicalPath.startsWith(userHome)) {
+    throw new Error(`Vault path must be within user home: ${canonicalPath}`)
+  }
+
+  // 4. Check if vault_path itself is a symlink (warn only, don't block)
+  const stats = await lstat(vault_path)
+  if (stats.isSymbolicLink()) {
+    console.warn(`Warning: Vault path is a symlink: ${vault_path} → ${canonicalPath}`)
+    console.warn(`Exports will follow symlink. Ensure target directory has correct permissions.`)
+  }
+}
+```
+
+**Security Rationale:**
+
+- **Absolute paths**: Prevents relative path manipulation (`../../etc/passwd`)
+- **Home directory boundary**: Prevents writing to system directories (`/etc`, `/var`, `/tmp`)
+- **Symlink resolution**: Uses `realpath()` to resolve symlinks before validation
+- **Symlink warning**: Alerts user if vault is symlinked (not blocked, but logged for awareness)
+
+**Permission Considerations:**
+
+- **Vault directory**: Must have write permission (tested via `fs.access(vault_path, fs.constants.W_OK)`)
+- **Inbox directory**: Created with user's umask (typically 0755)
+- **Trash directory**: Created with user's umask (typically 0755)
+- **Exported files**: Written with user's umask (typically 0644)
+- **Temp files**: Written with user's umask in `.trash/`, atomically renamed to `inbox/`
+
+**Symlink Behavior:**
+
+If vault_path is a symlink:
+- **Allowed**: System follows symlink and writes to target directory
+- **Validation**: Target directory (after symlink resolution) must be within user home
+- **Warning**: User is notified that vault is symlinked
+- **Recommendation**: Use canonical paths in configuration to avoid confusion
+
+**Rationale**: Symlinks are common for managing Obsidian vaults (e.g., syncing across machines, using cloud storage). Blocking symlinks would break legitimate use cases. Instead, we resolve and validate the target directory.
 
 ---
 

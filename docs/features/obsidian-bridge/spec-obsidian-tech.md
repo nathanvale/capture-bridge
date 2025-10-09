@@ -62,16 +62,12 @@ export interface AtomicWriter {
 **Exported Functions**:
 
 ```typescript
-// Main atomic writer implementation
-export class ObsidianAtomicWriter implements AtomicWriter {
-  constructor(private readonly vault_path: string) {}
-
-  async writeAtomic(
-    capture_id: string,
-    content: string,
-    vault_path: string
-  ): Promise<AtomicWriteResult>
-}
+// Main atomic writer implementation (function-based for simplicity in MPPP)
+export async function writeAtomic(
+  capture_id: string,
+  content: string,
+  vault_path: string
+): Promise<AtomicWriteResult>
 
 // Path resolution utilities
 export function resolveTempPath(vault_path: string, capture_id: string): string
@@ -81,14 +77,16 @@ export function resolveExportPath(
 ): string
 
 // Collision detection
-export function checkCollision(
+export async function checkCollision(
   export_path: string,
   content_hash: string
 ): Promise<CollisionResult>
 
-// Temp file cleanup (used in error paths)
-export function cleanupTempFile(temp_path: string): Promise<void>
+// ULID validation (security)
+export function validateCaptureId(capture_id: string): void
 ```
+
+**Note on API Design**: MPPP uses a stateless function-based API for simplicity. Phase 2+ may introduce a class-based wrapper if multiple configuration options are needed (e.g., custom temp directory, fsync toggle for testing).
 
 ### 1.3 CLI Integration
 
@@ -252,6 +250,11 @@ content_hash: { SHA-256 hex }
            │
            ▼
 ┌──────────────────────┐
+│ fs.fsync(parent_dir) │  ← **CRITICAL**: Persist directory entry after rename
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
 │ recordAudit()        │  ← Insert into exports_audit table
 └──────────┬───────────┘
            │
@@ -268,12 +271,21 @@ content_hash: { SHA-256 hex }
 1. **Write to temp file** (`fs.writeFile(temp_path, content)`)
 2. **Force fsync** (`fs.fsync(temp_fd)`) ← **MUST happen before rename**
 3. **Atomic rename** (`fs.rename(temp_path, export_path)`)
+4. **Directory fsync** (`fs.fsync(parent_dir_fd)`) ← **MUST happen after rename** to persist directory entry
 
 **Why fsync Before Rename**:
 
 - Without fsync: Rename succeeds, but content may still be in OS cache
 - Crash scenario: File appears in vault but is empty or truncated
 - fsync guarantee: Content is on disk BEFORE file becomes visible to Obsidian
+
+**Why Directory fsync After Rename**:
+
+- On POSIX filesystems, `rename()` modifies the parent directory's metadata (adds new entry, removes old entry)
+- Without directory fsync: Rename operation metadata may still be in OS cache
+- Crash scenario: File data is on disk, but directory entry is missing (file effectively lost)
+- Directory fsync guarantee: Directory entry is persisted, making the renamed file discoverable after crash
+- Reference: SQLite, PostgreSQL, and ext4 robustness guides recommend this for full crash-safety
 
 **Implementation**:
 
@@ -283,26 +295,37 @@ async function writeAtomicWithFsync(
   export_path: string,
   content: string
 ): Promise<void> {
-  let fd: number | undefined
+  let fd: fs.FileHandle | undefined
+  let dirFd: fs.FileHandle | undefined
 
   try {
     // 1. Write content to temp file
     fd = await fs.open(temp_path, "w")
-    await fs.write(fd, content, 0, "utf-8")
+    await fd.writeFile(content, "utf-8")
 
     // 2. CRITICAL: fsync before rename
-    await fs.fsync(fd)
+    await fd.sync()
 
     // 3. Close file descriptor
-    await fs.close(fd)
+    await fd.close()
     fd = undefined
 
     // 4. Atomic rename (now safe because content is on disk)
     await fs.rename(temp_path, export_path)
+
+    // 5. CRITICAL: fsync parent directory to persist directory entry
+    const parentDir = path.dirname(export_path)
+    dirFd = await fs.open(parentDir, "r")
+    await dirFd.sync()
+    await dirFd.close()
+    dirFd = undefined
   } catch (error) {
     // Cleanup temp file on any error
     if (fd !== undefined) {
-      await fs.close(fd).catch(() => {})
+      await fd.close().catch(() => {})
+    }
+    if (dirFd !== undefined) {
+      await dirFd.close().catch(() => {})
     }
     await cleanupTempFile(temp_path)
     throw error
@@ -345,11 +368,11 @@ async function checkCollision(
 
 **Collision Handling Policy**:
 
-| Collision Type   | Action                                            | Rationale                                                        |
-| ---------------- | ------------------------------------------------- | ---------------------------------------------------------------- |
-| **NO_COLLISION** | Proceed with atomic write                         | Normal case, file doesn't exist                                  |
-| **DUPLICATE**    | Skip write, mark as `exported_duplicate` in audit | Idempotent retry, same content already exported                  |
-| **CONFLICT**     | **HALT**, log CRITICAL error to `errors_log`      | ULID collision with different content = data integrity violation |
+| Collision Type   | Action                                         | Rationale                                                        |
+| ---------------- | ---------------------------------------------- | ---------------------------------------------------------------- |
+| **NO_COLLISION** | Proceed with atomic write                      | Normal case, file doesn't exist                                  |
+| **DUPLICATE**    | Skip write, audit with `mode='duplicate_skip'` | Idempotent retry, same content already exported                  |
+| **CONFLICT**     | **HALT**, log CRITICAL error to `errors_log`   | ULID collision with different content = data integrity violation |
 
 **Conflict Resolution**:
 
@@ -557,17 +580,24 @@ writeAtomic(capture_id, content, vault_path) can be called N times safely
 
 1. **Deterministic filename**: `captures.id` (ULID) → `{ULID}.md` (no timestamp prefix)
 2. **Content hash dedup**: If file exists with same `content_hash`, skip write and return success
-3. **Audit trail**: Duplicate exports recorded as `exported_duplicate` in `exports_audit`
+3. **Audit trail**: Duplicate exports recorded with `mode='duplicate_skip'` in `exports_audit`
 4. **Retry safety**: Crash during export → retry is safe (temp file cleaned up, no partial writes)
 
 **Retry Scenarios**:
 
-| Scenario                               | Behavior                          | Audit Record                                      |
-| -------------------------------------- | --------------------------------- | ------------------------------------------------- |
-| First export succeeds                  | File written, audit created       | `status = exported`                               |
-| Retry with same content                | File exists, skip write           | `status = exported_duplicate`                     |
-| Crash mid-write, then retry            | Temp file cleaned, retry succeeds | `status = exported` (only 1 record)               |
-| Collision conflict (different content) | **HALT**, manual investigation    | `status = failed_export`, notes = "ULID conflict" |
+| Scenario                               | Behavior                          | Audit Record                                 |
+| -------------------------------------- | --------------------------------- | -------------------------------------------- |
+| First export succeeds                  | File written, audit created       | `mode = 'initial'`                           |
+| Retry with same content                | File exists, skip write           | `mode = 'duplicate_skip'`                    |
+| Crash mid-write, then retry            | Temp file cleaned, retry succeeds | `mode = 'initial'` (only 1 record)           |
+| Collision conflict (different content) | **HALT**, manual investigation    | No audit record (error logged to errors_log) |
+
+**Allowed Mode Values**:
+
+| Mode Value          | Meaning                                     | When Used                       |
+| ------------------- | ------------------------------------------- | ------------------------------- |
+| `'initial'`         | First successful export of this capture    | Normal export completion        |
+| `'duplicate_skip'`  | Duplicate detected, write skipped           | Idempotent retry with same hash |
 
 **Implementation**:
 

@@ -15,6 +15,8 @@ This guide provides a 5-minute implementer primer for developers integrating the
 
 **Target Audience:** Developers implementing capture export functionality in the ADHD Brain CLI or other integrations.
 
+> **⚠️ API Note:** The actual implementation uses a **function-based API** (`writeAtomic()`), not a class-based API. Some examples in this guide may reference `ObsidianAtomicWriter` class—treat these as conceptual and use the function-based API shown in the Quick Reference section. Full guide updates are tracked as technical debt.
+
 ## When to Use This Guide
 
 Use this guide when you need to:
@@ -48,17 +50,18 @@ pnpm add @capture-bridge/obsidian-bridge @capture-bridge/staging-ledger
 ### Step 1: Install and Import
 
 ```typescript
-import { ObsidianAtomicWriter } from "@capture-bridge/obsidian-bridge"
+import { writeAtomic } from "@capture-bridge/obsidian-bridge"
 import { Database } from "@capture-bridge/staging-ledger"
 ```
 
-### Step 2: Initialize Writer
+### Step 2: Set Up Paths
 
 ```typescript
 const vault_path = "/Users/nathan/vault" // Absolute path to Obsidian vault
 const db = new Database("~/.capture-bridge/staging.db")
-const writer = new ObsidianAtomicWriter(vault_path, db)
 ```
+
+**Note:** MPPP uses a stateless function-based API. No writer initialization needed—just call `writeAtomic()` directly.
 
 ### Step 3: Export Capture
 
@@ -69,11 +72,11 @@ const capture = await db.getCapture(capture_id)
 // Format capture as markdown
 const content = formatMarkdownExport(capture)
 
-// Atomic write with automatic retry handling
-const result = await writer.writeAtomic(
+// Atomic write (stateless function call)
+const result = await writeAtomic(
   capture.id, // ULID (becomes filename)
   content, // Formatted markdown
-  vault_path
+  vault_path // Absolute vault path
 )
 
 if (result.success) {
@@ -179,7 +182,9 @@ Remember to buy groceries for the weekend party
 **Basic Export:**
 
 ```typescript
-const result = await writer.writeAtomic(capture.id, content, vault_path)
+import { writeAtomic } from "@capture-bridge/obsidian-bridge"
+
+const result = await writeAtomic(capture.id, content, vault_path)
 
 // Check result
 if (result.success) {
@@ -193,7 +198,7 @@ if (result.success) {
 
 ```typescript
 try {
-  const result = await writer.writeAtomic(capture.id, content, vault_path)
+  const result = await writeAtomic(capture.id, content, vault_path)
 
   if (!result.success) {
     switch (result.error?.code) {

@@ -5,10 +5,11 @@
  */
 
 // Export types
-export * from './types.js'
+export type { AtomicWriteResult, AtomicWriteError } from './types.js'
+export { CollisionResult } from './types.js'
 
 // Export path resolver utilities
-export * from './path-resolver.js'
+export { validateCaptureId, resolveTempPath, resolveExportPath } from './path-resolver.js'
 
-// Export atomic writer (to be implemented via TDD)
-// export * from './writer/index.js'
+// Export atomic writer
+export { writeAtomic, checkCollision } from './writer/index.js'

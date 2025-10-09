@@ -241,6 +241,19 @@
       ],
       "acs_remaining": [],
       "notes": "Completed transcription failure handling following strict TDD. AC06: Placeholder export on permanent failure (7 tests). AC07: errors_log insertion (3 tests). AC08: capture status update (11 tests). AC09: transcription_failure_total metric emission (1 test). AC10: raw_content storage verified (existing test coverage). Total 19 tests passing. Implementation includes error classification, DLQ handling, escalation actions, and optional metrics emission."
+    },
+    "DIRECT_EXPORT_VOICE--T01": {
+      "status": "completed",
+      "started_at": "2025-10-09T21:00:00Z",
+      "completed_at": "2025-10-09T22:30:00Z",
+      "acs_completed": [
+        "DIRECT_EXPORT_VOICE-AC01",
+        "DIRECT_EXPORT_VOICE-AC02",
+        "DIRECT_EXPORT_VOICE-AC03",
+        "DIRECT_EXPORT_VOICE-AC04"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed direct export implementation following strict TDD. AC01: Export trigger logic (shouldExport) checking status='transcribed' and not in exports_audit. AC02: Markdown formatter with frontmatter (id, source, captured_at, content_hash). AC03: Atomic write using obsidian-bridge's writeAtomic() to inbox/{capture.id}.md. AC04: exports_audit insertion with ULID generation, mode='initial', error_flag=0. 4/4 tests passing. Files created: direct-exporter.ts, direct-export-trigger.spec.ts, markdown-formatter.ts, markdown-formatter.spec.ts, direct-exporter-integration.spec.ts. Quality fixes applied: arrow functions, nullish coalescing, obsidian-bridge integration. Bundling configuration fixed in obsidian-bridge (bundle: true)."
     }
   }
 }

@@ -104,6 +104,9 @@ importers:
       '@capture-bridge/foundation':
         specifier: workspace:*
         version: link:../foundation
+      '@capture-bridge/obsidian-bridge':
+        specifier: workspace:*
+        version: link:../obsidian-bridge
       '@capture-bridge/storage':
         specifier: workspace:*
         version: link:../storage
