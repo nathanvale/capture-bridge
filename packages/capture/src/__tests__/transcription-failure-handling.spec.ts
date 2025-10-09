@@ -78,7 +78,7 @@ describe('Transcription Failure Handling', () => {
       timeoutError.name = 'TimeoutError'
 
       // Call handler
-      const result = handleTranscriptionFailure(db, 'test-capture-1', timeoutError, 1)
+      const result = await handleTranscriptionFailure(db, 'test-capture-1', timeoutError, 1)
 
       // Verify database was updated
       const capture = db
@@ -123,7 +123,7 @@ describe('Transcription Failure Handling', () => {
       const oomError = new Error('Memory limit exceeded')
       oomError.name = 'OOMError'
 
-      const result = handleTranscriptionFailure(db, 'test-capture-2', oomError, 1)
+      const result = await handleTranscriptionFailure(db, 'test-capture-2', oomError, 1)
 
       const capture = db
         .prepare('SELECT status, content_hash, meta_json FROM captures WHERE id = ?')
