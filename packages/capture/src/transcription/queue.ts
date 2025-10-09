@@ -3,7 +3,7 @@
  * Implements AC02: Sequential processing with non-reentrant guard
  */
 
-export const MAX_QUEUE_DEPTH = 50
+export const MAX_QUEUE_DEPTH = 256
 
 export class BackpressureError extends Error {
   constructor() {

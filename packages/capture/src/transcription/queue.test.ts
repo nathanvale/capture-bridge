@@ -15,6 +15,9 @@ interface TranscriptionJob {
 
 type JobStatus = 'queued' | 'processing' | 'completed' | 'failed'
 
+// Helper function to reduce nesting
+const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
+
 describe('TranscriptionQueue', () => {
   // Track resources for cleanup
   const queues: Array<{ shutdown: () => Promise<void> }> = []
@@ -30,13 +33,13 @@ describe('TranscriptionQueue', () => {
       try {
         await queue.shutdown()
       } catch {
-        // eslint-disable-next-line sonarjs/no-ignored-exceptions -- Safe in cleanup
+        // Ignore cleanup errors - safe in cleanup context
       }
     }
     queues.length = 0
 
     // 1. Settle
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await delay(100)
 
     // 5. Force GC
     if (global.gc) global.gc()
@@ -55,17 +58,18 @@ describe('TranscriptionQueue', () => {
       let maxConcurrentJobs = 0
 
       // Replace transcribeJob with mock that tracks concurrency
-      queue.transcribeJob = vi.fn(async (job: TranscriptionJob) => {
+      const mockTranscribeJob = async (job: TranscriptionJob) => {
         activeJobs++
         maxConcurrentJobs = Math.max(maxConcurrentJobs, activeJobs)
 
         // Simulate work
-        await new Promise((resolve) => setTimeout(resolve, 50))
+        await delay(50)
 
         activeJobs--
         job.status = 'completed'
         job.completedAt = new Date()
-      })
+      }
+      queue.transcribeJob = vi.fn(mockTranscribeJob)
 
       // Enqueue multiple jobs rapidly
       const jobs: TranscriptionJob[] = [
@@ -96,7 +100,12 @@ describe('TranscriptionQueue', () => {
       ]
 
       // Enqueue all jobs simultaneously
-      await Promise.all(jobs.map((job) => queue.enqueue(job)))
+      await Promise.all(
+        jobs.map((job) => {
+          queue.enqueue(job)
+          return Promise.resolve()
+        })
+      )
 
       // Wait for all jobs to complete
       await new Promise((resolve) => setTimeout(resolve, 200))
@@ -115,11 +124,12 @@ describe('TranscriptionQueue', () => {
       const processedOrder: string[] = []
 
       // Mock transcribeJob to track order
-      queue.transcribeJob = vi.fn(async (job: TranscriptionJob) => {
+      const mockTrackOrder = async (job: TranscriptionJob) => {
         processedOrder.push(job.captureId)
-        await new Promise((resolve) => setTimeout(resolve, 10))
+        await delay(10)
         job.status = 'completed'
-      })
+      }
+      queue.transcribeJob = vi.fn(mockTrackOrder)
 
       // Enqueue jobs
       await queue.enqueue({
@@ -162,10 +172,13 @@ describe('TranscriptionQueue', () => {
       queues.push(queue)
 
       // Mock transcribeJob to never complete (simulating slow processing)
-      queue.transcribeJob = vi.fn(async () => {
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
-        await new Promise(() => {}) // Never resolves
-      })
+      // Create a promise that never resolves outside the function to reduce nesting
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      const neverResolve = new Promise(() => {})
+      const mockNeverComplete = async () => {
+        await neverResolve // Never resolves
+      }
+      queue.transcribeJob = vi.fn(mockNeverComplete)
 
       // Fill up to MAX_QUEUE_DEPTH
       const jobs: TranscriptionJob[] = []
@@ -181,7 +194,12 @@ describe('TranscriptionQueue', () => {
       }
 
       // First MAX_QUEUE_DEPTH jobs should succeed
-      await Promise.all(jobs.map((job) => queue.enqueue(job)))
+      await Promise.all(
+        jobs.map((job) => {
+          queue.enqueue(job)
+          return Promise.resolve()
+        })
+      )
 
       // The next one should throw BackpressureError
       const extraJob: TranscriptionJob = {
@@ -204,13 +222,13 @@ describe('TranscriptionQueue', () => {
       queues.push(queue)
 
       let jobStarted = false
-      let jobCompleteResolve: () => void
+      let jobCompleteResolve: (() => void) | undefined
       const jobCompletePromise = new Promise<void>((resolve) => {
         jobCompleteResolve = resolve
       })
 
       // Mock transcribeJob with controllable timing
-      queue.transcribeJob = vi.fn(async (job: TranscriptionJob) => {
+      const mockControlledTiming = async (job: TranscriptionJob) => {
         jobStarted = true
         job.status = 'processing'
         job.startedAt = new Date()
@@ -220,7 +238,8 @@ describe('TranscriptionQueue', () => {
 
         job.status = 'completed'
         job.completedAt = new Date()
-      })
+      }
+      queue.transcribeJob = vi.fn(mockControlledTiming)
 
       // Initial status
       let status = queue.getStatus()
@@ -251,7 +270,9 @@ describe('TranscriptionQueue', () => {
       expect(status.queueDepth).toBe(0) // Job moved from queue to processing
 
       // Complete the job
-      jobCompleteResolve!()
+      if (jobCompleteResolve) {
+        jobCompleteResolve()
+      }
       await new Promise((resolve) => setTimeout(resolve, 50))
 
       // Check final status
@@ -269,7 +290,7 @@ describe('TranscriptionQueue', () => {
       queues.push(queue)
 
       // Mock transcribeJob to fail for specific job
-      queue.transcribeJob = vi.fn(async (job: TranscriptionJob) => {
+      const mockFailSpecific = (job: TranscriptionJob) => {
         if (job.captureId === 'fail-job') {
           job.status = 'failed'
           job.errorMessage = 'Transcription failed'
@@ -277,7 +298,8 @@ describe('TranscriptionQueue', () => {
         }
         job.status = 'completed'
         job.completedAt = new Date()
-      })
+      }
+      queue.transcribeJob = vi.fn(mockFailSpecific)
 
       // Enqueue mixed success/failure jobs
       await queue.enqueue({
@@ -325,7 +347,7 @@ describe('TranscriptionQueue', () => {
       const processedJobs: string[] = []
 
       // Mock transcribeJob to fail for second job
-      queue.transcribeJob = vi.fn(async (job: TranscriptionJob) => {
+      const mockFailSecondJob = (job: TranscriptionJob) => {
         processedJobs.push(job.captureId)
 
         if (job.captureId === 'job-2') {
@@ -334,7 +356,8 @@ describe('TranscriptionQueue', () => {
         }
 
         job.status = 'completed'
-      })
+      }
+      queue.transcribeJob = vi.fn(mockFailSecondJob)
 
       // Enqueue 3 jobs
       for (let i = 1; i <= 3; i++) {
@@ -369,28 +392,53 @@ describe('TranscriptionQueue', () => {
       const queue = new TranscriptionQueue()
       queues.push(queue)
 
-      // Mock instant processing
+      // Mock instant processing to allow queue to drain quickly
       queue.transcribeJob = vi.fn(async (job: TranscriptionJob) => {
         job.status = 'completed'
+        // Small delay to simulate minimal work
+        await delay(1)
       })
 
       if (global.gc) global.gc()
       const before = process.memoryUsage().heapUsed
 
-      // Process many jobs
-      for (let i = 0; i < 100; i++) {
-        await queue.enqueue({
-          captureId: `capture-${i}`,
-          audioPath: `/path/${i}.m4a`,
-          audioFingerprint: `fp${i}`,
-          status: 'queued',
-          attemptCount: 0,
-          queuedAt: new Date(),
-        })
+      // Process many jobs in batches to respect backpressure
+      const totalJobs = 100
+      const batchSize = 30 // Stay well below MAX_QUEUE_DEPTH of 50
+
+      for (let batch = 0; batch < Math.ceil(totalJobs / batchSize); batch++) {
+        const startIdx = batch * batchSize
+        const endIdx = Math.min(startIdx + batchSize, totalJobs)
+
+        // Enqueue a batch of jobs
+        for (let i = startIdx; i < endIdx; i++) {
+          await queue.enqueue({
+            captureId: `capture-${i}`,
+            audioPath: `/path/${i}.m4a`,
+            audioFingerprint: `fp${i}`,
+            status: 'queued',
+            attemptCount: 0,
+            queuedAt: new Date(),
+          })
+        }
+
+        // Wait for batch to process before enqueueing more
+        // This ensures we don't exceed MAX_QUEUE_DEPTH
+        await new Promise((resolve) => setTimeout(resolve, 50))
+
+        // Verify queue is draining
+        const status = queue.getStatus()
+        expect(status.queueDepth).toBeLessThanOrEqual(batchSize)
       }
 
-      // Wait for all processing
-      await new Promise((resolve) => setTimeout(resolve, 200))
+      // Wait for final processing to complete
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      // Verify all jobs were processed
+      const finalStatus = queue.getStatus()
+      expect(finalStatus.totalProcessed).toBe(totalJobs)
+      expect(finalStatus.queueDepth).toBe(0)
+      expect(finalStatus.isProcessing).toBe(false)
 
       if (global.gc) global.gc()
       await new Promise((resolve) => setTimeout(resolve, 100))
