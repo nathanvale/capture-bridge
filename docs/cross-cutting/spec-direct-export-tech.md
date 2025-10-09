@@ -1156,9 +1156,58 @@ function resolveTempPath(vault_path: string, capture_id: string): string {
 
 **Vault Path Validation:**
 
-- Must be absolute path
-- Must be within user's home directory (prevent writing to system directories)
-- Must not be symlink (prevent symlink attacks)
+```typescript
+import { realpath, lstat } from 'node:fs/promises'
+import { homedir } from 'node:os'
+
+async function validateVaultPath(vault_path: string): Promise<void> {
+  // 1. Must be absolute path
+  if (!path.isAbsolute(vault_path)) {
+    throw new Error(`Vault path must be absolute: ${vault_path}`)
+  }
+
+  // 2. Resolve symlinks to canonical path
+  const canonicalPath = await realpath(vault_path)
+
+  // 3. Verify resolved path is still within user's home directory
+  const userHome = homedir()
+  if (!canonicalPath.startsWith(userHome)) {
+    throw new Error(`Vault path must be within user home: ${canonicalPath}`)
+  }
+
+  // 4. Check if vault_path itself is a symlink (warn only, don't block)
+  const stats = await lstat(vault_path)
+  if (stats.isSymbolicLink()) {
+    console.warn(`Warning: Vault path is a symlink: ${vault_path} → ${canonicalPath}`)
+    console.warn(`Exports will follow symlink. Ensure target directory has correct permissions.`)
+  }
+}
+```
+
+**Security Rationale:**
+
+- **Absolute paths**: Prevents relative path manipulation (`../../etc/passwd`)
+- **Home directory boundary**: Prevents writing to system directories (`/etc`, `/var`, `/tmp`)
+- **Symlink resolution**: Uses `realpath()` to resolve symlinks before validation
+- **Symlink warning**: Alerts user if vault is symlinked (not blocked, but logged for awareness)
+
+**Permission Considerations:**
+
+- **Vault directory**: Must have write permission (tested via `fs.access(vault_path, fs.constants.W_OK)`)
+- **Inbox directory**: Created with user's umask (typically 0755)
+- **Trash directory**: Created with user's umask (typically 0755)
+- **Exported files**: Written with user's umask (typically 0644)
+- **Temp files**: Written with user's umask in `.trash/`, atomically renamed to `inbox/`
+
+**Symlink Behavior:**
+
+If vault_path is a symlink:
+- **Allowed**: System follows symlink and writes to target directory
+- **Validation**: Target directory (after symlink resolution) must be within user home
+- **Warning**: User is notified that vault is symlinked
+- **Recommendation**: Use canonical paths in configuration to avoid confusion
+
+**Rationale**: Symlinks are common for managing Obsidian vaults (e.g., syncing across machines, using cloud storage). Blocking symlinks would break legitimate use cases. Instead, we resolve and validate the target directory.
 
 ---
 
