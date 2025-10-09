@@ -229,15 +229,18 @@
       "acs_remaining": []
     },
     "WHISPER_TRANSCRIPTION--T02": {
-      "status": "in-progress",
+      "status": "completed",
       "started_at": "2025-10-09T15:00:00Z",
-      "acs_completed": ["WHISPER_TRANSCRIPTION-AC06"],
-      "acs_remaining": [
+      "completed_at": "2025-10-09T20:40:00Z",
+      "acs_completed": [
+        "WHISPER_TRANSCRIPTION-AC06",
         "WHISPER_TRANSCRIPTION-AC07",
         "WHISPER_TRANSCRIPTION-AC08",
         "WHISPER_TRANSCRIPTION-AC09",
         "WHISPER_TRANSCRIPTION-AC10"
-      ]
+      ],
+      "acs_remaining": [],
+      "notes": "Completed transcription failure handling following strict TDD. AC06: Placeholder export on permanent failure (7 tests). AC07: errors_log insertion (3 tests). AC08: capture status update (11 tests). AC09: transcription_failure_total metric emission (1 test). AC10: raw_content storage verified (existing test coverage). Total 19 tests passing. Implementation includes error classification, DLQ handling, escalation actions, and optional metrics emission."
     }
   }
 }
