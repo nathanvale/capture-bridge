@@ -34,4 +34,19 @@ export default defineConfig([
     sourcemap: true,
     target: 'es2022',
   },
+  {
+    entry: {
+      'metrics/index': 'src/metrics/index.ts',
+    },
+    format: ['esm'],
+    dts: {
+      compilerOptions: {
+        composite: false,
+      },
+    },
+    bundle: true, // Bundle metrics module with dependencies
+    clean: false,
+    sourcemap: true,
+    target: 'es2022',
+  },
 ])
