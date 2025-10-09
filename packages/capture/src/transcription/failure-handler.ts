@@ -2,7 +2,11 @@
  * Handles transcription failures by updating capture status and metadata
  * Implements AC06: Update capture status='failed_transcription' on failure
  * Implements AC07: Insert errors_log on failure
+ * Implements AC08: Placeholder export on failure
  */
+
+import { promises as fs } from 'node:fs'
+import { join } from 'node:path'
 
 import type { Database } from 'better-sqlite3'
 
@@ -122,20 +126,122 @@ const insertErrorLog = (
 }
 
 /**
+ * Export placeholder markdown file to vault on permanent transcription failure
+ * Implements ADR-0014: Placeholder Export Immutability
+ *
+ * @param db - SQLite database instance
+ * @param captureId - ID of the capture that failed transcription
+ * @param errorType - Type of transcription error
+ * @param vaultRoot - Root directory of the vault
+ */
+export const exportPlaceholder = async (
+  db: Database,
+  captureId: string,
+  errorType: TranscriptionErrorType,
+  vaultRoot: string
+): Promise<void> => {
+  // Fetch capture record
+  const capture = db.prepare('SELECT * FROM captures WHERE id = ?').get(captureId) as
+    | {
+        id: string
+        source: string
+        status: string
+        meta_json: string
+        created_at: string
+      }
+    | undefined
+
+  if (!capture) {
+    throw new Error(`Capture ${captureId} not found`)
+  }
+
+  const meta = JSON.parse(capture.meta_json)
+  const errorMessage = meta.error?.message ?? 'Unknown error'
+  const attemptCount = meta.error?.attemptCount ?? meta.attempt_count ?? 0
+  const filePath = meta.file_path ?? 'Unknown file path'
+
+  // Generate placeholder content
+  const placeholder = `[TRANSCRIPTION_FAILED: ${errorType}]
+
+---
+Capture ID: ${captureId}
+Source: ${capture.source}
+Audio file: ${filePath}
+Error: ${errorMessage}
+Attempts: ${attemptCount}
+Captured At: ${capture.created_at}
+Failed At: ${new Date().toISOString()}
+---
+
+Original content unavailable due to processing failure.
+This placeholder is PERMANENT and cannot be retried in MPPP.
+
+For manual recovery, see: docs/guides/guide-error-recovery.md
+`
+
+  // Create inbox directory if it doesn't exist
+  const inboxDir = join(vaultRoot, 'inbox')
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- vaultRoot is controlled, inbox is constant
+  await fs.mkdir(inboxDir, { recursive: true })
+
+  // Use atomic write pattern (temp file + rename)
+  const tempDir = join(vaultRoot, '.trash')
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- vaultRoot is controlled, .trash is constant
+  await fs.mkdir(tempDir, { recursive: true })
+
+  const tempPath = join(tempDir, `${captureId}.tmp`)
+  const finalPath = join(inboxDir, `${captureId}.md`)
+
+  // Write to temp file
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- tempPath constructed from controlled inputs
+  await fs.writeFile(tempPath, placeholder, 'utf-8')
+
+  // Atomic rename
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- paths constructed from controlled inputs
+  await fs.rename(tempPath, finalPath)
+
+  // Update capture status to exported_placeholder
+  db.prepare(
+    `UPDATE captures
+     SET status = ?,
+         raw_content = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = ?`
+  ).run('exported_placeholder', placeholder, captureId)
+
+  // Insert exports_audit record
+  const auditId = generateULID()
+  db.prepare(
+    `INSERT INTO exports_audit (id, capture_id, vault_path, hash_at_export, mode, error_flag, exported_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    auditId,
+    captureId,
+    `inbox/${captureId}.md`,
+    undefined, // hash_at_export is NULL for placeholder per spec
+    'placeholder',
+    1, // error_flag = 1
+    new Date().toISOString()
+  )
+}
+
+/**
  * Update capture record with failed_transcription status and error metadata
  *
  * @param db - SQLite database instance
  * @param captureId - ID of the capture that failed transcription
  * @param error - The error that occurred during transcription
  * @param attemptCount - Number of attempts made
+ * @param vaultRoot - Optional vault root for placeholder export (permanent errors only)
  * @returns Result object with error details
  */
-export const handleTranscriptionFailure = (
+export const handleTranscriptionFailure = async (
   db: Database,
   captureId: string,
   error: Error,
-  attemptCount: number
-): TranscriptionFailureResult => {
+  attemptCount: number,
+  vaultRoot?: string
+): Promise<TranscriptionFailureResult> => {
   const errorType = classifyError(error)
 
   // Get existing meta_json
@@ -170,6 +276,11 @@ export const handleTranscriptionFailure = (
 
   // Insert error log entry
   insertErrorLog(db, captureId, error, errorType, attemptCount, existingMeta)
+
+  // Export placeholder for permanent errors when vaultRoot is provided
+  if (vaultRoot && isPermanentError(errorType)) {
+    await exportPlaceholder(db, captureId, errorType, vaultRoot)
+  }
 
   return {
     success: false,

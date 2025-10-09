@@ -231,9 +231,8 @@
     "WHISPER_TRANSCRIPTION--T02": {
       "status": "in-progress",
       "started_at": "2025-10-09T15:00:00Z",
-      "acs_completed": [],
+      "acs_completed": ["WHISPER_TRANSCRIPTION-AC06"],
       "acs_remaining": [
-        "WHISPER_TRANSCRIPTION-AC06",
         "WHISPER_TRANSCRIPTION-AC07",
         "WHISPER_TRANSCRIPTION-AC08",
         "WHISPER_TRANSCRIPTION-AC09",
