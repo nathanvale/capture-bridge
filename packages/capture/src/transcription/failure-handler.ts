@@ -233,6 +233,7 @@ For manual recovery, see: docs/guides/guide-error-recovery.md
  * @param error - The error that occurred during transcription
  * @param attemptCount - Number of attempts made
  * @param vaultRoot - Optional vault root for placeholder export (permanent errors only)
+ * @param metricsClient - Optional metrics client for emitting failure metrics
  * @returns Result object with error details
  */
 export const handleTranscriptionFailure = async (
@@ -240,7 +241,8 @@ export const handleTranscriptionFailure = async (
   captureId: string,
   error: Error,
   attemptCount: number,
-  vaultRoot?: string
+  vaultRoot?: string,
+  metricsClient?: { counter: (name: string, tags?: Record<string, string>) => void }
 ): Promise<TranscriptionFailureResult> => {
   const errorType = classifyError(error)
 
@@ -276,6 +278,11 @@ export const handleTranscriptionFailure = async (
 
   // Insert error log entry
   insertErrorLog(db, captureId, error, errorType, attemptCount, existingMeta)
+
+  // Emit metrics after error logging but before returning
+  if (metricsClient) {
+    metricsClient.counter('transcription_failure_total', { error_type: errorType })
+  }
 
   // Export placeholder for permanent errors when vaultRoot is provided
   if (vaultRoot && isPermanentError(errorType)) {
