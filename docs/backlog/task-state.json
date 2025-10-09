@@ -241,6 +241,17 @@
       ],
       "acs_remaining": [],
       "notes": "Completed transcription failure handling following strict TDD. AC06: Placeholder export on permanent failure (7 tests). AC07: errors_log insertion (3 tests). AC08: capture status update (11 tests). AC09: transcription_failure_total metric emission (1 test). AC10: raw_content storage verified (existing test coverage). Total 19 tests passing. Implementation includes error classification, DLQ handling, escalation actions, and optional metrics emission."
+    },
+    "DIRECT_EXPORT_VOICE--T01": {
+      "status": "in-progress",
+      "started_at": "2025-10-09T21:00:00Z",
+      "acs_completed": [],
+      "acs_remaining": [
+        "DIRECT_EXPORT_VOICE-AC01",
+        "DIRECT_EXPORT_VOICE-AC02",
+        "DIRECT_EXPORT_VOICE-AC03",
+        "DIRECT_EXPORT_VOICE-AC04"
+      ]
     }
   }
 }
