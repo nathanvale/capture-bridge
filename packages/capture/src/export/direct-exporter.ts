@@ -158,6 +158,9 @@ export const exportToVault = async (
       0
     )
 
+    // AC05: Update capture status to 'exported' after successful export
+    db.prepare(`UPDATE captures SET status = ? WHERE id = ?`).run('exported', captureId)
+
     return {
       success: true,
       export_path: writeResult.export_path,
