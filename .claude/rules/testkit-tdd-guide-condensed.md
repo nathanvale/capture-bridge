@@ -3,7 +3,7 @@
 **Purpose**: Essential patterns for AI agents - condensed from 11k to 3k tokens
 **Full Version**: `.claude/rules/testkit-tdd-guide.md` (read when implementing complex patterns)
 **TestKit Version**: @orchestr8/testkit v2.0.0
-**Last Updated**: 2025-10-08
+**Last Updated**: 2025-10-09
 
 ---
 
@@ -74,11 +74,26 @@ pools.push(pool) // Track for cleanup
 
 ### In-Memory Database
 ```typescript
-const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-const Database = (await import('better-sqlite3')).default
-const db = new Database(createMemoryUrl())
+import Database from 'better-sqlite3'
+
+// ✅ CORRECT: True in-memory (zero file handles, perfect isolation)
+const db = new Database(':memory:')
 databases.push(db)
 ```
+
+**Why `:memory:` is preferred**:
+- **Zero file handles**: No OS-level file descriptors created
+- **Perfect isolation**: Each connection gets fresh database
+- **Auto-cleanup**: Database destroyed when connection closes
+- **Faster**: No IPC overhead from shared memory
+- **Simpler**: No dynamic imports needed
+
+**When NOT to use**:
+- Need to share state across connections (rare, use explicit coordination)
+
+**Related**: For detailed analysis of `:memory:` vs shared memory, see:
+`docs/features/testing/spec-test-db-cleanup-tech.md`
+
 **Full pattern**: [testkit-tdd-guide.md:624-649]
 
 ### MSW HTTP Mocking
@@ -127,6 +142,7 @@ expect(after - before).toBeLessThan(5 * 1024 * 1024) // 5MB threshold
 | Parallel cleanup | Sequential `for` loops |
 | Pool then database close | Database then pool drain |
 | GC first | GC last in cleanup |
+| **`createMemoryUrl()`** | **`new Database(':memory:')`** |
 
 ---
 
@@ -211,6 +227,7 @@ expect(after - before).toBeLessThan(5 * 1024 * 1024) // 5MB threshold
 - [ ] No manual rmSync() for temp directories
 - [ ] Security tests for input handling
 - [ ] Memory leak test for loops (if applicable)
+- [ ] Database isolation: Use `:memory:` for in-memory DBs
 
 ---
 

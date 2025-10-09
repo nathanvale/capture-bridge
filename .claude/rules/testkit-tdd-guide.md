@@ -623,15 +623,14 @@ describe('SQLite Pool Tests', () => {
 
 ### In-Memory Database
 
-**From**: `testkit-sqlite-features.test.ts`
+**Recommended Pattern**: Use `:memory:` for true in-memory databases
 
 ```typescript
 it('should create in-memory database', async () => {
-  const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
   const Database = (await import('better-sqlite3')).default
 
-  const url = createMemoryUrl()
-  const db = new Database(url)
+  // ✅ CORRECT: True in-memory (zero file handles, perfect isolation)
+  const db = new Database(':memory:')
   databases.push(db) // Track for cleanup
 
   db.exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)')
@@ -642,10 +641,23 @@ it('should create in-memory database', async () => {
 })
 ```
 
+**Why `:memory:` is preferred**:
+- **Zero file handles**: No OS-level file descriptors created
+- **Perfect isolation**: Each connection gets fresh database
+- **Auto-cleanup**: Database destroyed when connection closes
+- **Faster**: No IPC overhead from shared memory
+- **Simpler**: No dynamic imports needed
+
+**When NOT to use**:
+- Need to share state across connections (rare, use explicit coordination)
+
+**Related**: For detailed analysis of `:memory:` vs shared memory, see:
+`docs/features/testing/spec-test-db-cleanup-tech.md`
+
 **Key Points**:
 - Track databases in array: `databases.push(db)`
 - Use parameterized queries: `prepare().get(?)`
-- Import dynamically: `await import()`
+- Import Database dynamically: `await import('better-sqlite3')`
 
 ### Migrations & Seeding
 
@@ -1039,10 +1051,9 @@ describe('My SQLite Feature', () => {
   })
 
   it('should work', async () => {
-    const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
     const Database = (await import('better-sqlite3')).default
 
-    const db = new Database(createMemoryUrl())
+    const db = new Database(':memory:')
     databases.push(db)
 
     // Your test code here
@@ -1201,10 +1212,12 @@ const pool = new SQLiteConnectionPool(dbPath, { maxConnections: 5 })
 pools.push(pool)
 ```
 
-### Create Database
+### Create In-Memory Database
 
 ```typescript
 const Database = (await import('better-sqlite3')).default
+
+// ✅ CORRECT: True in-memory (zero file handles, perfect isolation)
 const db = new Database(':memory:')
 databases.push(db)
 ```

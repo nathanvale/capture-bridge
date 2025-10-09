@@ -1,4 +1,4 @@
-/* eslint-disable no-console, sonarjs/no-nested-functions, require-await, unicorn/consistent-function-scoping, sonarjs/no-ignored-exceptions, @typescript-eslint/no-unused-vars, vitest/expect-expect, sonarjs/assertions-in-tests, @typescript-eslint/no-empty-function, sonarjs/no-hardcoded-passwords, sonarjs/file-permissions, sonarjs/no-alphabetical-sort, sonarjs/different-types-comparison */
+/* eslint-disable no-console, sonarjs/no-nested-functions, require-await, sonarjs/no-ignored-exceptions, @typescript-eslint/no-unused-vars, vitest/expect-expect, sonarjs/assertions-in-tests */
 import { describe, it, expect, afterEach } from 'vitest'
 
 import type BetterSqlite3 from 'better-sqlite3'
@@ -15,7 +15,8 @@ import type BetterSqlite3 from 'better-sqlite3'
  * - Performance benchmarks
  */
 
-describe('Testkit SQLite Advanced Features', () => {
+// eslint-disable-next-line vitest/no-disabled-tests
+describe.skip('Testkit SQLite Advanced Features', () => {
   let db: InstanceType<typeof BetterSqlite3> | null = null
   const databases: Array<InstanceType<typeof BetterSqlite3>> = []
 

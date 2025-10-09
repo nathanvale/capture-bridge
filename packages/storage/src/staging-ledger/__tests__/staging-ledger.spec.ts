@@ -9,17 +9,16 @@
  * Based on spec-staging-tech.md §3.3 and §3.4
  */
 
+import Database from 'better-sqlite3'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 
-import type DatabaseConstructor from 'better-sqlite3'
-
-type Database = ReturnType<typeof DatabaseConstructor>
+type DatabaseInstance = ReturnType<typeof Database>
 
 type ULID = () => string
 
 describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
-  let db: Database
-  const databases: Database[] = []
+  let db: DatabaseInstance
+  const databases: DatabaseInstance[] = []
   let ulid: ULID
 
   beforeEach(async () => {
@@ -28,9 +27,7 @@ describe('Staging Ledger - Export Recording with Duplicate Skip', () => {
     ;({ ulid } = ulidModule)
 
     // Create in-memory database for testing
-    const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-    const DatabaseConstructor = (await import('better-sqlite3')).default
-    db = new DatabaseConstructor(createMemoryUrl())
+    db = new Database(':memory:')
     databases.push(db)
 
     // Initialize schema

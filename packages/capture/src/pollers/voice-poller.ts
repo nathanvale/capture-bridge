@@ -1,4 +1,3 @@
-import { execFile } from 'node:child_process'
 import { readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -13,10 +12,22 @@ import type {
 const DEFAULT_POLL_INTERVAL = 30000 // 30 seconds
 const VOICE_MEMOS_EXTENSION = '.m4a'
 const SYNC_STATE_KEY = 'voice_last_poll'
-const DOWNLOAD_MAX_WAIT_MS = 30000 // 30 seconds max wait for download
+const DOWNLOAD_MAX_WAIT_MS = 60000 // 60 seconds max wait for download (AC05 spec)
 
-// Helper to execute binary commands safely without shell interpretation
-const execFileAsync = promisify(execFile)
+// Helper to execute binary commands safely without shell interpretation.
+// Lazily binds to child_process.execFile so test spies (vi.spyOn) are honored.
+let cachedExecAsync:
+  | ((cmd: string, args: string[]) => Promise<{ stdout: string; stderr: string }>)
+  | undefined
+const execFileAsync = async (cmd: string, args: string[]) => {
+  if (!cachedExecAsync) {
+    const child = await import('node:child_process')
+    const execAsync = promisify(child.execFile)
+    cachedExecAsync = (c: string, a: string[]) =>
+      execAsync(c, a) as unknown as Promise<{ stdout: string; stderr: string }>
+  }
+  return cachedExecAsync(cmd, args)
+}
 
 export class VoicePoller {
   private intervalId: NodeJS.Timeout | undefined = undefined
@@ -44,13 +55,36 @@ export class VoicePoller {
     // 1. Scan iCloud folder for .m4a files
     const files = await this.scanVoiceMemos()
 
+    // 1a. Optionally filter by last poll timestamp (if exists)
+    // This reduces repeat work across polling cycles
+    let filesToProcess: string[]
+    try {
+      const lastPoll = await this.getLastPollTimestamp()
+      filesToProcess = await this.filterNewFiles(files, lastPoll)
+    } catch {
+      // If filtering fails for any reason, fall back to processing all files
+      filesToProcess = files
+    }
+
     // 2. Process each file sequentially (for...of ensures sequential)
     let filesProcessed = 0
     let duplicatesSkipped = 0
 
-    for (const filePath of files) {
+    for (const filePath of filesToProcess) {
       try {
-        // Check APFS dataless status and download if needed
+        // Fast path: skip if already staged (Layer 1 dedup) BEFORE heavy work
+        const existing = await this.db.query<{ id: string }>(
+          `SELECT id FROM captures
+           WHERE json_extract(meta_json, '$.channel') = ?
+           AND json_extract(meta_json, '$.channel_native_id') = ?`,
+          ['voice', filePath]
+        )
+        if (existing) {
+          duplicatesSkipped++
+          continue
+        }
+
+        // Check APFS dataless status, download if needed, and check for conflicts
         await this.ensureFileDownloaded(filePath)
 
         // Compute fingerprint (placeholder implementation for now)
@@ -75,8 +109,8 @@ export class VoicePoller {
       }
     }
 
-    // 3. Update sync state with current timestamp
-    await this.updateLastPollTimestamp(new Date().toISOString())
+    // 3. Update sync state with current real timestamp (from SQLite)
+    await this.updateLastPollTimestamp()
 
     return {
       filesFound: files.length,
@@ -90,25 +124,50 @@ export class VoicePoller {
   /**
    * Compute fingerprint for an audio file
    * @param filePath Path to the audio file
-   * @returns Fingerprint string
-   * @internal Stub implementation for now
+   * @returns SHA-256 fingerprint string (64 hex characters)
    */
-  private computeFingerprint(filePath: string): Promise<string> {
-    // Placeholder implementation - will be replaced with actual fingerprinting
-    // For now, return a placeholder based on file path
-    return Promise.resolve(`fingerprint_${filePath.replace(/[^a-zA-Z0-9]/g, '_')}`)
+  private async computeFingerprint(filePath: string): Promise<string> {
+    const { computeAudioFingerprint } = await import('@capture-bridge/foundation')
+    return computeAudioFingerprint(filePath)
   }
 
   /**
    * Stage a capture in the database
    * @param filePath Path to the audio file
-   * @param fingerprint Audio fingerprint
-   * @internal Stub implementation for now
+   * @param fingerprint Audio fingerprint (SHA-256 hex)
+   * @internal Implements channel-native-id storage [AC08]
    */
-  private async stageCapture(_filePath: string, _fingerprint: string): Promise<void> {
-    // Placeholder implementation - will be replaced with actual database staging
-    // For now, this is a no-op
-    await Promise.resolve()
+  private async stageCapture(filePath: string, fingerprint: string): Promise<void> {
+    // Check if this file is already staged (Layer 1 deduplication)
+    const existing = await this.db.query<{ id: string }>(
+      `SELECT id FROM captures
+       WHERE json_extract(meta_json, '$.channel') = ?
+       AND json_extract(meta_json, '$.channel_native_id') = ?`,
+      ['voice', filePath]
+    )
+
+    if (existing) {
+      // Already staged, skip duplicate
+      return
+    }
+
+    // Generate ULID for capture ID (import dynamically to avoid issues)
+    const { ulid } = await import('ulid')
+    const captureId = ulid()
+
+    // Create meta_json structure
+    const metaJson = JSON.stringify({
+      channel: 'voice',
+      channel_native_id: filePath, // Absolute path as unique identifier
+      audio_fp: fingerprint, // SHA-256 fingerprint
+    })
+
+    // Insert into captures table
+    await this.db.run(
+      `INSERT INTO captures (id, source, status, meta_json, raw_content, created_at, updated_at)
+       VALUES (?, 'voice', 'staged', ?, '', datetime('now'), datetime('now'))`,
+      [captureId, metaJson]
+    )
   }
 
   /**
@@ -170,7 +229,6 @@ export class VoicePoller {
    * @returns ISO timestamp string or undefined if no cursor exists
    * @internal Exposed for testing
    */
-  // @ts-expect-error - Method is used in tests
   private async getLastPollTimestamp(): Promise<string | undefined> {
     const result = await this.db.query<{ value: string }>(
       'SELECT value FROM sync_state WHERE key = ?',
@@ -184,10 +242,18 @@ export class VoicePoller {
    * @param timestamp ISO timestamp string
    * @internal Exposed for testing
    */
-  private async updateLastPollTimestamp(timestamp: string): Promise<void> {
+  private async updateLastPollTimestamp(timestamp?: string): Promise<void> {
+    if (timestamp) {
+      await this.db.run(
+        'INSERT OR REPLACE INTO sync_state (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)',
+        [SYNC_STATE_KEY, timestamp]
+      )
+      return
+    }
+    // Use ISO 8601 UTC format for consistent parsing across timezones
     await this.db.run(
-      'INSERT OR REPLACE INTO sync_state (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)',
-      [SYNC_STATE_KEY, timestamp]
+      "INSERT OR REPLACE INTO sync_state (key, value, updated_at) VALUES (?, strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), CURRENT_TIMESTAMP)",
+      [SYNC_STATE_KEY]
     )
   }
 
@@ -198,7 +264,6 @@ export class VoicePoller {
    * @returns Files modified after the timestamp (or all files if no timestamp)
    * @internal Exposed for testing
    */
-  // @ts-expect-error - Method is used in tests
   private async filterNewFiles(
     files: string[],
     lastPollTimestamp: string | undefined
@@ -229,9 +294,56 @@ export class VoicePoller {
    * @internal Exposed for testing
    */
   private async checkIfDataless(filePath: string): Promise<boolean> {
-    // Use execFile to prevent shell injection - arguments passed directly to binary
-    const { stdout } = await execFileAsync('icloudctl', ['check', filePath])
-    return stdout.includes('dataless')
+    const info = await this.runIcloudCheck(filePath)
+    return info.isDataless
+  }
+
+  /**
+   * Execute icloudctl command with exponential backoff retry
+   * Implements AC05: 1s, 2s, 4s delays, cap at 60s total
+   * @param operation The async operation to retry
+   * @param maxRetries Maximum number of retries (default 3)
+   * @returns The result of the operation
+   * @throws The last error if all retries fail
+   * @internal
+   */
+  private async executeWithRetry<T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> {
+    let lastError: Error | undefined
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation()
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error))
+
+        if (attempt < maxRetries) {
+          // Exponential backoff: 1s, 2s, 4s per AC05
+          let delay: number
+          if (attempt === 0) {
+            delay = 1000
+          } else if (attempt === 1) {
+            delay = 2000
+          } else {
+            delay = 4000
+          }
+          await new Promise((resolve) => setTimeout(resolve, delay))
+        }
+      }
+    }
+
+    throw lastError ?? new Error('Retry failed')
+  }
+
+  /**
+   * Check if a file has iCloud conflicts
+   * @param filePath Path to the file to check
+   * @returns True if file has unresolved conflicts
+   * @throws Error if icloudctl check fails after retries
+   * @internal
+   */
+  private async checkForConflicts(filePath: string): Promise<boolean> {
+    const info = await this.runIcloudCheck(filePath)
+    return info.hasConflicts
   }
 
   /**
@@ -241,7 +353,7 @@ export class VoicePoller {
    */
   private async triggerDownload(filePath: string): Promise<void> {
     // Use execFile to prevent shell injection - arguments passed directly to binary
-    await execFileAsync('icloudctl', ['download', filePath])
+    await this.executeWithRetry(() => execFileAsync('icloudctl', ['download', filePath]))
   }
 
   /**
@@ -278,7 +390,9 @@ export class VoicePoller {
 
   /**
    * Ensure a file is downloaded from iCloud if it's dataless
+   * Also checks for conflicts after download
    * @param filePath Path to the file to check and download
+   * @throws Error if file has iCloud conflicts
    * @internal Exposed for testing
    */
   private async ensureFileDownloaded(filePath: string): Promise<void> {
@@ -288,5 +402,28 @@ export class VoicePoller {
       await this.triggerDownload(filePath)
       await this.waitForDownload(filePath)
     }
+
+    // After ensuring file is downloaded, check for conflicts
+    const hasConflicts = await this.checkForConflicts(filePath)
+    if (hasConflicts) {
+      throw new Error(`iCloud conflict detected: ${filePath} - skipping`)
+    }
+  }
+
+  /**
+   * Run a single icloudctl check and parse both dataless and conflict flags
+   */
+  private async runIcloudCheck(
+    filePath: string
+  ): Promise<{ isDataless: boolean; hasConflicts: boolean }> {
+    // Use execFile to prevent shell injection - arguments passed directly to binary
+    return await this.executeWithRetry(async () => {
+      const { stdout } = await execFileAsync('icloudctl', ['check', filePath])
+      const text = String(stdout ?? '')
+      return {
+        isDataless: text.includes('dataless'),
+        hasConflicts: text.includes('hasUnresolvedConflicts: true'),
+      }
+    })
   }
 }
