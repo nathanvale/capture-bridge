@@ -43,9 +43,7 @@
       "status": "completed",
       "started_at": "2025-10-06T22:00:00Z",
       "completed_at": "2025-10-06T23:57:00Z",
-      "acs_completed": [
-        "SQLITE_SCHEMA-AC07"
-      ],
+      "acs_completed": ["SQLITE_SCHEMA-AC07"],
       "acs_remaining": [],
       "notes": "Completed database integrity check implementation following strict TDD (Red-Green-Refactor). AC07: PRAGMA integrity_check validation passes on clean databases, file-based databases, and databases with data. 69/69 tests passing (65 existing + 4 new). Files created: integrity-check.spec.ts (4 tests). Modified: schema.ts (added verifyIntegrity() function with proper type guards), schema/index.ts and src/index.ts (exported verifyIntegrity). Build successful. Implementation uses PRAGMA integrity_check to validate table structure, index consistency, row data validity, and B-tree structure correctness."
     },
@@ -194,7 +192,12 @@
       "status": "completed",
       "started_at": "2025-10-09T05:45:00Z",
       "completed_at": "2025-10-09T06:50:00Z",
-      "acs_completed": ["DEDUPLICATION_LOGIC-AC06", "DEDUPLICATION_LOGIC-AC07", "DEDUPLICATION_LOGIC-AC08", "DEDUPLICATION_LOGIC-AC09"],
+      "acs_completed": [
+        "DEDUPLICATION_LOGIC-AC06",
+        "DEDUPLICATION_LOGIC-AC07",
+        "DEDUPLICATION_LOGIC-AC08",
+        "DEDUPLICATION_LOGIC-AC09"
+      ],
       "acs_remaining": [],
       "notes": "All 4 ACs implemented together in AC06 as they are tightly coupled: AC06: exports_audit with mode='duplicate_skip' + status transition to exported_duplicate. AC07: Empty vault_path for duplicates (line 132 in test). AC08: < 10ms performance via indexed query (checkDuplicate uses captures_content_hash_idx). AC09: dedup_hits_total metric emission (line 254-270 test validates). 10/10 tests passing. Coverage: 80.85%."
     },
@@ -202,7 +205,13 @@
       "status": "completed",
       "started_at": "2025-10-09T07:00:00Z",
       "completed_at": "2025-10-09T08:00:00Z",
-      "acs_completed": ["VOICE_POLLING_ICLOUD-AC06", "VOICE_POLLING_ICLOUD-AC07", "VOICE_POLLING_ICLOUD-AC08", "VOICE_POLLING_ICLOUD-AC09", "VOICE_POLLING_ICLOUD-AC10"],
+      "acs_completed": [
+        "VOICE_POLLING_ICLOUD-AC06",
+        "VOICE_POLLING_ICLOUD-AC07",
+        "VOICE_POLLING_ICLOUD-AC08",
+        "VOICE_POLLING_ICLOUD-AC09",
+        "VOICE_POLLING_ICLOUD-AC10"
+      ],
       "acs_remaining": [],
       "notes": "Completed voice polling capture staging integration following strict TDD. AC06: iCloud conflict detection with prominent error logging (2 tests). AC07: Audio fingerprint computation using foundation's computeAudioFingerprint (2 tests). AC08: Channel-native-id uniqueness via file path in meta_json with Layer 1 deduplication (3 tests). AC09: Complete capture row structure validation (ULID, status='staged', empty raw_content, null content_hash, meta_json with channel/channel_native_id/audio_fp). AC10: Performance validation p95 < 150ms for staging operation (100 iterations with 4MB files). 46/46 tests passing. Coverage: >85%. Files modified: voice-poller.ts (stageCapture implementation), voice-poller.test.ts (11 new tests across 4 test suites)."
     },
@@ -210,7 +219,12 @@
       "status": "in-progress",
       "started_at": "2025-10-09T08:00:00Z",
       "acs_completed": ["WHISPER_TRANSCRIPTION-AC01"],
-      "acs_remaining": ["WHISPER_TRANSCRIPTION-AC02", "WHISPER_TRANSCRIPTION-AC03", "WHISPER_TRANSCRIPTION-AC04", "WHISPER_TRANSCRIPTION-AC05"]
+      "acs_remaining": [
+        "WHISPER_TRANSCRIPTION-AC02",
+        "WHISPER_TRANSCRIPTION-AC03",
+        "WHISPER_TRANSCRIPTION-AC04",
+        "WHISPER_TRANSCRIPTION-AC05"
+      ]
     }
   }
 }
