@@ -62,16 +62,12 @@ export interface AtomicWriter {
 **Exported Functions**:
 
 ```typescript
-// Main atomic writer implementation
-export class ObsidianAtomicWriter implements AtomicWriter {
-  constructor(private readonly vault_path: string) {}
-
-  async writeAtomic(
-    capture_id: string,
-    content: string,
-    vault_path: string
-  ): Promise<AtomicWriteResult>
-}
+// Main atomic writer implementation (function-based for simplicity in MPPP)
+export async function writeAtomic(
+  capture_id: string,
+  content: string,
+  vault_path: string
+): Promise<AtomicWriteResult>
 
 // Path resolution utilities
 export function resolveTempPath(vault_path: string, capture_id: string): string
@@ -81,14 +77,16 @@ export function resolveExportPath(
 ): string
 
 // Collision detection
-export function checkCollision(
+export async function checkCollision(
   export_path: string,
   content_hash: string
 ): Promise<CollisionResult>
 
-// Temp file cleanup (used in error paths)
-export function cleanupTempFile(temp_path: string): Promise<void>
+// ULID validation (security)
+export function validateCaptureId(capture_id: string): void
 ```
+
+**Note on API Design**: MPPP uses a stateless function-based API for simplicity. Phase 2+ may introduce a class-based wrapper if multiple configuration options are needed (e.g., custom temp directory, fsync toggle for testing).
 
 ### 1.3 CLI Integration
 
