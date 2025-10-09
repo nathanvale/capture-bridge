@@ -508,7 +508,39 @@ Proceed with TDD cycle now.`
 - Success: `✅ TDD Cycle Complete` + `Ready for Commit: YES`
 - Failure: `❌ TDD Cycle Blocked` + `Ready for Commit: NO`
 
-**If success**:
+**MANDATORY TEST VERIFICATION** (BLOCKING - DO NOT SKIP):
+
+Before committing, you MUST verify tests pass using one of these methods (in order of preference):
+
+**Option 1: Wallaby MCP Tools** (preferred - real-time feedback):
+```typescript
+// Check all tests for the package
+mcp__wallaby__wallaby_allTestsForFile({
+  file: "${test_file_path}"
+})
+
+// Expected output: All tests passing, no failures
+// If ANY test fails: BLOCK and report failure details
+```
+
+**Option 2: NPM Test** (if Wallaby unavailable or not responsive):
+```bash
+cd packages/${package_name}
+pnpm test ${test_pattern}
+
+# Expected: All tests pass (exit code 0)
+# If ANY test fails: BLOCK and report failure details
+```
+
+**BLOCKING CHECKPOINT - If tests fail**:
+- ❌ STOP - Do NOT commit code
+- ❌ Do NOT mark AC as completed
+- ❌ Do NOT proceed to next AC
+- 🔧 Report failure details to user
+- 🔧 Set task to 'blocked' in task-state.json
+- 🔧 Provide exact test output for debugging
+
+**If tests pass (and only then)**:
 
 ```bash
 git add ${changed_files}
