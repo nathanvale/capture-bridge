@@ -21,6 +21,7 @@ const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
 describe('TranscriptionQueue', () => {
   // Track resources for cleanup
   const queues: Array<{ shutdown: () => Promise<void> }> = []
+  const databases: Array<{ close: () => void }> = []
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -40,6 +41,16 @@ describe('TranscriptionQueue', () => {
 
     // 1. Settle
     await delay(100)
+
+    // 3. Close databases
+    for (const db of databases) {
+      try {
+        db.close()
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+    databases.length = 0
 
     // 5. Force GC
     if (global.gc) global.gc()
@@ -384,6 +395,116 @@ describe('TranscriptionQueue', () => {
       const status = queue.getStatus()
       expect(status.isProcessing).toBe(false)
       expect(status.queueDepth).toBe(0)
+    })
+
+    it('should retry once on timeout, succeed on second attempt', async () => {
+      const { TranscriptionQueue, TimeoutError } = await import('./queue.js')
+      const Database = (await import('better-sqlite3')).default
+
+      const db = new Database(':memory:')
+      databases.push(db)
+
+      db.exec(`CREATE TABLE captures (
+        id TEXT PRIMARY KEY, status TEXT NOT NULL,
+        raw_content TEXT, content_hash TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`)
+      db.prepare('INSERT INTO captures (id, status) VALUES (?, ?)').run('retry-test', 'discovered')
+
+      let callCount = 0
+      const whisperModel = {
+        transcribe: vi.fn(() => {
+          callCount++
+          if (callCount === 1) throw new TimeoutError()
+          return Promise.resolve({ text: 'Success after retry', confidence: 0.95 })
+        }),
+      }
+
+      const queue = new TranscriptionQueue(db, whisperModel, { timeoutMs: 30000 })
+      queues.push(queue)
+
+      queue.enqueue({
+        captureId: 'retry-test',
+        audioPath: '/path/audio.m4a',
+        audioFingerprint: 'fp1',
+        status: 'queued',
+        attemptCount: 0,
+        queuedAt: new Date(),
+      })
+
+      await delay(300)
+
+      expect(whisperModel.transcribe).toHaveBeenCalledTimes(2)
+      expect(queue.getStatus().totalProcessed).toBe(1)
+
+      const capture = db.prepare('SELECT status, raw_content FROM captures WHERE id = ?').get('retry-test') as {
+        status: string
+        raw_content: string
+      }
+      expect(capture.status).toBe('transcribed')
+      expect(capture.raw_content).toBe('Success after retry')
+    })
+
+    it('should not retry on second timeout (max attempts reached)', async () => {
+      const { TranscriptionQueue, TimeoutError } = await import('./queue.js')
+
+      const whisperModel = {
+        transcribe: vi.fn(() => {
+          throw new TimeoutError()
+        }),
+      }
+
+      const queue = new TranscriptionQueue(undefined, whisperModel, { timeoutMs: 30000 })
+      queues.push(queue)
+
+      const job: TranscriptionJob = {
+        captureId: 'double-timeout',
+        audioPath: '/path/audio.m4a',
+        audioFingerprint: 'fp1',
+        status: 'queued',
+        attemptCount: 0,
+        queuedAt: new Date(),
+      }
+
+      queue.enqueue(job)
+      await delay(300)
+
+      expect(whisperModel.transcribe).toHaveBeenCalledTimes(2)
+      expect(queue.getStatus().totalFailed).toBe(1)
+      expect(job.status).toBe('failed')
+      expect(job.attemptCount).toBe(2)
+    })
+
+    it('should not retry on non-timeout errors', async () => {
+      const { TranscriptionQueue } = await import('./queue.js')
+
+      const whisperModel = {
+        transcribe: vi.fn(() => {
+          throw new Error('File not found')
+        }),
+      }
+
+      const queue = new TranscriptionQueue(undefined, whisperModel, { timeoutMs: 30000 })
+      queues.push(queue)
+
+      const job: TranscriptionJob = {
+        captureId: 'non-timeout-error',
+        audioPath: '/path/missing.m4a',
+        audioFingerprint: 'fp1',
+        status: 'queued',
+        attemptCount: 0,
+        queuedAt: new Date(),
+      }
+
+      queue.enqueue(job)
+      await delay(200)
+
+      // Should only be called once (no retry for non-timeout errors)
+      expect(whisperModel.transcribe).toHaveBeenCalledTimes(1)
+      expect(queue.getStatus().totalFailed).toBe(1)
+      expect(job.status).toBe('failed')
+      expect(job.attemptCount).toBe(1)
     })
   })
 

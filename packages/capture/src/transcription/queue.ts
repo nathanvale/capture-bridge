@@ -139,8 +139,7 @@ export class TranscriptionQueue {
         if (!job) break
 
         this.currentJob = job
-        job.status = 'processing'
-        job.startedAt = new Date()
+        // Note: transcribeJob will set status to 'processing' and handle startedAt
 
         try {
           // Process the job, but allow shutdown to abort the wait
@@ -159,8 +158,13 @@ export class TranscriptionQueue {
           }
 
           // Update metrics on success (job.status is set by transcribeJob)
-          this.totalProcessed++
-          this.lastCompletedAt = new Date()
+          // Only count as processed if actually completed (not retrying)
+          // After transcribeJob, status will be 'completed' (success), 'queued' (retrying), or throw (failed)
+          if (job.status === 'completed') {
+            this.totalProcessed++
+            this.lastCompletedAt = new Date()
+          }
+          // If status is 'queued', job was re-enqueued for retry, no metrics update needed
         } catch (error) {
           // Job failed - update status and metrics
           job.status = 'failed'
@@ -278,6 +282,19 @@ export class TranscriptionQueue {
       job.status = 'completed'
       job.completedAt = new Date()
     } catch (error) {
+      // Check if this is a retriable error (timeout on first attempt)
+      const isRetriable = error instanceof TimeoutError && job.attemptCount < MAX_ATTEMPTS
+
+      if (isRetriable) {
+        // Re-enqueue for single retry (unshift for priority)
+        job.status = 'queued'
+        delete job.startedAt
+        delete job.completedAt
+        this.queue.unshift(job)
+        return // Exit gracefully, retry will happen next
+      }
+
+      // Non-retriable or max attempts reached: handle as permanent failure
       this.handleTranscriptionError(job, error)
     }
   }
