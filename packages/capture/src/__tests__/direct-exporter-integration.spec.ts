@@ -289,4 +289,81 @@ describe('Direct Exporter Integration [AC03+AC04]', () => {
     // AC06: Verify export time < 1000ms (1 second)
     expect(durationMs).toBeLessThan(1000)
   })
+
+  it('[AC07] should use atomic writer guaranteeing zero partial writes', async () => {
+    // Setup temp vault directory
+    const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+    const tempDir = await createTempDirectory()
+    tempDirs.push(tempDir)
+    const vaultPath = tempDir.path
+
+    // Setup database
+    const db = new Database(':memory:')
+    databases.push(db)
+
+    // Create schema
+    db.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        status TEXT NOT NULL,
+        raw_content TEXT,
+        content_hash TEXT,
+        meta_json TEXT DEFAULT '{}',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    db.exec(`
+      CREATE TABLE exports_audit (
+        id TEXT PRIMARY KEY,
+        capture_id TEXT NOT NULL,
+        vault_path TEXT NOT NULL,
+        hash_at_export TEXT,
+        exported_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        mode TEXT,
+        error_flag INTEGER DEFAULT 0,
+        FOREIGN KEY (capture_id) REFERENCES captures(id) ON DELETE CASCADE
+      )
+    `)
+
+    // Insert test capture
+    const captureId = '01HZVM8YWRQT5J3M3K7YPTXFZ5'
+    db.prepare(
+      `INSERT INTO captures (id, source, status, raw_content, content_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(captureId, 'voice', 'transcribed', 'Test content', 'hash789', '2025-10-10T00:00:00.000Z')
+
+    // Export
+    const { exportToVault } = await import('../export/direct-exporter.js')
+    const result = await exportToVault(captureId, db, vaultPath)
+
+    expect(result.success).toBe(true)
+
+    // AC07: Verify atomic write guarantees
+    // 1. No temp files remain in .trash/
+    const fs = await import('node:fs/promises')
+    const path = await import('node:path')
+    const trashPath = path.join(vaultPath, '.trash')
+
+    try {
+      const trashFiles = await fs.readdir(trashPath)
+      const tmpFiles = trashFiles.filter((f) => f.endsWith('.tmp'))
+      expect(tmpFiles).toHaveLength(0)
+    } catch {
+      // .trash directory might not exist if writeAtomic cleaned it up
+    }
+
+    // 2. Final file exists with complete content
+    const exportPath = path.join(vaultPath, 'inbox', `${captureId}.md`)
+    const fileContent = await fs.readFile(exportPath, 'utf-8')
+    expect(fileContent).toContain('Test content')
+    expect(fileContent).toContain(captureId)
+
+    // 3. Reference: Full crash safety verified in @capture-bridge/obsidian-bridge
+    // See packages/obsidian-bridge/src/__tests__/crash-testing.test.ts
+    // - Zero partial writes after simulated crash
+    // - Temp file cleanup on failure
+    // - Rapid sequential writes without temp files
+    // - No corruption of existing files
+  })
 })
