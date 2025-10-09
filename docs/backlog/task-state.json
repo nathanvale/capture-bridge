@@ -276,11 +276,11 @@
       "status": "in-progress",
       "started_at": "2025-10-10T00:00:00Z",
       "acs_completed": [
-        "GMAIL_OAUTH2_SETUP-AC01"
+        "GMAIL_OAUTH2_SETUP-AC01",
+        "GMAIL_OAUTH2_SETUP-AC02",
+        "GMAIL_OAUTH2_SETUP-AC03"
       ],
       "acs_remaining": [
-        "GMAIL_OAUTH2_SETUP-AC02",
-        "GMAIL_OAUTH2_SETUP-AC03",
         "GMAIL_OAUTH2_SETUP-AC04",
         "GMAIL_OAUTH2_SETUP-AC05",
         "GMAIL_OAUTH2_SETUP-AC06",
