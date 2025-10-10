@@ -283,7 +283,7 @@ describe('Automatic Token Refresh [AC04]', () => {
       ensureValidToken(credentialsPath, tokenPath, {
         mockRefresh: { error: 'invalid_grant' },
       })
-    ).rejects.toThrow('Refresh token invalid')
+    ).rejects.toThrow('Token revoked')
   })
 
   it('should handle generic OAuth2 errors during refresh [AC04]', async () => {

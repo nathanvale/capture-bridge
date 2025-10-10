@@ -1,11 +1,13 @@
 /**
- * OAuth2 Authorization Flow Implementation [AC02 + AC03]
+ * OAuth2 Authorization Flow Implementation [AC02 + AC03 + AC05]
  * Handles Google OAuth2 authorization and token management
  */
 
 import { promises as fs } from 'node:fs'
 
 import { google } from 'googleapis'
+
+import { GmailAuthError, GmailErrorType } from './types.js'
 
 /**
  * OAuth2 credentials structure from credentials.json
@@ -194,6 +196,80 @@ export const isTokenExpired = (token: TokenData): boolean => {
 }
 
 /**
+ * Parses error string to extract rate limit information
+ *
+ * @param errorStr - Error string to parse (may be JSON)
+ * @returns Parsed error object or undefined if not JSON/not parseable
+ */
+const parseErrorObject = (
+  errorStr: string
+): { status?: number; retryAfter?: number } | undefined => {
+  try {
+    return JSON.parse(errorStr)
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Handles invalid_grant error (revoked token)
+ *
+ * @throws GmailAuthError with AUTH_INVALID_GRANT type
+ */
+const handleInvalidGrant = (): never => {
+  const originalError = new Error('OAuth2 error: invalid_grant')
+  throw new GmailAuthError(
+    GmailErrorType.AUTH_INVALID_GRANT,
+    'Token revoked - refresh token is no longer valid',
+    originalError
+  )
+}
+
+/**
+ * Handles rate limit error (HTTP 429)
+ *
+ * @param errorStr - Error string (JSON with status and retryAfter)
+ * @param errorObj - Parsed error object
+ * @throws GmailAuthError with API_RATE_LIMITED type
+ */
+const handleRateLimit = (
+  errorStr: string,
+  errorObj: { status?: number; retryAfter?: number }
+): never => {
+  const originalError = new Error(`Rate limit: ${errorStr}`)
+  const retryMsg = errorObj.retryAfter
+    ? `Rate limit exceeded - retry after ${errorObj.retryAfter} seconds`
+    : 'Rate limit exceeded - retry later'
+  throw new GmailAuthError(GmailErrorType.API_RATE_LIMITED, retryMsg, originalError)
+}
+
+/**
+ * Processes mock refresh error, determining error type and throwing appropriate error
+ *
+ * @param errorStr - Error string from mock
+ * @throws GmailAuthError with appropriate error type
+ */
+const processMockRefreshError = (errorStr: string): never => {
+  // Check for invalid_grant (revoked token)
+  if (errorStr === 'invalid_grant') {
+    handleInvalidGrant()
+  }
+
+  // Check for rate limit (HTTP 429)
+  const errorObj = parseErrorObject(errorStr)
+  if (errorObj?.status === 429) {
+    handleRateLimit(errorStr, errorObj)
+  }
+
+  // Generic OAuth2 error (always throws, so function always has a path that throws)
+  throw new GmailAuthError(
+    GmailErrorType.AUTH_INVALID_REQUEST,
+    `OAuth2 error: ${errorStr}`,
+    new Error(`OAuth2 error: ${errorStr}`)
+  )
+}
+
+/**
  * Ensures token is valid, refreshing if necessary
  * [AC04] Automatic Token Refresh
  *
@@ -222,10 +298,7 @@ export const ensureValidToken = async (
   // If mock refresh provided (testing)
   if (options?.mockRefresh) {
     if (options.mockRefresh.error) {
-      if (options.mockRefresh.error === 'invalid_grant') {
-        throw new Error('Refresh token invalid')
-      }
-      throw new Error(`OAuth2 error: ${options.mockRefresh.error}`)
+      processMockRefreshError(options.mockRefresh.error)
     }
 
     if (options.mockRefresh.tokens) {
