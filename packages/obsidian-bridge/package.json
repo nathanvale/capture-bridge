@@ -22,7 +22,9 @@
   "scripts": {
     "build": "tsup",
     "clean": "rm -rf dist .tsbuildinfo",
-    "dev": "tsup --watch",
+    "dev": "concurrently \"pnpm:dev:*\" --names \"build,test\" --prefix-colors \"blue,green\"",
+    "dev:build": "tsup --watch",
+    "dev:test": "vitest watch",
     "lint": "eslint . --cache --cache-location ../../.eslintcache/obsidian-bridge",
     "lint:fix": "eslint . --fix --cache --cache-location ../../.eslintcache/obsidian-bridge",
     "prepublishOnly": "pnpm run build && test -d dist",
