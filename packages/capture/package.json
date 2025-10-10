@@ -38,7 +38,8 @@
     "@capture-bridge/foundation": "workspace:*",
     "@capture-bridge/obsidian-bridge": "workspace:*",
     "@capture-bridge/storage": "workspace:*",
-    "ulid": "^2.3.0"
+    "ulid": "^2.3.0",
+    "zod": "^4.1.11"
   },
   "devDependencies": {
     "@capture-bridge/build-config": "workspace:*",
