@@ -267,6 +267,20 @@
       ],
       "acs_remaining": [],
       "notes": "Completed direct export enhancements following strict TDD. AC05: Status update to 'exported' after successful export. AC06: Performance validation < 1s. AC07: Zero partial writes verified with crash testing. AC08: export_write_ms histogram metric emission. All 6/6 tests passing in direct-exporter-integration.spec.ts. Fixed foundation package build: added metrics/index entry to tsup.config.ts, updated src/index.ts to export hash utilities from bundled hash/index.js. Implementation uses MetricsClient.histogram() to record export duration when metrics client provided (optional parameter)."
+    },
+    "GMAIL_OAUTH2_SETUP--T01": {
+      "status": "in-progress",
+      "started_at": "2025-10-10T00:00:00Z",
+      "acs_completed": [],
+      "acs_remaining": [
+        "GMAIL_OAUTH2_SETUP-AC01",
+        "GMAIL_OAUTH2_SETUP-AC02",
+        "GMAIL_OAUTH2_SETUP-AC03",
+        "GMAIL_OAUTH2_SETUP-AC04",
+        "GMAIL_OAUTH2_SETUP-AC05",
+        "GMAIL_OAUTH2_SETUP-AC06",
+        "GMAIL_OAUTH2_SETUP-AC07"
+      ]
     }
   }
 }
