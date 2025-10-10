@@ -14,7 +14,7 @@
 
 export const storageVersion = '0.1.0'
 
-// Schema module
+// Schema module (bundled exports)
 export {
   createSchema,
   initializePragmas,
@@ -22,22 +22,14 @@ export {
   verifySchema,
   verifyPragmas,
   verifyIntegrity,
-} from './schema/index.js'
-
-// State machine module
-export {
   type CaptureStatus,
   validateTransition,
   getValidTransitions,
   isTerminalState,
-} from './schema/state-machine.js'
-
-// Service layer module
-export {
   assertValidTransition,
   StateTransitionError,
   queryRecoverableCaptures,
-} from './schema/service-layer.js'
+} from './schema/index.js'
 
 // Staging ledger module
 export {
