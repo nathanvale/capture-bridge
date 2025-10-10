@@ -219,13 +219,13 @@ describe('Gmail OAuth2 Error Handling [AC05]', () => {
 
       // Simulate invalid_grant error (token revoked)
       await expect(
-        ensureValidToken(credentialsPath, tokenPath, {
+        ensureValidToken(credentialsPath, tokenPath, undefined, {
           mockRefresh: { error: 'invalid_grant' },
         })
       ).rejects.toThrow(GmailAuthError)
 
       try {
-        await ensureValidToken(credentialsPath, tokenPath, {
+        await ensureValidToken(credentialsPath, tokenPath, undefined, {
           mockRefresh: { error: 'invalid_grant' },
         })
       } catch (error) {
@@ -268,7 +268,7 @@ describe('Gmail OAuth2 Error Handling [AC05]', () => {
       const { ensureValidToken } = await import('../auth.js')
 
       try {
-        await ensureValidToken(credentialsPath, tokenPath, {
+        await ensureValidToken(credentialsPath, tokenPath, undefined, {
           mockRefresh: { error: 'invalid_grant' },
         })
       } catch (error) {
@@ -321,13 +321,13 @@ describe('Gmail OAuth2 Error Handling [AC05]', () => {
       }
 
       await expect(
-        ensureValidToken(credentialsPath, tokenPath, {
+        ensureValidToken(credentialsPath, tokenPath, undefined, {
           mockRefresh: { error: JSON.stringify(rateLimitError) },
         })
       ).rejects.toThrow(GmailAuthError)
 
       try {
-        await ensureValidToken(credentialsPath, tokenPath, {
+        await ensureValidToken(credentialsPath, tokenPath, undefined, {
           mockRefresh: { error: JSON.stringify(rateLimitError) },
         })
       } catch (error) {
@@ -377,13 +377,13 @@ describe('Gmail OAuth2 Error Handling [AC05]', () => {
       }
 
       await expect(
-        ensureValidToken(credentialsPath, tokenPath, {
+        ensureValidToken(credentialsPath, tokenPath, undefined, {
           mockRefresh: { error: JSON.stringify(rateLimitError) },
         })
       ).rejects.toThrow(GmailAuthError)
 
       try {
-        await ensureValidToken(credentialsPath, tokenPath, {
+        await ensureValidToken(credentialsPath, tokenPath, undefined, {
           mockRefresh: { error: JSON.stringify(rateLimitError) },
         })
       } catch (error) {

@@ -31,6 +31,7 @@ export enum GmailErrorType {
   AUTH_INVALID_GRANT = 'auth.invalid_grant',
   AUTH_INVALID_CLIENT = 'auth.invalid_client',
   AUTH_INVALID_REQUEST = 'auth.invalid_request',
+  AUTH_MAX_FAILURES = 'auth.max_failures',
   FILE_PERMISSION_ERROR = 'file.permission_error',
   FILE_PARSE_ERROR = 'file.parse_error',
   API_RATE_LIMITED = 'api.rate_limited',
@@ -45,7 +46,7 @@ export class GmailAuthError extends Error {
   constructor(
     public readonly type: GmailErrorType,
     message: string,
-    public readonly cause?: unknown
+    public override readonly cause?: unknown
   ) {
     super(message)
     this.name = 'GmailAuthError'

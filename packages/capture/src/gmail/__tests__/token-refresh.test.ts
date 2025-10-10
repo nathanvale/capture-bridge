@@ -185,7 +185,7 @@ describe('Automatic Token Refresh [AC04]', () => {
     }
 
     await expect(
-      ensureValidToken(credentialsPath, tokenPath, {
+      ensureValidToken(credentialsPath, tokenPath, undefined, {
         mockRefresh: { tokens: mockNewTokens },
       })
     ).resolves.toBeUndefined()
@@ -234,7 +234,7 @@ describe('Automatic Token Refresh [AC04]', () => {
       expiry_date: Date.now() + 3600000,
     }
 
-    await ensureValidToken(credentialsPath, tokenPath, {
+    await ensureValidToken(credentialsPath, tokenPath, undefined, {
       mockRefresh: { tokens: mockNewTokens },
     })
 
@@ -280,7 +280,7 @@ describe('Automatic Token Refresh [AC04]', () => {
 
     // Mock invalid_grant error
     await expect(
-      ensureValidToken(credentialsPath, tokenPath, {
+      ensureValidToken(credentialsPath, tokenPath, undefined, {
         mockRefresh: { error: 'invalid_grant' },
       })
     ).rejects.toThrow('Token revoked')
@@ -320,7 +320,7 @@ describe('Automatic Token Refresh [AC04]', () => {
 
     // Mock generic OAuth2 error
     await expect(
-      ensureValidToken(credentialsPath, tokenPath, {
+      ensureValidToken(credentialsPath, tokenPath, undefined, {
         mockRefresh: { error: 'server_error' },
       })
     ).rejects.toThrow('OAuth2 error: server_error')
