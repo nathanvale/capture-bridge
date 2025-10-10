@@ -1,61 +1,32 @@
-import { defineConfig } from 'tsup'
+import { defineConfig, type Options } from 'tsup'
+import { baseTsupConfig } from '@capture-bridge/build-config/tsup.base'
 
-// DTS generation enabled via tsup's built-in TypeScript declaration bundling
-// Uses a non-composite tsconfig to avoid project reference issues
-// Generates ./dist/index.d.ts and ./dist/hash/index.d.ts as specified in package.json exports
-// Skip DTS in development (5-10s faster builds), generate only in CI
-const isDev = process.env['CI'] !== 'true'
+// Uses incremental TypeScript compilation for DTS generation in CI
+// See tsconfig.build.json for incremental build configuration
+// DTS generation is ~50-70% faster on subsequent builds using .tsbuildinfo cache
 
 export default defineConfig([
   {
+    ...(baseTsupConfig as Options),
     entry: {
       index: 'src/index.ts',
     },
-    format: ['esm'],
-    dts: isDev
-      ? false
-      : {
-          compilerOptions: {
-            composite: false,
-          },
-        },
     bundle: false,
-    clean: true,
-    sourcemap: true,
-    target: 'es2022',
-  },
+  } as Options,
   {
+    ...(baseTsupConfig as Options),
     entry: {
       'hash/index': 'src/hash/index.ts',
     },
-    format: ['esm'],
-    dts: isDev
-      ? false
-      : {
-          compilerOptions: {
-            composite: false,
-          },
-        },
     bundle: true, // Bundle hash module with dependencies
     clean: false,
-    sourcemap: true,
-    target: 'es2022',
-  },
+  } as Options,
   {
+    ...(baseTsupConfig as Options),
     entry: {
       'metrics/index': 'src/metrics/index.ts',
     },
-    format: ['esm'],
-    dts: isDev
-      ? false
-      : {
-          compilerOptions: {
-            composite: false,
-          },
-        },
     bundle: true, // Bundle metrics module with dependencies
     clean: false,
-    sourcemap: true,
-    target: 'es2022',
-  },
+  } as Options,
 ])
