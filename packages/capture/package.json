@@ -38,6 +38,7 @@
     "@capture-bridge/foundation": "workspace:*",
     "@capture-bridge/obsidian-bridge": "workspace:*",
     "@capture-bridge/storage": "workspace:*",
+    "googleapis": "^162.0.0",
     "ulid": "^2.3.0"
   },
   "devDependencies": {

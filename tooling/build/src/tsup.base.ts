@@ -13,7 +13,7 @@ export const baseTsupConfig: Options = {
   target: 'es2022',
   platform: 'node',
   treeshake: true,
-  splitting: true,
+  splitting: false, // Code splitting only works with bundle:true
   bundle: false,
   minify: false,
   sourcemap: true,

@@ -1,6 +1,6 @@
 {
   "manifest_hash": "d18c2638898a4a5d1e0cfbece98dfdd889490bfc5d257e65cce7cdfe58bb6691",
-  "last_updated": "2025-10-08T04:00:00Z",
+  "last_updated": "2025-10-10T00:00:00Z",
   "tasks": {
     "MONOREPO_STRUCTURE--T01": {
       "status": "completed",
@@ -43,7 +43,9 @@
       "status": "completed",
       "started_at": "2025-10-06T22:00:00Z",
       "completed_at": "2025-10-06T23:57:00Z",
-      "acs_completed": ["SQLITE_SCHEMA-AC07"],
+      "acs_completed": [
+        "SQLITE_SCHEMA-AC07"
+      ],
       "acs_remaining": [],
       "notes": "Completed database integrity check implementation following strict TDD (Red-Green-Refactor). AC07: PRAGMA integrity_check validation passes on clean databases, file-based databases, and databases with data. 69/69 tests passing (65 existing + 4 new). Files created: integrity-check.spec.ts (4 tests). Modified: schema.ts (added verifyIntegrity() function with proper type guards), schema/index.ts and src/index.ts (exported verifyIntegrity). Build successful. Implementation uses PRAGMA integrity_check to validate table structure, index consistency, row data validity, and B-tree structure correctness."
     },
@@ -185,7 +187,9 @@
       "status": "completed",
       "started_at": "2025-10-09T05:35:00Z",
       "completed_at": "2025-10-09T05:40:00Z",
-      "acs_completed": ["CAPTURE_STATE_MACHINE-AC07"],
+      "acs_completed": [
+        "CAPTURE_STATE_MACHINE-AC07"
+      ],
       "acs_remaining": []
     },
     "DEDUPLICATION_LOGIC--T02": {
@@ -267,6 +271,22 @@
       ],
       "acs_remaining": [],
       "notes": "Completed direct export enhancements following strict TDD. AC05: Status update to 'exported' after successful export. AC06: Performance validation < 1s. AC07: Zero partial writes verified with crash testing. AC08: export_write_ms histogram metric emission. All 6/6 tests passing in direct-exporter-integration.spec.ts. Fixed foundation package build: added metrics/index entry to tsup.config.ts, updated src/index.ts to export hash utilities from bundled hash/index.js. Implementation uses MetricsClient.histogram() to record export duration when metrics client provided (optional parameter)."
+    },
+    "GMAIL_OAUTH2_SETUP--T01": {
+      "status": "completed",
+      "started_at": "2025-10-10T00:00:00Z",
+      "completed_at": "2025-10-10T11:30:00Z",
+      "acs_completed": [
+        "GMAIL_OAUTH2_SETUP-AC01",
+        "GMAIL_OAUTH2_SETUP-AC02",
+        "GMAIL_OAUTH2_SETUP-AC03",
+        "GMAIL_OAUTH2_SETUP-AC04",
+        "GMAIL_OAUTH2_SETUP-AC05",
+        "GMAIL_OAUTH2_SETUP-AC06",
+        "GMAIL_OAUTH2_SETUP-AC07"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed Gmail OAuth2 authentication setup following strict TDD. All 7 ACs satisfied: AC01: credentials.json parsing with validation. AC02: OAuth2 authorization flow with gmail.readonly scope. AC03: token.json storage with 0600 permissions and atomic writes. AC04: Automatic token refresh with 5-minute buffer. AC05: Error handling for invalid credentials, revoked tokens, and rate limits. AC06: Sync state tracking (last_gmail_auth timestamp). AC07: Failure tracking with 5-failure cap and 'capture doctor' guidance. 44/44 Gmail tests passing (11 failure-tracking + 6 sync-state + 10 error-handling + 11 token-refresh + 6 oauth-flow). Total 151/151 tests passing. Coverage: 86.85%. Files created: auth.ts, credentials.ts, types.ts, 4 test files. Implementation includes GmailAuthError custom error class with 6 error types, sync_state integration for tracking, and comprehensive error handling with exponential backoff support."
     }
   }
 }
