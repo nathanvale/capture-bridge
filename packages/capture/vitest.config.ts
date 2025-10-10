@@ -26,9 +26,34 @@ export default defineConfig(
       poolOptions: {
         forks: {
           singleFork: false,
-          maxForks: process.env.CI ? 2 : 4,
+          maxForks: process.env['CI'] ? 2 : 6, // Increased from 4 to 6 for better parallelization
           minForks: 1,
           execArgv: ['--max-old-space-size=1024'],
+        },
+      },
+
+      // Coverage configuration with quality gates
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'json', 'json-summary', 'html'],
+        reportsDirectory: './coverage',
+        exclude: [
+          'node_modules/**',
+          'dist/**',
+          '**/*.test.ts',
+          '**/*.spec.ts',
+          '**/test-setup.ts',
+          '**/__tests__/**',
+          '**/vitest.config.ts',
+          '**/tsup.config.ts',
+        ],
+        include: ['src/**/*.ts'],
+        all: true,
+        thresholds: {
+          lines: 80,
+          functions: 80,
+          branches: 75,
+          statements: 80,
         },
       },
     },
