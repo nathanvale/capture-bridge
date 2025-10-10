@@ -82,6 +82,7 @@ describe('Gmail Error Classifier [AC05]', () => {
 
       for (let attempt = 0; attempt < 5; attempt++) {
         const backoff = calculateBackoff(attempt)
+        // eslint-disable-next-line security/detect-object-injection -- Array index from loop counter is safe
         const baseMs = expectedBase[attempt] ?? 1800000
         const minJitter = baseMs * 0.7 // 30% jitter means 70%-130% of base
         const maxJitter = baseMs * 1.3

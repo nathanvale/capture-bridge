@@ -8,8 +8,6 @@
  * Risk Level: High
  */
 
-/* eslint-disable import/no-unresolved -- RED phase: module doesn't exist yet */
-
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { TokenInfo } from '../oauth-flow.js'
@@ -271,12 +269,6 @@ describe('TokenManager - AC04: Token Expiry Detection', () => {
 
 describe('TokenManager - AC04: Token Refresh', () => {
   const databases: Database.Database[] = []
-  let tempDir: { path: string; cleanup: () => Promise<void> }
-
-  beforeEach(async () => {
-    const { createTempDirectory } = await import('@orchestr8/testkit/fs')
-    tempDir = await createTempDirectory()
-  })
 
   afterEach(async () => {
     await new Promise((resolve) => setTimeout(resolve, 100))
@@ -290,13 +282,14 @@ describe('TokenManager - AC04: Token Refresh', () => {
 
     // Mock OAuth2 client
     const mockOAuth2Client = {
-      refreshAccessToken: async () => ({
-        credentials: {
-          access_token: 'ya29.new_access_token',
-          refresh_token: '1//test_refresh_token',
-          expiry_date: Date.now() + 3600000,
-        },
-      }),
+      refreshAccessToken: () =>
+        Promise.resolve({
+          credentials: {
+            access_token: 'ya29.new_access_token',
+            refresh_token: '1//test_refresh_token',
+            expiry_date: Date.now() + 3600000,
+          },
+        }),
     } as any
 
     const manager = new TokenManager()
@@ -311,20 +304,20 @@ describe('TokenManager - AC04: Token Refresh', () => {
 
     let attemptCount = 0
     const mockOAuth2Client = {
-      refreshAccessToken: async () => {
+      refreshAccessToken: () => {
         attemptCount++
         if (attemptCount < 2) {
           const error = new Error('Network timeout') as Error & { code: string }
           error.code = 'ETIMEDOUT'
-          throw error
+          return Promise.reject(error)
         }
-        return {
+        return Promise.resolve({
           credentials: {
             access_token: 'ya29.new_access_token',
             refresh_token: '1//test_refresh_token',
             expiry_date: Date.now() + 3600000,
           },
-        }
+        })
       },
     } as any
 
@@ -339,10 +332,10 @@ describe('TokenManager - AC04: Token Refresh', () => {
     const { TokenManager } = await import('../token-manager.js')
 
     const mockOAuth2Client = {
-      refreshAccessToken: async () => {
+      refreshAccessToken: () => {
         const error = new Error('invalid_grant') as Error & { code: string }
         error.code = 'invalid_grant'
-        throw error
+        return Promise.reject(error)
       },
     } as any
 
