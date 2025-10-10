@@ -38,6 +38,7 @@
     "@capture-bridge/foundation": "workspace:*",
     "@capture-bridge/obsidian-bridge": "workspace:*",
     "@capture-bridge/storage": "workspace:*",
+    "google-auth-library": "^10.4.0",
     "ulid": "^2.3.0",
     "zod": "^4.1.11"
   },
