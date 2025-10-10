@@ -282,6 +282,9 @@ describe('TokenManager - AC04: Token Refresh', () => {
 
     // Mock OAuth2 client
     const mockOAuth2Client = {
+      credentials: {
+        refresh_token: '1//existing_refresh_token',
+      },
       refreshAccessToken: () =>
         Promise.resolve({
           credentials: {
@@ -296,7 +299,55 @@ describe('TokenManager - AC04: Token Refresh', () => {
     const newToken = await manager.refreshToken(mockOAuth2Client)
 
     expect(newToken.access_token).toBe('ya29.new_access_token')
+    expect(newToken.refresh_token).toBe('1//test_refresh_token')
     expect(newToken.expiry_date).toBeGreaterThan(Date.now())
+  })
+
+  it('should preserve existing refresh_token when Google omits it (real-world scenario)', async () => {
+    const { TokenManager } = await import('../token-manager.js')
+
+    // Mock OAuth2 client with existing refresh token in credentials
+    const mockOAuth2Client = {
+      credentials: {
+        refresh_token: '1//existing_refresh_token',
+      },
+      refreshAccessToken: () =>
+        Promise.resolve({
+          credentials: {
+            access_token: 'ya29.new_access_token',
+            // Google typically does NOT return refresh_token on refresh
+            expiry_date: Date.now() + 3600000,
+          },
+        }),
+    } as any
+
+    const manager = new TokenManager()
+    const newToken = await manager.refreshToken(mockOAuth2Client)
+
+    expect(newToken.access_token).toBe('ya29.new_access_token')
+    expect(newToken.refresh_token).toBe('1//existing_refresh_token') // Preserved from existing
+    expect(newToken.expiry_date).toBeGreaterThan(Date.now())
+  })
+
+  it('should throw error when no refresh_token available in OAuth2 client', async () => {
+    const { TokenManager } = await import('../token-manager.js')
+
+    // Mock OAuth2 client without refresh token
+    const mockOAuth2Client = {
+      credentials: {},
+      refreshAccessToken: () =>
+        Promise.resolve({
+          credentials: {
+            access_token: 'ya29.new_access_token',
+            expiry_date: Date.now() + 3600000,
+          },
+        }),
+    } as any
+
+    const manager = new TokenManager()
+    await expect(manager.refreshToken(mockOAuth2Client)).rejects.toThrow(
+      'Cannot refresh token: No refresh token available'
+    )
   })
 
   it('should retry token refresh on transient network error', async () => {
@@ -304,6 +355,9 @@ describe('TokenManager - AC04: Token Refresh', () => {
 
     let attemptCount = 0
     const mockOAuth2Client = {
+      credentials: {
+        refresh_token: '1//existing_refresh_token',
+      },
       refreshAccessToken: () => {
         attemptCount++
         if (attemptCount < 2) {
@@ -332,6 +386,9 @@ describe('TokenManager - AC04: Token Refresh', () => {
     const { TokenManager } = await import('../token-manager.js')
 
     const mockOAuth2Client = {
+      credentials: {
+        refresh_token: '1//existing_refresh_token',
+      },
       refreshAccessToken: () => {
         const error = new Error('invalid_grant') as Error & { code: string }
         error.code = 'invalid_grant'

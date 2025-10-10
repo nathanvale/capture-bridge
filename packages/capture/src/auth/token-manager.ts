@@ -192,6 +192,9 @@ export class TokenManager {
    * Includes retry logic for transient network errors.
    * Will NOT retry for permanent errors like revoked tokens.
    *
+   * IMPORTANT: Google's refresh response typically does NOT include the refresh_token.
+   * We preserve the existing refresh_token from oauth2Client.credentials.
+   *
    * @param oauth2Client - Configured OAuth2 client with credentials
    * @returns New token information
    * @throws Error if refresh fails after retries or token is revoked
@@ -200,20 +203,30 @@ export class TokenManager {
     const maxRetries = 3
     let lastError: Error | undefined
 
+    // Preserve the existing refresh token before refresh attempt
+    const existingRefreshToken = oauth2Client.credentials.refresh_token
+
+    if (!existingRefreshToken) {
+      throw new Error('Cannot refresh token: No refresh token available in OAuth2 client')
+    }
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         // Attempt to refresh the token
         const { credentials } = await oauth2Client.refreshAccessToken()
 
         // Validate response has required fields
-        if (!credentials.access_token || !credentials.refresh_token || !credentials.expiry_date) {
-          throw new Error('Token refresh returned incomplete tokens')
+        if (!credentials.access_token || !credentials.expiry_date) {
+          throw new Error(
+            'Token refresh returned incomplete tokens (missing access_token or expiry_date)'
+          )
         }
 
         // Return successfully refreshed token
+        // Use refresh_token from response if present, otherwise preserve existing
         return {
           access_token: credentials.access_token,
-          refresh_token: credentials.refresh_token,
+          refresh_token: credentials.refresh_token ?? existingRefreshToken,
           expiry_date: credentials.expiry_date,
           scope: credentials.scope ?? 'https://www.googleapis.com/auth/gmail.readonly',
           token_type: (credentials.token_type ?? 'Bearer') as 'Bearer',

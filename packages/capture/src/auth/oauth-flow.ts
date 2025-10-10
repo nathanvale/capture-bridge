@@ -2,14 +2,15 @@
  * OAuth2 Authorization Flow Implementation
  *
  * Implements OAuth2 authorization flow for Gmail API access:
- * - Generate authorization URL with offline access
+ * - Generate authorization URL with PKCE (Proof Key for Code Exchange)
  * - Exchange authorization code for tokens
  * - Securely save tokens with atomic write pattern
  *
- * Security: Tokens saved with 0600 permissions
+ * Security: Tokens saved with 0600 permissions, PKCE enabled
  * Atomicity: Uses temp file + rename pattern
  */
 
+import { randomBytes, createHash } from 'node:crypto'
 import { rename, stat, writeFile } from 'node:fs/promises'
 
 import type { OAuth2Client } from 'google-auth-library'
@@ -31,36 +32,107 @@ export interface TokenInfo {
 }
 
 /**
- * Generate OAuth2 authorization URL
+ * PKCE (Proof Key for Code Exchange) parameters
+ */
+export interface PKCEParams {
+  code_verifier: string
+  code_challenge: string
+}
+
+/**
+ * Generate PKCE parameters for OAuth2 authorization
+ *
+ * PKCE prevents authorization code interception attacks by:
+ * 1. Generating a random code_verifier
+ * 2. Creating a code_challenge from SHA256(code_verifier)
+ * 3. Sending code_challenge with auth request
+ * 4. Sending code_verifier with token exchange
+ *
+ * @returns PKCE parameters with code_verifier and code_challenge
+ */
+export const generatePKCE = (): PKCEParams => {
+  // Generate random 43-128 character code verifier (spec recommends 43)
+  const code_verifier = base64URLEncode(randomBytes(32))
+
+  // Create SHA256 hash of verifier
+  const hash = createHash('sha256').update(code_verifier).digest()
+
+  // Base64URL encode the hash
+  const code_challenge = base64URLEncode(hash)
+
+  return {
+    code_verifier,
+    code_challenge,
+  }
+}
+
+/**
+ * Base64URL encode a buffer (RFC 7636 compliant)
+ *
+ * Converts base64 to base64url by:
+ * - Replacing + with -
+ * - Replacing / with _
+ * - Removing = padding
+ */
+const base64URLEncode = (buffer: Buffer): string => {
+  return buffer.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+}
+
+/**
+ * Generate OAuth2 authorization URL with PKCE
  *
  * Creates authorization URL with:
  * - gmail.readonly scope
  * - access_type=offline (to get refresh token)
+ * - PKCE code_challenge for security
+ * - prompt=consent to force refresh token issuance
+ * - include_granted_scopes for future scope additions
  *
  * @param oauth2Client - Configured OAuth2 client
+ * @param codeChallenge - PKCE code challenge (from generatePKCE)
  * @returns Authorization URL for user to visit
  */
-export const generateAuthUrl = (oauth2Client: OAuth2Client): string => {
-  return oauth2Client.generateAuthUrl({
-    access_type: 'offline',
+export const generateAuthUrl = (oauth2Client: OAuth2Client, codeChallenge?: string): string => {
+  const baseParams = {
+    access_type: 'offline' as const,
     scope: [GMAIL_SCOPE],
-  })
+    // Force consent to reliably get refresh token
+    prompt: 'consent',
+    // Allow future scope additions without re-authorization
+    include_granted_scopes: true,
+  }
+
+  // Add PKCE parameters if code challenge provided (recommended for installed apps)
+  if (codeChallenge) {
+    return oauth2Client.generateAuthUrl({
+      ...baseParams,
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
+    } as Parameters<typeof oauth2Client.generateAuthUrl>[0])
+  }
+
+  return oauth2Client.generateAuthUrl(baseParams)
 }
 
 /**
- * Exchange authorization code for access and refresh tokens
+ * Exchange authorization code for access and refresh tokens with PKCE support
  *
  * @param oauth2Client - Configured OAuth2 client
  * @param code - Authorization code from user
+ * @param codeVerifier - PKCE code verifier (optional, from generatePKCE)
  * @returns Token information including access and refresh tokens
  * @throws Error with ADHD-friendly message on failure
  */
 export const exchangeCodeForTokens = async (
   oauth2Client: OAuth2Client,
-  code: string
+  code: string,
+  codeVerifier?: string
 ): Promise<TokenInfo> => {
   try {
-    const { tokens } = await oauth2Client.getToken(code)
+    // If PKCE was used, include code_verifier in token exchange
+    const { tokens } = codeVerifier
+      ? await oauth2Client.getToken({ code, codeVerifier })
+      : await oauth2Client.getToken(code)
 
     // Validate token structure
     if (!tokens.access_token || !tokens.refresh_token || !tokens.expiry_date) {
