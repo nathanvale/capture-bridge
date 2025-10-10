@@ -7,42 +7,18 @@ import { promises as fs } from 'node:fs'
 
 import { google } from 'googleapis'
 
-import { GmailAuthError, GmailErrorType } from './types.js'
+import { GmailAuthError, GmailErrorType, type GmailToken } from './types.js'
 
 import type DatabaseConstructor from 'better-sqlite3'
 
 type Database = ReturnType<typeof DatabaseConstructor>
 
 /**
- * OAuth2 credentials structure from credentials.json
- */
-export interface OAuth2Credentials {
-  installed: {
-    client_id: string
-    client_secret: string
-    redirect_uris: string[]
-    auth_uri: string
-    token_uri: string
-  }
-}
-
-/**
- * Token structure stored in token.json
- */
-export interface TokenData {
-  access_token: string
-  refresh_token?: string
-  expiry_date?: number
-  scope?: string
-  token_type?: string
-}
-
-/**
  * Authorization result containing auth URL or credentials
  */
 export interface AuthorizationResult {
   authUrl?: string
-  credentials?: TokenData
+  credentials?: GmailToken
 }
 
 /**
@@ -50,7 +26,7 @@ export interface AuthorizationResult {
  */
 interface AuthorizeOptions {
   mockTokenExchange?: {
-    tokens?: TokenData
+    tokens?: GmailToken
     error?: string
   }
 }
@@ -60,18 +36,35 @@ interface AuthorizeOptions {
  */
 interface EnsureValidTokenOptions {
   mockRefresh?: {
-    tokens?: TokenData
+    tokens?: GmailToken
     error?: string
   }
 }
 
 /**
+ * Ensures sync_state table exists (defensive guard for P0-3)
+ * Safe to call multiple times - uses IF NOT EXISTS
+ *
+ * @param db - SQLite database instance
+ */
+const ensureSyncStateTable = (db: Database): void => {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sync_state (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `)
+}
+
+/**
  * Updates sync_state table with last successful Gmail auth timestamp
- * [AC06] Sync State Tracking
+ * [AC06] Sync State Tracking + [P0-3] Defensive table initialization
  *
  * @param db - SQLite database instance
  */
 export const updateSyncState = (db: Database): void => {
+  ensureSyncStateTable(db)
   const timestamp = new Date().toISOString()
   const stmt = db.prepare(`
     INSERT INTO sync_state (key, value, updated_at)
@@ -85,12 +78,13 @@ export const updateSyncState = (db: Database): void => {
 
 /**
  * Increments the gmail_auth_failures counter in sync_state
- * [AC07] Auth Failure Tracking
+ * [AC07] Auth Failure Tracking + [P0-3] Defensive table initialization
  *
  * @param db - SQLite database instance
  * @returns Current failure count after increment
  */
 export const incrementAuthFailures = (db: Database): number => {
+  ensureSyncStateTable(db)
   const stmt = db.prepare(`
     INSERT INTO sync_state (key, value, updated_at)
     VALUES ('gmail_auth_failures', '1', datetime('now'))
@@ -108,11 +102,12 @@ export const incrementAuthFailures = (db: Database): number => {
 
 /**
  * Resets the gmail_auth_failures counter to 0
- * [AC07] Auth Failure Tracking
+ * [AC07] Auth Failure Tracking + [P0-3] Defensive table initialization
  *
  * @param db - SQLite database instance
  */
 export const resetAuthFailures = (db: Database): void => {
+  ensureSyncStateTable(db)
   const stmt = db.prepare(`
     INSERT INTO sync_state (key, value, updated_at)
     VALUES ('gmail_auth_failures', '0', datetime('now'))
@@ -126,12 +121,13 @@ export const resetAuthFailures = (db: Database): void => {
 /**
  * Checks if auth failures have exceeded the threshold (>= 5)
  * Throws MaxAuthFailuresError if threshold exceeded
- * [AC07] Auth Failure Tracking
+ * [AC07] Auth Failure Tracking + [P0-3] Defensive table initialization
  *
  * @param db - SQLite database instance
  * @throws GmailAuthError with AUTH_MAX_FAILURES type if failures >= 5
  */
 const checkAuthFailures = (db: Database): void => {
+  ensureSyncStateTable(db)
   const result = db
     .prepare("SELECT value FROM sync_state WHERE key = 'gmail_auth_failures'")
     .get() as { value: string } | undefined
@@ -153,7 +149,7 @@ const checkAuthFailures = (db: Database): void => {
  * @param path - Absolute path to token.json
  * @param token - Token data to write
  */
-const writeTokenSecurely = async (path: string, token: TokenData): Promise<void> => {
+const writeTokenSecurely = async (path: string, token: GmailToken): Promise<void> => {
   // Atomic write: write to temp file, then rename
   const tmpPath = `${path}.tmp`
 
@@ -197,10 +193,9 @@ export const authorize = async (
   }
 
   try {
-    // Load credentials
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- OAuth credential paths are controlled by application config
-    const credentialsContent = await fs.readFile(credentialsPath, 'utf-8')
-    const credentials: OAuth2Credentials = JSON.parse(credentialsContent)
+    // Load and validate credentials using shared loader [P0-2: AC01 validation]
+    const { loadCredentials } = await import('./credentials.js')
+    const credentials = await loadCredentials(credentialsPath)
 
     const { client_id, client_secret, redirect_uris } = credentials.installed
 
@@ -262,11 +257,11 @@ export const authorize = async (
  * @returns Parsed token data
  * @throws Error if token file is corrupted or invalid JSON
  */
-export const loadToken = async (tokenPath: string): Promise<TokenData> => {
+export const loadToken = async (tokenPath: string): Promise<GmailToken> => {
   try {
     // eslint-disable-next-line security/detect-non-literal-fs-filename -- OAuth token paths are controlled by application config
     const content = await fs.readFile(tokenPath, 'utf-8')
-    const token = JSON.parse(content) as TokenData
+    const token = JSON.parse(content) as GmailToken
 
     // Validate required fields
     if (!token.access_token) {
@@ -289,7 +284,7 @@ export const loadToken = async (tokenPath: string): Promise<TokenData> => {
  * @param token - Token data to check
  * @returns true if token is expired or expiring soon, false otherwise
  */
-export const isTokenExpired = (token: TokenData): boolean => {
+export const isTokenExpired = (token: GmailToken): boolean => {
   // If no expiry_date, consider it expired
   if (!token.expiry_date) {
     return true
@@ -301,6 +296,17 @@ export const isTokenExpired = (token: TokenData): boolean => {
   // Return true if token expires before 5 minutes from now
   return expiryDate < fiveMinutesFromNow
 }
+
+/**
+ * Type guard for Axios-like errors from googleapis
+ */
+const isAxiosError = (
+  err: unknown
+): err is {
+  response?: { status?: number; data?: { error?: string; error_description?: string } }
+  code?: string
+  message?: string
+} => typeof err === 'object' && err !== null
 
 /**
  * Parses error string to extract rate limit information
@@ -351,6 +357,62 @@ const handleRateLimit = (
 }
 
 /**
+ * Handles HTTP 400 Bad Request errors
+ *
+ * @param error - Original error object
+ * @param errorType - OAuth2 error type from response
+ * @param errorDesc - Optional error description
+ * @throws GmailAuthError with appropriate error type
+ */
+const handleBadRequest = (error: unknown, errorType: string, errorDesc: string): never => {
+  if (errorType === 'invalid_grant') {
+    throw new GmailAuthError(
+      GmailErrorType.AUTH_INVALID_GRANT,
+      'Token revoked - refresh token is no longer valid',
+      error
+    )
+  }
+  const message = errorDesc
+    ? `OAuth2 error: ${errorType} - ${errorDesc}`
+    : `OAuth2 error: ${errorType}`
+  throw new GmailAuthError(GmailErrorType.AUTH_INVALID_REQUEST, message, error)
+}
+
+/**
+ * Handles HTTP 429 Rate Limit errors
+ *
+ * @param error - Original error object
+ * @param data - Response data (may contain retryAfter)
+ * @throws GmailAuthError with API_RATE_LIMITED type
+ */
+const handleRateLimitResponse = (error: unknown, data?: unknown): never => {
+  // Parse Retry-After from response data if available
+  const retryAfter =
+    data && typeof data === 'object' && 'retryAfter' in data && typeof data.retryAfter === 'number'
+      ? data.retryAfter
+      : undefined
+  const retryMsg = retryAfter
+    ? `Rate limit exceeded - retry after ${retryAfter} seconds`
+    : 'Rate limit exceeded - retry later'
+  throw new GmailAuthError(GmailErrorType.API_RATE_LIMITED, retryMsg, error)
+}
+
+/**
+ * Handles HTTP 5xx Server Error responses
+ *
+ * @param error - Original error object
+ * @param status - HTTP status code
+ * @throws GmailAuthError with API_SERVER_ERROR type
+ */
+const handleServerError = (error: unknown, status: number): never => {
+  throw new GmailAuthError(
+    GmailErrorType.API_SERVER_ERROR,
+    `Gmail API server error (${status})`,
+    error
+  )
+}
+
+/**
  * Processes mock refresh error, determining error type and throwing appropriate error
  *
  * @param errorStr - Error string from mock
@@ -374,6 +436,175 @@ const processMockRefreshError = (errorStr: string): never => {
     `OAuth2 error: ${errorStr}`,
     new Error(`OAuth2 error: ${errorStr}`)
   )
+}
+
+/**
+ * Maps googleapis errors to GmailAuthError types
+ * Centralizes error taxonomy for production OAuth2 operations
+ * [P0-1: Production error mapping]
+ *
+ * @param error - Unknown error from googleapis
+ * @throws GmailAuthError with appropriate error type
+ */
+const mapGoogleApisError = (error: unknown): never => {
+  if (!isAxiosError(error)) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    throw new GmailAuthError(
+      GmailErrorType.AUTH_INVALID_REQUEST,
+      `OAuth2 error: ${errorMsg}`,
+      error
+    )
+  }
+
+  // Handle HTTP response errors
+  if (error.response?.status) {
+    const { status, data } = error.response
+    const errorType = data?.error ?? 'unknown'
+    const errorDesc = data?.error_description ?? ''
+
+    switch (status) {
+      case 400:
+        handleBadRequest(error, errorType, errorDesc)
+        break
+
+      case 401:
+        throw new GmailAuthError(
+          GmailErrorType.AUTH_INVALID_GRANT,
+          'Token revoked - refresh token is no longer valid',
+          error
+        )
+
+      case 429:
+        handleRateLimitResponse(error, data)
+        break
+
+      case 500:
+      case 502:
+      case 503:
+      case 504:
+        handleServerError(error, status)
+        break
+
+      default:
+        throw new GmailAuthError(
+          GmailErrorType.AUTH_INVALID_REQUEST,
+          `OAuth2 error: HTTP ${status}`,
+          error
+        )
+    }
+  }
+
+  // Handle network errors (ENOTFOUND, ECONNRESET, ETIMEDOUT, ECONNREFUSED)
+  if (error.code) {
+    const networkErrorCodes = ['ENOTFOUND', 'ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED']
+    if (networkErrorCodes.includes(error.code)) {
+      throw new GmailAuthError(
+        GmailErrorType.API_NETWORK_ERROR,
+        `Network error: ${error.code}`,
+        error
+      )
+    }
+  }
+
+  // Generic fallback
+  const errorMsg = error.message ?? String(error)
+  throw new GmailAuthError(GmailErrorType.AUTH_INVALID_REQUEST, `OAuth2 error: ${errorMsg}`, error)
+}
+
+/**
+ * Performs production token refresh using googleapis OAuth2 client
+ * [P0-1: Production token refresh with error mapping and scope validation]
+ *
+ * @param credentialsPath - Path to credentials.json
+ * @param currentToken - Current token data
+ * @param tokenPath - Path to write refreshed token
+ * @param db - Optional database for sync state tracking
+ * @throws GmailAuthError on refresh failure
+ */
+const performProductionRefresh = async (
+  credentialsPath: string,
+  currentToken: GmailToken,
+  tokenPath: string,
+  db?: Database
+): Promise<void> => {
+  // 1. Load credentials using shared loader [P0-2: AC01 validation]
+  const { loadCredentials } = await import('./credentials.js')
+  const credentials = await loadCredentials(credentialsPath)
+
+  const { client_id, client_secret, redirect_uris } = credentials.installed
+
+  // 2. Create OAuth2 client
+  const oauth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0])
+
+  // Set current token (needed for refresh) - use null for googleapis compatibility
+  oauth2Client.setCredentials({
+    access_token: currentToken.access_token,
+    // eslint-disable-next-line unicorn/no-null -- googleapis requires null, not undefined
+    refresh_token: currentToken.refresh_token ?? null,
+    // eslint-disable-next-line unicorn/no-null -- googleapis requires null, not undefined
+    expiry_date: currentToken.expiry_date ?? null,
+    scope: currentToken.scope ?? '',
+    // eslint-disable-next-line unicorn/no-null -- googleapis requires null, not undefined
+    token_type: currentToken.token_type ?? null,
+  })
+
+  // 3. Call refreshAccessToken() with error mapping [P0-1: Production error mapping]
+  let refreshedTokens
+  try {
+    const response = await oauth2Client.refreshAccessToken()
+    refreshedTokens = response.credentials
+  } catch (error) {
+    // Map googleapis errors to GmailAuthError types
+    mapGoogleApisError(error)
+  }
+
+  // Assert refreshedTokens is defined (mapGoogleApisError always throws)
+  if (!refreshedTokens) {
+    throw new Error('Unexpected: refreshedTokens undefined after successful refresh')
+  }
+
+  // 4. Validate scope includes gmail.readonly [P1-3: Scope validation]
+  const scope = refreshedTokens.scope ?? ''
+  if (!scope.includes('https://www.googleapis.com/auth/gmail.readonly')) {
+    throw new GmailAuthError(
+      GmailErrorType.AUTH_INVALID_GRANT,
+      'Refreshed token missing required gmail.readonly scope',
+      new Error(`Invalid scope: ${scope}`)
+    )
+  }
+
+  // 5. Write new tokens atomically
+  const newToken: GmailToken = {
+    access_token: refreshedTokens.access_token ?? '',
+  }
+
+  // Add optional fields only if they have values (filter out null/undefined)
+  if (refreshedTokens.expiry_date) {
+    newToken.expiry_date = refreshedTokens.expiry_date
+  }
+
+  if (refreshedTokens.scope) {
+    newToken.scope = refreshedTokens.scope
+  }
+
+  if (refreshedTokens.token_type) {
+    newToken.token_type = refreshedTokens.token_type
+  }
+
+  // Preserve refresh_token (may not be returned in refresh response)
+  const refreshToken = refreshedTokens.refresh_token ?? currentToken.refresh_token
+  if (refreshToken) {
+    newToken.refresh_token = refreshToken
+  }
+
+  await writeTokenSecurely(tokenPath, newToken)
+
+  // Update sync state after successful token refresh [AC06]
+  // Reset auth failures after successful refresh [AC07]
+  if (db) {
+    updateSyncState(db)
+    resetAuthFailures(db)
+  }
 }
 
 /**
@@ -431,18 +662,13 @@ export const ensureValidToken = async (
       }
     }
 
-    // Production refresh would happen here
-    // For now, we only support mock refresh in tests
+    // Production refresh [P0-1: Production token refresh]
     if (!actualCredentialsPath) {
       throw new Error('Token expired and no credentials provided for refresh')
     }
 
-    // In production, this would:
-    // 1. Load credentials from credentialsPath
-    // 2. Create OAuth2 client
-    // 3. Call oauth2Client.refreshAccessToken()
-    // 4. Write new tokens atomically
-    throw new Error('Production token refresh not yet implemented')
+    // Perform production token refresh and update state
+    await performProductionRefresh(actualCredentialsPath, token, actualTokenPath, db)
   } catch (error) {
     // Increment failure counter on any error [AC07]
     if (db) {

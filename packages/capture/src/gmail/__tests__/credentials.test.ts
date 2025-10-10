@@ -3,26 +3,26 @@
  * Testing AC01: credentials.json file parsing (Google Console)
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
+
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+
 import { loadCredentials } from '../credentials.js'
 import { GmailErrorType, GmailAuthError } from '../types.js'
 
 describe('Credentials Loading (AC01)', () => {
   let tempDir: string
-  const tempDirs: string[] = []
 
   beforeEach(async () => {
     const { createTempDirectory } = await import('@orchestr8/testkit/fs')
     const temp = await createTempDirectory()
     tempDir = temp.path
-    tempDirs.push(tempDir)
   })
 
   afterEach(async () => {
     // 5-step cleanup from testkit-tdd-guide-condensed.md
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
     // TestKit auto-cleanup handles temp directories
     if (global.gc) global.gc()
   })
@@ -36,8 +36,8 @@ describe('Credentials Loading (AC01)', () => {
           client_secret: 'GOCSPX-test-secret',
           redirect_uris: ['http://localhost'],
           auth_uri: 'https://accounts.google.com/o/oauth2/auth',
-          token_uri: 'https://oauth2.googleapis.com/token'
-        }
+          token_uri: 'https://oauth2.googleapis.com/token',
+        },
       }
 
       await fs.writeFile(credentialsPath, JSON.stringify(validCredentials, null, 2))
@@ -58,8 +58,8 @@ describe('Credentials Loading (AC01)', () => {
           client_secret: 'test-secret',
           redirect_uris: ['http://localhost'],
           auth_uri: 'https://accounts.google.com/o/oauth2/auth',
-          token_uri: 'https://oauth2.googleapis.com/token'
-        }
+          token_uri: 'https://oauth2.googleapis.com/token',
+        },
       }
 
       await fs.writeFile(credentialsPath, JSON.stringify(validCredentials, null, 2))
@@ -80,7 +80,7 @@ describe('Credentials Loading (AC01)', () => {
       await fs.writeFile(credentialsPath, '{ invalid json }')
 
       await expect(loadCredentials(credentialsPath)).rejects.toThrow(GmailAuthError)
-      
+
       try {
         await loadCredentials(credentialsPath)
       } catch (error) {
@@ -96,14 +96,14 @@ describe('Credentials Loading (AC01)', () => {
           client_secret: 'test-secret',
           redirect_uris: ['http://localhost'],
           auth_uri: 'https://accounts.google.com/o/oauth2/auth',
-          token_uri: 'https://oauth2.googleapis.com/token'
-        }
+          token_uri: 'https://oauth2.googleapis.com/token',
+        },
       }
 
       await fs.writeFile(credentialsPath, JSON.stringify(invalidCredentials, null, 2))
 
       await expect(loadCredentials(credentialsPath)).rejects.toThrow(GmailAuthError)
-      
+
       try {
         await loadCredentials(credentialsPath)
       } catch (error) {
@@ -120,14 +120,14 @@ describe('Credentials Loading (AC01)', () => {
           client_id: 'test-id',
           redirect_uris: ['http://localhost'],
           auth_uri: 'https://accounts.google.com/o/oauth2/auth',
-          token_uri: 'https://oauth2.googleapis.com/token'
-        }
+          token_uri: 'https://oauth2.googleapis.com/token',
+        },
       }
 
       await fs.writeFile(credentialsPath, JSON.stringify(invalidCredentials, null, 2))
 
       await expect(loadCredentials(credentialsPath)).rejects.toThrow(GmailAuthError)
-      
+
       try {
         await loadCredentials(credentialsPath)
       } catch (error) {
@@ -144,8 +144,8 @@ describe('Credentials Loading (AC01)', () => {
           client_id: 'test-id',
           client_secret: 'test-secret',
           auth_uri: 'https://accounts.google.com/o/oauth2/auth',
-          token_uri: 'https://oauth2.googleapis.com/token'
-        }
+          token_uri: 'https://oauth2.googleapis.com/token',
+        },
       }
 
       await fs.writeFile(credentialsPath, JSON.stringify(invalidCredentials, null, 2))
@@ -157,13 +157,13 @@ describe('Credentials Loading (AC01)', () => {
       const credentialsPath = path.join(tempDir, 'credentials.json')
       const invalidCredentials = {
         client_id: 'test-id',
-        client_secret: 'test-secret'
+        client_secret: 'test-secret',
       }
 
       await fs.writeFile(credentialsPath, JSON.stringify(invalidCredentials, null, 2))
 
       await expect(loadCredentials(credentialsPath)).rejects.toThrow(GmailAuthError)
-      
+
       try {
         await loadCredentials(credentialsPath)
       } catch (error) {
@@ -179,7 +179,7 @@ describe('Credentials Loading (AC01)', () => {
       const credentialsPath = path.join(tempDir, 'nonexistent.json')
 
       await expect(loadCredentials(credentialsPath)).rejects.toThrow(GmailAuthError)
-      
+
       try {
         await loadCredentials(credentialsPath)
       } catch (error) {
@@ -194,8 +194,8 @@ describe('Credentials Loading (AC01)', () => {
         installed: {
           client_id: 'SENSITIVE-ID-12345',
           client_secret: 'SENSITIVE-SECRET-67890',
-          redirect_uris: ['http://localhost']
-        }
+          redirect_uris: ['http://localhost'],
+        },
       }
 
       await fs.writeFile(credentialsPath, JSON.stringify(credentials, null, 2))

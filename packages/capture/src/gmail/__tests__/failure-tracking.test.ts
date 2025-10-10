@@ -64,7 +64,7 @@ describe('Auth Failure Tracking [AC07]', () => {
       `)
 
       const authModule = (await import('../auth.js')) as any
-      const incrementAuthFailures = authModule.incrementAuthFailures
+      const {incrementAuthFailures} = authModule
 
       // Act
       const count1 = incrementAuthFailures(db)
@@ -106,7 +106,7 @@ describe('Auth Failure Tracking [AC07]', () => {
       `)
 
       const authModule = (await import('../auth.js')) as any
-      const incrementAuthFailures = authModule.incrementAuthFailures
+      const {incrementAuthFailures} = authModule
 
       // Act
       const count = incrementAuthFailures(db)
@@ -145,7 +145,7 @@ describe('Auth Failure Tracking [AC07]', () => {
       ).run()
 
       const authModule = (await import('../auth.js')) as any
-      const resetAuthFailures = authModule.resetAuthFailures
+      const {resetAuthFailures} = authModule
 
       // Act
       resetAuthFailures(db)
@@ -180,7 +180,7 @@ describe('Auth Failure Tracking [AC07]', () => {
       `)
 
       const authModule = (await import('../auth.js')) as any
-      const resetAuthFailures = authModule.resetAuthFailures
+      const {resetAuthFailures} = authModule
 
       // Act
       resetAuthFailures(db)

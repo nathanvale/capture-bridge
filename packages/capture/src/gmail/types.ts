@@ -13,12 +13,16 @@ export interface CredentialsFile {
   }
 }
 
-export interface TokenInfo {
+/**
+ * Gmail OAuth2 token structure (P1-1: Consolidated from TokenData/TokenInfo)
+ * Matches googleapis Credentials type with optional fields for flexibility
+ */
+export interface GmailToken {
   access_token: string
-  refresh_token: string
-  expiry_date: number
-  scope: string
-  token_type: string
+  refresh_token?: string
+  expiry_date?: number
+  scope?: string
+  token_type?: string
 }
 
 export interface AuthResult {

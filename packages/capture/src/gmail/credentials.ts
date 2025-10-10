@@ -4,7 +4,8 @@
  */
 
 import { promises as fs } from 'node:fs'
-import { CredentialsFile, GmailErrorType, GmailAuthError } from './types.js'
+
+import { type CredentialsFile, GmailErrorType, GmailAuthError } from './types.js'
 
 /**
  * Load and validate OAuth2 credentials from credentials.json
@@ -12,11 +13,12 @@ import { CredentialsFile, GmailErrorType, GmailAuthError } from './types.js'
  * @returns Validated credentials object
  * @throws GmailAuthError with appropriate error type
  */
-export async function loadCredentials(credentialsPath: string): Promise<CredentialsFile> {
+export const loadCredentials = async (credentialsPath: string): Promise<CredentialsFile> => {
   let fileContent: string
 
   // Read file
   try {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- OAuth credential paths are controlled by application config
     fileContent = await fs.readFile(credentialsPath, 'utf-8')
   } catch (error) {
     throw new GmailAuthError(
@@ -54,53 +56,53 @@ export async function loadCredentials(credentialsPath: string): Promise<Credenti
 /**
  * Type guard to validate credentials structure
  */
-function isCredentialsFile(value: unknown): value is CredentialsFile {
+const isCredentialsFile = (value: unknown): value is CredentialsFile => {
   if (typeof value !== 'object' || value === null) {
     return false
   }
 
   const obj = value as Record<string, unknown>
 
-  if (typeof obj.installed !== 'object' || obj.installed === null) {
+  if (typeof obj['installed'] !== 'object' || obj['installed'] === null) {
     return false
   }
 
-  const installed = obj.installed as Record<string, unknown>
+  const installed = obj['installed'] as Record<string, unknown>
 
   return (
-    typeof installed.client_id === 'string' &&
-    typeof installed.client_secret === 'string' &&
-    Array.isArray(installed.redirect_uris) &&
-    typeof installed.auth_uri === 'string' &&
-    typeof installed.token_uri === 'string'
+    typeof installed['client_id'] === 'string' &&
+    typeof installed['client_secret'] === 'string' &&
+    Array.isArray(installed['redirect_uris']) &&
+    typeof installed['auth_uri'] === 'string' &&
+    typeof installed['token_uri'] === 'string'
   )
 }
 
 /**
  * Generate validation error message without leaking credentials
  */
-function getValidationMessage(value: unknown): string {
+const getValidationMessage = (value: unknown): string => {
   if (typeof value !== 'object' || value === null) {
     return 'Credentials must be an object'
   }
 
   const obj = value as Record<string, unknown>
 
-  if (typeof obj.installed !== 'object' || obj.installed === null) {
+  if (typeof obj['installed'] !== 'object' || obj['installed'] === null) {
     return 'Missing "installed" section'
   }
 
-  const installed = obj.installed as Record<string, unknown>
+  const installed = obj['installed'] as Record<string, unknown>
 
-  if (typeof installed.client_id !== 'string') {
+  if (typeof installed['client_id'] !== 'string') {
     return 'Missing or invalid "client_id" field'
   }
 
-  if (typeof installed.client_secret !== 'string') {
+  if (typeof installed['client_secret'] !== 'string') {
     return 'Missing or invalid "client_secret" field'
   }
 
-  if (!Array.isArray(installed.redirect_uris)) {
+  if (!Array.isArray(installed['redirect_uris'])) {
     return 'Missing or invalid "redirect_uris" field'
   }
 

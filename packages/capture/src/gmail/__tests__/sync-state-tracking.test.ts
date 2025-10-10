@@ -149,7 +149,7 @@ describe('AC06: Store last successful auth in sync_state table', () => {
       databases.push(db)
       initializeDatabase(db)
 
-      // Create credentials.json
+      // Create credentials.json with all required fields for validation [P0-2]
       const credentialsPath = path.join(testDir, 'credentials.json')
       await fs.writeFile(
         credentialsPath,
@@ -158,6 +158,8 @@ describe('AC06: Store last successful auth in sync_state table', () => {
             client_id: 'mock_client_id',
             client_secret: 'mock_client_secret',
             redirect_uris: ['http://localhost:3000'],
+            auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+            token_uri: 'https://oauth2.googleapis.com/token',
           },
         })
       )
@@ -216,7 +218,7 @@ describe('AC06: Store last successful auth in sync_state table', () => {
       databases.push(db)
       initializeDatabase(db)
 
-      // Create credentials.json
+      // Create credentials.json with all required fields for validation [P0-2]
       const credentialsPath = path.join(testDir, 'credentials.json')
       await fs.writeFile(
         credentialsPath,
@@ -225,6 +227,8 @@ describe('AC06: Store last successful auth in sync_state table', () => {
             client_id: 'mock_client_id',
             client_secret: 'mock_client_secret',
             redirect_uris: ['http://localhost:3000'],
+            auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+            token_uri: 'https://oauth2.googleapis.com/token',
           },
         })
       )
