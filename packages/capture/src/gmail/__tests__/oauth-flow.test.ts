@@ -20,7 +20,8 @@ describe('OAuth2 Authorization Flow [AC02]', () => {
     for (const dir of tempDirs) {
       try {
         await dir.cleanup()
-      } catch {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars, sonarjs/no-ignored-exceptions -- Cleanup errors can be safely ignored
+      } catch (_error) {
         // Ignore cleanup errors
       }
     }
@@ -46,6 +47,7 @@ describe('OAuth2 Authorization Flow [AC02]', () => {
         token_uri: 'https://oauth2.googleapis.com/token',
       },
     }
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- TestKit temp directory paths are safe
     await fs.writeFile(credentialsPath, JSON.stringify(mockCredentials, undefined, 2))
 
     // Import function under test
@@ -78,6 +80,7 @@ describe('OAuth2 Authorization Flow [AC02]', () => {
         token_uri: 'https://oauth2.googleapis.com/token',
       },
     }
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- TestKit temp directory paths are safe
     await fs.writeFile(credentialsPath, JSON.stringify(mockCredentials, undefined, 2))
 
     // Mock token response
@@ -92,15 +95,17 @@ describe('OAuth2 Authorization Flow [AC02]', () => {
     const { authorize } = await import('../auth.js')
 
     // Execute with mock token exchange
-    const result = await authorize(credentialsPath, tokenPath, {
+    const result = await authorize(credentialsPath, tokenPath, undefined, {
       mockTokenExchange: { tokens: mockTokens },
     })
 
     // Verify token returned
-    expect(result.credentials.access_token).toBe('mock-access-token')
-    expect(result.credentials.refresh_token).toBe('mock-refresh-token')
+    expect(result.credentials).toBeDefined()
+    expect(result.credentials?.access_token).toBe('mock-access-token')
+    expect(result.credentials?.refresh_token).toBe('mock-refresh-token')
 
     // Verify token saved to file
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- TestKit temp directory paths are safe
     const savedToken = JSON.parse(await fs.readFile(tokenPath, 'utf-8'))
     expect(savedToken.access_token).toBe('mock-access-token')
   })
@@ -120,13 +125,14 @@ describe('OAuth2 Authorization Flow [AC02]', () => {
         token_uri: 'https://oauth2.googleapis.com/token',
       },
     }
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- TestKit temp directory paths are safe
     await fs.writeFile(credentialsPath, JSON.stringify(mockCredentials, undefined, 2))
 
     const { authorize } = await import('../auth.js')
 
     // Mock failed token exchange
     await expect(
-      authorize(credentialsPath, undefined, {
+      authorize(credentialsPath, undefined, undefined, {
         mockTokenExchange: { error: 'invalid_grant' },
       })
     ).rejects.toThrow()
@@ -142,7 +148,10 @@ describe('Token Storage [AC03]', () => {
     for (const dir of tempDirs) {
       try {
         await dir.cleanup()
-      } catch (_error) {}
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars, sonarjs/no-ignored-exceptions -- Cleanup errors can be safely ignored
+      } catch (_error) {
+        // Ignore cleanup errors
+      }
     }
     tempDirs.length = 0
     if (global.gc) global.gc()
@@ -165,6 +174,7 @@ describe('Token Storage [AC03]', () => {
         token_uri: 'https://oauth2.googleapis.com/token',
       },
     }
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- TestKit temp directory paths are safe
     await fs.writeFile(credentialsPath, JSON.stringify(mockCredentials, undefined, 2))
 
     const mockTokens = {
@@ -176,11 +186,12 @@ describe('Token Storage [AC03]', () => {
     }
 
     const { authorize } = await import('../auth.js')
-    await authorize(credentialsPath, tokenPath, {
+    await authorize(credentialsPath, tokenPath, undefined, {
       mockTokenExchange: { tokens: mockTokens },
     })
 
     // Verify file permissions are 0600
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- TestKit temp directory paths are safe
     const stats = await fs.stat(tokenPath)
     const mode = stats.mode & parseInt('777', 8)
     expect(mode).toBe(0o600)
@@ -203,6 +214,7 @@ describe('Token Storage [AC03]', () => {
         token_uri: 'https://oauth2.googleapis.com/token',
       },
     }
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- TestKit temp directory paths are safe
     await fs.writeFile(credentialsPath, JSON.stringify(mockCredentials, undefined, 2))
 
     const mockTokens = {
@@ -214,7 +226,7 @@ describe('Token Storage [AC03]', () => {
     }
 
     const { authorize } = await import('../auth.js')
-    await authorize(credentialsPath, tokenPath, {
+    await authorize(credentialsPath, tokenPath, undefined, {
       mockTokenExchange: { tokens: mockTokens },
     })
 
@@ -234,6 +246,7 @@ describe('Token Storage [AC03]', () => {
     const tokenPath = join(tempDir.path, 'token.json')
 
     // Write corrupted JSON
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- TestKit temp directory paths are safe
     await fs.writeFile(tokenPath, '{invalid json}')
 
     const { loadToken } = await import('../auth.js')

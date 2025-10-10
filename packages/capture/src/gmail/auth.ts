@@ -1,5 +1,5 @@
 /**
- * OAuth2 Authorization Flow Implementation [AC02 + AC03 + AC05]
+ * OAuth2 Authorization Flow Implementation [AC02 + AC03 + AC05 + AC06]
  * Handles Google OAuth2 authorization and token management
  */
 
@@ -8,6 +8,10 @@ import { promises as fs } from 'node:fs'
 import { google } from 'googleapis'
 
 import { GmailAuthError, GmailErrorType } from './types.js'
+
+import type DatabaseConstructor from 'better-sqlite3'
+
+type Database = ReturnType<typeof DatabaseConstructor>
 
 /**
  * OAuth2 credentials structure from credentials.json
@@ -62,6 +66,24 @@ interface EnsureValidTokenOptions {
 }
 
 /**
+ * Updates sync_state table with last successful Gmail auth timestamp
+ * [AC06] Sync State Tracking
+ *
+ * @param db - SQLite database instance
+ */
+export const updateSyncState = (db: Database): void => {
+  const timestamp = new Date().toISOString()
+  const stmt = db.prepare(`
+    INSERT INTO sync_state (key, value, updated_at)
+    VALUES ('last_gmail_auth', ?, datetime('now'))
+    ON CONFLICT(key) DO UPDATE SET
+      value = excluded.value,
+      updated_at = datetime('now')
+  `)
+  stmt.run(timestamp)
+}
+
+/**
  * Writes token to file with secure permissions (0600) using atomic write
  * [AC03] Token Storage Implementation
  *
@@ -92,16 +114,18 @@ const writeTokenSecurely = async (path: string, token: TokenData): Promise<void>
 
 /**
  * Authorizes the application with Google OAuth2
- * [AC02] OAuth2 Authorization Flow
+ * [AC02] OAuth2 Authorization Flow + [AC06] Sync State Tracking
  *
  * @param credentialsPath - Path to credentials.json
  * @param tokenPath - Optional path to save token.json (defaults to no save)
+ * @param db - Optional database for sync state tracking
  * @param options - Optional testing options
  * @returns Authorization result with authUrl or credentials
  */
 export const authorize = async (
   credentialsPath: string,
   tokenPath?: string,
+  db?: Database,
   options?: AuthorizeOptions
 ): Promise<AuthorizationResult> => {
   // Load credentials
@@ -132,6 +156,11 @@ export const authorize = async (
       // Save token if path provided
       if (tokenPath) {
         await writeTokenSecurely(tokenPath, tokens)
+      }
+
+      // Update sync state after successful token exchange [AC06]
+      if (db) {
+        updateSyncState(db)
       }
 
       return {
@@ -271,16 +300,18 @@ const processMockRefreshError = (errorStr: string): never => {
 
 /**
  * Ensures token is valid, refreshing if necessary
- * [AC04] Automatic Token Refresh
+ * [AC04] Automatic Token Refresh + [AC06] Sync State Tracking
  *
  * @param credentialsPath - Path to credentials.json (optional for testing)
  * @param tokenPath - Path to token.json
+ * @param db - Optional database for sync state tracking
  * @param options - Optional testing options
  * @throws Error if refresh fails or token is invalid
  */
 export const ensureValidToken = async (
   credentialsPathOrToken: string,
   tokenPath?: string,
+  db?: Database,
   options?: EnsureValidTokenOptions
 ): Promise<void> => {
   // Handle single-argument case (tokenPath only)
@@ -304,6 +335,12 @@ export const ensureValidToken = async (
     if (options.mockRefresh.tokens) {
       // Write refreshed token atomically
       await writeTokenSecurely(actualTokenPath, options.mockRefresh.tokens)
+
+      // Update sync state after successful token refresh [AC06]
+      if (db) {
+        updateSyncState(db)
+      }
+
       return
     }
   }
