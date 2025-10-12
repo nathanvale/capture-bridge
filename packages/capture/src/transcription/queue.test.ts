@@ -433,10 +433,14 @@ describe('TranscriptionQueue', () => {
         queuedAt: new Date(),
       })
 
-      await delay(300)
-
-      expect(whisperModel.transcribe).toHaveBeenCalledTimes(2)
-      expect(queue.getStatus().totalProcessed).toBe(1)
+      // Event-driven assertion: wait for actual completion (fixes CI race condition)
+      await vi.waitFor(
+        () => {
+          expect(whisperModel.transcribe).toHaveBeenCalledTimes(2)
+          expect(queue.getStatus().totalProcessed).toBe(1)
+        },
+        { timeout: 1000, interval: 10 }
+      )
 
       const capture = db.prepare('SELECT status, raw_content FROM captures WHERE id = ?').get('retry-test') as {
         status: string
@@ -468,10 +472,15 @@ describe('TranscriptionQueue', () => {
       }
 
       queue.enqueue(job)
-      await delay(300)
 
-      expect(whisperModel.transcribe).toHaveBeenCalledTimes(2)
-      expect(queue.getStatus().totalFailed).toBe(1)
+      // Event-driven assertion: wait for actual completion (fixes CI race condition)
+      await vi.waitFor(
+        () => {
+          expect(whisperModel.transcribe).toHaveBeenCalledTimes(2)
+          expect(queue.getStatus().totalFailed).toBe(1)
+        },
+        { timeout: 1000, interval: 10 }
+      )
       expect(job.status).toBe('failed')
       expect(job.attemptCount).toBe(2)
     })
