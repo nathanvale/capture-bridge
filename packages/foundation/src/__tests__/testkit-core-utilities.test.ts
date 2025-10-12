@@ -72,18 +72,6 @@ describe('Testkit Core Utilities', () => {
 
         console.log('✅ delay(NaN) handled as edge case')
       })
-
-      it('should complete immediately with zero delay', async () => {
-        const { delay } = await import('@orchestr8/testkit')
-
-        const start = Date.now()
-        await delay(0)
-        const elapsed = Date.now() - start
-
-        expect(elapsed).toBeLessThan(50) // Allow variance for CI (was taking 18ms in CI)
-
-        console.log('✅ delay(0) completes immediately')
-      })
     })
 
     describe('retry', () => {

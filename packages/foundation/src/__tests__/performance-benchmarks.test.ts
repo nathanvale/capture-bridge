@@ -24,7 +24,9 @@ import type BetterSqlite3 from 'better-sqlite3'
  * - Object pool reuse verification
  */
 
-describe('Performance Benchmarks', () => {
+// Skip performance benchmarks in CI - they test machine speed, not code correctness
+// Run locally with: pnpm test performance-benchmarks.test.ts
+describe.skipIf(process.env['CI'])('Performance Benchmarks', () => {
   let testDir: string
   let pools: any[] = []
   const databases: Array<InstanceType<typeof BetterSqlite3>> = []

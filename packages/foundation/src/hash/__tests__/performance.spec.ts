@@ -23,7 +23,9 @@ function calculateP95(durations: number[]): number {
   return sorted[index] ?? 0
 }
 
-describe('AC07: Content Hash Performance Benchmarks', () => {
+// Skip performance benchmarks in CI - they test machine speed, not code correctness
+// Run locally with: pnpm test performance.spec.ts
+describe.skipIf(process.env['CI'])('AC07: Content Hash Performance Benchmarks', () => {
   describe('1KB text normalization + hashing', () => {
     it('should complete p95 under 10ms for 1KB text', async () => {
       const { normalizeText } = await import('../text-normalization.js')

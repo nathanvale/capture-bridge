@@ -63,8 +63,7 @@ describe('Auth Failure Tracking [AC07]', () => {
         )
       `)
 
-      const authModule = (await import('../auth.js')) as any
-      const { incrementAuthFailures } = authModule
+      const { incrementAuthFailures } = await import('../auth-state.js')
 
       // Act
       const count1 = incrementAuthFailures(db)
@@ -84,7 +83,7 @@ describe('Auth Failure Tracking [AC07]', () => {
       if (result) {
         expect(parseInt(result.value, 10)).toBe(3)
       }
-    }, 30000) // 30s timeout for googleapis module loading (expensive in CI)
+    }) // No timeout needed - auth-state.ts has no googleapis dependency
 
     it('should create initial counter if not exists [AC07]', async () => {
       // Arrange
@@ -105,8 +104,7 @@ describe('Auth Failure Tracking [AC07]', () => {
         )
       `)
 
-      const authModule = (await import('../auth.js')) as any
-      const { incrementAuthFailures } = authModule
+      const { incrementAuthFailures } = await import('../auth-state.js')
 
       // Act
       const count = incrementAuthFailures(db)
@@ -144,8 +142,7 @@ describe('Auth Failure Tracking [AC07]', () => {
       `
       ).run()
 
-      const authModule = (await import('../auth.js')) as any
-      const { resetAuthFailures } = authModule
+      const { resetAuthFailures } = await import('../auth-state.js')
 
       // Act
       resetAuthFailures(db)
@@ -179,8 +176,7 @@ describe('Auth Failure Tracking [AC07]', () => {
         )
       `)
 
-      const authModule = (await import('../auth.js')) as any
-      const { resetAuthFailures } = authModule
+      const { resetAuthFailures } = await import('../auth-state.js')
 
       // Act
       resetAuthFailures(db)
