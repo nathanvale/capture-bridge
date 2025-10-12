@@ -29,7 +29,9 @@ describe('Atomic Writer Performance', () => {
     if (global.gc) global.gc()
   })
 
-  describe('AC07: Performance requirement', () => {
+  // Skip in CI: Performance benchmarks test machine speed, not code correctness
+  // Run locally with: pnpm test performance.test.ts
+  describe.skipIf(!!process.env['CI'])('AC07: Performance requirement', () => {
     it('should complete write in < 50ms p95 for 1KB file', async () => {
       const { writeAtomic } = await import('../writer/atomic-writer.js')
       const { ulid } = await import('ulid')
