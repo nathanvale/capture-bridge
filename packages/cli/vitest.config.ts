@@ -29,7 +29,7 @@ export default defineConfig(
       poolOptions: {
         forks: {
           singleFork: false,
-          maxForks: process.env['CI'] ? 2 : 6, // Increased from 4 to 6 for better parallelization
+          maxForks: process.env['CI'] ? 4 : 6, // CI: 4 workers for ubuntu-latest 4-core runners
           minForks: 1,
           execArgv: ['--max-old-space-size=1024'],
         },

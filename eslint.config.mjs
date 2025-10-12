@@ -27,7 +27,6 @@ export default [
       '**/test-hook.ts',
       '**/test-prettier.ts',
       '**/tsup.config.ts',
-      'packages/capture/src/gmail/__tests__/failure-tracking.test.ts',
     ],
   },
   // Base configuration for all files
