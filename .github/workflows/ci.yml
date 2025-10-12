@@ -59,6 +59,60 @@ jobs:
           turbo run build lint typecheck test \
             --output-logs=errors-only
 
+      # Foundation package coverage enforcement (80% threshold)
+      - name: Enforce foundation coverage threshold
+        if: always() # Run even if tests fail
+        run: |
+          echo "## 📊 Foundation Coverage Quality Gate" >> $GITHUB_STEP_SUMMARY
+
+          # Check if coverage summary exists
+          if [ ! -f packages/foundation/coverage/coverage-summary.json ]; then
+            echo "⚠️ Coverage report not found (tests may have been skipped or failed)" >> $GITHUB_STEP_SUMMARY
+            exit 0 # Don't fail if tests didn't run
+          fi
+
+          # Extract coverage percentages using Node.js
+          node -e "
+            const fs = require('fs');
+            const coverage = JSON.parse(fs.readFileSync('packages/foundation/coverage/coverage-summary.json', 'utf8')).total;
+
+            const metrics = {
+              'Lines': { pct: coverage.lines.pct, threshold: 80 },
+              'Functions': { pct: coverage.functions.pct, threshold: 80 },
+              'Branches': { pct: coverage.branches.pct, threshold: 75 },
+              'Statements': { pct: coverage.statements.pct, threshold: 80 }
+            };
+
+            let failed = false;
+            console.log('\\n### Coverage Results\\n');
+
+            for (const [name, data] of Object.entries(metrics)) {
+              const status = data.pct >= data.threshold ? '✅' : '❌';
+              const message = \`\${status} \${name}: \${data.pct}% (threshold: \${data.threshold}%)\`;
+              console.log(message);
+
+              if (data.pct < data.threshold) {
+                failed = true;
+              }
+            }
+
+            if (failed) {
+              console.log('\\n❌ Foundation coverage thresholds not met');
+              process.exit(1);
+            } else {
+              console.log('\\n✅ All foundation coverage thresholds met');
+            }
+          " | tee -a $GITHUB_STEP_SUMMARY
+
+      # Upload coverage artifacts for analysis
+      - name: Upload foundation coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: foundation-coverage-${{ github.sha }}
+          path: packages/foundation/coverage
+          retention-days: 30
+
   # Only run on push to main - informational only
   coverage:
     name: Coverage Report
