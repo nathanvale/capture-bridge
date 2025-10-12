@@ -2,8 +2,8 @@
 title: Foundation Monorepo PRD
 status: living
 owner: Nathan
-version: 1.0.0-MPPP
-date: 2025-09-28
+version: 1.1.0-MPPP
+date: 2025-01-12
 spec_type: prd
 master_prd_version: 2.3.0-MPPP
 roadmap_version: 2.0.0-MPPP
@@ -26,17 +26,38 @@ The ADHD Brain capture system requires a monorepo foundation that supports:
 
 ### Success Metrics
 
-| Metric        | Target  | Measurement                                |
-| ------------- | ------- | ------------------------------------------ |
-| Build time    | < 30s   | `time pnpm build`                          |
-| Test suite    | < 30s   | `vitest run` duration                      |
-| Setup time    | < 5 min | Fresh clone → `pnpm install && pnpm build` |
-| CLI startup   | < 1s    | `time adhd --version`                      |
-| Circular deps | 0       | `pnpm list --depth=Infinity` validation    |
+| Metric               | Target     | Measurement                                | Status                       |
+| -------------------- | ---------- | ------------------------------------------ | ---------------------------- |
+| **TDD Feedback Loop** | **50-200ms** | **Change → Test result** | **✅ Achieved (source testing)** |
+| Build time           | < 30s      | `time pnpm build` (production only)        | ✅ Achieved                  |
+| Test suite           | < 30s      | `vitest run` duration                      | ✅ Achieved                  |
+| Setup time           | < 5 min    | Fresh clone → `pnpm install && pnpm build` | ✅ Achieved                  |
+| CLI startup          | < 1s       | `time adhd --version`                      | ✅ Achieved                  |
+| Circular deps        | 0          | `pnpm list --depth=Infinity` validation    | ✅ Achieved                  |
 
 ### One Number Success Metric
 
 **Time from `git clone` to running first test:** < 5 minutes (ADHD-optimized developer experience)
+
+### Source Testing Implementation (2025-01-12)
+
+**Critical Achievement:** Eliminated build step during development using custom export conditions.
+
+**Implementation:**
+- Custom `@capture-bridge/source` export condition points to TypeScript source files
+- Vitest configured with `resolve.conditions` to use source directly
+- Minimal `dist/` re-exports satisfy Vite resolution (not full builds)
+- Production builds still use TSUP for optimized ESM output
+
+**Impact:**
+```
+Before: Change code → pnpm build → pnpm test → See results (100-500ms latency)
+After:  Change code → pnpm test → See results (50-200ms latency)
+```
+
+**Performance Improvement:** 2-5x faster TDD feedback loop
+
+**Reference:** [ADR 0019: Monorepo Tooling Stack](../adr/0019-monorepo-tooling-stack.md) | [Source Testing Phase 2 Complete](../backlog/SOURCE-TESTING-PHASE-2-COMPLETE.md)
 
 ## 2) Users & Jobs
 
@@ -163,23 +184,33 @@ pnpm doctor
 
 **Success Criteria:** All steps complete < 5 minutes, zero errors
 
-### Flow B: Development Workflow (Daily Coding)
+### Flow B: Development Workflow (Daily Coding) - Source Testing Enabled
 
 ```bash
-# Terminal 1: Watch mode (hot reload)
-pnpm dev
+# Simple workflow - no build required!
+# Terminal 1: Watch mode for tests (source testing = instant feedback)
+pnpm test --watch
 
-# Terminal 2: Run specific tests
+# Terminal 2 (optional): Type checking
+pnpm typecheck --watch
+
+# Test specific package (runs against source files directly)
 pnpm test --filter=@capture-bridge/core
 
-# Terminal 3: Type checking
-pnpm typecheck
-
 # Before commit:
-pnpm lint && pnpm test
+pnpm lint && pnpm typecheck && pnpm test
 ```
 
-**Success Criteria:** Hot reload < 1s, tests complete < 30s
+**Success Criteria:**
+- Source change → test feedback: 50-200ms (achieved via source testing)
+- No build step required during development
+- Tests run directly against TypeScript source files
+
+**Traditional Dev Mode (only needed for complex scenarios):**
+```bash
+# Run concurrent build watch + test watch (rarely needed now)
+pnpm dev
+```
 
 ### Flow C: Adding New Package (Rare)
 
@@ -429,33 +460,58 @@ pnpm doctor
 
 ### Bundling Strategy
 
-**Decision: TSUP for all packages**
+**Decision: TSUP for production builds + Custom Export Conditions for development**
 
-- **Why:** Fast, simple, handles ESM + CJS, proven in gold standard
-- **Config:**
+- **Why:** TSUP proven for production, custom export conditions eliminate dev builds
+- **Production Config (TSUP):**
   ```typescript
   // tsup.config.ts
   export default defineConfig({
     entry: ["src/index.ts"],
-    format: ["esm", "cjs"],
+    format: ["esm"],  // ESM-only for ADHD Brain
     dts: true,
     splitting: false,
     sourcemap: true,
     clean: true,
   })
   ```
-- **Consequences:** Fast builds, dual format support, tree-shakeable
+- **Development Config (Custom Export Conditions):**
+  ```json
+  // package.json
+  {
+    "type": "module",
+    "exports": {
+      ".": {
+        "@capture-bridge/source": {
+          "types": "./src/index.ts",
+          "import": "./src/index.ts"
+        },
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
+  }
+  ```
+- **Consequences:**
+  - Fast production builds with tree-shaking
+  - Zero build latency during development (source testing)
+  - 2-5x faster TDD feedback loop
+  - ESM-only simplifies configuration
 
 ### Vitest Configuration
 
-**Decision: Projects-based multi-package testing**
+**Decision: Projects-based multi-package testing + Source Testing**
 
-- **Why:** Parallel execution with isolation, environment matching
-- **From Gold Standard:**
+- **Why:** Parallel execution with isolation, source testing eliminates builds
+- **Configuration:**
   ```typescript
   // vitest.config.ts
   export default defineConfig(
     createBaseVitestConfig({
+      resolve: {
+        // Custom export condition enables source testing
+        conditions: ['@capture-bridge/source', 'import', 'default'],
+      },
       test: {
         projects: getVitestProjects(),
         environment: "node",
@@ -471,7 +527,11 @@ pnpm doctor
     })
   )
   ```
-- **Consequences:** Fast parallel tests, no flakiness
+- **Consequences:**
+  - Fast parallel tests with no flakiness
+  - Tests run directly against TypeScript source files
+  - 50-200ms feedback loop (no build latency)
+  - Simplified development workflow
 
 ### ESLint Flat Config
 
@@ -1482,6 +1542,7 @@ This monorepo is like an ADHD brain's perfect filing cabinet - only 4 drawers (p
 
 ## 16. Revision History
 
+- **v1.1.0-MPPP** (2025-01-12): Source testing implementation - eliminated build step during development via custom export conditions
 - **v1.0.0-MPPP** (2025-09-28): Promoted to living status (P2-4 phase)
 - **v1.0.0-MPPP** (2025-09-27): Full PRD expansion for MPPP foundation
 

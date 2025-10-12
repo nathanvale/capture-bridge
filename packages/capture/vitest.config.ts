@@ -3,6 +3,9 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig(
   createBaseVitestConfig({
+    resolve: {
+      conditions: ['@capture-bridge/source', 'import', 'default'],
+    },
     test: {
       name: '@capture-bridge/capture',
       environment: 'node',
@@ -10,7 +13,7 @@ export default defineConfig(
       // Bootstrap sequence (order matters!)
       setupFiles: [
         '@orchestr8/testkit/register', // 1. TestKit bootstrap
-        './test-setup.ts', // 2. Resource cleanup config
+        '@orchestr8/testkit/setup', // 2. Pre-configured resource cleanup
       ],
 
       // Prevent zombie processes and hanging tests
@@ -19,7 +22,7 @@ export default defineConfig(
       // Timeout configuration
       testTimeout: 10000, // 10s per test
       hookTimeout: 5000, // 5s for hooks
-      teardownTimeout: 20000, // 20s for cleanup
+      teardownTimeout: 10000, // 10s for cleanup (TestKit 2.1.2 enables natural exit)
 
       // Fork pool for process isolation
       pool: 'forks',

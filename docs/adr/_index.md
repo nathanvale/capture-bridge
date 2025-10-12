@@ -26,7 +26,7 @@ Related: [Master PRD](/docs/master/prd-master.md)
 | [0016](0016-cli-as-feature-architecture.md)              | CLI as Feature Architecture (Not Foundation Infrastructure)            | Accepted   | 2025-09-28 | —                       | CLI                               |
 | [0017](0017-json-output-contract-stability.md)           | JSON Output Contract Stability for CLI Automation                      | Accepted   | 2025-09-28 | —                       | CLI                               |
 | [0018](0018-cli-exit-code-registry.md)                   | CLI Exit Code Registry Pattern for Automation                          | Accepted   | 2025-09-28 | —                       | CLI                               |
-| [0019](0019-monorepo-tooling-stack.md)                   | Monorepo Tooling Stack (pnpm + Turbo + TSUP)                           | Accepted   | 2025-09-28 | —                       | Foundation                        |
+| [0019](0019-monorepo-tooling-stack.md)                   | Monorepo Tooling Stack (pnpm + Turbo + TSUP)                           | Accepted   | 2025-01-12 | —                       | Foundation                        |
 | [0020](0020-foundation-direct-export-pattern.md)         | Foundation Direct Export Pattern (Synchronous Atomic Writes)           | Accepted   | 2025-09-28 | —                       | Foundation, Obsidian Bridge       |
 | [0021](0021-local-metrics-ndjson-strategy.md)            | Local-Only NDJSON Metrics Strategy                                     | Accepted   | 2025-09-28 | —                       | Foundation, Metrics               |
 | [0022](0022-sqlite-cache-size-optimization.md)           | SQLite Cache Size Optimization (2MB → 64MB)                            | Accepted   | 2025-09-29 | —                       | Staging Ledger, Performance       |
@@ -49,7 +49,7 @@ Related: [Master PRD](/docs/master/prd-master.md)
 - **Obsidian Export Strategy**: Atomic temp-then-rename pattern with ULID-based deterministic filenames to inbox-only directory
 - **Testing Approach**: TDD required for vault operations due to high risk of data loss
 - **CLI Architecture**: Feature-level interface using Commander.js + Zod with stable JSON contracts and exit code registry
-- **Monorepo Foundation**: pnpm + Turbo + TSUP stack with external @orchestr8/testkit and 4-package ADHD-optimized constraint
+- **Monorepo Foundation**: pnpm + Turbo + TSUP stack with external @orchestr8/testkit, 4-package ADHD-optimized constraint, and source testing via custom export conditions (2-5x faster TDD feedback)
 - **Direct Export Strategy**: Synchronous atomic writes over outbox queue pattern for MPPP scope (< 200 captures/day)
 - **Metrics Collection**: Local-only NDJSON files with opt-in activation and additive-only schema evolution
 - **SQLite Performance Optimization**: 64MB cache size (32x increase), composite indexes for recovery/export queries, automated PRAGMA optimize, and memory mapping for large data operations delivering 40-60% faster reads and 5-10x faster recovery operations

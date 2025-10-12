@@ -74,7 +74,7 @@ cat > "$PACKAGE_DIR/package.json" <<EOF
   "dependencies": {},
   "devDependencies": {
     "@capture-bridge/build-config": "workspace:*",
-    "@orchestr8/testkit": "^2.0.0",
+    "@orchestr8/testkit": "^2.1.2",
     "@types/node": "^24.3.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.3",

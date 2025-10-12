@@ -56,7 +56,7 @@ export function getVitestProjects() {
       ...(isWallaby ? {} : { globalTeardown: globalTeardownPath }),
       setupFiles: [
         '@orchestr8/testkit/register',
-        resolve(__dirname, 'packages/foundation/test-setup.ts'),
+        resolve(__dirname, 'node_modules/@orchestr8/testkit/dist/setup/index.js'),
       ],
       // Use threads pool for MSW compatibility (MSW doesn't work with forks)
       pool: 'threads',
@@ -176,7 +176,7 @@ export function getVitestProjects() {
           ...(isWallaby ? {} : { globalTeardown: globalTeardownPath }),
           setupFiles: [
             '@orchestr8/testkit/register',
-            resolve(__dirname, 'packages/foundation/test-setup.ts'),
+            resolve(__dirname, 'node_modules/@orchestr8/testkit/dist/setup/index.js'),
           ],
           testTimeout: 60_000,
           hookTimeout: 60_000,
@@ -214,7 +214,7 @@ export function getVitestProjects() {
           ...(isWallaby ? {} : { globalTeardown: globalTeardownPath }),
           setupFiles: [
             '@orchestr8/testkit/register',
-            resolve(__dirname, 'packages/foundation/test-setup.ts'),
+            resolve(__dirname, 'node_modules/@orchestr8/testkit/dist/setup/index.js'),
           ],
           testTimeout: 120_000,
           hookTimeout: 120_000,

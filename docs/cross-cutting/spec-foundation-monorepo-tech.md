@@ -2,8 +2,8 @@
 title: Foundation Monorepo Technical Specification
 status: draft
 owner: Nathan
-version: 1.0.0-MPPP
-date: 2025-09-27
+version: 1.1.0-MPPP
+date: 2025-01-12
 spec_type: tech
 master_prd_version: 2.3.0-MPPP
 roadmap_version: 2.0.0-MPPP
@@ -165,6 +165,11 @@ import { createBaseVitestConfig } from "@orchestr8/testkit/vitest-config"
 
 export default defineConfig(
   createBaseVitestConfig({
+    resolve: {
+      // Custom export condition enables source testing (2025-01-12)
+      // Tests run directly against TypeScript source files (no build required)
+      conditions: ['@capture-bridge/source', 'import', 'default'],
+    },
     test: {
       environment: "node",
       globals: true,

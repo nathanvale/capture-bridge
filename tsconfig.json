@@ -45,11 +45,12 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@capture-bridge/foundation/hash": ["packages/foundation/src/hash"],
       "@capture-bridge/*": ["packages/*/src"]
     },
     "types": []
   },
-  "include": [],
+  "include": ["vitest.projects.ts"],
   "exclude": ["node_modules", "**/dist", "**/*.test.ts", "**/*.spec.ts"],
   "references": [
     {
