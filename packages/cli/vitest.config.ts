@@ -17,7 +17,12 @@ export default defineConfig(
       ],
 
       // Prevent zombie processes and hanging tests
-      reporters: process.env.CI ? ['default'] : ['default', 'hanging-process'],
+      // CI: basic reporter for clean logs + hanging-process for zombie detection
+      // Local: default reporter for detailed output + hanging-process
+      reporters: process.env['CI'] ? ['basic', 'hanging-process'] : ['default', 'hanging-process'],
+
+      // Test isolation (disabled for 20-30% speedup, safe with TestKit cleanup)
+      isolate: false,
 
       // Timeout configuration
       testTimeout: 10000, // 10s per test

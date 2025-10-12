@@ -41,7 +41,7 @@ jobs:
       - name: Validate affected packages (PR)
         if: github.event_name == 'pull_request'
         run: |
-          turbo run build lint typecheck test \
+          turbo run build lint typecheck test -- --run \
             --filter="...[origin/${{ github.event.pull_request.base.ref }}]" \
             --output-logs=errors-only
 
@@ -49,14 +49,14 @@ jobs:
       - name: Validate all packages (Push)
         if: github.event_name == 'push'
         run: |
-          turbo run build lint typecheck test \
+          turbo run build lint typecheck test -- --run \
             --output-logs=errors-only
 
       # Manual trigger: Validate everything
       - name: Validate all packages (Manual)
         if: github.event_name == 'workflow_dispatch'
         run: |
-          turbo run build lint typecheck test \
+          turbo run build lint typecheck test -- --run \
             --output-logs=errors-only
 
   # Only run on push to main - informational only

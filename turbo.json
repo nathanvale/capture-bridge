@@ -19,7 +19,6 @@
       "outputLogs": "errors-only"
     },
     "test": {
-      "dependsOn": ["^build"],
       "outputs": [],
       "cache": true,
       "inputs": [
@@ -36,7 +35,6 @@
       "outputLogs": "new-only"
     },
     "test:nocache": {
-      "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
       "cache": false,
       "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts"],
@@ -120,7 +118,6 @@
       "inputs": ["dist/**", "dist-node/**", "dist-types/**"]
     },
     "test:integration": {
-      "dependsOn": ["^build"],
       "outputs": ["test-results/**"],
       "cache": false,
       "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts", "**/*.integration.test.*"],
@@ -128,7 +125,6 @@
       "outputLogs": "new-only"
     },
     "//#test:root": {
-      "dependsOn": ["^build"],
       "outputs": ["coverage/**", "test-results/**"],
       "cache": false,
       "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts", "vitest.projects.ts"],
@@ -136,7 +132,6 @@
       "outputLogs": "new-only"
     },
     "//#test:integration:root": {
-      "dependsOn": ["^build"],
       "outputs": ["test-results/**"],
       "cache": false,
       "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts", "vitest.projects.ts", "**/*.integration.test.*"],
@@ -144,7 +139,6 @@
       "outputLogs": "new-only"
     },
     "test:ci": {
-      "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
       "cache": true,
       "inputs": [
@@ -159,7 +153,6 @@
       "outputLogs": "new-only"
     },
     "test:coverage": {
-      "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
       "cache": true,
       "inputs": [
@@ -172,7 +165,6 @@
       "outputLogs": "new-only"
     },
     "//#test:e2e:root": {
-      "dependsOn": ["^build"],
       "outputs": ["test-results/**"],
       "cache": false,
       "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts", "**/*.e2e.test.*"],
@@ -180,7 +172,6 @@
       "outputLogs": "new-only"
     },
     "//#test:smoke:root": {
-      "dependsOn": ["^build"],
       "outputs": [],
       "cache": false,
       "inputs": ["$TURBO_DEFAULT$", "**/*.smoke.test.*"],
@@ -188,7 +179,6 @@
       "outputLogs": "new-only"
     },
     "//#test:quick:root": {
-      "dependsOn": ["^build"],
       "outputs": [],
       "cache": false,
       "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts"],
@@ -196,7 +186,6 @@
       "outputLogs": "new-only"
     },
     "//#test:focused:root": {
-      "dependsOn": ["^build"],
       "outputs": [],
       "cache": false,
       "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts"],
@@ -204,7 +193,6 @@
       "outputLogs": "new-only"
     },
     "//#test:debug:root": {
-      "dependsOn": ["^build"],
       "outputs": [],
       "cache": false,
       "inputs": ["$TURBO_DEFAULT$", "vitest.config.ts"],
