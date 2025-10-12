@@ -11,7 +11,10 @@
 import { z } from 'zod'
 
 // eslint-disable-next-line import/no-unresolved
+import { ExponentialBackoff, SimpleCircuitBreaker, type BreakerState } from './resilience.js'
+// eslint-disable-next-line import/no-unresolved
 import { SyncStateRepository } from './sync-state-repository.js'
+
 
 import type DatabaseConstructor from 'better-sqlite3'
 
@@ -73,8 +76,8 @@ export class EmailPoller {
   // Expose concrete config with defaulted pollInterval for tests and consumers
   public readonly config: EmailPollerConfig & { pollInterval: number }
 
-  // Non-reentrant guard to serialize pollOnce calls
-  private activePoll: Promise<EmailPollResult> | undefined = undefined
+  // Serialize pollOnce calls via simple promise queue (avoids re-entrancy deadlocks)
+  private queue: Promise<void> = Promise.resolve()
 
   // Optional Gmail API client shim for tests/DI
   public gmail?: {
@@ -104,6 +107,16 @@ export class EmailPoller {
     }
   }
 
+  // AC05 resilience primitives
+  private readonly backoff = new ExponentialBackoff()
+  private readonly circuitBreaker = new SimpleCircuitBreaker()
+  private lastApiCallAt?: number
+  // Logger shim to allow tests to spy without eslint console errors
+  private log(...args: unknown[]): void {
+    // eslint-disable-next-line no-console
+    console.log(...args)
+  }
+
   constructor(
     private readonly _db: Database,
     private readonly _dedup: DeduplicationService,
@@ -126,28 +139,54 @@ export class EmailPoller {
    * Currently a stub that returns empty result while architecture is wired.
    * Enforces sequential execution by preventing overlapping polls.
    */
-  async pollOnce(): Promise<EmailPollResult> {
-    // Serialize concurrent invocations
-    if (this.activePoll) {
-      // Wait for current poll to finish, then run a new one
-      // Chain to ensure callers get their own poll execution result
-      const next = this.activePoll.then(() => this.executePollOnce())
-      this.activePoll = next
-      try {
-        return await next
-      } finally {
-        // Clear lock only if this is the last chained promise
-        if (this.activePoll === next) this.activePoll = undefined
-      }
-    }
+  pollOnce(): Promise<EmailPollResult> {
+    // Circuit breaker wrapped retry executor, queued to ensure sequential execution
+    const p = this.queue.then(this._runBreakerWrapped, this._runBreakerWrapped)
+    // Advance the queue regardless of success/failure to avoid blocking subsequent calls
+    this.queue = p.then(
+      () => undefined,
+      () => undefined
+    )
+    return p
+  }
 
-    const run = this.executePollOnce()
-    this.activePoll = run
-    try {
-      return await run
-    } finally {
-      if (this.activePoll === run) this.activePoll = undefined
-    }
+  // Helper bound method to satisfy lint rule about arrow in function body
+  private _runBreakerWrapped = (): Promise<EmailPollResult> => {
+    return this.circuitBreaker.execute(() => this.pollWithRetry())
+  }
+
+  // Retry wrapper per AC05
+  private pollWithRetry(maxAttempts = 5): Promise<EmailPollResult> {
+    const run = (async () => {
+      let attempt = 0
+      while (attempt < maxAttempts) {
+        attempt += 1
+        try {
+          const res = await this.executePollOnce()
+          // Success resets backoff state
+          this.backoff.reset()
+          return res
+        } catch (e: unknown) {
+          const err = e as { code?: number; response?: { headers?: Record<string, string> } }
+          if (err?.code === 429) {
+            this.log('Gmail is temporarily busy. Waiting a moment before trying again...')
+            const retryAfterSecRaw = err.response?.headers?.['retry-after']
+            const delayMs = retryAfterSecRaw
+              ? parseInt(retryAfterSecRaw, 10) * 1000
+              : this.backoff.calculateDelay(attempt)
+            this.log(
+              `Retry attempt ${attempt}/${maxAttempts} after ${Math.floor(delayMs / 1000)}s`
+            )
+            await this.sleep(delayMs)
+            continue
+          }
+          // Non-retriable
+          throw e
+        }
+      }
+      throw new Error(`Gmail polling failed after ${maxAttempts} attempts`)
+    })()
+    return run
   }
 
   /**
@@ -200,12 +239,15 @@ export class EmailPoller {
 
     try {
       do {
+        // Rate limit between sequential page requests
+        await this.maybeRateLimitDelay()
         const resp = await gmail.users.history.list({
           userId: 'me',
           startHistoryId: cursor,
           ...(pageToken ? { pageToken } : {}),
           maxResults: 100,
         })
+        this.lastApiCallAt = Date.now()
 
         const pageMessageIds =
           resp.data.history
@@ -264,6 +306,31 @@ export class EmailPoller {
       // ignore
     }
     return result
+  }
+
+  // Helper: Rate limit pacing
+  private async maybeRateLimitDelay(): Promise<void> {
+    const cfg = this.config.rateLimitConfig
+    if (!cfg) return
+    const now = Date.now()
+    const minIntervalMs = Math.max(0, Math.floor(1000 / cfg.maxRequestsPerSecond))
+  if (this.lastApiCallAt !== undefined) {
+      const elapsed = now - this.lastApiCallAt
+      const toWait = minIntervalMs - elapsed
+      if (toWait > 0) await this.sleep(toWait)
+    }
+  }
+
+  private async sleep(ms: number): Promise<void> {
+    await new Promise((r) => setTimeout(r, ms))
+  }
+
+  // AC05: small helpers for tests
+  getCircuitBreakerState(): BreakerState {
+    return this.circuitBreaker.getState()
+  }
+  resetBackoff(): void {
+    this.backoff.reset()
   }
 
   private updateCursor(historyId: string): void {

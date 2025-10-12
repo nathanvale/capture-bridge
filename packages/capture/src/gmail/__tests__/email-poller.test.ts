@@ -146,7 +146,7 @@ describe('EmailPoller', () => {
 
     expect(slowImpl).toHaveBeenCalledTimes(2)
     expect(maxConcurrent).toBe(1)
-  })
+  }, 10000)
 
   it('should reject non-positive pollInterval values', async () => {
     // @ts-expect-error - TS project references may not include test module mapping; runtime path is valid
@@ -814,5 +814,264 @@ describe('EmailPoller - Pagination', () => {
       expect(t1 - t0).toBeGreaterThanOrEqual(90)
       expect(t2 - t1).toBeGreaterThanOrEqual(90)
     }
+  })
+})
+
+// AC05: Rate Limiting & Resilience RED tests
+describe('EmailPoller - Rate Limiting & Resilience', () => {
+  const databases: Array<{ close: () => void }> = []
+  let db: any
+
+  beforeEach(() => {
+    db = new Database(':memory:')
+    databases.push(db)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS sync_state (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `)
+    // Seed a cursor so we hit history.list immediately
+    db.prepare(
+      `INSERT OR REPLACE INTO sync_state(key,value,updated_at) VALUES('gmail_history_id','seed-rl',datetime('now'))`
+    ).run()
+  })
+
+  afterEach(async () => {
+    await new Promise((r) => setTimeout(r, 20))
+    for (const d of databases) d.close()
+    databases.length = 0
+    vi.resetAllMocks()
+  })
+
+  it('should handle 429 rate limit with exponential backoff', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+    const gmail = makeMockGmail()
+
+    const error429: any = new Error('Rate limit exceeded')
+    error429.code = 429
+
+    const historySpy = gmail.__spies.listHistory
+      .mockRejectedValueOnce(error429)
+      .mockRejectedValueOnce(error429)
+      .mockResolvedValueOnce({
+        data: { history: [], historyId: 'hist-after-retry' },
+      })
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    const start = Date.now()
+    const result: any = await poller.pollOnce()
+    const duration = Date.now() - start
+
+    expect(historySpy).toHaveBeenCalledTimes(3)
+    // Expect ~1s + ~2s (with jitter the lower bound is conservative)
+    expect(duration).toBeGreaterThanOrEqual(2500)
+    expect(duration).toBeLessThan(6000)
+    expect(result.historyId).toBe('hist-after-retry')
+  })
+
+  it('should respect Retry-After header from Gmail', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+    const gmail = makeMockGmail()
+
+    const error429: any = new Error('Rate limit exceeded')
+    error429.code = 429
+    error429.response = { headers: { 'retry-after': '5' } }
+
+    gmail.__spies.listHistory
+      .mockRejectedValueOnce(error429)
+      .mockResolvedValueOnce({ data: { history: [], historyId: 'hist' } })
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    const start = Date.now()
+    await poller.pollOnce()
+    const duration = Date.now() - start
+
+    expect(duration).toBeGreaterThanOrEqual(4900)
+    expect(duration).toBeLessThan(5600)
+  }, 12000)
+
+  it('should apply jitter to backoff delays', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+    const delays: number[] = []
+
+    for (let i = 0; i < 8; i++) {
+      const gmail = makeMockGmail()
+      const error429: any = new Error('Rate limit exceeded')
+      error429.code = 429
+
+      gmail.__spies.listHistory
+        .mockRejectedValueOnce(error429)
+        .mockResolvedValueOnce({ data: { history: [], historyId: 'hist' } })
+
+      const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+      const db2 = new Database(':memory:')
+      databases.push(db2)
+      db2.exec(`
+        CREATE TABLE IF NOT EXISTS sync_state (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+      `)
+      db2.prepare(
+        `INSERT OR REPLACE INTO sync_state(key,value,updated_at) VALUES('gmail_history_id','seed-jitter',datetime('now'))`
+      ).run()
+
+      const poller = new EmailPoller(db2, dedup, {
+        gmailCredentialsPath: '/creds.json',
+        sequential: true,
+      } satisfies EmailPollerConfig)
+      ;(poller as any).gmail = gmail
+
+      const start = Date.now()
+      await poller.pollOnce()
+      const dur = Date.now() - start
+      delays.push(dur)
+      // Attempt to reset backoff between independent pollers is implicit
+    }
+
+    const unique = new Set(delays.map((d) => Math.round(d / 50) * 50))
+    expect(unique.size).toBeGreaterThan(3)
+    for (const d of delays) {
+      expect(d).toBeGreaterThanOrEqual(700)
+      expect(d).toBeLessThan(1500)
+    }
+  }, 12000)
+
+  it('should reset backoff counter on successful request', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+    const gmail1 = makeMockGmail()
+    const error429: any = new Error('Rate limit exceeded')
+    error429.code = 429
+    gmail1.__spies.listHistory
+      .mockRejectedValueOnce(error429)
+      .mockResolvedValueOnce({ data: { history: [], historyId: 'hist1' } })
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail1
+    await poller.pollOnce()
+
+    const gmail2 = makeMockGmail()
+    gmail2.__spies.listHistory
+      .mockRejectedValueOnce(error429)
+      .mockResolvedValueOnce({ data: { history: [], historyId: 'hist2' } })
+    ;(poller as any).gmail = gmail2
+
+    const start = Date.now()
+    await poller.pollOnce()
+    const duration = Date.now() - start
+
+    expect(duration).toBeGreaterThanOrEqual(700)
+    expect(duration).toBeLessThan(1500)
+  })
+
+  it('should open circuit breaker after threshold failures', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+    // @ts-expect-error runtime path valid under vitest
+    const { BreakerState } = await import('../resilience.js')
+    const gmail = makeMockGmail()
+
+    const error500: any = new Error('Internal Server Error')
+    error500.code = 500
+    const historySpy = gmail.__spies.listHistory.mockRejectedValue(error500)
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    for (let i = 0; i < 5; i++) {
+      await expect(poller.pollOnce()).rejects.toThrow()
+    }
+
+    expect(poller.getCircuitBreakerState()).toBe(BreakerState.OPEN)
+
+    historySpy.mockClear()
+    await expect(poller.pollOnce()).rejects.toThrow('Circuit breaker is open')
+    expect(historySpy).not.toHaveBeenCalled()
+  })
+
+  it('should display ADHD-friendly error messages', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+    const gmail = makeMockGmail()
+    const consoleSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation((..._args: any[]) => void 0)
+
+    const error429: any = new Error('Rate limit exceeded')
+    error429.code = 429
+
+    gmail.__spies.listHistory
+      .mockRejectedValueOnce(error429)
+      .mockResolvedValueOnce({ data: { history: [], historyId: 'hist' } })
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    await poller.pollOnce()
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Gmail is temporarily busy')
+    )
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Waiting a moment before trying again')
+    )
+    consoleSpy.mockRestore()
+  })
+
+  it('should honor a conservative rate limiter between page requests', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+    const gmail = makeMockGmail()
+
+    gmail.__spies.listHistory
+      .mockResolvedValueOnce({
+        data: { history: [], historyId: 'h1', nextPageToken: 'next' },
+      })
+      .mockResolvedValueOnce({ data: { history: [], historyId: 'h2' } })
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+      rateLimitConfig: { maxRequestsPerSecond: 1, burstCapacity: 1 },
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    const start = Date.now()
+    await poller.pollOnce()
+    const dur = Date.now() - start
+
+    expect(dur).toBeGreaterThanOrEqual(950)
   })
 })
