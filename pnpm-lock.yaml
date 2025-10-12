@@ -21,8 +21,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       '@orchestr8/testkit':
-        specifier: ^2.1.2
-        version: 2.1.2(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
+        specifier: ^2.2.0
+        version: 2.2.0(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
       '@types/node':
         specifier: ^24.3.0
         version: 24.5.2
@@ -130,8 +130,8 @@ importers:
         specifier: workspace:*
         version: link:../../tooling/build
       '@orchestr8/testkit':
-        specifier: ^2.1.2
-        version: 2.1.2(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
+        specifier: ^2.2.0
+        version: 2.2.0(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
@@ -167,8 +167,8 @@ importers:
         specifier: workspace:*
         version: link:../../tooling/build
       '@orchestr8/testkit':
-        specifier: ^2.1.2
-        version: 2.1.2(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
+        specifier: ^2.2.0
+        version: 2.2.0(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
       '@types/node':
         specifier: ^24.3.0
         version: 24.5.2
@@ -188,8 +188,8 @@ importers:
         specifier: workspace:*
         version: link:../../tooling/build
       '@orchestr8/testkit':
-        specifier: ^2.1.2
-        version: 2.1.2(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
+        specifier: ^2.2.0
+        version: 2.2.0(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
       '@types/node':
         specifier: ^24.3.0
         version: 24.5.2
@@ -225,8 +225,8 @@ importers:
         specifier: workspace:*
         version: link:../foundation
       '@orchestr8/testkit':
-        specifier: ^2.1.2
-        version: 2.1.2(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
+        specifier: ^2.2.0
+        version: 2.2.0(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
       '@types/node':
         specifier: ^24.3.0
         version: 24.5.2
@@ -253,8 +253,8 @@ importers:
         specifier: workspace:*
         version: link:../../tooling/build
       '@orchestr8/testkit':
-        specifier: ^2.1.2
-        version: 2.1.2(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
+        specifier: ^2.2.0
+        version: 2.2.0(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)
       '@types/node':
         specifier: ^24.3.0
         version: 24.5.2
@@ -722,8 +722,8 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-  '@orchestr8/testkit@2.1.2':
-    resolution: {integrity: sha512-JeLlcDpDM2VZIJAB4gre4wL/n3cRJPSFOWka3m2KGy4zQPZbO2DVv3YxiAEVGZH9Pg8TyPKAnBzxMnmDvCwU/g==}
+  '@orchestr8/testkit@2.2.0':
+    resolution: {integrity: sha512-BM8Z1nTGE56wBVdjbB8+vkJ+aVuXpV/wBvobPLhKb/ZfBg2esrqQza6TnW/Zf4hMSK2Xo5q3qcQ/Gjha42tFyQ==}
     hasBin: true
     peerDependencies:
       '@vitest/ui': ^3.2.4
@@ -3915,7 +3915,7 @@ snapshots:
       - jiti
       - supports-color
 
-  '@orchestr8/testkit@2.1.2(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)':
+  '@orchestr8/testkit@2.2.0(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)':
     dependencies:
       '@vitest/ui': 3.2.4(vitest@3.2.4)
       vitest: 3.2.4(@types/node@24.5.2)(@vitest/ui@3.2.4)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(tsx@4.20.6)

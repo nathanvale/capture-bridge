@@ -282,6 +282,7 @@
     "DEBUG",
     "MEMORY_DEBUG",
     "TEST_MODE",
+    "TEST_SEED",
     "COVERAGE",
     "CAPTURE_METRICS",
     "LOG_CLEANUP_STATS",

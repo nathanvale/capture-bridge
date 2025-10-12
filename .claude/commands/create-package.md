@@ -121,7 +121,7 @@ The command should:
      },
      "devDependencies": {
        "@capture-bridge/build-config": "workspace:*",
-       "@orchestr8/testkit": "^2.1.2",
+       "@orchestr8/testkit": "^2.2.0",
        "@types/node": "^24.3.0",
        "tsup": "^8.3.0",
        "typescript": "^5.7.3",
