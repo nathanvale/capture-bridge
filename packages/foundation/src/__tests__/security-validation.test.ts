@@ -25,11 +25,13 @@ describe('Security Validation', () => {
   const databases: Array<InstanceType<typeof BetterSqlite3>> = []
 
   beforeEach(async () => {
-    // Create temp directory for file-based tests
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'security-test-'))
+    // Create temp directory using TestKit (auto-cleanup)
+    const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+    const tempDir = await createTempDirectory()
+    tmpDir = tempDir.path
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     // Cleanup databases
     for (const database of databases) {
       try {
@@ -43,15 +45,8 @@ describe('Security Validation', () => {
     databases.length = 0
     db = null
 
-    // Cleanup temp directory
-    if (tmpDir) {
-      try {
-        await fs.rm(tmpDir, { recursive: true, force: true })
-      } catch {
-        // Ignore cleanup errors
-      }
-      tmpDir = null
-    }
+    // No manual temp directory cleanup needed - TestKit handles it automatically
+    tmpDir = null
   })
 
   describe('SQL Injection Prevention', () => {
@@ -140,8 +135,10 @@ describe('Security Validation', () => {
       if (!tmpDir) throw new Error('tmpDir not initialized')
 
       // Create migration with potentially malicious SQL
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Intentional for security test
       await fs.writeFile(path.join(tmpDir, '001_safe.sql'), 'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT);')
 
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Intentional for security test
       await fs.writeFile(path.join(tmpDir, '002_malicious.sql'), 'CREATE TABLE temp (id INTEGER); DROP TABLE users; --')
 
       try {

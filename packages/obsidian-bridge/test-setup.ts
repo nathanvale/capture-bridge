@@ -2,9 +2,9 @@
  * Global test setup for obsidian-bridge package
  */
 
-import { afterAll } from 'vitest'
 import { setupResourceCleanup } from '@orchestr8/testkit/config'
 import { cleanupAllResources } from '@orchestr8/testkit/utils'
+import { afterAll } from 'vitest'
 
 // Configure automatic resource cleanup
 await setupResourceCleanup({
@@ -19,4 +19,5 @@ afterAll(async () => {
   await cleanupAllResources()
 })
 
+// eslint-disable-next-line no-console -- Setup file logging is acceptable
 console.log('✅ TestKit resource cleanup configured (obsidian-bridge package)')
