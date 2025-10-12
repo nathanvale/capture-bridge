@@ -31,7 +31,7 @@ export default defineConfig(
       poolOptions: {
         forks: {
           singleFork: false,
-          maxForks: process.env['CI'] ? 2 : 6,
+          maxForks: process.env['CI'] ? 4 : 6, // CI: 4 workers for ubuntu-latest 4-core runners
           minForks: 1,
           // Memory limit per worker (512MB default, 1GB for DB tests)
           execArgv: ['--max-old-space-size=1024'],

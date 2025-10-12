@@ -113,12 +113,12 @@ importers:
       '@capture-bridge/storage':
         specifier: workspace:*
         version: link:../storage
+      '@googleapis/gmail':
+        specifier: ^15.0.0
+        version: 15.0.0
       google-auth-library:
         specifier: ^10.4.0
         version: 10.4.0
-      googleapis:
-        specifier: ^162.0.0
-        version: 162.0.0
       ulid:
         specifier: ^2.3.0
         version: 2.4.0
@@ -586,6 +586,10 @@ packages:
   '@eslint/plugin-kit@0.3.5':
     resolution: {integrity: sha512-Z5kJ+wU3oA7MMIqVR9tyZRtjYPr4OC004Q4Rw7pgOKUOKkJfZ3O24nz3WYfGRpMDNmcOi3TwQOmgm7B7Tpii0w==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@googleapis/gmail@15.0.0':
+    resolution: {integrity: sha512-H4VsX2Hnx8DFZ4KdtuurcAqFUerfvLiitKhqq4BTBUM1u4y8dgWoGeVjz7+gWtMJl6/hUDCd0H8JaiU7pFNaOA==}
+    engines: {node: '>=12.0.0'}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -1974,10 +1978,6 @@ packages:
   googleapis-common@8.0.0:
     resolution: {integrity: sha512-66if47It7y+Sab3HMkwEXx1kCq9qUC9px8ZXoj1CMrmLmUw81GpbnsNlXnlyZyGbGPGcj+tDD9XsZ23m7GLaJQ==}
     engines: {node: '>=18.0.0'}
-
-  googleapis@162.0.0:
-    resolution: {integrity: sha512-dxHgGExRjbRLHxHZuPyiFB2692H9hP4Qg9OI6nhzw5OOFlxl6ufG5GMqraKv6HAFvHltz7Ytx/C1ndcM85USxA==}
-    engines: {node: '>=18'}
 
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
@@ -3762,6 +3762,12 @@ snapshots:
       '@eslint/core': 0.15.2
       levn: 0.4.1
 
+  '@googleapis/gmail@15.0.0':
+    dependencies:
+      googleapis-common: 8.0.0
+    transitivePeerDependencies:
+      - supports-color
+
   '@humanfs/core@0.19.1': {}
 
   '@humanfs/node@0.16.7':
@@ -5322,13 +5328,6 @@ snapshots:
       google-auth-library: 10.4.0
       qs: 6.14.0
       url-template: 2.0.8
-    transitivePeerDependencies:
-      - supports-color
-
-  googleapis@162.0.0:
-    dependencies:
-      google-auth-library: 10.4.0
-      googleapis-common: 8.0.0
     transitivePeerDependencies:
       - supports-color
 

@@ -44,10 +44,10 @@
     "@capture-bridge/foundation": "workspace:*",
     "@capture-bridge/obsidian-bridge": "workspace:*",
     "@capture-bridge/storage": "workspace:*",
+    "@googleapis/gmail": "^15.0.0",
     "google-auth-library": "^10.4.0",
     "ulid": "^2.3.0",
-    "zod": "^4.1.11",
-    "googleapis": "^162.0.0"
+    "zod": "^4.1.11"
   },
   "devDependencies": {
     "@capture-bridge/build-config": "workspace:*",

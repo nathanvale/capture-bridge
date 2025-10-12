@@ -259,7 +259,7 @@ describe('Auth Failure Tracking [AC07]', () => {
       if (result) {
         expect(parseInt(result.value, 10)).toBe(0)
       }
-    })
+    }, 30000) // 30s timeout for googleapis mock
 
     it('should increment failure counter on authorization error [AC07]', async () => {
       // Arrange
@@ -312,7 +312,7 @@ describe('Auth Failure Tracking [AC07]', () => {
       if (result) {
         expect(parseInt(result.value, 10)).toBe(1)
       }
-    })
+    }, 30000) // 30s timeout for googleapis mock
 
     it('should throw MaxAuthFailuresError when failures >= 5 [AC07]', async () => {
       // Arrange
@@ -362,7 +362,7 @@ describe('Auth Failure Tracking [AC07]', () => {
       await expect(authorize(credentialsPath, undefined, db)).rejects.toThrow(GmailAuthError)
       await expect(authorize(credentialsPath, undefined, db)).rejects.toThrow('5 times consecutively')
       await expect(authorize(credentialsPath, undefined, db)).rejects.toThrow('capture doctor')
-    })
+    }, 30000) // 30s timeout for googleapis mock
   })
 
   describe('ensureValidToken() integration', () => {
@@ -430,7 +430,7 @@ describe('Auth Failure Tracking [AC07]', () => {
       if (result) {
         expect(parseInt(result.value, 10)).toBe(0)
       }
-    })
+    }, 30000) // 30s timeout for googleapis mock
 
     it('should increment failure counter on token refresh error [AC07]', async () => {
       // Arrange
@@ -482,7 +482,7 @@ describe('Auth Failure Tracking [AC07]', () => {
       if (result) {
         expect(parseInt(result.value, 10)).toBe(1)
       }
-    })
+    }, 30000) // 30s timeout for googleapis mock
 
     it('should throw MaxAuthFailuresError when failures >= 5 [AC07]', async () => {
       // Arrange
@@ -530,7 +530,7 @@ describe('Auth Failure Tracking [AC07]', () => {
       await expect(ensureValidToken(tokenPath, undefined, db)).rejects.toThrow(GmailAuthError)
       await expect(ensureValidToken(tokenPath, undefined, db)).rejects.toThrow('5 times consecutively')
       await expect(ensureValidToken(tokenPath, undefined, db)).rejects.toThrow('capture doctor')
-    })
+    }, 30000) // 30s timeout for googleapis mock
   })
 
   describe('Error message content [AC07]', () => {
@@ -591,6 +591,6 @@ describe('Auth Failure Tracking [AC07]', () => {
           expect(error.type).toBe('auth.max_failures')
         }
       }
-    })
+    }, 30000) // 30s timeout for googleapis mock
   })
 })
