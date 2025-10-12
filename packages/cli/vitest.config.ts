@@ -17,7 +17,7 @@ export default defineConfig(
       ],
 
       // Prevent zombie processes and hanging tests
-      reporters: process.env['CI'] ? ['default'] : ['default', 'hanging-process'],
+      reporters: process.env.CI ? ['default'] : ['default', 'hanging-process'],
 
       // Timeout configuration
       testTimeout: 10000, // 10s per test

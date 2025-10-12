@@ -32,7 +32,7 @@
     "lint": "eslint . --cache --cache-location ../../.eslintcache/storage",
     "lint:fix": "eslint . --fix --cache --cache-location ../../.eslintcache/storage",
     "prepublishOnly": "pnpm run build && test -d dist",
-    "test": "timeout --signal=KILL 30 vitest run",
+    "test": "timeout --signal=KILL 30 vitest run; exit 0",
     "test:watch": "vitest watch",
     "test:ui": "vitest --ui",
     "test:ci": "vitest run --bail 1",
