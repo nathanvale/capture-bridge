@@ -234,10 +234,12 @@ describe('EmailPoller - History API', () => {
 
     await poller.pollOnce()
 
-    expect(gmail.__spies.listHistory).toHaveBeenCalledWith({
-      userId: 'me',
-      startHistoryId: 'previous-history-id',
-    })
+    expect(gmail.__spies.listHistory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'me',
+        startHistoryId: 'previous-history-id',
+      })
+    )
   })
 
   it('should extract message IDs from messagesAdded events and update cursor', async () => {
@@ -616,5 +618,201 @@ describe('SyncStateRepository', () => {
     await repo.set('gmail_history_id', '901')
     const age = await repo.getCursorAge('gmail_history_id')
     expect(age).toBeGreaterThanOrEqual(0)
+  })
+})
+
+// AC04: Pagination RED tests
+describe('EmailPoller - Pagination', () => {
+  const databases: Array<{ close: () => void }> = []
+  let db: any
+
+  beforeEach(() => {
+    db = new Database(':memory:')
+    databases.push(db)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS sync_state (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `)
+    // Start with an initial cursor
+    db.prepare(
+      `INSERT OR REPLACE INTO sync_state(key,value,updated_at) VALUES('gmail_history_id','seed-0',datetime('now'))`
+    ).run()
+  })
+
+  afterEach(async () => {
+    await new Promise((r) => setTimeout(r, 20))
+    for (const d of databases) d.close()
+    databases.length = 0
+    vi.resetAllMocks()
+  })
+
+  it('should fetch all pages when nextPageToken present and update cursor to final historyId', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+    const gmail = makeMockGmail()
+
+    const page1 = {
+      data: {
+        history: [{ messagesAdded: [{ message: { id: 'msg1', threadId: 't1' } }] }],
+        historyId: 'hist-page1',
+        nextPageToken: 'token-page2',
+      },
+    }
+    const page2 = {
+      data: {
+        history: [{ messagesAdded: [{ message: { id: 'msg2', threadId: 't2' } }] }],
+        historyId: 'hist-page2',
+        nextPageToken: 'token-page3',
+      },
+    }
+    const page3 = {
+      data: {
+        history: [{ messagesAdded: [{ message: { id: 'msg3', threadId: 't3' } }] }],
+        historyId: 'hist-final',
+      },
+    }
+
+    gmail.__spies.listHistory
+      .mockResolvedValueOnce(page1 as any)
+      .mockResolvedValueOnce(page2 as any)
+      .mockResolvedValueOnce(page3 as any)
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    const result: any = await poller.pollOnce()
+
+    expect(gmail.__spies.listHistory).toHaveBeenCalledTimes(3)
+    expect(result.messageIds).toEqual(['msg1', 'msg2', 'msg3'])
+    expect(result.historyId).toBe('hist-final')
+    expect(result.pagesProcessed ?? 0).toBeGreaterThanOrEqual(3)
+
+    const row = db
+      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
+      .get() as { value: string }
+    expect(row.value).toBe('hist-final')
+  })
+
+  it('should pass pageToken to subsequent requests', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+    const gmail = makeMockGmail()
+
+    gmail.__spies.listHistory
+      .mockResolvedValueOnce({
+        data: { history: [], historyId: 'hist1', nextPageToken: 'token-abc' },
+      })
+      .mockResolvedValueOnce({
+        data: { history: [], historyId: 'hist2' },
+      })
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    await poller.pollOnce()
+
+    expect(gmail.__spies.listHistory).toHaveBeenNthCalledWith(1, {
+      userId: 'me',
+      startHistoryId: expect.any(String),
+      maxResults: 100,
+    })
+    expect(gmail.__spies.listHistory).toHaveBeenNthCalledWith(2, {
+      userId: 'me',
+      startHistoryId: expect.any(String),
+      pageToken: 'token-abc',
+      maxResults: 100,
+    })
+  })
+
+  it('should stop when no nextPageToken', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+    const gmail = makeMockGmail()
+
+    gmail.__spies.listHistory.mockResolvedValueOnce({
+      data: { history: [{ messagesAdded: [{ message: { id: 'msg1', threadId: 't1' } }] }], historyId: 'hist-final' },
+    })
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    await poller.pollOnce()
+    expect(gmail.__spies.listHistory).toHaveBeenCalledTimes(1)
+  })
+
+  it('should handle empty pages gracefully and still advance', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+    const gmail = makeMockGmail()
+
+    gmail.__spies.listHistory
+      .mockResolvedValueOnce({
+        data: { history: [], historyId: 'hist1', nextPageToken: 'token-next' },
+      })
+      .mockResolvedValueOnce({
+        data: { history: [{ messagesAdded: [{ message: { id: 'msg1', threadId: 't1' } }] }], historyId: 'hist2' },
+      })
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    const result: any = await poller.pollOnce()
+    expect(result.messageIds).toEqual(['msg1'])
+    expect(result.pagesProcessed ?? 0).toBeGreaterThanOrEqual(2)
+  })
+
+  it('should process pages sequentially not concurrently', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+    const gmail = makeMockGmail()
+
+    const timestamps: number[] = []
+    gmail.__spies.listHistory.mockImplementation(async () => {
+      timestamps.push(Date.now())
+      await new Promise((r) => setTimeout(r, 100))
+      return {
+        data: {
+          history: [],
+          historyId: 'hist',
+          nextPageToken: timestamps.length < 3 ? 'token' : undefined,
+        },
+      } as any
+    })
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    await poller.pollOnce()
+
+    expect(timestamps).toHaveLength(3)
+    // Assert length to satisfy TS, then compare deltas
+    if (timestamps.length === 3) {
+      const [t0, t1, t2] = timestamps as [number, number, number]
+      expect(t1 - t0).toBeGreaterThanOrEqual(90)
+      expect(t2 - t1).toBeGreaterThanOrEqual(90)
+    }
   })
 })

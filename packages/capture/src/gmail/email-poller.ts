@@ -36,6 +36,8 @@ export interface EmailPollResult {
   historyId?: string
   bootstrapped?: boolean
   cursorReset?: boolean
+  // AC04 pagination metric
+  pagesProcessed?: number
 }
 
 // Same Database type pattern used elsewhere in gmail module
@@ -78,8 +80,19 @@ export class EmailPoller {
   public gmail?: {
     users: {
       history: {
-        list: (req: { userId: 'me'; startHistoryId: string }) => Promise<{
-          data: { history?: Array<{ messagesAdded?: Array<{ message: { id: string; threadId: string } }> }>; historyId: string }
+        list: (req: {
+          userId: 'me'
+          startHistoryId: string
+          pageToken?: string
+          maxResults?: number
+        }) => Promise<{
+          data: {
+            history?: Array<{
+              messagesAdded?: Array<{ message: { id: string; threadId: string } }>
+            }>
+            historyId: string
+            nextPageToken?: string
+          }
         }>
       }
       messages: {
@@ -179,10 +192,32 @@ export class EmailPoller {
       bootstrapped = true
     }
 
-    // 2) Fetch history since cursor
-    let historyResp: { data: { history?: Array<{ messagesAdded?: Array<{ message: { id: string; threadId: string } }> }>; historyId: string } }
+    // 2) Fetch all pages sequentially with pagination
+    const allMessageIds: string[] = []
+    let pageToken: string | undefined = undefined
+  let pagesProcessed = 0
+  let finalHistoryId = ''
+
     try {
-      historyResp = await gmail.users.history.list({ userId: 'me', startHistoryId: cursor })
+      do {
+        const resp = await gmail.users.history.list({
+          userId: 'me',
+          startHistoryId: cursor,
+          ...(pageToken ? { pageToken } : {}),
+          maxResults: 100,
+        })
+
+        const pageMessageIds =
+          resp.data.history
+            ?.flatMap((h) => h.messagesAdded ?? [])
+            .map((ma) => ma.message.id)
+            .filter(Boolean) ?? []
+
+        allMessageIds.push(...pageMessageIds)
+        finalHistoryId = resp.data.historyId
+        pageToken = resp.data.nextPageToken
+        pagesProcessed += 1
+      } while (pageToken)
     } catch (error: unknown) {
       const err = error as { status?: number }
       if (err.status === 404) {
@@ -198,28 +233,25 @@ export class EmailPoller {
           historyId: boot.historyId,
           cursorReset: true,
           bootstrapped: true,
+          pagesProcessed,
         }
         return result404
       }
       throw error
     }
 
-    // 3) Extract message IDs from messagesAdded
-    const messageIds =
-      historyResp.data.history?.flatMap((h) => h.messagesAdded ?? []).map((ma) => ma.message.id).filter(Boolean) ?? []
-
-    // 4) Stage messages and update cursor atomically
-    const nextHistoryId = historyResp.data.historyId
-    this.processWithCursorUpdate(messageIds, nextHistoryId)
+    // 3) Stage messages and update cursor atomically to the last page historyId
+    this.processWithCursorUpdate(allMessageIds, finalHistoryId)
 
     const result: EmailPollResult = {
-      messagesFound: messageIds.length,
-      messagesProcessed: messageIds.length,
+      messagesFound: allMessageIds.length,
+      messagesProcessed: allMessageIds.length,
       duplicatesSkipped: 0,
       errors: [],
       duration: Date.now() - start,
-      messageIds,
-      historyId: nextHistoryId,
+      messageIds: allMessageIds,
+      historyId: finalHistoryId,
+      pagesProcessed,
       bootstrapped,
     }
     // Touch _dedup to satisfy no-unused until duplicate check is implemented
