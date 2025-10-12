@@ -4,6 +4,7 @@
     "outDir": "./dist",
     "rootDir": ".",
     "paths": {
+      "@capture-bridge/foundation/hash": ["../foundation/src/hash"],
       "@capture-bridge/*": ["../*/src"]
     }
   },
@@ -12,7 +13,6 @@
     "src/**/__tests__/**/*.ts",
     "**/*.test.ts",
     "**/*.spec.ts",
-    "test-setup.ts",
     "vitest.config.ts",
     "tsup.config.ts"
   ],

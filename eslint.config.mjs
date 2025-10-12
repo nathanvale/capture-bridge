@@ -26,8 +26,6 @@ export default [
       '**/tsconfig.*.json',
       '**/test-hook.ts',
       '**/test-prettier.ts',
-      '**/test-setup.ts',
-      '**/vitest.config.ts',
       '**/tsup.config.ts',
     ],
   },
@@ -339,6 +337,16 @@ export default [
       '@typescript-eslint/array-type': 'off',
       '@typescript-eslint/consistent-type-definitions': 'off',
       '@typescript-eslint/member-ordering': 'off',
+    },
+  },
+
+  // Obsidian-bridge package - allow foundation/hash subpath imports
+  {
+    files: ['packages/obsidian-bridge/**/*.{ts,tsx}'],
+    rules: {
+      // ESLint import resolver doesn't understand package.json exports with custom conditions
+      // These imports work correctly at runtime (verified by passing tests)
+      'import/no-unresolved': ['error', { ignore: ['^@capture-bridge/foundation/hash$'] }],
     },
   },
 

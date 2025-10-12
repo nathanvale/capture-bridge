@@ -695,7 +695,8 @@ it("should handle concurrent connection pool operations", async () => {
 /**
  * Resource Cleanup Hierarchy (Most Critical → Least Critical)
  *
- * Source: test-setup.ts:1-33
+ * Note: Now handled automatically by @orchestr8/testkit/setup
+ * which provides pre-configured resource cleanup
  */
 
 // 1. DATABASE POOLS (most critical)
@@ -744,21 +745,30 @@ if (global.gc) {
 
 ### Global Cleanup Hook
 
-**Source**: `test-setup.ts:26-30`
+**Configured via**: `@orchestr8/testkit/setup` in `vitest.config.ts`
 
 ```typescript
 /**
  * Global Cleanup Hook (Safety Net)
  *
- * This runs after ALL tests in a file complete.
- * Ensures resources are cleaned even if individual tests fail.
+ * This is now automatically configured when you include
+ * '@orchestr8/testkit/setup' in your vitest setupFiles.
+ *
+ * It provides:
+ * - cleanupAllResources() in afterAll hooks
+ * - Automatic leak detection
+ * - Optional logging via LOG_CLEANUP_STATS=1
+ *
+ * For custom cleanup, you can use the factory function:
  */
 
-import { afterAll } from "vitest"
-import { cleanupAllResources } from "@orchestr8/testkit/utils"
+import { createTestSetup } from '@orchestr8/testkit/setup'
 
-afterAll(async () => {
-  await cleanupAllResources()
+await createTestSetup({
+  cleanupAfterEach: true,
+  cleanupAfterAll: true,
+  enableLeakDetection: true,
+  logStats: true,
 })
 ```
 

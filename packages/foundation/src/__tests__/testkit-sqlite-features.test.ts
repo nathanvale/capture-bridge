@@ -41,94 +41,24 @@ describe('Testkit SQLite Features', () => {
 
   describe('Database Creation', () => {
     it('should create in-memory SQLite database', async () => {
-      try {
-        const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-        const Database = (await import('better-sqlite3')).default
+      const Database = (await import('better-sqlite3')).default
 
-        // Create in-memory database URL
-        const memoryUrl = createMemoryUrl()
-        expect(memoryUrl).toContain(':memory:')
+      // Create database instance with :memory: string
+      db = new Database(':memory:')
+      databases.push(db)
 
-        // Create database instance directly with better-sqlite3
-        db = new Database(':memory:')
-        databases.push(db)
+      // Verify database works
+      const result = db.prepare('SELECT 1 as value').get() as { value: number }
+      expect(result.value).toBe(1)
 
-        // Verify database works
-        const result = db.prepare('SELECT 1 as value').get() as { value: number }
-        expect(result.value).toBe(1)
+      // Create table to verify full functionality
+      db.exec('CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)')
+      db.prepare('INSERT INTO test (name) VALUES (?)').run('Test')
 
-        console.log('✅ In-memory SQLite database created successfully')
-      } catch (error) {
-        console.error('SQLite import error:', error)
-        throw new Error('Failed to import SQLite utilities - ensure better-sqlite3 is installed')
-      }
-    })
+      const row = db.prepare('SELECT * FROM test').get() as { id: number; name: string }
+      expect(row.name).toBe('Test')
 
-    it('should create memory URL with auto-generated identifier', async () => {
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-
-      // Create URL with auto-generated identifier
-      const url = createMemoryUrl('raw', { autoGenerate: true })
-
-      expect(url).toContain('mem-')
-      expect(url).toContain('mode=memory')
-      expect(url).toContain('cache=shared')
-
-      console.log('✅ Auto-generated memory URL:', url)
-    })
-
-    it('should create memory URL with different isolation modes', async () => {
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-
-      // Shared cache (default)
-      const sharedUrl = createMemoryUrl('raw', {
-        identifier: 'test-shared',
-        isolation: 'shared',
-      })
-      expect(sharedUrl).toContain('cache=shared')
-
-      // Private cache
-      const privateUrl = createMemoryUrl('raw', {
-        identifier: 'test-private',
-        isolation: 'private',
-      })
-      expect(privateUrl).toContain('cache=private')
-
-      console.log('✅ Isolation modes tested:', { shared: sharedUrl, private: privateUrl })
-    })
-
-    it('should create memory URL with custom parameters', async () => {
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-
-      // Create URL with custom parameters
-      const url = createMemoryUrl('raw', {
-        identifier: 'test-params',
-        params: {
-          connection_limit: 5,
-          timeout: 10000,
-        },
-      })
-
-      expect(url).toContain('connection_limit=5')
-      expect(url).toContain('timeout=10000')
-
-      console.log('✅ Memory URL with custom params:', url)
-    })
-
-    it('should create memory URL for different targets', async () => {
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-
-      const rawUrl = createMemoryUrl('raw')
-      const prismaUrl = createMemoryUrl('prisma', { identifier: 'test-prisma' })
-      const kyselyUrl = createMemoryUrl('kysely')
-      const drizzleUrl = createMemoryUrl('drizzle-better-sqlite3')
-
-      expect(rawUrl).toBeDefined()
-      expect(prismaUrl).toBeDefined()
-      expect(kyselyUrl).toBeDefined()
-      expect(drizzleUrl).toBe(':memory:') // Simple format for drizzle-better-sqlite3
-
-      console.log('✅ All target URLs created:', { rawUrl, prismaUrl, kyselyUrl, drizzleUrl })
+      console.log('✅ In-memory SQLite database created successfully')
     })
 
     it('should create file-based SQLite database', async () => {

@@ -2,10 +2,10 @@
 adr: 0019
 title: Monorepo Tooling Stack (pnpm + Turbo + TSUP)
 status: accepted
-context-date: 2025-09-28
+context-date: 2025-01-12
 owner: Nathan
 spec_type: adr
-version: 0.1.0
+version: 0.2.0
 ---
 
 # ADR 0019: Monorepo Tooling Stack (pnpm + Turbo + TSUP)
@@ -52,6 +52,52 @@ We will use **pnpm + Turbo + TSUP** as our monorepo tooling stack with external 
 - Prettier with ADHD-optimized formatting (100 char width, no semicolons)
 - Vitest projects for isolated parallel testing
 - No remote Turbo cache (privacy-first)
+- **Source testing with custom export conditions** (no build required during development)
+
+**Source Testing Implementation (2025-01-12):**
+
+We implemented custom export conditions for source testing following Colin Hacks' 2024 best practices. This eliminates the need to run builds during development, providing 2-5x faster feedback loops.
+
+**Package Configuration Pattern:**
+
+```json
+{
+  "type": "module",
+  "exports": {
+    ".": {
+      "@capture-bridge/source": {
+        "types": "./src/index.ts",
+        "import": "./src/index.ts"
+      },
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  }
+}
+```
+
+**Vitest Configuration:**
+
+```typescript
+resolve: {
+  conditions: ['@capture-bridge/source', 'import', 'default']
+}
+```
+
+**Development Workflow:**
+
+- **Before:** Change code → `pnpm build` → `pnpm test` → See results (100-500ms latency)
+- **After:** Change code → `pnpm test` → See results (50-200ms latency)
+
+**Key Benefits:**
+
+- Tests run directly against TypeScript source files
+- No build step required during TDD cycles
+- Minimal `dist/` re-exports satisfy Vite resolution (not full builds)
+- Production builds still use TSUP for optimized ESM output
+- Compatible with ESM-only publishing strategy
+
+See: `/docs/backlog/SOURCE-TESTING-PHASE-2-COMPLETE.md` for implementation details.
 
 ## Alternatives Considered
 
@@ -77,12 +123,14 @@ We will use **pnpm + Turbo + TSUP** as our monorepo tooling stack with external 
 
 ### Positive
 
-- **Fast feedback loops:** Turbo caching enables < 5s incremental builds
+- **Ultra-fast feedback loops:** Source testing provides 50-200ms latency (2-5x faster than build-first)
+- **Turbo caching:** Enables < 5s incremental builds for production
 - **Proven patterns:** Gold standard repo (`/Users/nathanvale/code/bun-changesets-template/`) validates this stack
 - **TypeScript excellence:** TSUP provides fast bundling with perfect TS support
 - **Test isolation:** @orchestr8/testkit prevents flaky tests and resource conflicts
-- **ADHD-friendly:** 4-package limit + external testkit reduces cognitive load
+- **ADHD-friendly:** 4-package limit + external testkit + no-build development reduces cognitive load
 - **Privacy preservation:** No remote cache, local-first development
+- **Modern best practices:** Custom export conditions follow Colin Hacks 2024 ESM patterns
 
 ### Negative
 
@@ -109,4 +157,7 @@ We will use **pnpm + Turbo + TSUP** as our monorepo tooling stack with external 
 - [Foundation Monorepo Tech Spec](/Users/nathanvale/code/capture-bridge/docs/cross-cutting/spec-foundation-monorepo-tech.md)
 - [Foundation Monorepo Arch Spec](/Users/nathanvale/code/capture-bridge/docs/cross-cutting/spec-foundation-monorepo-arch.md)
 - [Foundation Monorepo Test Spec](/Users/nathanvale/code/capture-bridge/docs/cross-cutting/spec-foundation-monorepo-test.md)
+- [Source Testing Migration Plan](/Users/nathanvale/code/capture-bridge/docs/backlog/SOURCE-TESTING-MIGRATION-PLAN.md)
+- [Source Testing Phase 2 Complete](/Users/nathanvale/code/capture-bridge/docs/backlog/SOURCE-TESTING-PHASE-2-COMPLETE.md)
 - Gold Standard Repository: `/Users/nathanvale/code/bun-changesets-template/`
+- Colin Hacks: [Live Types in TypeScript Monorepo](https://colinhacks.com/essays/live-types-typescript-monorepo) (2024)

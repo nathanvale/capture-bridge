@@ -10,6 +10,10 @@
   "type": "module",
   "exports": {
     ".": {
+      "@capture-bridge/source": {
+        "types": "./src/index.ts",
+        "import": "./src/index.ts"
+      },
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
@@ -41,7 +45,7 @@
   },
   "devDependencies": {
     "@capture-bridge/build-config": "workspace:*",
-    "@orchestr8/testkit": "^2.0.0",
+    "@orchestr8/testkit": "^2.1.2",
     "@types/node": "^24.3.0",
     "better-sqlite3": "^12.4.1",
     "tsup": "^8.3.0",

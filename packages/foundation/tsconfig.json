@@ -12,7 +12,6 @@
     "src/**/__tests__/**/*.ts",
     "**/*.test.ts",
     "**/*.spec.ts",
-    "test-setup.ts",
     "vitest.config.ts",
     "vitest.projects.ts",
     "tsup.config.ts"

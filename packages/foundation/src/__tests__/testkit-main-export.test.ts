@@ -1,4 +1,4 @@
-/* eslint-disable no-console, sonarjs/no-nested-functions, require-await, unicorn/consistent-function-scoping, sonarjs/no-ignored-exceptions, @typescript-eslint/no-unused-vars, vitest/expect-expect, sonarjs/assertions-in-tests, @typescript-eslint/no-empty-function, sonarjs/no-hardcoded-passwords, sonarjs/file-permissions, sonarjs/no-alphabetical-sort, sonarjs/different-types-comparison */
+/* eslint-disable no-console, sonarjs/no-ignored-exceptions, @typescript-eslint/no-unused-vars, vitest/expect-expect, sonarjs/assertions-in-tests */
 import { describe, it, expect } from 'vitest'
 
 /**
@@ -46,18 +46,20 @@ describe('@orchestr8/testkit - External Dependency Integration', () => {
 
     // Verify all core utilities are present
     for (const utility of coreUtilities) {
+      // eslint-disable-next-line security/detect-object-injection -- Safe: utility comes from controlled array, not user input
       expect((testkit as any)[utility]).toBeDefined()
+      // eslint-disable-next-line security/detect-object-injection -- Safe: utility comes from controlled array, not user input
       expect(typeof (testkit as any)[utility]).toBe('function')
     }
 
     // Optional utilities that should NOT be in main export
     const optionalUtilities = [
       'setupMSW', // Should be in @orchestr8/testkit/msw
-      'createMemoryUrl', // Should be in @orchestr8/testkit/sqlite
     ]
 
     // Verify optional utilities are correctly excluded
     for (const utility of optionalUtilities) {
+      // eslint-disable-next-line security/detect-object-injection -- Safe: utility comes from controlled array, not user input
       expect((testkit as any)[utility]).toBeUndefined()
     }
 
