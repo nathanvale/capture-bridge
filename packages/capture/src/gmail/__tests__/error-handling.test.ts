@@ -185,9 +185,7 @@ describe('Gmail OAuth2 Error Handling [AC05]', () => {
     })
   })
 
-  // Skip in CI: googleapis integration tests are slow under concurrent load
-  // Run locally with: pnpm test error-handling.test.ts
-  describe.skipIf(!!process.env['CI'])('Revoked token handling (HTTP 401)', () => {
+  describe('Revoked token handling (HTTP 401)', () => {
     it('should throw GmailAuthError with "Token revoked" for invalid_grant error', async () => {
       const { createTempDirectory } = await import('@orchestr8/testkit/fs')
       const tempDir = await createTempDirectory()
@@ -285,9 +283,7 @@ describe('Gmail OAuth2 Error Handling [AC05]', () => {
     })
   })
 
-  // Skip in CI: googleapis integration tests are slow under concurrent load
-  // Run locally with: pnpm test error-handling.test.ts
-  describe.skipIf(!!process.env['CI'])('Rate limit handling (HTTP 429)', () => {
+  describe('Rate limit handling (HTTP 429)', () => {
     it('should throw GmailAuthError for rate limit with retry-after duration', async () => {
       const { createTempDirectory } = await import('@orchestr8/testkit/fs')
       const tempDir = await createTempDirectory()

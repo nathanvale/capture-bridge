@@ -5,7 +5,7 @@
 
 import { promises as fs } from 'node:fs'
 
-import { google } from 'googleapis'
+import { OAuth2Client } from 'google-auth-library'
 
 import { GmailAuthError, GmailErrorType, type GmailToken } from './types.js'
 
@@ -200,7 +200,7 @@ export const authorize = async (
     const { client_id, client_secret, redirect_uris } = credentials.installed
 
     // Create OAuth2 client
-    const oauth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0])
+    const oauth2Client = new OAuth2Client(client_id, client_secret, redirect_uris[0])
 
     // Generate authorization URL
     const authUrl = oauth2Client.generateAuthUrl({
@@ -534,7 +534,7 @@ const performProductionRefresh = async (
   const { client_id, client_secret, redirect_uris } = credentials.installed
 
   // 2. Create OAuth2 client
-  const oauth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0])
+  const oauth2Client = new OAuth2Client(client_id, client_secret, redirect_uris[0])
 
   // Set current token (needed for refresh) - use null for googleapis compatibility
   oauth2Client.setCredentials({
