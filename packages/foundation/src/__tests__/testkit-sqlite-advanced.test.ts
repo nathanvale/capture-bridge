@@ -536,7 +536,9 @@ describe('Testkit SQLite Advanced Features', () => {
     })
   })
 
-  describe('Performance Benchmarks', () => {
+  // Skip in CI: Performance benchmarks test machine speed, not code correctness
+  // Run locally with: pnpm test testkit-sqlite-advanced.test.ts
+  describe.skipIf(!!process.env['CI'])('Performance Benchmarks', () => {
     it('should benchmark insert performance', async () => {
       const Database = (await import('better-sqlite3')).default
 
