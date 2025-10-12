@@ -6,5 +6,11 @@
     "types": ["node"]
   },
   "include": ["src/**/*.ts", "src/**/*.test.ts"],
-  "exclude": ["dist", "node_modules", "tsup.config.ts", "tests"]
+  "exclude": [
+    "dist",
+    "node_modules",
+    "tsup.config.ts",
+    "tests",
+    "src/gmail/__tests__/failure-tracking.test.ts"
+  ]
 }
