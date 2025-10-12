@@ -1,11 +1,47 @@
 # Capture Bridge TestKit Comprehensive Audit & Implementation Plan
 
 **Date:** 2025-10-12
-**Status:** Planning Complete - Ready for Implementation
+**Status:** Migration to TestKit 2.2.0 Complete - Audit Partially Addressed
 **Auditor:** Claude (Sequential Thinking Analysis)
+**TestKit Version:** 2.2.0 (migrated from 2.0.0)
 
 ---
-****
+
+## Migration Status (2025-10-12)
+
+### ✅ Completed During TestKit 2.2.0 Migration
+
+1. **Zero-Config Setup Module** - Migrated from manual `test-setup.ts` files to `@orchestr8/testkit/setup/auto`
+   - ✅ Foundation package now uses `@orchestr8/testkit/setup/auto` for automatic resource cleanup
+   - ✅ Removed all manual `test-setup.ts` files (5 packages)
+   - ✅ Centralized configuration in `vitest.projects.ts`
+   - ✅ Updated all documentation to reflect new pattern
+
+2. **Pool Strategy Update** - Migrated from forks to threads pool for MSW compatibility
+   - ✅ Foundation uses `pool: "threads"` with `isolate: true`
+   - ✅ Better performance for I/O-heavy tests
+   - ✅ MSW compatibility ensured
+
+3. **Documentation Updates**
+   - ✅ Updated `guide-testkit-optimizations.md` to show setup/auto pattern
+   - ✅ Removed references to deleted test-setup.ts files
+   - ✅ Added examples of zero-config and custom configuration patterns
+
+### 🔄 Still To Address
+
+From the original audit, these items remain:
+
+- ⚠️ **1.2** Migrate performance-benchmarks.test.ts to use createTempDirectory() (P1)
+- ⚠️ **1.3** Standardize database cleanup pattern (P1 - team decision needed)
+- ⚠️ **2.1** Security utilities usage in production code (P2)
+- ⚠️ **2.2** Concurrency control examples (P2)
+- ⚠️ **3.1** Environment control documentation (P3)
+- ⚠️ **3.2** CLI package real tests (P3)
+
+**Note:** TempDirectory helper methods (P1 task 1.1) are already documented in TestKit but need to be verified in API.md
+
+---
+
 ## Executive Summary
 
 **Overall Assessment:** ✅ **STRONG COMPLIANCE** - Capture Bridge demonstrates solid TestKit adoption with **6 of 12 feature categories fully adopted**. All critical features (guards, resource cleanup, vitest config) are correctly implemented. The codebase serves well as a TestKit showcase project.
@@ -21,10 +57,10 @@
 ### ✅ Fully Adopted (6/12)
 
 1. **Core Utilities** - delay, retry, withTimeout used across tests
-2. **Resource Management** - setupResourceCleanup() in all 5 packages
+2. **Resource Management** - `@orchestr8/testkit/setup/auto` in foundation package (zero-config cleanup)
 3. **SQLite Testing** - 5 dedicated test files with comprehensive coverage
 4. **MSW Mock Server** - Full feature coverage in testkit-msw-features.test.ts
-5. **Configuration** - All packages use createBaseVitestConfig()
+5. **Configuration** - All packages use createBaseVitestConfig() in centralized vitest.projects.ts
 6. **Guards** - SQLite & Timers guards globally enabled via env vars
 
 ### ⚠️ Partially Adopted (2/12)
@@ -55,6 +91,7 @@
 ### Files Examined (39 total test files)
 
 **Foundation Package (12 files):**
+
 - ✅ testkit-msw-features.test.ts - MSW comprehensive usage
 - ✅ performance-benchmarks.test.ts - Manual patterns, novel cleanup sequences
 - ✅ security-validation.test.ts - Security utilities, ConcurrencyManager
@@ -68,9 +105,11 @@
 - Hash tests (audio-fingerprint, email, sha256, text-normalization)
 
 **Storage Package (1 file):**
+
 - ✅ schema-creation.spec.ts - Manual database cleanup pattern
 
 **Capture Package (11 files):**
+
 - ✅ oauth-flow.test.ts (gmail) - createTempDirectory with settle pattern
 - auth tests (auth-state-tracker, credentials-parser, error-classifier, token-manager)
 - gmail tests (credentials, error-handling, failure-tracking, sync-state-tracking, token-refresh)
@@ -79,6 +118,7 @@
 - placeholder.test.ts
 
 **Obsidian-Bridge Package (5 files):**
+
 - ✅ atomic-writer.test.ts - createTempDirectory with TempDir helpers
 - collision-detector.test.ts
 - crash-testing.test.ts
@@ -86,11 +126,13 @@
 - performance.test.ts
 
 **CLI Package (1 file):**
+
 - ❌ placeholder.test.ts - No real tests
 
 ### TestKit Features Analyzed
 
 **12 Feature Categories from API.md:**
+
 1. Core Utilities (delay, retry, withTimeout, createMockFn)
 2. Security Validation (validateCommand, sanitizeCommand, validatePath, sanitizeSqlIdentifier)
 3. Resource Management (registerResource, cleanupAllResources, ResourceManager)
@@ -121,6 +163,7 @@
 **Issue:** Uses manual `mkdirSync`/`rmSync` instead of TestKit's `createTempDirectory()`
 
 **Current Code:**
+
 ```typescript
 // ❌ CURRENT (lines 31-35, 55-57)
 beforeEach(() => {
@@ -136,6 +179,7 @@ afterEach(async () => {
 ```
 
 **Recommended Fix:**
+
 ```typescript
 // ✅ SHOULD BE
 let tempDir: any // TestKit TempDirectory object
@@ -154,6 +198,7 @@ afterEach(async () => {
 ```
 
 **Benefits:**
+
 - Automatic cleanup via TestKit guards
 - Prevents temp directory leaks on test failures
 - Consistent with 90% of other tests
@@ -167,13 +212,15 @@ afterEach(async () => {
 #### 1.2 Standardize Database Cleanup
 
 **Files Affected:**
-- packages/storage/src/__tests__/schema-creation.spec.ts (10+ tests)
-- packages/foundation/src/__tests__/testkit-sqlite-features.test.ts (20+ tests)
-- packages/foundation/src/__tests__/security-validation.test.ts (15+ tests)
+
+- packages/storage/src/**tests**/schema-creation.spec.ts (10+ tests)
+- packages/foundation/src/**tests**/testkit-sqlite-features.test.ts (20+ tests)
+- packages/foundation/src/**tests**/security-validation.test.ts (15+ tests)
 
 **Issue:** Manual array tracking + loops when SQLite Guards are already enabled globally
 
 **Current Pattern (used in 45+ tests):**
+
 ```typescript
 // ❌ CURRENT PATTERN
 const databases: Array<InstanceType<typeof BetterSqlite3>> = []
@@ -199,6 +246,7 @@ afterEach(() => {
 ```
 
 **Recommended Fix - OPTION 1 (Rely on Guards):**
+
 ```typescript
 // ✅ OPTION 1: Rely on SQLite Guards (already enabled via TESTKIT_SQLITE_GUARD=on)
 // Guards auto-close leaked databases, so just remove manual cleanup
@@ -215,6 +263,7 @@ afterEach(() => {
 ```
 
 **Recommended Fix - OPTION 2 (Explicit Registration):**
+
 ```typescript
 // ✅ OPTION 2: Explicit registration with TestKit
 beforeEach(() => {
@@ -238,6 +287,7 @@ afterEach(async () => {
 **Decision Needed:** Team should choose one pattern for consistency
 
 **Benefits:**
+
 - Reduced boilerplate code (remove 5-10 lines per test)
 - Consistent pattern across 100+ tests
 - Leverages TestKit features (guards or registration)
@@ -254,6 +304,7 @@ afterEach(async () => {
 **Issue:** TempDirectory helper methods exist but are UNDOCUMENTED
 
 **Currently Undocumented Methods (found in atomic-writer.test.ts):**
+
 ```typescript
 // These work but aren't in API.md!
 await tempDir.exists('inbox')           // Check if file/dir exists
@@ -262,14 +313,16 @@ await tempDir.writeFile('file.txt', '') // Write file
 await tempDir.mkdir('inbox')            // Create directory
 ```
 
-**Location:** packages/obsidian-bridge/src/__tests__/atomic-writer.test.ts (used extensively lines 68, 87, 105, 117, 131, 149, 164, etc.)
+**Location:** packages/obsidian-bridge/src/**tests**/atomic-writer.test.ts (used extensively lines 68, 87, 105, 117, 131, 149, 164, etc.)
 
 **Action Required:**
+
 1. Add TempDirectory interface documentation to TestKit API.md
 2. Document all helper methods with examples
 3. Add to "File System" section
 
 **Documentation Template:**
+
 ```markdown
 ### TempDirectory Helper Methods
 
@@ -302,17 +355,20 @@ await tempDir.mkdir('subdir')
 #### 2.1 Promote Security Utilities in Application Code
 
 **Current State:**
+
 - Security utilities ONLY used in test file: security-validation.test.ts
 - Production code doesn't use: validateCommand, sanitizeSqlIdentifier, validatePath, escapeShellArg
 
 **Opportunity:** Use in actual application code where user input is processed
 
 **Files to Review:**
+
 - CLI package: Any command-line argument processing
 - Capture package: Any file path handling, external command execution
 - Storage package: Any dynamic SQL identifier construction
 
 **Example Usage:**
+
 ```typescript
 // In CLI command handlers
 import { validateCommand, SecurityValidationError } from '@orchestr8/testkit/utils'
@@ -335,6 +391,7 @@ db.exec(`CREATE TABLE ${tableName} (...)`)
 ```
 
 **Benefits:**
+
 - Production security hardening
 - Consistent validation across codebase
 - Demonstrates security utilities in real-world usage
@@ -351,6 +408,7 @@ db.exec(`CREATE TABLE ${tableName} (...)`)
 **Enhancement:** Use ConcurrencyManager for parallel operations
 
 **Current Code (Sequential):**
+
 ```typescript
 // Currently runs sequentially
 for (let i = 0; i < 1000; i++) {
@@ -359,6 +417,7 @@ for (let i = 0; i < 1000; i++) {
 ```
 
 **Recommended Enhancement:**
+
 ```typescript
 import { ConcurrencyManager } from '@orchestr8/testkit/utils'
 
@@ -372,6 +431,7 @@ await manager.map(operations, async (i) => {
 ```
 
 **Benefits:**
+
 - Performance test improvements
 - Showcase concurrency features in real scenarios
 - Demonstrate best practices for parallel operations
@@ -390,6 +450,7 @@ await manager.map(operations, async (i) => {
 **Action:** Add documentation/examples for future time-sensitive tests
 
 **Potential Use Cases:**
+
 - Testing retry logic with exponential backoff
 - Testing scheduled tasks
 - Testing random ID generation
@@ -407,6 +468,7 @@ await manager.map(operations, async (i) => {
 **Enhancement:** Real CLI tests using spawnUtils, createProcessMock
 
 **Example Test Structure:**
+
 ```typescript
 import { spawnUtils, processHelpers } from '@orchestr8/testkit/cli'
 
@@ -431,6 +493,7 @@ describe('CLI Commands', () => {
 ```
 
 **Benefits:**
+
 - Complete test coverage for CLI package
 - Showcase CLI mocking in real application
 - Validate CLI behavior without external dependencies
@@ -447,6 +510,7 @@ describe('CLI Commands', () => {
 **Found in:** oauth-flow.test.ts, performance-benchmarks.test.ts, atomic-writer.test.ts (10+ occurrences)
 
 **Pattern:**
+
 ```typescript
 afterEach(async () => {
   // 0. Settle 100ms (prevents race conditions)
@@ -459,6 +523,7 @@ afterEach(async () => {
 **Purpose:** Prevents race conditions when async operations complete during cleanup
 
 **TestKit Enhancement Proposal:**
+
 - Add automatic settle before cleanup hooks
 - Or provide `settleBeforeCleanup()` utility
 - Make it configurable via setupResourceCleanup options
@@ -472,6 +537,7 @@ afterEach(async () => {
 **Found in:** performance-benchmarks.test.ts:46-53
 
 **Pattern:**
+
 ```typescript
 afterEach(async () => {
   // 0. Settle
@@ -496,6 +562,7 @@ afterEach(async () => {
 **Purpose:** Graceful shutdown - order matters (pools before connections)
 
 **TestKit Enhancement Proposal:**
+
 - Document cleanup order best practices
 - Resource priority system already exists (DATABASE, FILE, NETWORK, etc.)
 - Add pool-specific resource category with higher priority than connections
@@ -509,6 +576,7 @@ afterEach(async () => {
 **Found in:** performance-benchmarks.test.ts:40-58
 
 **Pattern:**
+
 ```typescript
 afterEach(async () => {
   // 4-STEP CLEANUP (CRITICAL ORDER)
@@ -542,6 +610,7 @@ afterEach(async () => {
 **Purpose:** Explicit cleanup order with documentation inline
 
 **TestKit Enhancement Proposal:**
+
 - Formalize as cleanup orchestrator
 - ResourceManager already has priority system - document it better
 - Add predefined cleanup sequences for common scenarios
@@ -555,6 +624,7 @@ afterEach(async () => {
 **Found in:** performance-benchmarks.test.ts:137-154
 
 **Pattern:**
+
 ```typescript
 it('should verify no memory leaks', async () => {
   const heapBefore = process.memoryUsage().heapUsed
@@ -577,6 +647,7 @@ it('should verify no memory leaks', async () => {
 **Purpose:** Validate no memory leaks in cleanup logic
 
 **TestKit Enhancement Proposal:**
+
 ```typescript
 // Add to @orchestr8/testkit/utils
 export async function expectNoMemoryLeak(
@@ -615,6 +686,7 @@ export async function expectNoMemoryLeak(
 **Found in:** atomic-writer.test.ts (extensively used)
 
 **Pattern:**
+
 ```typescript
 const tempDir = await createTempDirectory()
 
@@ -638,14 +710,18 @@ await tempDir.mkdir('inbox')            // Create directory
 **Total Test Files:** 39
 **Files Examined in Detail:** 12
 
-**Test Setup Patterns:**
-- ✅ All 5 packages use setupResourceCleanup()
-- ✅ All 5 packages use createBaseVitestConfig()
+**Test Setup Patterns (Updated 2025-10-12):**
+
+- ✅ Foundation package uses `@orchestr8/testkit/setup/auto` (zero-config resource cleanup)
+- ✅ Other packages use `@orchestr8/testkit/register` (bootstrap only)
+- ✅ All packages use createBaseVitestConfig() in centralized vitest.projects.ts
 - ✅ Guards enabled globally (TESTKIT_SQLITE_GUARD=on, TESTKIT_TIMERS_GUARD=on)
+- ✅ No manual test-setup.ts files (migrated to setup/auto module)
 - ⚠️ Database cleanup: 45+ tests use manual arrays, could use guards or registration
 - ⚠️ Temp directories: 90% use createTempDirectory(), 10% use manual mkdirSync/rmSync
 
 **Test Coverage:**
+
 - Foundation: 72% coverage (target: 80%+)
 - All tests passing (755 tests)
 - Natural process exit in <10s with TestKit 2.1.2
@@ -657,19 +733,24 @@ await tempDir.mkdir('inbox')            // Create directory
 ### ✅ Todo List
 
 #### P1 - High Priority (Standardization)
+
+- [x] **1.0** ✅ Migrate to @orchestr8/testkit@2.2.0 setup/auto module (COMPLETED 2025-10-12)
 - [ ] **1.1** Document TempDirectory helper methods in TestKit API.md (.exists, .readFile, .writeFile, .mkdir)
 - [ ] **1.2** Migrate performance-benchmarks.test.ts to use createTempDirectory() instead of manual mkdirSync/rmSync
 - [ ] **1.3** Standardize database cleanup pattern (team decision: Guards-only OR explicit registerDatabaseCleanup)
 
 #### P2 - Medium Priority (Feature Adoption)
+
 - [ ] **2.1** Review production code for security utilities usage opportunities (validateCommand, sanitizeSqlIdentifier)
 - [ ] **2.2** Add concurrency control examples to performance-benchmarks.test.ts
 
 #### P3 - Low Priority (Enhancement)
+
 - [ ] **3.1** Document environment control features (useFakeTime, controlRandomness, etc.) for future use
 - [ ] **3.2** Implement real CLI tests in packages/cli using spawnUtils and createProcessMock
 
 #### TestKit Enhancement Proposals (for TestKit team)
+
 - [ ] **E1** Add automatic settle pattern or settleBeforeCleanup() utility
 - [ ] **E2** Document cleanup order best practices (pools → connections → filesystem → GC)
 - [ ] **E3** Add expectNoMemoryLeak() helper utility
@@ -680,17 +761,27 @@ await tempDir.mkdir('inbox')            // Create directory
 
 ## Recommended Implementation Order
 
-### Sprint 1 (This Week)
-1. ✅ Document TempDirectory helper methods in TestKit API.md (1 hour)
+### ✅ Completed (2025-10-12)
+
+1. ✅ Migrated to @orchestr8/testkit@2.2.0 setup/auto module
+2. ✅ Removed all manual test-setup.ts files
+3. ✅ Updated documentation to reflect new pattern
+4. ✅ Centralized configuration in vitest.projects.ts
+
+### Sprint 1 (Current)
+
+1. 🔍 Verify TempDirectory helper methods are documented in TestKit API.md (1 hour)
 2. 🔧 Migrate performance-benchmarks.test.ts to createTempDirectory() (30 min)
 3. 🤝 Team decision: Guards-only vs explicit database cleanup pattern
 
 ### Sprint 2 (Next Week)
+
 4. 🔧 Implement chosen database cleanup pattern across 45+ tests (2-4 hours)
 5. 🔒 Security utilities usage review in production code (2-3 hours)
 6. 🚀 Add concurrency control examples to performance tests (1-2 hours)
 
 ### Backlog
+
 7. ⏰ Environment control documentation (1 hour)
 8. 🖥️ CLI package test implementation (4-6 hours)
 9. 📝 Submit TestKit enhancement proposals to TestKit team
@@ -700,17 +791,20 @@ await tempDir.mkdir('inbox')            // Create directory
 ## Key Metrics
 
 **Before Audit:**
+
 - TestKit feature adoption: Unknown
 - Pattern consistency: Mixed
 - Documentation gaps: Unknown
 
 **After Audit:**
+
 - TestKit feature adoption: 6/12 fully, 2/12 partial, 2/12 unused, 2/12 N/A
 - Pattern consistency: 3 inconsistencies identified (P1 priority)
 - Documentation gaps: 1 critical gap (TempDirectory helpers)
 - Novel patterns discovered: 5 (candidates for TestKit enhancement)
 
 **Success Metrics:**
+
 - [ ] 100% consistent temp directory pattern (currently 90%)
 - [ ] 100% consistent database cleanup pattern (currently mixed)
 - [ ] All TempDirectory helpers documented
@@ -731,6 +825,7 @@ await tempDir.mkdir('inbox')            // Create directory
 The codebase has revealed several valuable patterns that should be incorporated into TestKit to benefit all consumers.
 
 **Next Steps:**
+
 1. Review this plan with the team
 2. Make team decision on database cleanup pattern (Guards vs explicit)
 3. Start with P1 items (highest ROI, lowest effort)
@@ -743,6 +838,7 @@ The codebase has revealed several valuable patterns that should be incorporated 
 ### Key Test Files Examined
 
 **Foundation Package:**
+
 - `/Users/nathanvale/code/capture-bridge/packages/foundation/src/__tests__/performance-benchmarks.test.ts`
   - Lines 31-35: Manual temp dir creation
   - Lines 40-58: 4-step cleanup sequence
@@ -760,39 +856,44 @@ The codebase has revealed several valuable patterns that should be incorporated 
   - Lines 352-404: seedWithFiles using createTempDirectory
 
 **Storage Package:**
+
 - `/Users/nathanvale/code/capture-bridge/packages/storage/src/__tests__/schema-creation.spec.ts`
   - Lines 12-30: Database cleanup pattern (4-step sequence)
 
 **Capture Package:**
+
 - `/Users/nathanvale/code/capture-bridge/packages/capture/src/gmail/__tests__/oauth-flow.test.ts`
   - Lines 14-37: createTempDirectory with settle pattern
   - Lines 64-82: 5-step cleanup sequence
 
 **Obsidian-Bridge Package:**
+
 - `/Users/nathanvale/code/capture-bridge/packages/obsidian-bridge/src/__tests__/atomic-writer.test.ts`
   - Lines 14-34: createTempDirectory with helper methods
   - Lines 68, 87, 105, 117, 131, 149, 164: TempDir helper method usage
 
 **TestKit Package:**
+
 - `/@orchestr8/packages/testkit/API.md` - Complete feature reference (1522 lines)
 - `/@orchestr8/packages/testkit/src/guards/sqlite-guard.ts` - SQLite Guard implementation
 - `/@orchestr8/packages/testkit/src/guards/timers-guard.ts` - Timers Guard implementation
 - `/@orchestr8/packages/testkit/src/register.ts` - Global lifecycle hooks
 
-### Configuration Files
+### Configuration Files (Updated 2025-10-12)
 
-**Vitest Configurations (All Packages):**
-- `/Users/nathanvale/code/capture-bridge/packages/foundation/vitest.config.ts` - Base pattern
-- `/Users/nathanvale/code/capture-bridge/packages/capture/vitest.config.ts` - Guards enabled
-- `/Users/nathanvale/code/capture-bridge/packages/storage/vitest.config.ts` - Guards enabled
-- `/Users/nathanvale/code/capture-bridge/packages/obsidian-bridge/vitest.config.ts` - Guards enabled
-- `/Users/nathanvale/code/capture-bridge/packages/cli/vitest.config.ts` - Guards enabled
+**Centralized Vitest Configuration:**
 
-**Test Setup Files:**
-- All 5 packages have identical `test-setup.ts` with setupResourceCleanup()
+- `/Users/nathanvale/code/capture-bridge/vitest.projects.ts` - Single source of truth for all project configurations
+  - Foundation: `setupFiles: ['@orchestr8/testkit/register', '@orchestr8/testkit/setup/auto']`
+  - Other packages: `setupFiles: ['@orchestr8/testkit/register']`
+  - Guards enabled globally via env vars
+
+**Deprecated (Removed):**
+
+- ~~All packages had individual `test-setup.ts` files~~ (Migrated to setup/auto module)
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** 2025-10-12
-**Next Review:** After P1 items completion
+**Document Version:** 1.1 (Migration Update)
+**Last Updated:** 2025-10-12 (Migration to TestKit 2.2.0 Complete)
+**Next Review:** After remaining P1 items completion (1.1, 1.2, 1.3)

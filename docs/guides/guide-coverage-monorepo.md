@@ -1,6 +1,6 @@
 # Coverage Testing in Monorepo - Complete Guide
 
-**Last Updated**: 2025-10-11
+**Last Updated**: 2025-10-12 (Updated for TestKit 2.2.0 migration)
 **Vitest Version**: 3.2.4
 **Applies To**: Capture Bridge monorepo
 
@@ -126,7 +126,6 @@ coverage: {
     'dist/**',
     '**/*.test.ts',
     '**/*.spec.ts',
-    '**/test-setup.ts',
     '**/__tests__/**',
     '**/vitest.config.ts',
     '**/tsup.config.ts',
@@ -298,7 +297,6 @@ exclude: [
   '**/*.test.ts',
   '**/*.spec.ts',
   '**/__tests__/**',
-  '**/test-setup.ts',
   '**/vitest.config.ts',
 ]
 
@@ -615,7 +613,6 @@ exclude: [
   '**/__tests__/**',
   '**/*.test.ts',
   '**/*.spec.ts',
-  '**/test-setup.ts',
   '**/vitest.config.ts',
   '**/tsup.config.ts',
 ]
@@ -718,6 +715,6 @@ vitest --coverage --run
 
 ---
 
-**Last Updated**: 2025-10-11
+**Last Updated**: 2025-10-12 (Updated for TestKit 2.2.0 migration - removed test-setup.ts references)
 **Maintained By**: Nathan Vale & AI Agents
 **Questions**: See [Troubleshooting](#troubleshooting) or ask in #eng-testing

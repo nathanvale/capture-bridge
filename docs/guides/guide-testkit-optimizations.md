@@ -11,7 +11,7 @@ doc_type: guide
 
 ## Overview
 
-This guide documents the implementation of @orchestr8/testkit@2.0.0 optimizations across the capture-bridge monorepo to prevent flaky tests, zombie processes, and resource leaks.
+This guide documents the implementation of @orchestr8/testkit@2.2.0 optimizations across the capture-bridge monorepo to prevent flaky tests, zombie processes, and resource leaks.
 
 **Reference**: `/Users/nathanvale/code/@orchestr8/packages/testkit/OPTIMIZED_USAGE_GUIDE.md`
 
@@ -30,7 +30,7 @@ This guide documents the implementation of @orchestr8/testkit@2.0.0 optimization
 #### 2. Lifecycle & Bootstrap
 
 - [x] **TestKit register** - loaded first in setupFiles
-- [x] **Custom setup files** - per-package configuration
+- [x] **Zero-config setup** - auto-executing cleanup via `@orchestr8/testkit/setup/auto`
 - [x] **Bootstrap sequence** - correct order enforced
 
 #### 3. Performance
@@ -49,68 +49,75 @@ This guide documents the implementation of @orchestr8/testkit@2.0.0 optimization
 
 ### Foundation Package
 
-**File**: `packages/foundation/test-setup.ts`
+**Setup**: Zero-config resource cleanup via `@orchestr8/testkit/setup/auto`
 
-```typescript
-import { setupResourceCleanup } from "@orchestr8/testkit/config"
-
-await setupResourceCleanup({
-  cleanupAfterEach: true,
-  cleanupAfterAll: true,
-  enableLeakDetection: true,
-  logStats: process.env.LOG_CLEANUP_STATS === "1",
-})
-```
-
-**File**: `packages/foundation/vitest.config.ts`
+**File**: `vitest.projects.ts` (centralized configuration)
 
 ```typescript
 import { createBaseVitestConfig } from "@orchestr8/testkit/config"
-import { defineConfig } from "vitest/config"
+import { resolve } from "node:path"
 
-export default defineConfig(
-  createBaseVitestConfig({
+export const getVitestProjects = () => {
+  const foundation = createBaseVitestConfig({
     test: {
-      name: "@capture-bridge/foundation",
+      name: "foundation",
+      root: resolve(__dirname, "packages/foundation"),
       environment: "node",
 
       // Bootstrap sequence (order matters!)
       setupFiles: [
         "@orchestr8/testkit/register", // 1. TestKit bootstrap
-        "./test-setup.ts", // 2. Resource cleanup config
+        "@orchestr8/testkit/setup/auto", // 2. Zero-config resource cleanup
       ],
 
-      // Prevent zombie processes and hanging tests
-      reporters: process.env.CI ? ["default"] : ["default", "hanging-process"],
+      // Use threads pool for MSW compatibility
+      pool: "threads",
+      poolOptions: {
+        threads: {
+          singleThread: false,
+          isolate: true,
+        },
+      },
 
       // Timeout configuration
-      testTimeout: 10000, // 10s per test (doubled for database/file tests)
+      testTimeout: 10000, // 10s per test
       hookTimeout: 5000, // 5s for beforeEach/afterEach hooks
       teardownTimeout: 20000, // 20s for final cleanup
 
-      // Fork pool for process isolation (prevents cross-test leaks)
-      pool: "forks",
-      poolOptions: {
-        forks: {
-          singleFork: false,
-          maxForks: process.env.CI ? 2 : 4, // Limit workers in CI
-          minForks: 1,
-          // Memory limit per worker (512MB default, 1GB for DB tests)
-          execArgv: ["--max-old-space-size=1024"],
-        },
-      },
+      // Global teardown for process cleanup
+      globalTeardown: globalTeardownPath,
+
+      // Prevent zombie processes
+      globals: true,
+      mockReset: true,
+      clearMocks: true,
+      restoreMocks: false,
     },
   })
-)
+
+  return [foundation, capture, cli, storage]
+}
 ```
+
+**What `@orchestr8/testkit/setup/auto` does:**
+
+- ✅ Automatic resource cleanup after each test
+- ✅ Leak detection enabled by default
+- ✅ Zombie process prevention
+- ✅ Priority-based cleanup (databases → files → network → timers)
+- ✅ Optional logging via `LOG_CLEANUP_STATS=1`
 
 ### Other Packages (capture, storage, cli)
 
-Same pattern applied to:
+**Foundation-only**: Only the foundation package uses `@orchestr8/testkit/setup/auto` (MSW compatibility)
 
-- `packages/capture/test-setup.ts` + `vitest.config.ts`
-- `packages/storage/test-setup.ts` + `vitest.config.ts`
-- `packages/cli/test-setup.ts` + `vitest.config.ts`
+All other packages use:
+
+```typescript
+setupFiles: [
+  "@orchestr8/testkit/register", // TestKit bootstrap only
+]
+```
 
 ## Key Features Enabled
 
@@ -168,11 +175,12 @@ LOG_CLEANUP_STATS=1 pnpm test
 - Sets up process mocking for CLI tests
 - Configures memory limits and timeouts
 - Registers process listener cleanup
+- Auto-executes resource cleanup (foundation package only)
 
 **Order matters:**
 
 1. `@orchestr8/testkit/register` - Bootstrap first
-2. `./test-setup.ts` - Then our custom setup
+2. `@orchestr8/testkit/setup/auto` - Zero-config cleanup (foundation only)
 
 ### 4. Hanging Process Reporter
 
@@ -192,19 +200,24 @@ pnpm test
 CI=1 pnpm test
 ```
 
-### 5. Fork Pool Strategy
+### 5. Pool Strategy
 
-**What it does:**
+**Threads Pool (Foundation):**
 
-- Runs tests in separate processes (not threads)
-- Better isolation between tests
-- Prevents memory leaks between tests
+- Runs tests in worker threads (required for MSW compatibility)
+- Isolated workers prevent cross-test contamination
+- Better performance than forks for I/O-heavy tests
 
 **Trade-offs:**
 
-- ✅ Better isolation (recommended for DB/file tests)
-- ✅ Prevents test pollution
-- ⚡ Slightly slower than threads (but more reliable)
+- ✅ MSW compatibility (MSW doesn't work with forks)
+- ✅ Better performance for network/API tests
+- ✅ Resource isolation via `isolate: true`
+
+**Other Packages:**
+
+- Use default pool strategy (threads)
+- No special configuration needed
 
 ## Resource Categories
 
@@ -390,60 +403,86 @@ export default defineConfig({
 })
 ```
 
-**After:**
+**After (Zero-Config):**
 
 ```typescript
-// vitest.config.ts
+// vitest.projects.ts
 import { createBaseVitestConfig } from "@orchestr8/testkit/config"
 
-export default defineConfig(
-  createBaseVitestConfig({
+export const getVitestProjects = () => {
+  const myPackage = createBaseVitestConfig({
     test: {
+      name: "my-package",
       environment: "node",
-      setupFiles: ["@orchestr8/testkit/register", "./test-setup.ts"],
-      reporters: process.env.CI ? ["default"] : ["default", "hanging-process"],
-      pool: "forks",
+
+      // Zero-config resource cleanup
+      setupFiles: [
+        "@orchestr8/testkit/register",
+        "@orchestr8/testkit/setup/auto", // ← Auto-executing cleanup
+      ],
     },
   })
-)
 
-// test-setup.ts
-import { setupResourceCleanup } from "@orchestr8/testkit/config"
-
-await setupResourceCleanup({
-  cleanupAfterEach: true,
-  cleanupAfterAll: true,
-  enableLeakDetection: true,
-})
+  return [myPackage]
+}
 ```
 
-### From TestKit 1.0.9 to 2.0.0
+**After (Custom Config):**
+
+```typescript
+// vitest.projects.ts
+import { createBaseVitestConfig } from "@orchestr8/testkit/config"
+import { createTestSetup } from "@orchestr8/testkit/setup"
+
+// Custom setup in a separate file
+await createTestSetup({
+  cleanupAfterEach: true,
+  enableLeakDetection: true,
+  logStats: true,
+})
+
+export const getVitestProjects = () => {
+  const myPackage = createBaseVitestConfig({
+    test: {
+      name: "my-package",
+      setupFiles: [
+        "@orchestr8/testkit/register",
+        "./my-custom-setup.ts", // ← Your custom setup
+      ],
+    },
+  })
+
+  return [myPackage]
+}
+```
+
+### From TestKit 2.0.0 to 2.2.0
 
 **Key Changes:**
 
-- ✅ Config bug fixed (was causing "Vitest failed to access its internal state")
-- ✅ Use `createBaseVitestConfig` instead of `createVitestConfig`
-- ✅ Always wrap with `defineConfig` from `vitest/config`
-- ✅ Add setupFiles for proper bootstrap sequence
+- ✅ New `@orchestr8/testkit/setup/auto` entry point (zero-config)
+- ✅ Separation of manual (`setup`) vs auto-executing (`setup/auto`) configuration
+- ✅ No more `test-setup.ts` files needed for standard usage
+- ✅ Custom configuration still supported via `createTestSetup()`
 
 ## Best Practices
 
 ### DO ✅
 
-- Use `setupResourceCleanup()` in test setup files
-- Add `@orchestr8/testkit/register` to setupFiles
-- Enable leak detection in development
-- Use fork pool for database tests
-- Clean resources in priority order
+- Use `@orchestr8/testkit/setup/auto` for zero-config resource cleanup
+- Add `@orchestr8/testkit/register` first in setupFiles
+- Enable leak detection via `LOG_CLEANUP_STATS=1`
+- Use threads pool for MSW compatibility
 - Use TestKit's built-in hooks (`useSqliteCleanup`, `useTempDirectory`)
+- Prefer centralized configuration in `vitest.projects.ts`
 
 ### DON'T ❌
 
 - Manually clean up resources (let TestKit handle it)
-- Mix pool strategies across packages
+- Create `test-setup.ts` files unless you need custom configuration
 - Skip bootstrap sequence
 - Ignore hanging-process warnings
-- Use threads for database tests
+- Mix pool strategies across packages
 - Forget to close connections in custom resources
 
 ## Related Documentation
@@ -471,37 +510,56 @@ await setupResourceCleanup({
 
 ---
 
-## ✅ Verification Complete (2025-10-03)
+## ✅ Verification Complete (2025-10-12)
 
-All optimizations have been verified and tested:
+All optimizations have been verified and tested with TestKit 2.2.0:
 
 ### Configuration Verified ✅
 
-| Package        | Config File | test-setup.ts | Pool Options | Timeouts | Memory Limit |
-| -------------- | ----------- | ------------- | ------------ | -------- | ------------ |
-| **foundation** | ✅          | ✅            | ✅           | ✅       | ✅ 1GB       |
-| **capture**    | ✅          | ✅            | ✅           | ✅       | ✅ 1GB       |
-| **cli**        | ✅          | ✅            | ✅           | ✅       | ✅ 1GB       |
-| **storage**    | ✅          | ✅            | ✅           | ✅       | ✅ 1GB       |
+| Package        | Config Location     | Setup Module                       | Pool Strategy | Timeouts | Global Teardown |
+| -------------- | ------------------- | ---------------------------------- | ------------- | -------- | --------------- |
+| **foundation** | vitest.projects.ts  | `@orchestr8/testkit/setup/auto` ✅ | threads       | ✅       | ✅              |
+| **capture**    | vitest.projects.ts  | `@orchestr8/testkit/register` ✅   | default       | ✅       | ✅              |
+| **cli**        | vitest.projects.ts  | `@orchestr8/testkit/register` ✅   | default       | ✅       | ✅              |
+| **storage**    | vitest.projects.ts  | `@orchestr8/testkit/register` ✅   | default       | ✅       | ✅              |
 
 ### Features Tested ✅
 
-- ✅ **Automatic Resource Cleanup**: Verified with foundation tests - 4 resources cleaned, 0 errors
-- ✅ **Leak Detection**: Tested with `LOG_CLEANUP_STATS=1` - reports after each test
-- ✅ **Hanging-Process Reporter**: Confirmed available in Vitest 3.2.4
-- ✅ **Fork Pool Isolation**: Tests complete cleanly without cross-test contamination
+- ✅ **Zero-Config Setup**: Foundation uses `@orchestr8/testkit/setup/auto` - no custom setup files needed
+- ✅ **Automatic Resource Cleanup**: Verified with foundation tests - resources cleaned automatically
+- ✅ **Leak Detection**: Available via `LOG_CLEANUP_STATS=1` environment variable
 - ✅ **Process Exit**: No zombie processes - clean shutdown every time
-- ✅ **CI Optimization**: Worker count limited to 2 in CI environment
+- ✅ **Centralized Config**: All projects configured in single `vitest.projects.ts`
+
+### Setup Module Pattern ✅
+
+**Foundation (with auto-cleanup):**
+
+```typescript
+setupFiles: [
+  '@orchestr8/testkit/register',     // Bootstrap
+  '@orchestr8/testkit/setup/auto',   // Zero-config cleanup
+]
+```
+
+**Other Packages (bootstrap only):**
+
+```typescript
+setupFiles: [
+  '@orchestr8/testkit/register',     // Bootstrap only
+]
+```
 
 ### Pool Configuration ✅
 
+**Foundation (MSW-compatible):**
+
 ```typescript
+pool: 'threads',
 poolOptions: {
-  forks: {
-    singleFork: false,        // Multiple workers for parallel execution
-    maxForks: CI ? 2 : 4,     // Limit workers in CI
-    minForks: 1,              // At least 1 worker
-    execArgv: ['--max-old-space-size=1024']  // 1GB memory per worker
+  threads: {
+    singleThread: false,    // Parallel execution
+    isolate: true,          // Resource isolation
   }
 }
 ```
@@ -526,6 +584,6 @@ teardownTimeout: 20000,   // 20 seconds for cleanup
 
 ---
 
-**Last Updated**: 2025-10-03
-**TestKit Version**: 2.0.0
-**Status**: ✅ Fully Implemented, Tested, and Verified Across All Packages
+**Last Updated**: 2025-10-12
+**TestKit Version**: 2.2.0
+**Status**: ✅ Fully Migrated to Zero-Config Setup Module Pattern

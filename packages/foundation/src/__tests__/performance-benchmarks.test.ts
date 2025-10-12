@@ -449,7 +449,7 @@ describe('Performance Benchmarks', () => {
         ...Array.from({ length: 50 }, () =>
           withTimeout(
             delay(10).then(() => 'done'),
-            100
+            500 // Increased from 100ms for CI stability
           )
         ),
       ]

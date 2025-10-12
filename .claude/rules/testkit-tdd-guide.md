@@ -1,9 +1,9 @@
 # TestKit TDD Guide for AI Agents
 
 **Purpose**: Production-accurate TDD guide based on 319 passing tests in foundation package
-**TestKit Version**: @orchestr8/testkit v2.0.0
+**TestKit Version**: @orchestr8/testkit v2.2.0
 **Source**: `/packages/foundation/src/__tests__/` (verified against implementation)
-**Last Updated**: 2025-10-07 - Added Custom Resource Cleanup Patterns section; critical guidance for event listeners, timers, async shutdown
+**Last Updated**: 2025-10-12 - Migrated to setup/auto module; removed test-setup.ts references
 
 ---
 
@@ -61,7 +61,7 @@ When implementing TDD task:
 - [CLI Process Mocking](#cli-process-mocking-patterns) - Dynamic registration
 - [Security Testing](#security-testing-patterns) - Attack vectors
 - [Memory Leak Detection](#memory-leak-detection-patterns) - GC patterns
-- [Global Setup](#global-test-setup) - test-setup.ts configuration
+- [Global Setup](#global-test-setup) - setup/auto module (zero-config)
 - [Legacy Patterns](#⚠️-legacy-patterns) - tmpdir() pattern (still supported)
 
 ---
@@ -949,51 +949,64 @@ describe('Memory Leak Detection', () => {
 
 ## Global Test Setup
 
-### test-setup.ts Pattern
+### @orchestr8/testkit/setup/auto Pattern (TestKit 2.2.0+)
 
-**From**: `test-setup.ts:1-33`
-
-```typescript
-/**
- * Global test setup for foundation package
- */
-
-import { afterAll } from 'vitest'
-import { setupResourceCleanup } from '@orchestr8/testkit/config'
-import { cleanupAllResources } from '@orchestr8/testkit/utils'
-
-// Configure automatic resource cleanup
-await setupResourceCleanup({
-  cleanupAfterEach: true,   // Clean up after each individual test
-  cleanupAfterAll: true,    // Clean up after all tests in a file
-  enableLeakDetection: true, // Detect and warn about resource leaks
-  logStats: process.env.LOG_CLEANUP_STATS === '1', // Log cleanup statistics
-})
-
-// Add global afterAll hook for comprehensive cleanup
-afterAll(async () => {
-  await cleanupAllResources()
-})
-
-console.log('✅ TestKit resource cleanup configured (foundation package)')
-```
-
-**Configure in vitest.config.ts**:
+**Zero-Config Resource Cleanup** - No manual setup files needed!
 
 ```typescript
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'node',
-    setupFiles: ['./test-setup.ts'], // ← Add this
-    testTimeout: 10000,
-    hookTimeout: 30000,
-    teardownTimeout: 60000,
-  },
+// vitest.projects.ts (centralized configuration)
+import { createBaseVitestConfig } from '@orchestr8/testkit/config'
+import { resolve } from 'node:path'
+
+export const getVitestProjects = () => {
+  const foundation = createBaseVitestConfig({
+    test: {
+      name: 'foundation',
+      root: resolve(__dirname, 'packages/foundation'),
+      environment: 'node',
+
+      // Zero-config resource cleanup (foundation package only)
+      setupFiles: [
+        '@orchestr8/testkit/register',     // 1. Bootstrap
+        '@orchestr8/testkit/setup/auto',   // 2. Auto-executing cleanup
+      ],
+
+      // Other packages: bootstrap only
+      // setupFiles: ['@orchestr8/testkit/register'],
+
+      testTimeout: 10000,
+      hookTimeout: 5000,
+      teardownTimeout: 20000,
+    },
+  })
+
+  return [foundation, capture, cli, storage]
+}
+```
+
+**What `@orchestr8/testkit/setup/auto` provides:**
+
+- ✅ Automatic resource cleanup after each test
+- ✅ Leak detection enabled by default
+- ✅ Zombie process prevention
+- ✅ Priority-based cleanup (databases → files → network → timers)
+- ✅ Optional logging via `LOG_CLEANUP_STATS=1`
+
+**Custom Configuration** (if needed):
+
+```typescript
+// custom-setup.ts (only if you need non-standard configuration)
+import { createTestSetup } from '@orchestr8/testkit/setup'
+
+await createTestSetup({
+  cleanupAfterEach: true,
+  enableLeakDetection: true,
+  logStats: true,
+  packageName: 'my-package',
 })
 ```
 
-**Source**: `test-setup.ts:1-33`
+**Migration Note**: TestKit 2.2.0 eliminated the need for manual `test-setup.ts` files in most cases. Only use custom setup if you need non-standard configuration.
 
 ---
 
@@ -1276,7 +1289,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    setupFiles: ['./test-setup.ts'],
+    setupFiles: [
+      '@orchestr8/testkit/register',
+      '@orchestr8/testkit/setup/auto',  // Zero-config cleanup
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -1285,7 +1301,6 @@ export default defineConfig({
         'dist/**',
         '**/*.test.ts',
         '**/__tests__/**',
-        '**/test-setup.ts',
       ],
       include: ['src/**/*.ts'],
       all: true,
@@ -1308,8 +1323,8 @@ export default defineConfig({
 ## Reference Links
 
 - **Test Files**: `/packages/foundation/src/__tests__/`
-- **Test Setup**: `/packages/foundation/test-setup.ts`
-- **Vitest Config**: `/packages/foundation/vitest.config.ts`
+- **Centralized Config**: `/vitest.projects.ts` (includes foundation setup)
+- **TestKit Setup**: `@orchestr8/testkit/setup/auto` (zero-config module)
 - **Production Report**: `/packages/foundation/docs/PRODUCTION-READY-FINAL-REPORT.md`
 
 ---
