@@ -84,7 +84,7 @@ describe('Auth Failure Tracking [AC07]', () => {
       if (result) {
         expect(parseInt(result.value, 10)).toBe(3)
       }
-    })
+    }, 30000) // 30s timeout for googleapis module loading (expensive in CI)
 
     it('should create initial counter if not exists [AC07]', async () => {
       // Arrange
