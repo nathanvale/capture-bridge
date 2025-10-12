@@ -21,7 +21,7 @@
     "test": {
       "dependsOn": ["^build"],
       "outputs": [],
-      "cache": true,
+      "cache": false,
       "inputs": [
         "$TURBO_DEFAULT$",
         "vitest.config.ts",

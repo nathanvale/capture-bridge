@@ -43,7 +43,8 @@ jobs:
         run: |
           turbo run build lint typecheck test \
             --filter="...[origin/${{ github.event.pull_request.base.ref }}]" \
-            --output-logs=errors-only
+            --output-logs=new-only \
+            --force
 
       # Push to main/develop: Validate everything
       - name: Validate all packages (Push)
