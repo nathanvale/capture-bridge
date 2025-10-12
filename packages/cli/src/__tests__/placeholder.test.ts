@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest'
 
+import { cliVersion } from '../index.js'
+
 describe('CLI Package', () => {
-  it('placeholder test - package exists', () => {
-    expect(true).toBe(true)
+  it('should export cliVersion', () => {
+    expect(cliVersion).toBe('0.1.0')
   })
 })
