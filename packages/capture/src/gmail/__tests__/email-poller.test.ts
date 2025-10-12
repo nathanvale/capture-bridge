@@ -341,3 +341,280 @@ describe('EmailPoller - History API', () => {
     expect(result.cursorReset ?? true).toBe(true)
   })
 })
+
+// AC03: Cursor Persistence RED tests
+describe('EmailPoller - Cursor Persistence', () => {
+  const databases: Array<{ close: () => void }> = []
+  let db: any
+
+  beforeEach(() => {
+    db = new Database(':memory:')
+    databases.push(db)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS sync_state (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_sync_state_updated ON sync_state(updated_at);
+    `)
+  })
+
+  afterEach(async () => {
+    await new Promise((r) => setTimeout(r, 20))
+    for (const d of databases) d.close()
+    databases.length = 0
+    vi.resetAllMocks()
+  })
+
+  it('stores cursor with key gmail_history_id on first poll', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+  const gmail = makeMockGmail()
+
+    // Bootstrap path: no existing cursor → messages.list then history.list
+    gmail.__spies.listMessages.mockResolvedValue({
+      data: { historyId: '100', resultSizeEstimate: 0 },
+    })
+    gmail.__spies.listHistory.mockResolvedValue({
+      data: { history: [], historyId: '101' },
+    })
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    await poller.pollOnce()
+
+    const cursor = db
+      .prepare("SELECT key, value, updated_at FROM sync_state WHERE key = 'gmail_history_id'")
+      .get() as { key: string; value: string; updated_at: string } | undefined
+    expect(cursor).toBeDefined()
+    expect(cursor?.key).toBe('gmail_history_id')
+    expect(cursor?.value).toMatch(/^\d+$/)
+    expect(cursor?.updated_at).toBeDefined()
+  })
+
+  it('updates cursor after subsequent polls', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+  const gmail = makeMockGmail()
+
+    // Seed missing → bootstrap to 100 then first history to 101
+    gmail.__spies.listMessages.mockResolvedValueOnce({
+      data: { historyId: '100', resultSizeEstimate: 0 },
+    })
+    gmail.__spies.listHistory.mockResolvedValueOnce({
+      data: { history: [], historyId: '101' },
+    })
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+    await poller.pollOnce()
+
+    const row1 = db
+      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
+      .get() as { value: string }
+    expect(row1.value).toBe('101')
+
+    // Next poll returns newer history id
+    gmail.__spies.listHistory.mockResolvedValueOnce({
+      data: { history: [], historyId: '102' },
+    })
+    await poller.pollOnce()
+    const row2 = db
+      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
+      .get() as { value: string }
+    expect(row2.value).not.toBe(row1.value)
+    expect(row2.value).toBe('102')
+  })
+
+  it('bootstraps cursor if missing', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+  const gmail = makeMockGmail()
+    // Ensure missing
+    db.prepare("DELETE FROM sync_state WHERE key = 'gmail_history_id'").run()
+
+    gmail.__spies.listMessages.mockResolvedValue({
+      data: { historyId: '200', resultSizeEstimate: 0 },
+    })
+    gmail.__spies.listHistory.mockResolvedValue({
+      data: { history: [], historyId: '201' },
+    })
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    await poller.pollOnce()
+    const row = db
+      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
+      .get() as { value: string } | undefined
+    expect(row?.value).toBe('201')
+  })
+
+  it('does not update cursor if staging fails (atomic rollback)', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+  const gmail = makeMockGmail()
+
+    // Seed existing cursor
+    db.prepare(`INSERT OR REPLACE INTO sync_state(key,value,updated_at) VALUES('gmail_history_id','300',datetime('now'))`).run()
+
+    gmail.__spies.listHistory.mockResolvedValueOnce({
+      data: {
+        history: [
+          { messagesAdded: [{ message: { id: 'm1', threadId: 't1' } }] },
+        ],
+        historyId: '301',
+      },
+    })
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    // Force stageCapture to fail synchronously so transaction rolls back
+    vi.spyOn(poller as any, 'stageCapture').mockImplementationOnce(() => {
+      throw new Error('Insert failed')
+    })
+
+    await expect(poller.pollOnce()).rejects.toThrow('Insert failed')
+
+    const row = db
+      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
+      .get() as { value: string }
+    expect(row.value).toBe('300') // should not advance to 301
+  })
+
+  it('calculates cursor age from updated_at', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+  const gmail = makeMockGmail()
+
+    gmail.__spies.listMessages.mockResolvedValueOnce({
+      data: { historyId: '400', resultSizeEstimate: 0 },
+    })
+    gmail.__spies.listHistory.mockResolvedValueOnce({
+      data: { history: [], historyId: '401' },
+    })
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    await poller.pollOnce()
+
+    // Wait ~1s
+    await new Promise((r) => setTimeout(r, 1000))
+    const cursor = db
+      .prepare("SELECT value, updated_at FROM sync_state WHERE key = 'gmail_history_id'")
+      .get() as { value: string; updated_at: string }
+
+    const age = Date.now() - new Date(cursor.updated_at).getTime()
+    expect(age).toBeGreaterThanOrEqual(900)
+    expect(age).toBeLessThan(3000)
+  })
+
+  it('persists cursor across poller restarts', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { EmailPoller } = await import('../email-poller.js')
+  const gmail = makeMockGmail()
+
+    gmail.__spies.listMessages.mockResolvedValueOnce({
+      data: { historyId: '500', resultSizeEstimate: 0 },
+    })
+    gmail.__spies.listHistory.mockResolvedValueOnce({
+      data: { history: [], historyId: '501' },
+    })
+
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller1 = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller1 as any).gmail = gmail
+    await poller1.pollOnce()
+
+    const row1 = db
+      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
+      .get() as { value: string }
+    expect(row1.value).toBe('501')
+
+    // New instance, new poll should advance
+    gmail.__spies.listHistory.mockResolvedValueOnce({
+      data: { history: [], historyId: '502' },
+    })
+    const poller2 = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller2 as any).gmail = gmail
+    await poller2.pollOnce()
+    const row2 = db
+      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
+      .get() as { value: string }
+    expect(row2.value).toBe('502')
+  })
+})
+
+// Unit tests for SyncStateRepository (AC03 coverage)
+describe('SyncStateRepository', () => {
+  const databases: Array<{ close: () => void }> = []
+  let db: any
+
+  beforeEach(() => {
+    db = new Database(':memory:')
+    databases.push(db)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS sync_state (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `)
+  })
+
+  afterEach(() => {
+    for (const d of databases) d.close()
+    databases.length = 0
+  })
+
+  it('get/set/exists/getCursorAge basics', async () => {
+    // @ts-expect-error runtime path valid under vitest
+    const { SyncStateRepository } = await import('../sync-state-repository.js')
+    const repo = new SyncStateRepository(db)
+
+    expect(await repo.exists('gmail_history_id')).toBe(false)
+    expect(await repo.get('gmail_history_id')).toBeNull()
+
+    await repo.set('gmail_history_id', '900')
+    expect(await repo.exists('gmail_history_id')).toBe(true)
+    expect(await repo.get('gmail_history_id')).toBe('900')
+
+    const age0 = await repo.getCursorAge('gmail_history_id')
+    expect(typeof age0).toBe('number')
+
+    await new Promise((r) => setTimeout(r, 15))
+    await repo.set('gmail_history_id', '901')
+    const age = await repo.getCursorAge('gmail_history_id')
+    expect(age).toBeGreaterThanOrEqual(0)
+  })
+})

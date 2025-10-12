@@ -10,6 +10,9 @@
 
 import { z } from 'zod'
 
+// eslint-disable-next-line import/no-unresolved
+import { SyncStateRepository } from './sync-state-repository.js'
+
 import type DatabaseConstructor from 'better-sqlite3'
 
 export interface EmailPollerConfig {
@@ -162,12 +165,13 @@ export class EmailPoller {
       CREATE TABLE IF NOT EXISTS sync_state (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,
-        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        updated_at TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ','now'))
       )
     `)
 
     // 1) Get or bootstrap cursor
-    let cursor = this.getCursor()
+    const repo = new SyncStateRepository(this._db)
+    let cursor = repo.get('gmail_history_id') ?? undefined
     let bootstrapped = false
     if (!cursor) {
       const boot = await this.bootstrapCursor()
@@ -204,9 +208,9 @@ export class EmailPoller {
     const messageIds =
       historyResp.data.history?.flatMap((h) => h.messagesAdded ?? []).map((ma) => ma.message.id).filter(Boolean) ?? []
 
-    // 4) Update cursor to new historyId
+    // 4) Stage messages and update cursor atomically
     const nextHistoryId = historyResp.data.historyId
-    this.updateCursor(nextHistoryId)
+    this.processWithCursorUpdate(messageIds, nextHistoryId)
 
     const result: EmailPollResult = {
       messagesFound: messageIds.length,
@@ -230,19 +234,15 @@ export class EmailPoller {
     return result
   }
 
-  private getCursor(): string | undefined {
-    const row = this._db
-      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
-      .get() as { value: string } | undefined
-    return row?.value ?? undefined
-  }
-
   private updateCursor(historyId: string): void {
+    // Use ISO8601 UTC with millisecond precision for stable parsing & age calculations
     this._db
       .prepare(
         `INSERT INTO sync_state (key, value, updated_at)
-         VALUES ('gmail_history_id', ?, datetime('now'))
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`
+         VALUES ('gmail_history_id', ?, STRFTIME('%Y-%m-%dT%H:%M:%fZ','now'))
+         ON CONFLICT(key) DO UPDATE
+           SET value = excluded.value,
+               updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ','now')`
       )
       .run(historyId)
   }
@@ -261,5 +261,26 @@ export class EmailPoller {
     // Persist cursor
     this.updateCursor(historyId)
     return { historyId, messageCount: resp.data.resultSizeEstimate ?? 0 }
+  }
+
+  /**
+   * Transactionally stage messages and then advance the cursor.
+   * Throws if staging fails; cursor must not advance.
+   */
+  private processWithCursorUpdate(messageIds: string[], nextHistoryId: string): void {
+    const tx = this._db.transaction((ids: string[], hid: string) => {
+      for (const id of ids) {
+        this.stageCapture(id)
+      }
+      this.updateCursor(hid)
+    })
+    tx(messageIds, nextHistoryId)
+  }
+
+  /**
+   * Placeholder for staging logic; throws are used in tests to validate rollback.
+   */
+  private stageCapture(_messageId: string): void {
+    // Intentionally left as no-op for now. Tests may spy and force this to throw.
   }
 }
