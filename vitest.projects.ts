@@ -1,11 +1,12 @@
-import { resolve } from 'path'
+import { resolve } from 'node:path'
+
 import { createBaseVitestConfig } from '@orchestr8/testkit/config'
 
 /**
  * Build the list of Vitest projects for this monorepo.
  * This is the single source of truth used by both Vitest and Wallaby.
  */
-export function getVitestProjects() {
+export const getVitestProjects = () => {
   const isWallaby = process.env['WALLABY_ENV'] === 'true'
   const isIntegration = process.env['TEST_MODE'] === 'integration' && !isWallaby
   const isE2E = process.env['TEST_MODE'] === 'e2e' && !isWallaby
@@ -36,7 +37,7 @@ export function getVitestProjects() {
       sequence: { shuffle: false },
       env: {
         NODE_ENV: 'test',
-        TEST_SEED: process.env['TEST_SEED'] || '12345',
+        TEST_SEED: process.env['TEST_SEED'] ?? '12345',
         VITEST: 'true',
       },
     },
@@ -54,10 +55,7 @@ export function getVitestProjects() {
         '**/*.integration.test.*',
       ],
       ...(isWallaby ? {} : { globalTeardown: globalTeardownPath }),
-      setupFiles: [
-        '@orchestr8/testkit/register',
-        resolve(__dirname, 'packages/foundation/test-setup.ts'),
-      ],
+      setupFiles: ['@orchestr8/testkit/register', '@orchestr8/testkit/setup/auto'],
       // Use threads pool for MSW compatibility (MSW doesn't work with forks)
       pool: 'threads',
       poolOptions: {
@@ -76,7 +74,7 @@ export function getVitestProjects() {
       sequence: { shuffle: false },
       env: {
         NODE_ENV: 'test',
-        TEST_SEED: process.env['TEST_SEED'] || '12345',
+        TEST_SEED: process.env['TEST_SEED'] ?? '12345',
         VITEST: 'true',
       },
     },
@@ -102,7 +100,7 @@ export function getVitestProjects() {
       sequence: { shuffle: false },
       env: {
         NODE_ENV: 'test',
-        TEST_SEED: process.env['TEST_SEED'] || '12345',
+        TEST_SEED: process.env['TEST_SEED'] ?? '12345',
         VITEST: 'true',
       },
     },
@@ -128,7 +126,7 @@ export function getVitestProjects() {
       sequence: { shuffle: false },
       env: {
         NODE_ENV: 'test',
-        TEST_SEED: process.env['TEST_SEED'] || '12345',
+        TEST_SEED: process.env['TEST_SEED'] ?? '12345',
         VITEST: 'true',
       },
     },
@@ -154,7 +152,7 @@ export function getVitestProjects() {
       sequence: { shuffle: false },
       env: {
         NODE_ENV: 'test',
-        TEST_SEED: process.env['TEST_SEED'] || '12345',
+        TEST_SEED: process.env['TEST_SEED'] ?? '12345',
         VITEST: 'true',
       },
     },
@@ -174,10 +172,7 @@ export function getVitestProjects() {
           ],
           exclude: ['**/node_modules/**', '**/dist/**', '**/.{idea,git,cache,output,temp}/**'],
           ...(isWallaby ? {} : { globalTeardown: globalTeardownPath }),
-          setupFiles: [
-            '@orchestr8/testkit/register',
-            resolve(__dirname, 'packages/foundation/test-setup.ts'),
-          ],
+          setupFiles: ['@orchestr8/testkit/register', '@orchestr8/testkit/setup/auto'],
           testTimeout: 60_000,
           hookTimeout: 60_000,
           teardownTimeout: 30_000,
@@ -190,7 +185,7 @@ export function getVitestProjects() {
           sequence: { shuffle: false },
           env: {
             NODE_ENV: 'test',
-            TEST_SEED: process.env['TEST_SEED'] || '12345',
+            TEST_SEED: process.env['TEST_SEED'] ?? '12345',
             VITEST: 'true',
           },
         },
@@ -212,10 +207,7 @@ export function getVitestProjects() {
           ],
           exclude: ['**/node_modules/**', '**/dist/**', '**/.{idea,git,cache,output,temp}/**'],
           ...(isWallaby ? {} : { globalTeardown: globalTeardownPath }),
-          setupFiles: [
-            '@orchestr8/testkit/register',
-            resolve(__dirname, 'packages/foundation/test-setup.ts'),
-          ],
+          setupFiles: ['@orchestr8/testkit/register', '@orchestr8/testkit/setup/auto'],
           testTimeout: 120_000,
           hookTimeout: 120_000,
           teardownTimeout: 60_000,
@@ -228,7 +220,7 @@ export function getVitestProjects() {
           sequence: { shuffle: false },
           env: {
             NODE_ENV: 'test',
-            TEST_SEED: process.env['TEST_SEED'] || '12345',
+            TEST_SEED: process.env['TEST_SEED'] ?? '12345',
             VITEST: 'true',
           },
         },

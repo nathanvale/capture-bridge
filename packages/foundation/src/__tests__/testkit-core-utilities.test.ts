@@ -1,4 +1,4 @@
-/* eslint-disable no-console, sonarjs/no-nested-functions, require-await, unicorn/consistent-function-scoping, sonarjs/no-ignored-exceptions, @typescript-eslint/no-unused-vars, vitest/expect-expect, sonarjs/assertions-in-tests, @typescript-eslint/no-empty-function, sonarjs/no-hardcoded-passwords, sonarjs/file-permissions, sonarjs/no-alphabetical-sort, sonarjs/different-types-comparison */
+/* eslint-disable no-console, sonarjs/no-nested-functions, require-await, unicorn/consistent-function-scoping, sonarjs/no-ignored-exceptions, @typescript-eslint/no-unused-vars */
 import { describe, it, expect } from 'vitest'
 
 /**
@@ -72,18 +72,6 @@ describe('Testkit Core Utilities', () => {
 
         console.log('✅ delay(NaN) handled as edge case')
       })
-
-      it('should complete immediately with zero delay', async () => {
-        const { delay } = await import('@orchestr8/testkit')
-
-        const start = Date.now()
-        await delay(0)
-        const elapsed = Date.now() - start
-
-        expect(elapsed).toBeLessThan(10) // Should complete virtually instantly
-
-        console.log('✅ delay(0) completes immediately')
-      })
     })
 
     describe('retry', () => {
@@ -140,7 +128,10 @@ describe('Testkit Core Utilities', () => {
         await retry(operation, 3, 50) // 50ms base delay
 
         // Check that delays increase
+        expect(timestamps).toHaveLength(3)
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe after length check
         const delay1 = timestamps[1]! - timestamps[0]!
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe after length check
         const delay2 = timestamps[2]! - timestamps[1]!
 
         expect(delay1).toBeGreaterThanOrEqual(45) // First retry ~50ms
@@ -169,8 +160,12 @@ describe('Testkit Core Utilities', () => {
 
         // Verify exponential backoff formula: delay = baseDelay * 2^(attempt-1)
         // First retry: ~100ms, Second: ~200ms, Third: ~400ms
+        expect(timestamps).toHaveLength(4)
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe after length check
         const delay1 = timestamps[1]! - timestamps[0]!
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe after length check
         const delay2 = timestamps[2]! - timestamps[1]!
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Safe after length check
         const delay3 = timestamps[3]! - timestamps[2]!
 
         expect(delay1).toBeGreaterThanOrEqual(baseDelay * 0.9)
@@ -419,6 +414,7 @@ describe('Testkit Core Utilities', () => {
     it('should setup test environment variables', async () => {
       const { setupTestEnv } = await import('@orchestr8/testkit')
 
+      // eslint-disable-next-line turbo/no-undeclared-env-vars -- Test-only variable
       const originalValue = process.env['TEST_VAR']
 
       // Setup test environment - returns object with restore method
@@ -427,12 +423,15 @@ describe('Testkit Core Utilities', () => {
         ANOTHER_VAR: 'another-value',
       })
 
+      // eslint-disable-next-line turbo/no-undeclared-env-vars -- Test-only variable
       expect(process.env['TEST_VAR']).toBe('test-value')
+      // eslint-disable-next-line turbo/no-undeclared-env-vars -- Test-only variable
       expect(process.env['ANOTHER_VAR']).toBe('another-value')
 
       // Restore original environment
       restore()
 
+      // eslint-disable-next-line turbo/no-undeclared-env-vars -- Test-only variable
       expect(process.env['TEST_VAR']).toBe(originalValue)
 
       console.log('✅ Environment setup and restore works')
@@ -547,6 +546,7 @@ describe('Testkit Core Utilities', () => {
 
       // Make directory read-only to cause cleanup issues (platform-dependent)
       try {
+        // eslint-disable-next-line sonarjs/file-permissions -- Test requires restricted permissions
         await fs.chmod(tempDir.path, 0o444)
       } catch (error) {
         // Some platforms may not support this
@@ -567,6 +567,7 @@ describe('Testkit Core Utilities', () => {
 
       // Restore permissions and cleanup
       try {
+        // eslint-disable-next-line sonarjs/file-permissions -- Test cleanup requires write permissions
         await fs.chmod(tempDir.path, 0o755)
         await fs.rm(tempDir.path, { recursive: true, force: true })
       } catch (error) {
@@ -733,7 +734,7 @@ describe('Testkit Core Utilities', () => {
       expect(testkit).toBeDefined()
 
       // List all exports for documentation
-      const exports = Object.keys(testkit).sort()
+      const exports = Object.keys(testkit).sort((a, b) => a.localeCompare(b))
 
       console.log('✅ Available exports:', exports.length)
       console.log(

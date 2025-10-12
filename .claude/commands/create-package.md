@@ -35,6 +35,7 @@ When invoked with `/create-package <package-name>`, this command:
 ## What Gets Created
 
 ### Directory Structure
+
 ```
 packages/<package-name>/
 ├── src/
@@ -50,12 +51,14 @@ packages/<package-name>/
 ```
 
 ### package.json
+
 - Proper naming: `@capture-bridge/<package-name>`
 - TestKit 2.0 dependency
 - Standard scripts (build, test, test:ui, test:watch, typecheck)
 - Workspace dependencies configured
 
 ### vitest.config.ts
+
 - Fork pool with maxForks: 4 (local), 2 (CI)
 - Memory limit: 1GB per worker
 - Timeouts: 10s test, 5s hooks, 20s teardown
@@ -63,11 +66,13 @@ packages/<package-name>/
 - Bootstrap sequence configured
 
 ### test-setup.ts
+
 - Resource cleanup enabled
 - Leak detection active
 - Stats logging configurable
 
 ### Example Test
+
 - Demonstrates TestKit patterns
 - Shows database cleanup
 - Shows temp directory usage
@@ -77,17 +82,19 @@ packages/<package-name>/
 
 The command should:
 
-1. **Validate Input**
+1. __Validate Input__
    - Package name is kebab-case
    - Directory doesn't already exist
    - Name doesn't conflict with existing packages
 
-2. **Create Directory Structure**
+2. __Create Directory Structure__
+
    ```bash
    mkdir -p packages/<package-name>/src/__tests__
    ```
 
-3. **Generate package.json**
+3. __Generate package.json__
+
    ```json
    {
      "name": "@capture-bridge/<package-name>",
@@ -114,7 +121,7 @@ The command should:
      },
      "devDependencies": {
        "@capture-bridge/build-config": "workspace:*",
-       "@orchestr8/testkit": "^2.0.0",
+       "@orchestr8/testkit": "^2.2.0",
        "@types/node": "^24.3.0",
        "tsup": "^8.3.0",
        "typescript": "^5.7.3",
@@ -123,7 +130,8 @@ The command should:
    }
    ```
 
-4. **Generate vitest.config.ts**
+4. __Generate vitest.config.ts__
+
    ```typescript
    import { createBaseVitestConfig } from '@orchestr8/testkit/config'
    import { defineConfig } from 'vitest/config'
@@ -163,7 +171,8 @@ The command should:
    )
    ```
 
-5. **Generate test-setup.ts**
+5. __Generate test-setup.ts__
+
    ```typescript
    /**
     * Global test setup for <package-name> package
@@ -181,7 +190,8 @@ The command should:
    console.log('✅ TestKit resource cleanup configured (<package-name> package)')
    ```
 
-6. **Generate Example Test**
+6. __Generate Example Test__
+
    ```typescript
    import { describe, it, expect } from 'vitest'
    import { useSqliteCleanup } from '@orchestr8/testkit/sqlite'
@@ -240,7 +250,8 @@ The command should:
    })
    ```
 
-7. **Generate tsconfig.json**
+7. __Generate tsconfig.json__
+
    ```json
    {
      "extends": "../../tooling/tsconfig/base.json",
@@ -253,7 +264,8 @@ The command should:
    }
    ```
 
-8. **Generate tsup.config.ts**
+8. __Generate tsup.config.ts__
+
    ```typescript
    import { defineConfig } from '@capture-bridge/build-config'
 
@@ -262,7 +274,8 @@ The command should:
    })
    ```
 
-9. **Generate src/index.ts**
+9. __Generate src/index.ts__
+
    ```typescript
    /**
     * @capture-bridge/<package-name>
@@ -275,7 +288,8 @@ The command should:
    // Export your module API here
    ```
 
-10. **Generate README.md**
+10. __Generate README.md__
+
     ```markdown
     # @capture-bridge/<package-name>
 
@@ -321,14 +335,17 @@ The command should:
     - ✅ 1GB memory limit per worker
 
     See `vitest.config.ts` and `test-setup.ts` for details.
+
     ```
 
-11. **Run pnpm install**
+11. __Run pnpm install__
+
     ```bash
     pnpm install
     ```
 
-12. **Output Summary**
+12. __Output Summary__
+
     ```
     ✅ Package created: @capture-bridge/<package-name>
 
@@ -362,7 +379,7 @@ The command should:
 
 ---
 
-**Category**: Package Management
-**Scope**: Project
-**Author**: Claude Code
-**Version**: 1.0.0
+__Category__: Package Management
+__Scope__: Project
+__Author__: Claude Code
+__Version__: 1.0.0

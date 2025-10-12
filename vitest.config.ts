@@ -1,13 +1,21 @@
-import { defineConfig } from 'vitest/config'
 import { createBaseVitestConfig } from '@orchestr8/testkit/config'
+import { defineConfig } from 'vitest/config'
+
 import { getVitestProjects } from './vitest.projects.js'
 
 /**
  * Root Vitest config that extends base configuration for Wallaby compatibility.
  * Ensures Wallaby picks up all project configurations and TestKit settings.
+ *
+ * Custom export condition '@capture-bridge/source' enables source testing:
+ * - Development: Resolves workspace imports to TypeScript source files (src/)
+ * - Production: Falls back to built files (dist/)
  */
 export default defineConfig(
   createBaseVitestConfig({
+    resolve: {
+      conditions: ['@capture-bridge/source', 'import', 'default'],
+    },
     test: {
       // Use projects for multi-package testing
       projects: getVitestProjects(),

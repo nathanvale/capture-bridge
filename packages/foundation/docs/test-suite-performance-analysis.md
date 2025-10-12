@@ -173,16 +173,20 @@ Tests closed successfully but something prevents the main process from exiting
 **Recommendation**:
 
 ```typescript
-// Enhanced afterAll in test-setup.ts
-afterAll(async () => {
-  // 1. Cleanup all TestKit resources
-  await cleanupAllResources()
+// Note: This is now handled automatically by @orchestr8/testkit/setup
+// which provides pre-configured resource cleanup with:
+// - cleanupAllResources() in afterAll hooks
+// - Automatic leak detection
+// - Optional logging via LOG_CLEANUP_STATS=1
 
-  // 2. Force close any remaining DB connections
-  if (global.gc) {
-    global.gc() // Force garbage collection
-    await new Promise((resolve) => setTimeout(resolve, 100))
-  }
+// For custom cleanup, use the factory function:
+import { createTestSetup } from '@orchestr8/testkit/setup'
+
+await createTestSetup({
+  cleanupAfterEach: true,
+  cleanupAfterAll: true,
+  enableLeakDetection: true,
+  logStats: true,
 })
 ```
 
@@ -574,8 +578,9 @@ grep -l "FAIL" logs/test-run-*.log
 2. **Resolve File Handle Cleanup** (Priority: P1)
 
    ```bash
-   # File: test-setup.ts
-   # Add: Enhanced cleanup with forced GC and DB closure
+   # Note: Now handled by @orchestr8/testkit/setup
+   # which provides automatic resource cleanup
+   # See vitest.config.ts setupFiles configuration
    ```
 
 3. **Verify Coverage** (Priority: P1)

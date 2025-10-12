@@ -6,6 +6,8 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 
+import { computeSHA256 } from '@capture-bridge/foundation/hash'
+
 import { resolveTempPath, resolveExportPath } from '../path-resolver.js'
 import { CollisionResult, type AtomicWriteResult } from '../types.js'
 
@@ -28,7 +30,6 @@ export const writeAtomic = async (
   const exportPath = resolveExportPath(vault_path, capture_id)
 
   // AC05/AC06: Check for collisions before writing
-  const { computeSHA256 } = await import('@capture-bridge/foundation/hash')
   const contentHash = computeSHA256(content)
   const collisionResult = await checkCollision(exportPath, contentHash)
 

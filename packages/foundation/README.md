@@ -86,7 +86,7 @@ The 318 tests cover:
 
 - **Vitest Config:** `vitest.config.ts` - Uses TestKit's
   `createBaseVitestConfig()`
-- **Test Setup:** `test-setup.ts` - Configures resource cleanup
+- **Test Setup:** `@orchestr8/testkit/setup` - Pre-configured resource cleanup
 - **Fork Pool:** 6 workers (local), 2 workers (CI)
 - **Timeouts:** 10s test, 5s hooks, 120s teardown
 

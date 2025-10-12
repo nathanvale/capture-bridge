@@ -1,5 +1,3 @@
-import { mkdirSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
@@ -31,11 +29,11 @@ describe('SQLite Connection Pool', () => {
   let dbPath: string
   let pools: any[] = []
 
-  beforeEach(() => {
-    // Create temp directory for test databases
-    testDir = join(tmpdir(), `testkit-pool-${Date.now()}`)
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- dynamic temp directory path is safe
-    mkdirSync(testDir, { recursive: true })
+  beforeEach(async () => {
+    // Create temp directory for test databases using TestKit
+    const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
     dbPath = join(testDir, 'test.db')
   })
 
@@ -50,12 +48,7 @@ describe('SQLite Connection Pool', () => {
     }
     pools = []
 
-    // Clean up test directory
-    try {
-      rmSync(testDir, { recursive: true, force: true })
-    } catch {
-      // Ignore cleanup errors
-    }
+    // TestKit auto-cleanup handles temp directory removal
   })
 
   const createPool = async (options = {}) => {
@@ -431,8 +424,7 @@ describe('SQLite Connection Pool', () => {
     })
   })
 
-  // eslint-disable-next-line vitest/no-disabled-tests
-  describe.skip('Idle Connection Cleanup', () => {
+  describe('Idle Connection Cleanup', () => {
     it('should clean up idle connections after timeout', async () => {
       const pool = await createPool({
         minConnections: 0,

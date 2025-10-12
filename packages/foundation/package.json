@@ -10,10 +10,18 @@
   "type": "module",
   "exports": {
     ".": {
+      "@capture-bridge/source": {
+        "types": "./src/index.ts",
+        "import": "./src/index.ts"
+      },
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./hash": {
+      "@capture-bridge/source": {
+        "types": "./src/hash/index.ts",
+        "import": "./src/hash/index.ts"
+      },
       "types": "./dist/hash/index.d.ts",
       "import": "./dist/hash/index.js"
     }
@@ -26,21 +34,23 @@
   "scripts": {
     "build": "tsup",
     "clean": "rm -rf dist .tsbuildinfo",
-    "dev": "tsup --watch",
+    "dev": "concurrently \"pnpm:dev:*\" --names \"build,test\" --prefix-colors \"blue,green\"",
+    "dev:build": "tsup --watch",
+    "dev:test": "vitest watch",
     "lint": "eslint . --cache --cache-location ../../.eslintcache/foundation --no-warn-ignored",
     "lint:fix": "eslint . --fix --cache --cache-location ../../.eslintcache/foundation --no-warn-ignored",
     "prepublishOnly": "pnpm run build && test -d dist",
-    "test": "[ \"$SKIP_FOUNDATION_TESTS\" = \"1\" ] && echo 'Skipping foundation tests (set SKIP_FOUNDATION_TESTS=1)' && exit 0 || timeout --signal=KILL 90 vitest run; exit 0",
-    "test:watch": "vitest watch",
-    "test:ui": "vitest --ui",
-    "test:ci": "vitest run --bail 1",
+    "test": "[ \"$SKIP_FOUNDATION_TESTS\" = \"1\" ] && echo 'Skipping foundation tests (set SKIP_FOUNDATION_TESTS=1)' && exit 0 || TESTKIT_SQLITE_GUARD=on TESTKIT_TIMERS_GUARD=on vitest run",
+    "test:watch": "TESTKIT_SQLITE_GUARD=on TESTKIT_TIMERS_GUARD=on vitest watch",
+    "test:ui": "TESTKIT_SQLITE_GUARD=on TESTKIT_TIMERS_GUARD=on vitest --ui",
+    "test:ci": "TESTKIT_SQLITE_GUARD=on TESTKIT_TIMERS_GUARD=on TESTKIT_SQLITE_GUARD_STRICT=on vitest run --bail 1",
     "test:coverage": "vitest run --coverage",
     "test:integration": "TEST_MODE=integration vitest run",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@capture-bridge/build-config": "workspace:*",
-    "@orchestr8/testkit": "^2.0.0",
+    "@orchestr8/testkit": "^2.2.0",
     "@types/node": "^24.3.0",
     "better-sqlite3": "^12.4.1",
     "happy-dom": "^18.0.1",

@@ -15,23 +15,29 @@ import type BetterSqlite3 from 'better-sqlite3'
  * - Performance benchmarks
  */
 
-// eslint-disable-next-line vitest/no-disabled-tests
-describe.skip('Testkit SQLite Advanced Features', () => {
+describe('Testkit SQLite Advanced Features', () => {
   let db: InstanceType<typeof BetterSqlite3> | null = null
   const databases: Array<InstanceType<typeof BetterSqlite3>> = []
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Step 1: Settle (prevent race conditions)
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    // Step 2: Close databases
     for (const database of databases) {
       try {
         if (!database.readonly) {
           database.close()
         }
-      } catch (error) {
-        // Ignore close errors
+      } catch (_error) {
+        // Ignore close errors in cleanup
       }
     }
     databases.length = 0
     db = null
+
+    // Step 3: Force GC (if available)
+    if (global.gc) global.gc()
   })
 
   describe('WAL Mode and Pragmas', () => {
@@ -530,7 +536,9 @@ describe.skip('Testkit SQLite Advanced Features', () => {
     })
   })
 
-  describe('Performance Benchmarks', () => {
+  // Skip in CI: Performance benchmarks test machine speed, not code correctness
+  // Run locally with: pnpm test testkit-sqlite-advanced.test.ts
+  describe.skipIf(!!process.env['CI'])('Performance Benchmarks', () => {
     it('should benchmark insert performance', async () => {
       const Database = (await import('better-sqlite3')).default
 

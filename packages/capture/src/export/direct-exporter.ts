@@ -81,7 +81,7 @@ export const exportToVault = async (
   captureId: string,
   db: Database.Database,
   vaultPath: string,
-  metricsClient?: MetricsClient
+  metricsClient?: InstanceType<typeof MetricsClient>
 ): Promise<ExportResult> => {
   const startTime = performance.now()
 

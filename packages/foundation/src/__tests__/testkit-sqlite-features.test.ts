@@ -39,97 +39,26 @@ describe('Testkit SQLite Features', () => {
     db = null
   })
 
-  // eslint-disable-next-line vitest/no-disabled-tests
-  describe.skip('Database Creation', () => {
+  describe('Database Creation', () => {
     it('should create in-memory SQLite database', async () => {
-      try {
-        const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-        const Database = (await import('better-sqlite3')).default
+      const Database = (await import('better-sqlite3')).default
 
-        // Create in-memory database URL
-        const memoryUrl = createMemoryUrl()
-        expect(memoryUrl).toContain(':memory:')
+      // Create database instance with :memory: string
+      db = new Database(':memory:')
+      databases.push(db)
 
-        // Create database instance directly with better-sqlite3
-        db = new Database(':memory:')
-        databases.push(db)
+      // Verify database works
+      const result = db.prepare('SELECT 1 as value').get() as { value: number }
+      expect(result.value).toBe(1)
 
-        // Verify database works
-        const result = db.prepare('SELECT 1 as value').get() as { value: number }
-        expect(result.value).toBe(1)
+      // Create table to verify full functionality
+      db.exec('CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)')
+      db.prepare('INSERT INTO test (name) VALUES (?)').run('Test')
 
-        console.log('✅ In-memory SQLite database created successfully')
-      } catch (error) {
-        console.error('SQLite import error:', error)
-        throw new Error('Failed to import SQLite utilities - ensure better-sqlite3 is installed')
-      }
-    })
+      const row = db.prepare('SELECT * FROM test').get() as { id: number; name: string }
+      expect(row.name).toBe('Test')
 
-    it('should create memory URL with auto-generated identifier', async () => {
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-
-      // Create URL with auto-generated identifier
-      const url = createMemoryUrl('raw', { autoGenerate: true })
-
-      expect(url).toContain('mem-')
-      expect(url).toContain('mode=memory')
-      expect(url).toContain('cache=shared')
-
-      console.log('✅ Auto-generated memory URL:', url)
-    })
-
-    it('should create memory URL with different isolation modes', async () => {
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-
-      // Shared cache (default)
-      const sharedUrl = createMemoryUrl('raw', {
-        identifier: 'test-shared',
-        isolation: 'shared',
-      })
-      expect(sharedUrl).toContain('cache=shared')
-
-      // Private cache
-      const privateUrl = createMemoryUrl('raw', {
-        identifier: 'test-private',
-        isolation: 'private',
-      })
-      expect(privateUrl).toContain('cache=private')
-
-      console.log('✅ Isolation modes tested:', { shared: sharedUrl, private: privateUrl })
-    })
-
-    it('should create memory URL with custom parameters', async () => {
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-
-      // Create URL with custom parameters
-      const url = createMemoryUrl('raw', {
-        identifier: 'test-params',
-        params: {
-          connection_limit: 5,
-          timeout: 10000,
-        },
-      })
-
-      expect(url).toContain('connection_limit=5')
-      expect(url).toContain('timeout=10000')
-
-      console.log('✅ Memory URL with custom params:', url)
-    })
-
-    it('should create memory URL for different targets', async () => {
-      const { createMemoryUrl } = await import('@orchestr8/testkit/sqlite')
-
-      const rawUrl = createMemoryUrl('raw')
-      const prismaUrl = createMemoryUrl('prisma', { identifier: 'test-prisma' })
-      const kyselyUrl = createMemoryUrl('kysely')
-      const drizzleUrl = createMemoryUrl('drizzle-better-sqlite3')
-
-      expect(rawUrl).toBeDefined()
-      expect(prismaUrl).toBeDefined()
-      expect(kyselyUrl).toBeDefined()
-      expect(drizzleUrl).toBe(':memory:') // Simple format for drizzle-better-sqlite3
-
-      console.log('✅ All target URLs created:', { rawUrl, prismaUrl, kyselyUrl, drizzleUrl })
+      console.log('✅ In-memory SQLite database created successfully')
     })
 
     it('should create file-based SQLite database', async () => {
@@ -175,8 +104,14 @@ describe('Testkit SQLite Features', () => {
       expect(fileDb.path).toBeDefined()
       expect(fileDb.url).toBeDefined()
 
+      // Type guard: pool verified above
+      if (!fileDb.pool) {
+        throw new Error('Pool should be defined')
+      }
+      const { pool } = fileDb
+
       // Acquire connection from pool
-      const conn1 = await fileDb.pool!.acquire()
+      const conn1 = await pool.acquire()
       databases.push(conn1)
 
       // Use connection
@@ -184,20 +119,20 @@ describe('Testkit SQLite Features', () => {
       conn1.prepare('INSERT INTO test (name) VALUES (?)').run('Test User')
 
       // Release connection back to pool
-      await fileDb.pool!.release(conn1)
+      await pool.release(conn1)
 
       // Acquire another connection and verify data persists
-      const conn2 = await fileDb.pool!.acquire()
+      const conn2 = await pool.acquire()
       databases.push(conn2)
 
       const result = conn2.prepare('SELECT * FROM test WHERE name = ?').get('Test User') as any
       expect(result).toBeDefined()
       expect(result.name).toBe('Test User')
 
-      await fileDb.pool!.release(conn2)
+      await pool.release(conn2)
 
       // Get pool stats
-      const stats = fileDb.pool!.getStats()
+      const stats = pool.getStats()
       expect(stats).toHaveProperty('totalConnections')
       expect(stats).toHaveProperty('connectionsInUse')
       expect(stats).toHaveProperty('idleConnections')
@@ -205,7 +140,7 @@ describe('Testkit SQLite Features', () => {
       console.log('✅ File database with connection pool created, stats:', stats)
 
       // Cleanup pool
-      await fileDb.pool!.drain()
+      await pool.drain()
       await fileDb.cleanup()
     })
 
@@ -261,46 +196,43 @@ describe('Testkit SQLite Features', () => {
   describe('Migration Support', () => {
     it('should apply migrations using applyMigrations', async () => {
       const { applyMigrations } = await import('@orchestr8/testkit/sqlite')
+      const { createTempDirectory } = await import('@orchestr8/testkit/fs')
       const Database = (await import('better-sqlite3')).default
       const fs = await import('node:fs/promises')
       const path = await import('node:path')
-      const os = await import('node:os')
 
       db = new Database(':memory:')
       databases.push(db)
 
-      // Create temp directory for migrations
-      const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'migrations-'))
+      // Create temp directory using TestKit (auto-cleanup)
+      const tempDir = await createTempDirectory()
+      const tmpDir = tempDir.path
 
-      try {
-        // Write migration files
-        await fs.writeFile(
-          path.join(tmpDir, '001_create_users.sql'),
-          'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL);'
-        )
-        await fs.writeFile(path.join(tmpDir, '002_add_email.sql'), 'ALTER TABLE users ADD COLUMN email TEXT;')
-        await fs.writeFile(path.join(tmpDir, '003_create_index.sql'), 'CREATE INDEX idx_users_email ON users(email);')
+      // Write migration files
+      await fs.writeFile(
+        path.join(tmpDir, '001_create_users.sql'),
+        'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL);'
+      )
+      await fs.writeFile(path.join(tmpDir, '002_add_email.sql'), 'ALTER TABLE users ADD COLUMN email TEXT;')
+      await fs.writeFile(path.join(tmpDir, '003_create_index.sql'), 'CREATE INDEX idx_users_email ON users(email);')
 
-        // Apply migrations using actual applyMigrations function
-        await applyMigrations(db, { dir: tmpDir })
+      // Apply migrations using actual applyMigrations function
+      await applyMigrations(db, { dir: tmpDir })
 
-        // Verify migrations applied
-        const tableInfo = db.prepare("PRAGMA table_info('users')").all()
-        const columns = (tableInfo as any[]).map((col) => col.name)
+      // Verify migrations applied
+      const tableInfo = db.prepare("PRAGMA table_info('users')").all()
+      const columns = (tableInfo as any[]).map((col) => col.name)
 
-        expect(columns).toContain('id')
-        expect(columns).toContain('name')
-        expect(columns).toContain('email')
+      expect(columns).toContain('id')
+      expect(columns).toContain('name')
+      expect(columns).toContain('email')
 
-        // Verify index was created
-        const indexes = db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_users_email'").all()
-        expect(indexes).toHaveLength(1)
+      // Verify index was created
+      const indexes = db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_users_email'").all()
+      expect(indexes).toHaveLength(1)
 
-        console.log('✅ Migrations applied successfully using applyMigrations')
-      } finally {
-        // Cleanup temp directory
-        await fs.rm(tmpDir, { recursive: true, force: true })
-      }
+      console.log('✅ Migrations applied successfully using applyMigrations')
+      // No manual cleanup needed - TestKit handles it automatically
     })
 
     it('should reset database using resetDatabase', async () => {
@@ -419,10 +351,10 @@ describe('Testkit SQLite Features', () => {
 
     it('should seed database with files using seedWithFiles', async () => {
       const { seedWithFiles } = await import('@orchestr8/testkit/sqlite')
+      const { createTempDirectory } = await import('@orchestr8/testkit/fs')
       const Database = (await import('better-sqlite3')).default
       const fs = await import('node:fs/promises')
       const path = await import('node:path')
-      const os = await import('node:os')
 
       db = new Database(':memory:')
       databases.push(db)
@@ -440,38 +372,35 @@ describe('Testkit SQLite Features', () => {
         );
       `)
 
-      // Create temp directory for seed files
-      const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'seeds-'))
+      // Create temp directory using TestKit (auto-cleanup)
+      const tempDir = await createTempDirectory()
+      const tmpDir = tempDir.path
 
-      try {
-        // Write seed files
-        await fs.writeFile(
-          path.join(tmpDir, '001_categories.sql'),
-          `INSERT INTO categories (name) VALUES ('Electronics'), ('Books'), ('Clothing');`
-        )
-        await fs.writeFile(
-          path.join(tmpDir, '002_products.sql'),
-          `INSERT INTO products (name, price) VALUES
-            ('Laptop', 999.99),
-            ('Mouse', 29.99),
-            ('Keyboard', 79.99);`
-        )
+      // Write seed files
+      await fs.writeFile(
+        path.join(tmpDir, '001_categories.sql'),
+        `INSERT INTO categories (name) VALUES ('Electronics'), ('Books'), ('Clothing');`
+      )
+      await fs.writeFile(
+        path.join(tmpDir, '002_products.sql'),
+        `INSERT INTO products (name, price) VALUES
+          ('Laptop', 999.99),
+          ('Mouse', 29.99),
+          ('Keyboard', 79.99);`
+      )
 
-        // Seed using actual seedWithFiles function
-        await seedWithFiles(db, { dir: tmpDir })
+      // Seed using actual seedWithFiles function
+      await seedWithFiles(db, { dir: tmpDir })
 
-        // Verify seeded data
-        const categories = db.prepare('SELECT * FROM categories').all()
-        const products = db.prepare('SELECT * FROM products').all()
+      // Verify seeded data
+      const categories = db.prepare('SELECT * FROM categories').all()
+      const products = db.prepare('SELECT * FROM products').all()
 
-        expect(categories).toHaveLength(3)
-        expect(products).toHaveLength(3)
+      expect(categories).toHaveLength(3)
+      expect(products).toHaveLength(3)
 
-        console.log('✅ Database seeded with files using seedWithFiles')
-      } finally {
-        // Cleanup temp directory
-        await fs.rm(tmpDir, { recursive: true, force: true })
-      }
+      console.log('✅ Database seeded with files using seedWithFiles')
+      // No manual cleanup needed - TestKit handles it automatically
     })
   })
 

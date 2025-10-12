@@ -56,14 +56,75 @@ capture-bridge/
 
 ## Development Workflow
 
+### Starting Work
+
+**IMPORTANT**: Before starting any implementation work, use the task orchestration system:
+
+```bash
+# Start the next task from the Virtual Task Manifest
+/pm start
+```
+
+This command:
+- Queries the next available VTM task
+- Creates a feature branch
+- Sets up task context
+- Delegates to the appropriate implementation agent
+- Handles test validation and PR creation
+
+**DO NOT** start coding without using `/pm start` - this ensures proper task tracking, branching strategy, and test-driven development workflow.
+
+### Development Mode (Local Work)
+
+**Dev mode runs parallel build + test watching** for instant feedback:
+
+```bash
+# In any package
+cd packages/foundation
+pnpm dev               # Runs tsup --watch AND vitest watch in parallel
+
+# Or from root (all packages)
+pnpm dev               # Runs dev mode in all packages via Turbo
+```
+
+**What dev mode does:**
+- **[build]** Watches source files → rebuilds to `dist/` on changes
+- **[test]** Watches test files → re-runs tests on changes
+- **Parallel execution** Both run simultaneously with colored, labeled output
+- **Single terminal** No context switching between build and test windows
+
+**When to use dev mode:**
+- ✅ Active TDD development (writing code + tests)
+- ✅ Package has dependents (other packages import from your dist/)
+- ✅ Refactoring with instant test feedback
+- ❌ Just running tests once (use `pnpm test`)
+- ❌ Just building once (use `pnpm build`)
+
 ### Running Tests
 
 ```bash
 # Foundation package (TestKit tests)
 cd packages/foundation
 pnpm test              # Run all 319 tests
+pnpm test:watch        # Watch mode (tests only)
 pnpm test:coverage     # With coverage report
+pnpm test:ui           # Visual test UI
+pnpm test:integration  # Integration tests only
 ```
+
+### Building Packages
+
+```bash
+# Development build (fast, no DTS)
+pnpm build             # Skips type declaration generation
+
+# CI/Production build (complete, with DTS)
+CI=true pnpm build     # Generates .d.ts files for publishing
+```
+
+**Why two modes?**
+- **Dev**: No DTS = 5-10s faster builds, types not needed locally
+- **CI**: Full DTS = Required for publishing to npm
 
 ### Code Quality
 
@@ -71,6 +132,7 @@ pnpm test:coverage     # With coverage report
 - **Test Execution**: 7.80s average (optimized from 18.73s)
 - **Security**: 21 comprehensive security tests
 - **Performance**: 14 benchmark tests
+- **Test Parallelization**: 6 workers in dev, 2 in CI (Wallaby: 4 initial, 2 regular)
 
 ---
 
