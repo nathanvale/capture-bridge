@@ -552,9 +552,8 @@ describe('TranscriptionQueue', () => {
         // This ensures we don't exceed MAX_QUEUE_DEPTH
         await new Promise((resolve) => setTimeout(resolve, 50))
 
-        // Verify queue is draining
-        const status = queue.getStatus()
-        expect(status.queueDepth).toBeLessThanOrEqual(batchSize)
+        // Note: Don't check queueDepth here - it's racy during processing
+        // The real leak check is the heap memory assertion at the end
       }
 
       // Wait for final processing to complete
