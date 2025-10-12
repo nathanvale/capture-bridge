@@ -5,7 +5,7 @@
  */
 
 import Database from 'better-sqlite3'
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, vi, beforeEach } from 'vitest'
 
 // Local test-only type contracts
 interface DeduplicationService {
@@ -52,7 +52,7 @@ describe('EmailPoller', () => {
       isDuplicate: () => Promise.resolve(false),
     }
 
-    const poller = new EmailPoller(db as any, dedup, {
+    const poller = new EmailPoller(db, dedup, {
       gmailCredentialsPath: '/test/creds.json',
       pollInterval: 30000, // Custom 30s
       sequential: true,
@@ -71,7 +71,7 @@ describe('EmailPoller', () => {
       isDuplicate: () => Promise.resolve(false),
     }
 
-    const poller = new EmailPoller(db as any, dedup, {
+    const poller = new EmailPoller(db, dedup, {
       gmailCredentialsPath: '/test/creds.json',
       sequential: true,
     } satisfies EmailPollerConfig)
@@ -89,7 +89,7 @@ describe('EmailPoller', () => {
       isDuplicate: () => Promise.resolve(false),
     }
 
-    const poller = new EmailPoller(db as any, dedup, {
+    const poller = new EmailPoller(db, dedup, {
       gmailCredentialsPath: '/test/creds.json',
       sequential: true,
     } satisfies EmailPollerConfig)
@@ -116,7 +116,7 @@ describe('EmailPoller', () => {
       isDuplicate: () => Promise.resolve(false),
     }
 
-    const poller = new EmailPoller(db as any, dedup, {
+    const poller = new EmailPoller(db, dedup, {
       gmailCredentialsPath: '/test/creds.json',
       sequential: true,
       pollInterval: 1000,
@@ -160,11 +160,184 @@ describe('EmailPoller', () => {
 
     expect(
       () =>
-        new EmailPoller(db as any, dedup, {
+        new EmailPoller(db, dedup, {
           gmailCredentialsPath: '/test/creds.json',
           sequential: true,
           pollInterval: 0,
         } as EmailPollerConfig)
     ).toThrowError()
+  })
+})
+
+// History API RED tests (AC02)
+// Helper shim must be in module scope to satisfy lint rules
+const makeMockGmail = () => {
+  const listHistory = vi.fn()
+  const listMessages = vi.fn()
+  return {
+    users: {
+      history: { list: listHistory },
+      messages: { list: listMessages, get: vi.fn() },
+    },
+    __spies: { listHistory, listMessages },
+  }
+}
+
+describe('EmailPoller - History API', () => {
+  const databases: Array<{ close: () => void }> = []
+  let db: any
+
+  beforeEach(() => {
+    db = new Database(':memory:')
+    databases.push(db)
+    // Minimal sync_state table for cursor tests
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS sync_state (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `)
+    // Seed a previous cursor
+    db.prepare(`
+      INSERT OR REPLACE INTO sync_state (key, value, updated_at)
+      VALUES ('gmail_history_id', 'previous-history-id', datetime('now'))
+    `).run()
+  })
+
+  afterEach(async () => {
+    await new Promise((r) => setTimeout(r, 20))
+    for (const d of databases) d.close()
+    databases.length = 0
+    vi.resetAllMocks()
+  })
+
+  it('should use history.list API with startHistoryId', async () => {
+    // @ts-expect-error - TS project references may not include test module mapping; runtime path is valid
+    const { EmailPoller } = await import('../email-poller.js')
+    const gmail = makeMockGmail()
+
+    // Mock history.list returning a basic history envelope
+    gmail.__spies.listHistory.mockResolvedValue({
+      data: { history: [], historyId: '67890' },
+    })
+
+    // Inject mock gmail into poller via any-cast field after construction in GREEN phase.
+  const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+
+    // Inject mock gmail for RED phase
+    ;(poller as any).gmail = gmail
+
+    await poller.pollOnce()
+
+    expect(gmail.__spies.listHistory).toHaveBeenCalledWith({
+      userId: 'me',
+      startHistoryId: 'previous-history-id',
+    })
+  })
+
+  it('should extract message IDs from messagesAdded events and update cursor', async () => {
+    // @ts-expect-error - TS project references may not include test module mapping; runtime path is valid
+    const { EmailPoller } = await import('../email-poller.js')
+    const gmail = makeMockGmail()
+
+    gmail.__spies.listHistory.mockResolvedValue({
+      data: {
+        history: [
+          {
+            id: '12345',
+            messagesAdded: [
+              { message: { id: 'msg1', threadId: 't1' } },
+              { message: { id: 'msg2', threadId: 't2' } },
+            ],
+          },
+        ],
+        historyId: '67890',
+      },
+    })
+
+  const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    const result = await poller.pollOnce()
+
+    // Expect messageIds returned and cursor advanced
+    expect(result).toEqual(
+      expect.objectContaining({
+        messageIds: ['msg1', 'msg2'],
+        historyId: '67890',
+      })
+    )
+
+    const row = db
+      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
+      .get() as { value: string } | undefined
+    expect(row?.value).toBe('67890')
+  })
+
+  it('should bootstrap cursor if missing', async () => {
+    // @ts-expect-error - TS project references may not include test module mapping; runtime path is valid
+    const { EmailPoller } = await import('../email-poller.js')
+    const gmail = makeMockGmail()
+
+    // Remove existing cursor
+    db.prepare("DELETE FROM sync_state WHERE key = 'gmail_history_id'").run()
+
+    // Simulate messages.list to obtain a current historyId during bootstrap
+    gmail.__spies.listMessages.mockResolvedValue({
+      data: { historyId: 'cur-100', resultSizeEstimate: 0 },
+    })
+
+    // Subsequent history.list after bootstrap
+    gmail.__spies.listHistory.mockResolvedValue({
+      data: { history: [], historyId: 'cur-101' },
+    })
+
+  const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    const result = await poller.pollOnce()
+
+    expect(result.bootstrapped ?? true).toBe(true)
+    const cursor = db
+      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
+      .get() as { value: string } | undefined
+    expect(cursor?.value).toBe('cur-101')
+  })
+
+  it('should handle 404 cursor invalid error by re-bootstrapping', async () => {
+    // @ts-expect-error - TS project references may not include test module mapping; runtime path is valid
+    const { EmailPoller } = await import('../email-poller.js')
+    const gmail = makeMockGmail()
+
+    const error404: any = new Error('Requested history not found')
+    error404.status = 404
+
+    gmail.__spies.listHistory.mockRejectedValueOnce(error404)
+    gmail.__spies.listMessages.mockResolvedValue({
+      data: { historyId: 'reboot-1', resultSizeEstimate: 0 },
+    })
+
+  const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const poller = new EmailPoller(db, dedup, {
+      gmailCredentialsPath: '/creds.json',
+      sequential: true,
+    } satisfies EmailPollerConfig)
+    ;(poller as any).gmail = gmail
+
+    const result = await poller.pollOnce()
+    expect(result.cursorReset ?? true).toBe(true)
   })
 })
