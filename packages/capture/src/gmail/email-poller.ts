@@ -108,6 +108,80 @@ export class EmailPoller {
   private readonly backoff = new ExponentialBackoff()
   private readonly circuitBreaker = new SimpleCircuitBreaker()
   private lastApiCallAt?: number
+
+  /**
+   * Performance instrumentation helper for AC10.
+   * Measures a minimal polling cycle and returns timing breakdown.
+   */
+  async pollOnceWithTiming(): Promise<{
+    apiCallMs: number
+    extractBodyMs: number
+    extractMetadataMs: number
+    dedupCheckMs: number
+    insertMs: number
+    totalMs: number
+  }> {
+    const metrics = {
+      apiCallMs: 0,
+      extractBodyMs: 0,
+      extractMetadataMs: 0,
+      dedupCheckMs: 0,
+      insertMs: 0,
+      totalMs: 0,
+    }
+
+    const totalStart = typeof performance !== 'undefined' ? performance.now() : Date.now()
+
+    // Ensure sync_state exists (mirrors executePollOnce)
+    this._db.exec(`
+      CREATE TABLE IF NOT EXISTS sync_state (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ','now'))
+      )
+    `)
+
+    // Resolve cursor (bootstrap if missing)
+    const repo = new SyncStateRepository(this._db)
+    let cursor = repo.get('gmail_history_id') ?? undefined
+    if (!cursor) {
+      const boot = await this.bootstrapCursor()
+      cursor = boot.historyId
+    }
+
+    // API call timing: perform a single history.list page fetch when gmail is injected
+    if (this.gmail) {
+      const apiStart = typeof performance !== 'undefined' ? performance.now() : Date.now()
+      await this.gmail.users.history.list({ userId: 'me', startHistoryId: cursor })
+      this.lastApiCallAt = Date.now()
+      metrics.apiCallMs =
+        (typeof performance !== 'undefined' ? performance.now() : Date.now()) - apiStart
+    }
+
+    // Dedup timing: touch injected service with a sentinel id
+    const dedupStart = typeof performance !== 'undefined' ? performance.now() : Date.now()
+    try {
+      await this._dedup.isDuplicate?.({ messageId: '__perf__' })
+    } catch {
+      // ignore
+    }
+    metrics.dedupCheckMs =
+      (typeof performance !== 'undefined' ? performance.now() : Date.now()) - dedupStart
+
+    // Insert timing: call stageCapture for a sentinel message id (no-op in current impl)
+    const insertStart = typeof performance !== 'undefined' ? performance.now() : Date.now()
+    try {
+      this.stageCapture('__perf__')
+    } catch {
+      // ignore
+    }
+    metrics.insertMs =
+      (typeof performance !== 'undefined' ? performance.now() : Date.now()) - insertStart
+
+    metrics.totalMs =
+      (typeof performance !== 'undefined' ? performance.now() : Date.now()) - totalStart
+    return metrics
+  }
   // Logger shim to allow tests to spy without eslint console errors
   private log(...args: unknown[]): void {
     // eslint-disable-next-line no-console

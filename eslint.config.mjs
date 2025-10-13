@@ -24,6 +24,7 @@ export default [
       '**/turbo.json',
       '**/tsconfig.json',
       '**/tsconfig.*.json',
+      '**/*.d.ts',
       '**/test-hook.ts',
       '**/test-prettier.ts',
       '**/tsup.config.ts',
