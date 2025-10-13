@@ -1,0 +1,46 @@
+---
+id: d9f9aad1-5d14-4733-b6f7-3ddf92d5f6e3
+---
+sequenceDiagram
+  autonumber
+  actor App
+  participant Poller as EmailPoller
+  participant CB as CircuitBreaker
+  participant Backoff
+  participant Repo as SyncStateRepository
+  participant Gmail as Gmail API
+  participant Stager as stageCapture()
+
+  App->>Poller: pollOnce()
+  Poller->>CB: execute(pollWithRetry)
+  alt Circuit CLOSED or HALF_OPEN
+    loop attempts (until success or max)
+      Poller->>Repo: get("gmail_history_id")
+      alt No cursor
+        Poller->>Gmail: users.history.list(bootstrap)
+        Gmail-->>Poller: historyId₀
+        Poller->>Repo: set("gmail_history_id", historyId₀)
+        Note right of Poller: bootstrapped=true
+      else Has cursor
+        Poller->>Gmail: history.list(startHistoryId, [pageToken])
+        Gmail-->>Poller: {history, nextPageToken, historyIdᵢ}
+        Poller->>Stager: stageCapture(messageIds from history)
+        Stager-->>Poller: ok
+        Poller->>Repo: set("gmail_history_id", historyIdᵢ)
+        opt next page
+          Poller->>Poller: maybeRateLimitDelay()
+          Poller->>Gmail: history.list(..., nextPageToken)
+        end
+      end
+      CB-->>Poller: onSuccess()
+      Poller-->>App: EmailPollResult
+    end
+  else Circuit OPEN
+    Note over CB,Poller: Reject until resetTimeout elapses
+  end
+  opt Retries on 429/5xx
+    Poller->>Backoff: calculateDelay(attempt)
+    Backoff-->>Poller: delay ms
+    Poller->>Poller: sleep(delay)
+    CB-->>Poller: onFailure(err)
+  end
