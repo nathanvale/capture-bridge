@@ -319,11 +319,12 @@
     "CRASH_RECOVERY_MECHANISM--T01": {
       "status": "in-progress",
       "started_at": "2025-10-13T20:10:00Z",
-      "acs_completed": [],
-      "acs_remaining": [
+      "acs_completed": [
         "CRASH_RECOVERY_MECHANISM-AC01",
         "CRASH_RECOVERY_MECHANISM-AC02",
-        "CRASH_RECOVERY_MECHANISM-AC03",
+        "CRASH_RECOVERY_MECHANISM-AC03"
+      ],
+      "acs_remaining": [
         "CRASH_RECOVERY_MECHANISM-AC04"
       ]
     }
