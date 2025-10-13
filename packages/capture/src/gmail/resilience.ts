@@ -16,13 +16,10 @@ export class ExponentialBackoff {
 
   // attempt is 1-based
   calculateDelay(attempt: number): number {
-    const raw = Math.min(
-      this.baseDelay * Math.pow(this.multiplier, attempt - 1),
-      this.maxDelay
-    )
-  // Positive jitter only (0..+jitterFactor) using crypto-safe random source.
-  const randUnit = randomInt(0, 1_000_000) / 1_000_000 // [0, 1)
-  const jitter = randUnit * this.jitterFactor
+    const raw = Math.min(this.baseDelay * Math.pow(this.multiplier, attempt - 1), this.maxDelay)
+    // Positive jitter only (0..+jitterFactor) using crypto-safe random source.
+    const randUnit = randomInt(0, 1_000_000) / 1_000_000 // [0, 1)
+    const jitter = randUnit * this.jitterFactor
     return Math.floor(raw * (1 + jitter))
   }
 
@@ -69,7 +66,8 @@ export class SimpleCircuitBreaker {
 
   private onFailure(error: unknown): void {
     // Do not count 429 rate limits as breaker failures
-    const code = (error as { code?: number; status?: number } | undefined)?.code ??
+    const code =
+      (error as { code?: number; status?: number } | undefined)?.code ??
       (error as { code?: number; status?: number } | undefined)?.status
     if (code === 429) return
 

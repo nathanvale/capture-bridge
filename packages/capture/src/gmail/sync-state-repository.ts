@@ -17,16 +17,16 @@ export class SyncStateRepository {
       CREATE TABLE IF NOT EXISTS sync_state (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,
-        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        updated_at TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%dT%H:%M:%fZ','now'))
       )
     `)
   }
 
   get(key: string): string | null {
     this.ensureTable()
-    const row = this.db
-      .prepare('SELECT value FROM sync_state WHERE key = ?')
-      .get(key) as { value: string } | undefined
+    const row = this.db.prepare('SELECT value FROM sync_state WHERE key = ?').get(key) as
+      | { value: string }
+      | undefined
     return row?.value ?? null
   }
 

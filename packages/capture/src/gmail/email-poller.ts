@@ -10,11 +10,8 @@
 
 import { z } from 'zod'
 
-// eslint-disable-next-line import/no-unresolved
 import { ExponentialBackoff, SimpleCircuitBreaker, type BreakerState } from './resilience.js'
-// eslint-disable-next-line import/no-unresolved
 import { SyncStateRepository } from './sync-state-repository.js'
-
 
 import type DatabaseConstructor from 'better-sqlite3'
 
@@ -174,9 +171,7 @@ export class EmailPoller {
             const delayMs = retryAfterSecRaw
               ? parseInt(retryAfterSecRaw, 10) * 1000
               : this.backoff.calculateDelay(attempt)
-            this.log(
-              `Retry attempt ${attempt}/${maxAttempts} after ${Math.floor(delayMs / 1000)}s`
-            )
+            this.log(`Retry attempt ${attempt}/${maxAttempts} after ${Math.floor(delayMs / 1000)}s`)
             await this.sleep(delayMs)
             continue
           }
@@ -198,7 +193,7 @@ export class EmailPoller {
 
     // AC02: History-based polling with cursor management.
     // Minimal implementation uses injected gmail shim when available.
-  const { gmail } = this
+    const { gmail } = this
 
     // If no gmail client injected yet, return AC01-compatible stub
     if (!gmail) {
@@ -234,8 +229,8 @@ export class EmailPoller {
     // 2) Fetch all pages sequentially with pagination
     const allMessageIds: string[] = []
     let pageToken: string | undefined = undefined
-  let pagesProcessed = 0
-  let finalHistoryId = ''
+    let pagesProcessed = 0
+    let finalHistoryId = ''
 
     try {
       do {
@@ -314,7 +309,7 @@ export class EmailPoller {
     if (!cfg) return
     const now = Date.now()
     const minIntervalMs = Math.max(0, Math.floor(1000 / cfg.maxRequestsPerSecond))
-  if (this.lastApiCallAt !== undefined) {
+    if (this.lastApiCallAt !== undefined) {
       const elapsed = now - this.lastApiCallAt
       const toWait = minIntervalMs - elapsed
       if (toWait > 0) await this.sleep(toWait)
@@ -347,8 +342,8 @@ export class EmailPoller {
   }
 
   private async bootstrapCursor(): Promise<{ historyId: string; messageCount: number }> {
-  const { gmail } = this
-  if (!gmail) {
+    const { gmail } = this
+    if (!gmail) {
       // Fallback: create a cursor-less result
       const nowId = `${Date.now()}`
       this.updateCursor(nowId)

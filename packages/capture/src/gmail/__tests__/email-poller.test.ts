@@ -1,4 +1,4 @@
-/* eslint-disable import/no-unresolved */
+ 
 /**
  * TDD RED Phase: Gmail EmailPoller polling interval and sequential execution
  * AC01 (EMAIL_POLLING_GMAIL--T01): Poll Gmail API every 60s (configurable)
@@ -43,7 +43,6 @@ describe('EmailPoller', () => {
   })
 
   it('should accept configurable poll interval', async () => {
-    // @ts-expect-error - TS project references may not include test module mapping; runtime path is valid
     const { EmailPoller } = await import('../email-poller.js')
     const db = new Database(':memory:')
     databases.push(db)
@@ -62,7 +61,6 @@ describe('EmailPoller', () => {
   })
 
   it('should default poll interval to 60000ms when not provided', async () => {
-    // @ts-expect-error - TS project references may not include test module mapping; runtime path is valid
     const { EmailPoller } = await import('../email-poller.js')
     const db = new Database(':memory:')
     databases.push(db)
@@ -80,7 +78,6 @@ describe('EmailPoller', () => {
   })
 
   it('should expose pollOnce() that returns EmailPollResult', async () => {
-    // @ts-expect-error - TS project references may not include test module mapping; runtime path is valid
     const { EmailPoller } = await import('../email-poller.js')
     const db = new Database(':memory:')
     databases.push(db)
@@ -107,7 +104,6 @@ describe('EmailPoller', () => {
   })
 
   it('enforces sequential execution by preventing overlapping polls', async () => {
-    // @ts-expect-error - TS project references may not include test module mapping; runtime path is valid
     const { EmailPoller } = await import('../email-poller.js')
     const db = new Database(':memory:')
     databases.push(db)
@@ -149,7 +145,6 @@ describe('EmailPoller', () => {
   }, 10000)
 
   it('should reject non-positive pollInterval values', async () => {
-    // @ts-expect-error - TS project references may not include test module mapping; runtime path is valid
     const { EmailPoller } = await import('../email-poller.js')
     const db = new Database(':memory:')
     databases.push(db)
@@ -199,10 +194,12 @@ describe('EmailPoller - History API', () => {
       )
     `)
     // Seed a previous cursor
-    db.prepare(`
+    db.prepare(
+      `
       INSERT OR REPLACE INTO sync_state (key, value, updated_at)
       VALUES ('gmail_history_id', 'previous-history-id', datetime('now'))
-    `).run()
+    `
+    ).run()
   })
 
   afterEach(async () => {
@@ -213,7 +210,6 @@ describe('EmailPoller - History API', () => {
   })
 
   it('should use history.list API with startHistoryId', async () => {
-    // @ts-expect-error - TS project references may not include test module mapping; runtime path is valid
     const { EmailPoller } = await import('../email-poller.js')
     const gmail = makeMockGmail()
 
@@ -223,7 +219,7 @@ describe('EmailPoller - History API', () => {
     })
 
     // Inject mock gmail into poller via any-cast field after construction in GREEN phase.
-  const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
     const poller = new EmailPoller(db, dedup, {
       gmailCredentialsPath: '/creds.json',
       sequential: true,
@@ -243,7 +239,6 @@ describe('EmailPoller - History API', () => {
   })
 
   it('should extract message IDs from messagesAdded events and update cursor', async () => {
-    // @ts-expect-error - TS project references may not include test module mapping; runtime path is valid
     const { EmailPoller } = await import('../email-poller.js')
     const gmail = makeMockGmail()
 
@@ -252,17 +247,14 @@ describe('EmailPoller - History API', () => {
         history: [
           {
             id: '12345',
-            messagesAdded: [
-              { message: { id: 'msg1', threadId: 't1' } },
-              { message: { id: 'msg2', threadId: 't2' } },
-            ],
+            messagesAdded: [{ message: { id: 'msg1', threadId: 't1' } }, { message: { id: 'msg2', threadId: 't2' } }],
           },
         ],
         historyId: '67890',
       },
     })
 
-  const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
     const poller = new EmailPoller(db, dedup, {
       gmailCredentialsPath: '/creds.json',
       sequential: true,
@@ -279,14 +271,13 @@ describe('EmailPoller - History API', () => {
       })
     )
 
-    const row = db
-      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
-      .get() as { value: string } | undefined
+    const row = db.prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'").get() as
+      | { value: string }
+      | undefined
     expect(row?.value).toBe('67890')
   })
 
   it('should bootstrap cursor if missing', async () => {
-    // @ts-expect-error - TS project references may not include test module mapping; runtime path is valid
     const { EmailPoller } = await import('../email-poller.js')
     const gmail = makeMockGmail()
 
@@ -303,7 +294,7 @@ describe('EmailPoller - History API', () => {
       data: { history: [], historyId: 'cur-101' },
     })
 
-  const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
     const poller = new EmailPoller(db, dedup, {
       gmailCredentialsPath: '/creds.json',
       sequential: true,
@@ -313,14 +304,13 @@ describe('EmailPoller - History API', () => {
     const result = await poller.pollOnce()
 
     expect(result.bootstrapped ?? true).toBe(true)
-    const cursor = db
-      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
-      .get() as { value: string } | undefined
+    const cursor = db.prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'").get() as
+      | { value: string }
+      | undefined
     expect(cursor?.value).toBe('cur-101')
   })
 
   it('should handle 404 cursor invalid error by re-bootstrapping', async () => {
-    // @ts-expect-error - TS project references may not include test module mapping; runtime path is valid
     const { EmailPoller } = await import('../email-poller.js')
     const gmail = makeMockGmail()
 
@@ -332,7 +322,7 @@ describe('EmailPoller - History API', () => {
       data: { historyId: 'reboot-1', resultSizeEstimate: 0 },
     })
 
-  const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
+    const dedup: DeduplicationService = { isDuplicate: () => Promise.resolve(false) }
     const poller = new EmailPoller(db, dedup, {
       gmailCredentialsPath: '/creds.json',
       sequential: true,
@@ -370,9 +360,8 @@ describe('EmailPoller - Cursor Persistence', () => {
   })
 
   it('stores cursor with key gmail_history_id on first poll', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
-  const gmail = makeMockGmail()
+    const gmail = makeMockGmail()
 
     // Bootstrap path: no existing cursor → messages.list then history.list
     gmail.__spies.listMessages.mockResolvedValue({
@@ -391,9 +380,9 @@ describe('EmailPoller - Cursor Persistence', () => {
 
     await poller.pollOnce()
 
-    const cursor = db
-      .prepare("SELECT key, value, updated_at FROM sync_state WHERE key = 'gmail_history_id'")
-      .get() as { key: string; value: string; updated_at: string } | undefined
+    const cursor = db.prepare("SELECT key, value, updated_at FROM sync_state WHERE key = 'gmail_history_id'").get() as
+      | { key: string; value: string; updated_at: string }
+      | undefined
     expect(cursor).toBeDefined()
     expect(cursor?.key).toBe('gmail_history_id')
     expect(cursor?.value).toMatch(/^\d+$/)
@@ -401,9 +390,8 @@ describe('EmailPoller - Cursor Persistence', () => {
   })
 
   it('updates cursor after subsequent polls', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
-  const gmail = makeMockGmail()
+    const gmail = makeMockGmail()
 
     // Seed missing → bootstrap to 100 then first history to 101
     gmail.__spies.listMessages.mockResolvedValueOnce({
@@ -421,9 +409,7 @@ describe('EmailPoller - Cursor Persistence', () => {
     ;(poller as any).gmail = gmail
     await poller.pollOnce()
 
-    const row1 = db
-      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
-      .get() as { value: string }
+    const row1 = db.prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'").get() as { value: string }
     expect(row1.value).toBe('101')
 
     // Next poll returns newer history id
@@ -431,17 +417,14 @@ describe('EmailPoller - Cursor Persistence', () => {
       data: { history: [], historyId: '102' },
     })
     await poller.pollOnce()
-    const row2 = db
-      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
-      .get() as { value: string }
+    const row2 = db.prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'").get() as { value: string }
     expect(row2.value).not.toBe(row1.value)
     expect(row2.value).toBe('102')
   })
 
   it('bootstraps cursor if missing', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
-  const gmail = makeMockGmail()
+    const gmail = makeMockGmail()
     // Ensure missing
     db.prepare("DELETE FROM sync_state WHERE key = 'gmail_history_id'").run()
 
@@ -460,25 +443,24 @@ describe('EmailPoller - Cursor Persistence', () => {
     ;(poller as any).gmail = gmail
 
     await poller.pollOnce()
-    const row = db
-      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
-      .get() as { value: string } | undefined
+    const row = db.prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'").get() as
+      | { value: string }
+      | undefined
     expect(row?.value).toBe('201')
   })
 
   it('does not update cursor if staging fails (atomic rollback)', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
-  const gmail = makeMockGmail()
+    const gmail = makeMockGmail()
 
     // Seed existing cursor
-    db.prepare(`INSERT OR REPLACE INTO sync_state(key,value,updated_at) VALUES('gmail_history_id','300',datetime('now'))`).run()
+    db.prepare(
+      `INSERT OR REPLACE INTO sync_state(key,value,updated_at) VALUES('gmail_history_id','300',datetime('now'))`
+    ).run()
 
     gmail.__spies.listHistory.mockResolvedValueOnce({
       data: {
-        history: [
-          { messagesAdded: [{ message: { id: 'm1', threadId: 't1' } }] },
-        ],
+        history: [{ messagesAdded: [{ message: { id: 'm1', threadId: 't1' } }] }],
         historyId: '301',
       },
     })
@@ -497,16 +479,13 @@ describe('EmailPoller - Cursor Persistence', () => {
 
     await expect(poller.pollOnce()).rejects.toThrow('Insert failed')
 
-    const row = db
-      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
-      .get() as { value: string }
+    const row = db.prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'").get() as { value: string }
     expect(row.value).toBe('300') // should not advance to 301
   })
 
   it('calculates cursor age from updated_at', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
-  const gmail = makeMockGmail()
+    const gmail = makeMockGmail()
 
     gmail.__spies.listMessages.mockResolvedValueOnce({
       data: { historyId: '400', resultSizeEstimate: 0 },
@@ -526,9 +505,10 @@ describe('EmailPoller - Cursor Persistence', () => {
 
     // Wait ~1s
     await new Promise((r) => setTimeout(r, 1000))
-    const cursor = db
-      .prepare("SELECT value, updated_at FROM sync_state WHERE key = 'gmail_history_id'")
-      .get() as { value: string; updated_at: string }
+    const cursor = db.prepare("SELECT value, updated_at FROM sync_state WHERE key = 'gmail_history_id'").get() as {
+      value: string
+      updated_at: string
+    }
 
     const age = Date.now() - new Date(cursor.updated_at).getTime()
     expect(age).toBeGreaterThanOrEqual(900)
@@ -536,9 +516,8 @@ describe('EmailPoller - Cursor Persistence', () => {
   })
 
   it('persists cursor across poller restarts', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
-  const gmail = makeMockGmail()
+    const gmail = makeMockGmail()
 
     gmail.__spies.listMessages.mockResolvedValueOnce({
       data: { historyId: '500', resultSizeEstimate: 0 },
@@ -555,9 +534,7 @@ describe('EmailPoller - Cursor Persistence', () => {
     ;(poller1 as any).gmail = gmail
     await poller1.pollOnce()
 
-    const row1 = db
-      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
-      .get() as { value: string }
+    const row1 = db.prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'").get() as { value: string }
     expect(row1.value).toBe('501')
 
     // New instance, new poll should advance
@@ -570,9 +547,7 @@ describe('EmailPoller - Cursor Persistence', () => {
     } satisfies EmailPollerConfig)
     ;(poller2 as any).gmail = gmail
     await poller2.pollOnce()
-    const row2 = db
-      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
-      .get() as { value: string }
+    const row2 = db.prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'").get() as { value: string }
     expect(row2.value).toBe('502')
   })
 })
@@ -600,7 +575,6 @@ describe('SyncStateRepository', () => {
   })
 
   it('get/set/exists/getCursorAge basics', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { SyncStateRepository } = await import('../sync-state-repository.js')
     const repo = new SyncStateRepository(db)
 
@@ -650,7 +624,6 @@ describe('EmailPoller - Pagination', () => {
   })
 
   it('should fetch all pages when nextPageToken present and update cursor to final historyId', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
     const gmail = makeMockGmail()
 
@@ -694,14 +667,11 @@ describe('EmailPoller - Pagination', () => {
     expect(result.historyId).toBe('hist-final')
     expect(result.pagesProcessed ?? 0).toBeGreaterThanOrEqual(3)
 
-    const row = db
-      .prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'")
-      .get() as { value: string }
+    const row = db.prepare("SELECT value FROM sync_state WHERE key = 'gmail_history_id'").get() as { value: string }
     expect(row.value).toBe('hist-final')
   })
 
   it('should pass pageToken to subsequent requests', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
     const gmail = makeMockGmail()
 
@@ -736,7 +706,6 @@ describe('EmailPoller - Pagination', () => {
   })
 
   it('should stop when no nextPageToken', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
     const gmail = makeMockGmail()
 
@@ -756,7 +725,6 @@ describe('EmailPoller - Pagination', () => {
   })
 
   it('should handle empty pages gracefully and still advance', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
     const gmail = makeMockGmail()
 
@@ -781,7 +749,6 @@ describe('EmailPoller - Pagination', () => {
   })
 
   it('should process pages sequentially not concurrently', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
     const gmail = makeMockGmail()
 
@@ -823,6 +790,7 @@ describe('EmailPoller - Rate Limiting & Resilience', () => {
   let db: any
 
   beforeEach(() => {
+    vi.useFakeTimers()
     db = new Database(':memory:')
     databases.push(db)
     db.exec(`
@@ -839,6 +807,7 @@ describe('EmailPoller - Rate Limiting & Resilience', () => {
   })
 
   afterEach(async () => {
+    vi.useRealTimers()
     await new Promise((r) => setTimeout(r, 20))
     for (const d of databases) d.close()
     databases.length = 0
@@ -846,7 +815,6 @@ describe('EmailPoller - Rate Limiting & Resilience', () => {
   })
 
   it('should handle 429 rate limit with exponential backoff', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
     const gmail = makeMockGmail()
 
@@ -867,19 +835,25 @@ describe('EmailPoller - Rate Limiting & Resilience', () => {
     } satisfies EmailPollerConfig)
     ;(poller as any).gmail = gmail
 
-    const start = Date.now()
+    // Mock internal sleep to advance fake timers deterministically
+    const sleepSpy = vi.spyOn(poller as any, 'sleep').mockImplementation(async (...args: any[]) => {
+      const ms = args[0] as number
+      await vi.advanceTimersByTimeAsync(ms)
+    })
+
     const result: any = await poller.pollOnce()
-    const duration = Date.now() - start
 
     expect(historySpy).toHaveBeenCalledTimes(3)
-    // Expect ~1s + ~2s (with jitter the lower bound is conservative)
-    expect(duration).toBeGreaterThanOrEqual(2500)
-    expect(duration).toBeLessThan(6000)
+    const calls = sleepSpy.mock.calls.map((c) => c[0] as number)
+    expect(calls.length).toBeGreaterThanOrEqual(2)
+    expect(calls[0]).toBeGreaterThanOrEqual(900)
+    expect(calls[0]).toBeLessThanOrEqual(1300)
+    expect(calls[1]).toBeGreaterThanOrEqual(1800)
+    expect(calls[1]).toBeLessThanOrEqual(2600)
     expect(result.historyId).toBe('hist-after-retry')
   })
 
   it('should respect Retry-After header from Gmail', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
     const gmail = makeMockGmail()
 
@@ -898,16 +872,19 @@ describe('EmailPoller - Rate Limiting & Resilience', () => {
     } satisfies EmailPollerConfig)
     ;(poller as any).gmail = gmail
 
-    const start = Date.now()
-    await poller.pollOnce()
-    const duration = Date.now() - start
+    const sleepSpy = vi.spyOn(poller as any, 'sleep').mockImplementation(async (...args: any[]) => {
+      const ms = args[0] as number
+      await vi.advanceTimersByTimeAsync(ms)
+    })
 
-    expect(duration).toBeGreaterThanOrEqual(4900)
-    expect(duration).toBeLessThan(5600)
+    await poller.pollOnce()
+
+    const calls = sleepSpy.mock.calls.map((c) => c[0] as number)
+    expect(calls.length).toBeGreaterThanOrEqual(1)
+    expect(calls[0]).toBe(5000)
   }, 12000)
 
   it('should apply jitter to backoff delays', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
     const delays: number[] = []
 
@@ -930,9 +907,11 @@ describe('EmailPoller - Rate Limiting & Resilience', () => {
           updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
       `)
-      db2.prepare(
-        `INSERT OR REPLACE INTO sync_state(key,value,updated_at) VALUES('gmail_history_id','seed-jitter',datetime('now'))`
-      ).run()
+      db2
+        .prepare(
+          `INSERT OR REPLACE INTO sync_state(key,value,updated_at) VALUES('gmail_history_id','seed-jitter',datetime('now'))`
+        )
+        .run()
 
       const poller = new EmailPoller(db2, dedup, {
         gmailCredentialsPath: '/creds.json',
@@ -940,10 +919,14 @@ describe('EmailPoller - Rate Limiting & Resilience', () => {
       } satisfies EmailPollerConfig)
       ;(poller as any).gmail = gmail
 
-      const start = Date.now()
+      const sleepSpy = vi.spyOn(poller as any, 'sleep').mockImplementation(async (...args: any[]) => {
+        const ms = args[0] as number
+        await vi.advanceTimersByTimeAsync(ms)
+      })
+
       await poller.pollOnce()
-      const dur = Date.now() - start
-      delays.push(dur)
+      const firstDelay = (sleepSpy.mock.calls[0]?.[0] as number) ?? 0
+      delays.push(firstDelay)
       // Attempt to reset backoff between independent pollers is implicit
     }
 
@@ -956,7 +939,6 @@ describe('EmailPoller - Rate Limiting & Resilience', () => {
   }, 12000)
 
   it('should reset backoff counter on successful request', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
     const gmail1 = makeMockGmail()
     const error429: any = new Error('Rate limit exceeded')
@@ -971,6 +953,11 @@ describe('EmailPoller - Rate Limiting & Resilience', () => {
       sequential: true,
     } satisfies EmailPollerConfig)
     ;(poller as any).gmail = gmail1
+    // Drive fake timers through sleep during the first backoff
+    const sleepSpy1 = vi.spyOn(poller as any, 'sleep').mockImplementation(async (...args: any[]) => {
+      const ms = args[0] as number
+      await vi.advanceTimersByTimeAsync(ms)
+    })
     await poller.pollOnce()
 
     const gmail2 = makeMockGmail()
@@ -978,19 +965,19 @@ describe('EmailPoller - Rate Limiting & Resilience', () => {
       .mockRejectedValueOnce(error429)
       .mockResolvedValueOnce({ data: { history: [], historyId: 'hist2' } })
     ;(poller as any).gmail = gmail2
-
-    const start = Date.now()
+    sleepSpy1.mockReset()
+    const sleepSpy2 = vi.spyOn(poller as any, 'sleep').mockImplementation(async (...args: any[]) => {
+      const ms = args[0] as number
+      await vi.advanceTimersByTimeAsync(ms)
+    })
     await poller.pollOnce()
-    const duration = Date.now() - start
-
-    expect(duration).toBeGreaterThanOrEqual(700)
-    expect(duration).toBeLessThan(1500)
+    const firstDelay = (sleepSpy2.mock.calls[0]?.[0] as number) ?? 0
+    expect(firstDelay).toBeGreaterThanOrEqual(700)
+    expect(firstDelay).toBeLessThan(1500)
   })
 
   it('should open circuit breaker after threshold failures', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
-    // @ts-expect-error runtime path valid under vitest
     const { BreakerState } = await import('../resilience.js')
     const gmail = makeMockGmail()
 
@@ -1017,12 +1004,9 @@ describe('EmailPoller - Rate Limiting & Resilience', () => {
   })
 
   it('should display ADHD-friendly error messages', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
     const gmail = makeMockGmail()
-    const consoleSpy = vi
-      .spyOn(console, 'log')
-      .mockImplementation((..._args: any[]) => void 0)
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation((..._args: any[]) => void 0)
 
     const error429: any = new Error('Rate limit exceeded')
     error429.code = 429
@@ -1038,19 +1022,19 @@ describe('EmailPoller - Rate Limiting & Resilience', () => {
     } satisfies EmailPollerConfig)
     ;(poller as any).gmail = gmail
 
+    // Drive sleep with fake timers so the retry completes immediately
+    vi.spyOn(poller as any, 'sleep').mockImplementation(async (...args: any[]) => {
+      const ms = args[0] as number
+      await vi.advanceTimersByTimeAsync(ms)
+    })
     await poller.pollOnce()
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Gmail is temporarily busy')
-    )
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Waiting a moment before trying again')
-    )
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Gmail is temporarily busy'))
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Waiting a moment before trying again'))
     consoleSpy.mockRestore()
   })
 
   it('should honor a conservative rate limiter between page requests', async () => {
-    // @ts-expect-error runtime path valid under vitest
     const { EmailPoller } = await import('../email-poller.js')
     const gmail = makeMockGmail()
 
@@ -1068,10 +1052,17 @@ describe('EmailPoller - Rate Limiting & Resilience', () => {
     } satisfies EmailPollerConfig)
     ;(poller as any).gmail = gmail
 
-    const start = Date.now()
-    await poller.pollOnce()
-    const dur = Date.now() - start
+    const sleepSpy = vi.spyOn(poller as any, 'sleep').mockImplementation(async (...args: any[]) => {
+      const ms = args[0] as number
+      await vi.advanceTimersByTimeAsync(ms)
+    })
 
-    expect(dur).toBeGreaterThanOrEqual(950)
+    await poller.pollOnce()
+
+    // Should have waited ~1s between pages
+    const calls = sleepSpy.mock.calls.map((c) => c[0] as number)
+    expect(calls.length).toBeGreaterThanOrEqual(1)
+    expect(calls[0]).toBeGreaterThanOrEqual(900)
+    expect(calls[0]).toBeLessThanOrEqual(1100)
   })
 })
