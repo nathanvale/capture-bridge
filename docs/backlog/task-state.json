@@ -287,6 +287,20 @@
       ],
       "acs_remaining": [],
       "notes": "Completed Gmail OAuth2 authentication setup following strict TDD. All 7 ACs satisfied: AC01: credentials.json parsing with validation. AC02: OAuth2 authorization flow with gmail.readonly scope. AC03: token.json storage with 0600 permissions and atomic writes. AC04: Automatic token refresh with 5-minute buffer. AC05: Error handling for invalid credentials, revoked tokens, and rate limits. AC06: Sync state tracking (last_gmail_auth timestamp). AC07: Failure tracking with 5-failure cap and 'capture doctor' guidance. 44/44 Gmail tests passing (11 failure-tracking + 6 sync-state + 10 error-handling + 11 token-refresh + 6 oauth-flow). Total 151/151 tests passing. Coverage: 86.85%. Files created: auth.ts, credentials.ts, types.ts, 4 test files. Implementation includes GmailAuthError custom error class with 6 error types, sync_state integration for tracking, and comprehensive error handling with exponential backoff support."
+    },
+    "EMAIL_POLLING_GMAIL--T01": {
+      "status": "completed",
+      "started_at": "2025-10-13T00:00:00Z",
+      "completed_at": "2025-10-13T05:00:00Z",
+      "acs_completed": [
+        "EMAIL_POLLING_GMAIL-AC01",
+        "EMAIL_POLLING_GMAIL-AC02",
+        "EMAIL_POLLING_GMAIL-AC03",
+        "EMAIL_POLLING_GMAIL-AC04",
+        "EMAIL_POLLING_GMAIL-AC05"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed Gmail API history-based polling implementation following strict TDD. All 5 ACs satisfied: AC01: Configurable 60s polling interval with EmailPoller class and sequential execution enforcement. AC02: History-based polling via gmail.users.history.list with bootstrapCursor() fallback. AC03: Cursor persistence in sync_state table (gmail_history_id) with ISO 8601 UTC timestamps. AC04: Full pagination support with nextPageToken handling and pagesProcessed metric. AC05: Rate limit resilience with exponential backoff, circuit breaker, and 429 retry logic with Retry-After header support. 209/209 tests passing. Coverage: 82%+. Files created: email-poller.ts (381 lines), email-poller.test.ts (1000+ lines), resilience.ts (ExponentialBackoff + SimpleCircuitBreaker classes), sync-state-repository.ts (cursor age calculation). Implementation includes 404 cursor reset handling, transactional message staging with cursor updates, deduplication service integration, and comprehensive error recovery per spec-capture-tech.md. TypeScript and ESLint checks passing. Related docs: guide-gmail-oauth2-setup.md, guide-polling-implementation.md."
     }
   }
 }
