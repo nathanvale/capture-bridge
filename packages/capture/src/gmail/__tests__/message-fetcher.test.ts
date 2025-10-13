@@ -8,11 +8,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 // Helper to generate base64url without padding
 const makeUrl = (s: string) =>
-  Buffer.from(s, 'utf-8')
-    .toString('base64')
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replaceAll('=', '')
+  Buffer.from(s, 'utf-8').toString('base64').replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
 
 // Minimal Gmail mock factory focused on users.messages.get
 function createGmailMock() {
@@ -153,9 +149,9 @@ describe('GmailMessageFetcher', () => {
     expect(result.from).toBe('sender@example.com')
     expect(result.subject).toBe('')
     expect(result.date).toMatch(/\d{4}-\d{2}-\d{2}/)
-  // Headers map should include only present headers
-  expect(result.headers['From']).toBe('sender@example.com')
-  expect(result.headers['Subject'] ?? '').toBe('')
+    // Headers map should include only present headers
+    expect(result.headers['From']).toBe('sender@example.com')
+    expect(result.headers['Subject'] ?? '').toBe('')
   })
 
   it('returns empty body when only HTML is present', async () => {
@@ -230,10 +226,10 @@ describe('GmailMessageFetcher', () => {
 
     const special = 'Café – naïve ☕️'
     // Gmail uses base64url, so replace +/ with -_ and strip padding
-  const b64 = Buffer.from(special, 'utf-8').toString('base64')
-  let b64url = b64.replaceAll('+', '-').replaceAll('/', '_')
-  const eqIndex = b64url.indexOf('=')
-  b64url = eqIndex !== -1 ? b64url.slice(0, eqIndex) : b64url
+    const b64 = Buffer.from(special, 'utf-8').toString('base64')
+    let b64url = b64.replaceAll('+', '-').replaceAll('/', '_')
+    const eqIndex = b64url.indexOf('=')
+    b64url = eqIndex !== -1 ? b64url.slice(0, eqIndex) : b64url
 
     const gmail = createGmailMock()
     gmail.__spies.get.mockResolvedValue({
@@ -262,7 +258,7 @@ describe('GmailMessageFetcher', () => {
     const db = new Database(':memory:')
     databases.push(db)
 
-  // text 'Pad' yields base64 'UGFk' (length % 4 === 0), 'Pa' => 'UGE=' (rem===3), 'P' => 'UA==' (rem===2)
+    // text 'Pad' yields base64 'UGFk' (length % 4 === 0), 'Pa' => 'UGE=' (rem===3), 'P' => 'UA==' (rem===2)
 
     const gmail = createGmailMock()
     gmail.__spies.get.mockResolvedValue({

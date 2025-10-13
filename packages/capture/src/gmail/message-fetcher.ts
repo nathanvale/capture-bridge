@@ -52,7 +52,11 @@ export class GmailMessageFetcher {
     private readonly gmail: {
       users: {
         messages: {
-          get: (req: { userId: 'me'; id: string; format: 'full' }) => Promise<{ data: GmailMessageLike }>
+          get: (req: {
+            userId: 'me'
+            id: string
+            format: 'full'
+          }) => Promise<{ data: GmailMessageLike }>
         }
       }
     }
@@ -63,7 +67,11 @@ export class GmailMessageFetcher {
    */
   async fetchMessage(messageId: string): Promise<MessageFetchResult> {
     try {
-      const res = await this.gmail.users.messages.get({ userId: 'me', id: messageId, format: 'full' })
+      const res = await this.gmail.users.messages.get({
+        userId: 'me',
+        id: messageId,
+        format: 'full',
+      })
       const msg = res.data
 
       const headers = this.buildHeadersMap(msg.payload)
