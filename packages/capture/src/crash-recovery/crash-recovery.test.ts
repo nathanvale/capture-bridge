@@ -85,11 +85,11 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
       )
 
       // This will fail - function doesn't exist yet
-      const { queryRecoverableCaptures } = await import('./crash-recovery')
+      const { queryRecoverableCaptures } = await import('./crash-recovery.js')
       const result = queryRecoverableCaptures(db)
 
       expect(result).toHaveLength(3)
-      expect(result.map((r) => r.id)).toEqual(['test-staged', 'test-transcribed', 'test-failed'])
+      expect(result.map((r: { id: string }) => r.id)).toEqual(['test-staged', 'test-transcribed', 'test-failed'])
     })
 
     it('should order results by created_at ASC', async () => {
@@ -109,11 +109,13 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         '2025-10-14 10:00:00'
       )
 
-      const { queryRecoverableCaptures } = await import('./crash-recovery')
+      const { queryRecoverableCaptures } = await import('./crash-recovery.js')
       const result = queryRecoverableCaptures(db)
 
-      expect(result[0].id).toBe('test-old')
-      expect(result[1].id).toBe('test-new')
+      expect(result).toHaveLength(2)
+      const [first, second] = result
+      expect(first?.id).toBe('test-old')
+      expect(second?.id).toBe('test-new')
     })
 
     it('should exclude terminal statuses (exported*)', async () => {
@@ -137,14 +139,14 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         'exported_placeholder'
       )
 
-      const { queryRecoverableCaptures } = await import('./crash-recovery')
+      const { queryRecoverableCaptures } = await import('./crash-recovery.js')
       const result = queryRecoverableCaptures(db)
 
       expect(result).toHaveLength(0)
     })
 
     it('should return empty array if no pending captures', async () => {
-      const { queryRecoverableCaptures } = await import('./crash-recovery')
+      const { queryRecoverableCaptures } = await import('./crash-recovery.js')
       const result = queryRecoverableCaptures(db)
 
       expect(result).toEqual([])
@@ -160,7 +162,7 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         'staged'
       )
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       const result = await recoverCaptures(db)
 
       expect(result.capturesRecovered).toBe(1)
@@ -175,7 +177,7 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         'transcribed'
       )
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       const result = await recoverCaptures(db)
 
       expect(result.capturesRecovered).toBe(1)
@@ -190,7 +192,7 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         'failed_transcription'
       )
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       const result = await recoverCaptures(db)
 
       expect(result.capturesRecovered).toBe(1)
@@ -205,7 +207,7 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         'exported'
       )
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       const result = await recoverCaptures(db)
 
       expect(result.capturesFound).toBe(0)
@@ -235,11 +237,11 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         }
       })
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       await recoverCaptures(db)
 
       // Verify sequential processing (implementation will log processing order)
-      expect(processedOrder.length).toBe(2)
+      expect(processedOrder).toHaveLength(2)
     })
 
     it('should handle errors without blocking other captures', async () => {
@@ -259,7 +261,7 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         '{"will_fail": true}'
       )
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       const result = await recoverCaptures(db)
 
       // Should recover at least the good one
@@ -280,7 +282,7 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         elevenMinutesAgo
       )
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       const result = await recoverCaptures(db)
 
       expect(result.capturesTimedOut).toBe(1)
@@ -296,7 +298,7 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         fiveMinutesAgo
       )
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       const result = await recoverCaptures(db)
 
       // Should NOT be timed out
@@ -313,9 +315,11 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         elevenMinutesAgo
       )
 
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation((_msg: unknown) => {
+        // Mock to suppress console.warn during test
+      })
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       await recoverCaptures(db)
 
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('stuck in state'))
@@ -333,7 +337,7 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         elevenMinutesAgo
       )
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       const result = await recoverCaptures(db)
 
       expect(result).toHaveProperty('capturesTimedOut')
@@ -351,7 +355,7 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         '{"file_path": "/nonexistent/file.m4a"}'
       )
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       const result = await recoverCaptures(db)
 
       expect(result.capturesQuarantined).toBe(1)
@@ -373,7 +377,7 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         '{"file_path": "/nonexistent/file.m4a"}'
       )
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       await recoverCaptures(db)
 
       const capture = db.prepare('SELECT meta_json FROM captures WHERE id = ?').get('test-voice') as {
@@ -395,7 +399,7 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         '{"file_path": "/nonexistent/file.m4a"}'
       )
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       const result = await recoverCaptures(db)
 
       // Should be quarantined, not recovered
@@ -412,7 +416,7 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         '{"file_path": "/nonexistent/file.m4a"}'
       )
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       const result = await recoverCaptures(db)
 
       expect(result).toHaveProperty('capturesQuarantined')
@@ -433,7 +437,7 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         )
       }
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       const startTime = performance.now()
       const result = await recoverCaptures(db)
       const duration = performance.now() - startTime
@@ -450,9 +454,11 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         'staged'
       )
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation((_msg: unknown) => {
+        // Mock to suppress console.log during test
+      })
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       await recoverCaptures(db)
 
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching(/Recovered \d+ captures/))
@@ -468,7 +474,7 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         'staged'
       )
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       const result = await recoverCaptures(db)
 
       // Should complete without throwing
@@ -482,17 +488,24 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
       // Insert 1000 captures with mix of statuses
       const stmt = db.prepare(`INSERT INTO captures (id, source, raw_content, status) VALUES (?, ?, ?, ?)`)
       for (let i = 0; i < 1000; i++) {
-        const status = i % 3 === 0 ? 'staged' : i % 3 === 1 ? 'transcribed' : 'failed_transcription'
+        let status: string
+        if (i % 3 === 0) {
+          status = 'staged'
+        } else if (i % 3 === 1) {
+          status = 'transcribed'
+        } else {
+          status = 'failed_transcription'
+        }
         stmt.run(`test-${i}`, 'voice', 'content', status)
       }
 
-      const { queryRecoverableCaptures } = await import('./crash-recovery')
+      const { queryRecoverableCaptures } = await import('./crash-recovery.js')
       const startTime = performance.now()
       const result = queryRecoverableCaptures(db)
       const duration = performance.now() - startTime
 
       expect(duration).toBeLessThan(50)
-      expect(result.length).toBe(1000) // All are recoverable
+      expect(result).toHaveLength(1000) // All are recoverable
     })
 
     it('should complete full recovery < 250ms target', async () => {
@@ -502,7 +515,7 @@ describe('CRASH_RECOVERY_MECHANISM--T01: Startup Reconciliation', () => {
         stmt.run(`test-${i}`, 'voice', 'content', 'staged')
       }
 
-      const { recoverCaptures } = await import('./crash-recovery')
+      const { recoverCaptures } = await import('./crash-recovery.js')
       const result = await recoverCaptures(db)
 
       expect(result.duration).toBeLessThan(250)
