@@ -101,8 +101,11 @@ export class TranscriptionQueue {
 
     // Start processing if not already running
     if (!this.isRunning) {
-      // Don't await - let it process in background
-      void this.processQueue()
+      // Don't await - let it process in background; swallow errors to avoid unhandled rejections
+      this.processQueue().catch(() => {
+        // Intentionally ignore background errors to avoid unhandled rejection noise
+        return undefined
+      })
     }
   }
 
@@ -152,8 +155,10 @@ export class TranscriptionQueue {
 
           if (this.shutdownRequested) {
             // Prevent unhandled rejections if transcribePromise rejects later
-            // eslint-disable-next-line @typescript-eslint/no-empty-function -- intentionally swallowing to avoid unhandled rejection warnings during shutdown
-            void transcribePromise.catch(() => {})
+            transcribePromise.catch(() => {
+              // Intentionally ignore to avoid unhandled rejection during shutdown
+              return undefined
+            })
             break
           }
 
