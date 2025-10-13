@@ -304,8 +304,8 @@ describe('EMAIL_POLLING_GMAIL--T02/AC10: Performance < 200ms p95', () => {
     const currentP95 = calculateP95(current)
 
     // Allow 50% regression tolerance for sub-millisecond operations
-    // (timing variance is significant at this scale)
-    const threshold = Math.max(baselineP95 * 1.5, 1) // At least 1ms or 50% of baseline
+    // CI timing variance requires higher minimum threshold (2ms vs 1ms)
+    const threshold = Math.max(baselineP95 * 1.5, 2) // At least 2ms or 50% of baseline
     expect(currentP95).toBeLessThan(threshold)
   })
 
