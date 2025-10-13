@@ -46,11 +46,12 @@
     "baseUrl": ".",
     "paths": {
       "@capture-bridge/foundation/hash": ["packages/foundation/src/hash"],
-      "@capture-bridge/*": ["packages/*/src"]
+      "@capture-bridge/*": ["packages/*/src"],
+      "@orchestr8/testkit/config": ["node_modules/@orchestr8/testkit/dist/config/index.d.ts"]
     },
     "types": []
   },
-  "include": ["vitest.projects.ts"],
+  "include": ["vitest.projects.ts", "vitest.config.ts"],
   "exclude": ["node_modules", "**/dist", "**/*.test.ts", "**/*.spec.ts"],
   "references": [
     {
