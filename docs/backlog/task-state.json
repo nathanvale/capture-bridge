@@ -304,7 +304,7 @@
     },
     "EMAIL_POLLING_GMAIL--T02": {
       "status": "completed",
-      "started_at": "2025-10-13T00:00:00Z",
+      "started_at": "2025-10-13T17:00:00Z",
       "completed_at": "2025-10-13T18:54:00Z",
       "acs_completed": [
         "EMAIL_POLLING_GMAIL-AC06",
@@ -314,7 +314,20 @@
         "EMAIL_POLLING_GMAIL-AC10"
       ],
       "acs_remaining": [],
-      "notes": "Completed email polling with 5 ACs: message fetching, metadata extraction, deduplication, staging, and performance validation (p95=0.02ms < 200ms target). All 307 tests passing."
+      "notes": "Completed Gmail polling core logic following strict TDD. All 5 ACs satisfied: AC06: Message fetching via gmail.users.messages.get with full format and MIME parsing for plain text body. AC07: Metadata extraction (From, Subject, Message-ID) into meta_json field. AC08: Duplicate detection using json_extract(meta_json, '$.Message-ID') with indexed query. AC09: Capture row insertion with ULID generation, content_hash, channel_native_id (Message-ID), and status='staged'. AC10: Performance validation < 200ms p95 (achieved 0.02ms p95, 99.99% faster than target). 307/307 tests passing. Coverage: >80%. Files created: message-fetcher.ts (195 lines), metadata-extractor.ts (166 lines), email-deduplicator.ts (83 lines), email-stager.ts (187 lines), email-poller-performance.test.ts (370 lines, 12 tests). Implementation includes MIME multipart handling, Base64 decoding, recursive body extraction, normalized text hashing, and comprehensive performance instrumentation via pollOnceWithTiming() method. TypeScript and ESLint checks passing."
+    },
+    "CRASH_RECOVERY_MECHANISM--T01": {
+      "status": "completed",
+      "started_at": "2025-10-13T20:10:00Z",
+      "completed_at": "2025-10-14T06:01:00Z",
+      "acs_completed": [
+        "CRASH_RECOVERY_MECHANISM-AC01",
+        "CRASH_RECOVERY_MECHANISM-AC02",
+        "CRASH_RECOVERY_MECHANISM-AC03",
+        "CRASH_RECOVERY_MECHANISM-AC04"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed crash recovery mechanism following strict TDD. All 4 ACs satisfied: AC01: Recovery query for non-terminal statuses (staged, transcribed, failed_transcription) ordered by created_at ASC. AC02: Resume processing with status-aware routing (staged→transcription, transcribed→export, failed_transcription→placeholder). AC03: Timeout detection for captures stuck > 10 minutes with warning logs. AC04: Quarantine workflow for missing voice memo files with metadata tracking. 23/23 tests passing. Performance: Full recovery 2.0ms for 100 captures (99.2% faster than 250ms target). Files created: crash-recovery.ts (170 lines), crash-recovery.test.ts (524 lines), types.ts (57 lines). Implementation includes sequential processing (ADR-0008), error isolation, file integrity checks, and comprehensive logging. PR #43 created."
     }
   }
 }
