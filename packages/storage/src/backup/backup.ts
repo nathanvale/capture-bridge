@@ -112,13 +112,13 @@ export const pruneOldBackups = async (
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   const entries = await fsp.readdir(backupDir)
   const files = entries
-    .filter((f) => f.startsWith('ledger-') && f.endsWith('.sqlite'))
-    .sort((a, b) => a.localeCompare(b)) // lexicographic sort aligns with chronological for our format
+    .filter((f: string) => f.startsWith('ledger-') && f.endsWith('.sqlite'))
+    .sort((a: string, b: string) => a.localeCompare(b)) // lexicographic sort aligns with chronological for our format
 
   const toDelete = files.length > keep ? files.slice(0, files.length - keep) : []
 
   // eslint-disable-next-line security/detect-non-literal-fs-filename
-  await Promise.all(toDelete.map((name) => fsp.unlink(join(backupDir, name))))
+  await Promise.all(toDelete.map((name: string) => fsp.unlink(join(backupDir, name))))
 
   return { deleted_count: toDelete.length }
 }
