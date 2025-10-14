@@ -341,5 +341,18 @@
       "acs_remaining": [],
       "notes": "Completed startup reconciliation enhancements via strict TDD (Wallaby real‑time cycle). AC05: Notification gating — suppress recovery log when 0 captures; single concise log emitted only when >0 (3 tests). AC06: 1000-capture performance benchmark — recovery completed in ~20–23ms (well under 250ms target) (1 test). AC07: Duplicate export prevention — introduced optional performExport hook ensuring idempotent export path and single exports_audit row across repeated recoveries (2 tests). Refactored recoverCaptures with processSingleCapture helper to reduce cognitive complexity and added options interface (CrashRecoveryOptions). All 6 new tests passing; no regressions observed. Corrected started_at (previous future-dated value adjusted to actual work start)."
     }
+    ,
+    "HOURLY_BACKUP_AUTOMATION--T01": {
+      "status": "in-progress",
+      "started_at": "2025-10-15T00:00:00Z",
+      "acs_completed": [],
+      "acs_remaining": [
+        "HOURLY_BACKUP_AUTOMATION-AC01",
+        "HOURLY_BACKUP_AUTOMATION-AC02",
+        "HOURLY_BACKUP_AUTOMATION-AC03",
+        "HOURLY_BACKUP_AUTOMATION-AC04"
+      ],
+      "notes": "Initialized hourly backup automation task. High risk → TDD required. Implement backup creation, ISO8601 timestamped filenames, hourly scheduler, and 24-hour retention policy per spec-staging-tech.md §2.4 and related guides."
+    }
   }
 }
