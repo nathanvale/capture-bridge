@@ -1,4 +1,5 @@
 import { createBackup } from './backup.js'
+
 import type DatabaseConstructor from 'better-sqlite3'
 
 type Database = ReturnType<typeof DatabaseConstructor>
@@ -27,8 +28,9 @@ export const startBackupScheduler = (
   }, interval)
 
   return {
-    shutdown: async (): Promise<void> => {
+    shutdown: (): Promise<void> => {
       clearInterval(timer)
+      return Promise.resolve()
     },
   }
 }

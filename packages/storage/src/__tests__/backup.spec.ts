@@ -11,15 +11,16 @@
  * Guides: guide-backup-verification.md, guide-backup-restore-drill.md
  */
 
-import Database from 'better-sqlite3'
 import { join } from 'node:path'
+
+import Database from 'better-sqlite3'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 
 type DatabaseInstance = ReturnType<typeof Database>
 
 describe('SQLite Backups', () => {
   let db: DatabaseInstance
-  const databases: Array<DatabaseInstance> = []
+  const databases: DatabaseInstance[] = []
   let vaultRoot: string
 
   beforeEach(async () => {
@@ -52,7 +53,10 @@ describe('SQLite Backups', () => {
     for (const database of databases) {
       try {
         if (database.open && !database.readonly) database.close()
-      } catch {}
+      } catch {
+        // Swallow close errors in tests; ensure block is non-empty per eslint(no-empty)
+        void 0
+      }
     }
     databases.length = 0
 
@@ -60,7 +64,7 @@ describe('SQLite Backups', () => {
   })
 
   it('AC02/AC03: creates backup file with correct timestamped name', async () => {
-  const { createBackup, verifyBackup } = await import('../backup/backup.js')
+    const { createBackup, verifyBackup } = await import('../index.js')
 
     // Fix the time to ensure deterministic filename (UTC 2025-10-15T07:00:00Z)
     const fixed = new Date('2025-10-15T07:00:00.000Z')
@@ -81,14 +85,13 @@ describe('SQLite Backups', () => {
   })
 
   it('AC04: enforces retention policy (keep last 24 hourly)', async () => {
-  const { createBackup, pruneOldBackups } = await import('../backup/backup.js')
+    const { createBackup, pruneOldBackups } = await import('../index.js')
 
     const base = new Date('2025-10-15T00:00:00.000Z')
 
     // Create 30 hourly backups (should prune to 24 later)
     for (let i = 0; i < 30; i++) {
       const when = new Date(base.getTime() + i * 60 * 60 * 1000)
-      // eslint-disable-next-line no-await-in-loop
       await createBackup(db, vaultRoot, { now: when })
     }
 
@@ -103,9 +106,7 @@ describe('SQLite Backups', () => {
     expect(files.filter((f) => f.startsWith('ledger-'))).toHaveLength(24)
 
     // Ensure the kept ones are the newest 24 (hours 6..29)
-    const names = files
-      .filter((f) => f.startsWith('ledger-'))
-      .sort()
+    const names = files.filter((f) => f.startsWith('ledger-')).sort((a, b) => a.localeCompare(b))
     expect(names[0]).toBe('ledger-20251015-06.sqlite')
     expect(names.at(-1)).toBe('ledger-20251016-05.sqlite')
   })

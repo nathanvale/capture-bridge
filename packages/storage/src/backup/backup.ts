@@ -1,6 +1,6 @@
 import { mkdirSync, statSync, copyFileSync, promises as fsp } from 'node:fs'
-
 import { join } from 'node:path'
+
 import type DatabaseConstructor from 'better-sqlite3'
 
 type Database = ReturnType<typeof DatabaseConstructor>
@@ -38,7 +38,8 @@ export const createBackup = (
   // Ensure backup directory exists
   const captureDir = join(vaultRoot, '.capture-bridge')
   const backupDir = join(captureDir, '.backups')
-  // eslint-disable-next-line security/detect-non-literal-fs-filename
+  // Security: backupDir is derived from trusted vaultRoot test fixture; dynamic path is required
+  // Dynamic path is intentional: destPath is created within controlled vaultRoot
   mkdirSync(backupDir, { recursive: true })
 
   // Compose filename using UTC components as per spec
@@ -61,10 +62,8 @@ export const createBackup = (
     // Ignore checkpoint errors; proceed with copy
   }
 
-  // eslint-disable-next-line security/detect-non-literal-fs-filename
   copyFileSync(livePath, destPath)
 
-  // eslint-disable-next-line security/detect-non-literal-fs-filename
   const { size } = statSync(destPath)
   const duration = performance.now() - start
 
@@ -110,6 +109,7 @@ export const pruneOldBackups = async (
   options: { keep: number }
 ): Promise<{ deleted_count: number }> => {
   const keep = Math.max(0, options.keep)
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
   const entries = await fsp.readdir(backupDir)
   const files = entries
     .filter((f) => f.startsWith('ledger-') && f.endsWith('.sqlite'))
@@ -117,6 +117,7 @@ export const pruneOldBackups = async (
 
   const toDelete = files.length > keep ? files.slice(0, files.length - keep) : []
 
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
   await Promise.all(toDelete.map((name) => fsp.unlink(join(backupDir, name))))
 
   return { deleted_count: toDelete.length }

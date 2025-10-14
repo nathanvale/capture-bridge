@@ -9,7 +9,7 @@ type DatabaseInstance = ReturnType<typeof Database>
 
 describe('Backup Scheduler', () => {
   let db: DatabaseInstance
-  const databases: Array<DatabaseInstance> = []
+  const databases: DatabaseInstance[] = []
   let vaultRoot: string
 
   beforeEach(async () => {
@@ -26,33 +26,36 @@ describe('Backup Scheduler', () => {
     db = new Database(join(vaultRoot, '.capture-bridge', 'ledger.sqlite'))
     databases.push(db)
 
-    const { initializeDatabase } = await import('../schema/index.js')
+    const { initializeDatabase } = await import('../index.js')
     initializeDatabase(db)
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     // Cleanup timers
     vi.useRealTimers()
 
     for (const database of databases) {
       try {
         if (database.open && !database.readonly) database.close()
-      } catch {}
+      } catch {
+        // Ensure non-empty catch; ignoring close errors in test cleanup
+        void 0
+      }
     }
     databases.length = 0
   })
 
   it('AC01: triggers backups on interval', async () => {
-    // Mock createBackup to count invocations
+    // Mock createBackup to count invocations (must spy on the SAME module path used by scheduler)
     const backupModule = await import('../backup/backup.js')
     const createBackupSpy = vi.spyOn(backupModule, 'createBackup').mockResolvedValue({
       success: true,
-      backup_path: '/tmp/fake.sqlite',
+      backup_path: `${vaultRoot}/.capture-bridge/.backups/fake.sqlite`,
       size_bytes: 123,
       duration_ms: 1,
     })
 
-    const { startBackupScheduler } = await import('../backup/scheduler.js')
+    const { startBackupScheduler } = await import('../index.js')
 
     const scheduler = startBackupScheduler(db, vaultRoot, { intervalMs: 1000 })
 
