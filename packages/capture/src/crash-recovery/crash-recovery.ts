@@ -13,6 +13,17 @@ import type { RecoverableCapture, CrashRecoveryResult, CaptureMetadata } from '.
 import type Database from 'better-sqlite3'
 
 /**
+ * Options for extended recovery behavior (T02 enhancements)
+ */
+export interface CrashRecoveryOptions {
+  /**
+   * Optional export performer invoked for transcribed captures.
+   * Must be idempotent and safe to call multiple times.
+   */
+  performExport?: (captureId: string, db: Database.Database) => Promise<void> | void
+}
+
+/**
  * AC01: Query captures with non-terminal status
  *
  * @param db SQLite database instance
@@ -45,87 +56,87 @@ export const queryRecoverableCaptures = (db: Database.Database): RecoverableCapt
  * @param db SQLite database instance
  * @returns Recovery operation result
  */
-export const recoverCaptures = async (db: Database.Database): Promise<CrashRecoveryResult> => {
+export const recoverCaptures = async (
+  db: Database.Database,
+  options: CrashRecoveryOptions = {}
+): Promise<CrashRecoveryResult> => {
   const startTime = performance.now()
-
   const captures = queryRecoverableCaptures(db)
 
   let capturesRecovered = 0
   let capturesTimedOut = 0
   let capturesQuarantined = 0
 
-  // Process captures sequentially (no parallel processing)
   for (const capture of captures) {
     // eslint-disable-next-line no-console
     console.log(`Processing capture ${capture.id} with status ${capture.status}`)
-
     try {
-      // AC03: Check for timeout (>10 minutes)
-      // Handle both ISO format (from tests) and SQLite datetime format
-      const parsedDate = capture.updated_at.includes('T')
-        ? new Date(capture.updated_at) // ISO format: "2025-10-13T18:23:00.785Z"
-        : new Date(capture.updated_at + 'Z') // SQLite datetime format: "2025-10-13 18:34:00" - treat as UTC
-
-      const now = new Date()
-      const timeDiffMinutes = (now.getTime() - parsedDate.getTime()) / (1000 * 60)
-
-      // Only check timeout if parsed date is valid and timeout exceeds 10 minutes
-      if (!isNaN(parsedDate.getTime()) && timeDiffMinutes > 10) {
-        // eslint-disable-next-line no-console
-        console.warn(
-          `Capture ${capture.id} stuck in state ${capture.status} for ${timeDiffMinutes.toFixed(1)} minutes`
-        )
-        capturesTimedOut++
-        continue
-      }
-
-      // AC04: Check for missing voice files
-      if (capture.source === 'voice') {
-        const meta: CaptureMetadata = JSON.parse(capture.meta_json)
-        // eslint-disable-next-line security/detect-non-literal-fs-filename
-        if (meta.file_path && !existsSync(meta.file_path)) {
-          // Quarantine the capture
-          const updatedMeta: CaptureMetadata = {
-            ...meta,
-            integrity: {
-              quarantine: true,
-              quarantine_reason: 'missing_file',
-              quarantine_timestamp: new Date().toISOString(),
-            },
-          }
-
-          db.prepare('UPDATE captures SET meta_json = ? WHERE id = ?').run(
-            JSON.stringify(updatedMeta),
-            capture.id
-          )
-
-          capturesQuarantined++
-          continue
-        }
-      }
-
-      // AC02: Resume processing based on status
-      await resumeProcessingByStatus(capture)
-      capturesRecovered++
+      const result = await processSingleCapture(capture, db, options)
+      capturesRecovered += result.recovered ? 1 : 0
+      capturesTimedOut += result.timedOut ? 1 : 0
+      capturesQuarantined += result.quarantined ? 1 : 0
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error(`Error recovering capture ${capture.id}:`, error)
-      // Continue processing other captures even if one fails
     }
   }
 
   const duration = performance.now() - startTime
-
-  // eslint-disable-next-line no-console
-  console.log(`Recovered ${capturesRecovered} captures in ${duration.toFixed(1)}ms`)
-
-  return {
-    capturesFound: captures.length,
-    capturesRecovered,
-    capturesTimedOut,
-    capturesQuarantined,
-    duration,
+  if (capturesRecovered > 0) {
+    // eslint-disable-next-line no-console
+    console.log(`Recovered ${capturesRecovered} captures in ${duration.toFixed(1)}ms`)
   }
+
+  return { capturesFound: captures.length, capturesRecovered, capturesTimedOut, capturesQuarantined, duration }
+}
+
+/**
+ * Process a single capture returning status counters.
+ */
+const processSingleCapture = async (
+  capture: RecoverableCapture,
+  db: Database.Database,
+  options: CrashRecoveryOptions
+): Promise<{ recovered: boolean; timedOut: boolean; quarantined: boolean }> => {
+  // Timeout check (AC03)
+  const parsedDate = capture.updated_at.includes('T')
+    ? new Date(capture.updated_at)
+    : new Date(capture.updated_at + 'Z')
+
+  const diffMinutes = (Date.now() - parsedDate.getTime()) / (1000 * 60)
+  if (!isNaN(parsedDate.getTime()) && diffMinutes > 10) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `Capture ${capture.id} stuck in state ${capture.status} for ${diffMinutes.toFixed(1)} minutes`
+    )
+    return { recovered: false, timedOut: true, quarantined: false }
+  }
+
+  // Quarantine check (AC04)
+  if (capture.source === 'voice') {
+    const meta: CaptureMetadata = JSON.parse(capture.meta_json)
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    if (meta.file_path && !existsSync(meta.file_path)) {
+      const updatedMeta: CaptureMetadata = {
+        ...meta,
+        integrity: {
+          quarantine: true,
+          quarantine_reason: 'missing_file',
+          quarantine_timestamp: new Date().toISOString(),
+        },
+      }
+      db.prepare('UPDATE captures SET meta_json = ? WHERE id = ?').run(JSON.stringify(updatedMeta), capture.id)
+      return { recovered: false, timedOut: false, quarantined: true }
+    }
+  }
+
+  // Export hook or default resume (AC02/AC07)
+  if (capture.status === 'transcribed' && options.performExport) {
+    await options.performExport(capture.id, db)
+  } else {
+    resumeProcessingByStatus(capture)
+  }
+  return { recovered: true, timedOut: false, quarantined: false }
 }
 
 /**
