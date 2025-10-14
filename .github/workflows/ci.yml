@@ -11,9 +11,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: "20.18.0"
-  PNPM_VERSION: "9.15.4"
-  NODE_OPTIONS: "--max-old-space-size=4096"
+  NODE_VERSION: '22.20.0 '
+  PNPM_VERSION: '9.15.4'
+  NODE_OPTIONS: '--max-old-space-size=4096'
 
 permissions:
   contents: read
