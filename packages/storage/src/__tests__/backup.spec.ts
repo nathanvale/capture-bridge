@@ -22,14 +22,22 @@ describe('SQLite Backups', () => {
   let db: DatabaseInstance
   const databases: DatabaseInstance[] = []
   let vaultRoot: string
+  interface CleanupHandle {
+    cleanup: () => Promise<void>
+  }
+  const cleanupHandles: CleanupHandle[] = []
 
   beforeEach(async () => {
     // Use TestKit temp directory
     const { createTempDirectory } = await import('@orchestr8/testkit/fs')
     const tempDir = await createTempDirectory()
     vaultRoot = tempDir.path
+    // Track for filesystem cleanup in afterEach
+    cleanupHandles.push(tempDir)
 
-    // Initialize a file-based database under vaultRoot/.capture-bridge/ledger.sqlite
+  // Initialize a file-based database under vaultRoot/.capture-bridge/ledger.sqlite
+  // Note: For backup tests we intentionally use a file-backed DB (not ':memory:')
+  // because createBackup copies the underlying database file.
     const dbPath = join(vaultRoot, '.capture-bridge', 'ledger.sqlite')
     const fs = await import('node:fs')
     fs.mkdirSync(join(vaultRoot, '.capture-bridge'), { recursive: true })
@@ -47,9 +55,13 @@ describe('SQLite Backups', () => {
   })
 
   afterEach(async () => {
-    // Settling
-    await new Promise((r) => setTimeout(r, 50))
-    // Close DBs
+    // 5-step cleanup: custom resources → pools → databases → filesystem → GC
+
+    // Step 1: Custom resources (none in this test)
+
+    // Step 2: Pools (none in this test)
+
+    // Step 3: Databases
     for (const database of databases) {
       try {
         if (database.open && !database.readonly) database.close()
@@ -60,6 +72,17 @@ describe('SQLite Backups', () => {
     }
     databases.length = 0
 
+    // Step 4: Filesystem
+    for (const handle of cleanupHandles) {
+      try {
+        await handle.cleanup()
+      } catch {
+        void 0
+      }
+    }
+    cleanupHandles.length = 0
+
+    // Step 5: GC
     if (global.gc) global.gc()
   })
 
