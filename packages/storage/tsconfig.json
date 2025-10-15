@@ -2,7 +2,8 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "composite": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "types": ["node"]
   },
   "include": ["src/**/*.ts", "src/**/*.spec.ts"],
   "exclude": ["dist", "node_modules", "tsup.config.ts", "tests"]

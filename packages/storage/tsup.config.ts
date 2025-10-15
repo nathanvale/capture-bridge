@@ -57,4 +57,22 @@ export default defineConfig([
     sourcemap: true,
     target: 'es2022',
   },
+  {
+    entry: {
+      'backup/backup': 'src/backup/backup.ts',
+      'backup/scheduler': 'src/backup/scheduler.ts',
+    },
+    format: ['esm'],
+    dts: isDev
+      ? false
+      : {
+          compilerOptions: {
+            composite: false,
+          },
+        },
+    bundle: true, // Bundle backup utilities to ensure standalone use
+    clean: false,
+    sourcemap: true,
+    target: 'es2022',
+  },
 ])

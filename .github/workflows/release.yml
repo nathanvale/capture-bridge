@@ -10,8 +10,8 @@ permissions:
   pull-requests: write
 
 env:
-  NODE_VERSION: "20.18.0"
-  PNPM_VERSION: "9.15.4"
+  NODE_VERSION: '22.20.0 '
+  PNPM_VERSION: '9.15.4'
 
 jobs:
   release:
@@ -36,8 +36,8 @@ jobs:
         uses: changesets/action@v1
         with:
           version: pnpm changeset version
-          commit: "chore: version packages"
-          title: "chore: version packages"
+          commit: 'chore: version packages'
+          title: 'chore: version packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

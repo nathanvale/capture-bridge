@@ -49,7 +49,7 @@ Automates package versioning using Changesets.
 
 Both workflows use:
 
-- Node.js 20.18.0
+- Node.js 22.20.0
 - pnpm 9.15.4
 - Environment-aware memory limits (4GB)
 
