@@ -43,9 +43,7 @@
       "status": "completed",
       "started_at": "2025-10-06T22:00:00Z",
       "completed_at": "2025-10-06T23:57:00Z",
-      "acs_completed": [
-        "SQLITE_SCHEMA-AC07"
-      ],
+      "acs_completed": ["SQLITE_SCHEMA-AC07"],
       "acs_remaining": [],
       "notes": "Completed database integrity check implementation following strict TDD (Red-Green-Refactor). AC07: PRAGMA integrity_check validation passes on clean databases, file-based databases, and databases with data. 69/69 tests passing (65 existing + 4 new). Files created: integrity-check.spec.ts (4 tests). Modified: schema.ts (added verifyIntegrity() function with proper type guards), schema/index.ts and src/index.ts (exported verifyIntegrity). Build successful. Implementation uses PRAGMA integrity_check to validate table structure, index consistency, row data validity, and B-tree structure correctness."
     },
@@ -187,9 +185,7 @@
       "status": "completed",
       "started_at": "2025-10-09T05:35:00Z",
       "completed_at": "2025-10-09T05:40:00Z",
-      "acs_completed": [
-        "CAPTURE_STATE_MACHINE-AC07"
-      ],
+      "acs_completed": ["CAPTURE_STATE_MACHINE-AC07"],
       "acs_remaining": []
     },
     "DEDUPLICATION_LOGIC--T02": {
@@ -340,8 +336,7 @@
       ],
       "acs_remaining": [],
       "notes": "Completed startup reconciliation enhancements via strict TDD (Wallaby real‑time cycle). AC05: Notification gating — suppress recovery log when 0 captures; single concise log emitted only when >0 (3 tests). AC06: 1000-capture performance benchmark — recovery completed in ~20–23ms (well under 250ms target) (1 test). AC07: Duplicate export prevention — introduced optional performExport hook ensuring idempotent export path and single exports_audit row across repeated recoveries (2 tests). Refactored recoverCaptures with processSingleCapture helper to reduce cognitive complexity and added options interface (CrashRecoveryOptions). All 6 new tests passing; no regressions observed. Corrected started_at (previous future-dated value adjusted to actual work start)."
-    }
-    ,
+    },
     "HOURLY_BACKUP_AUTOMATION--T01": {
       "status": "in-progress",
       "started_at": "2025-10-15T00:00:00Z",

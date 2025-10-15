@@ -40,10 +40,6 @@ export {
 } from './staging-ledger/staging-ledger.js'
 
 // Backup utilities
-export {
-  createBackup,
-  verifyBackup,
-  pruneOldBackups,
-} from './backup/backup.js'
+export { createBackup, verifyBackup, pruneOldBackups } from './backup/backup.js'
 
 export { startBackupScheduler } from './backup/scheduler.js'
