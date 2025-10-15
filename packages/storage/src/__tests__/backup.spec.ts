@@ -35,9 +35,9 @@ describe('SQLite Backups', () => {
     // Track for filesystem cleanup in afterEach
     cleanupHandles.push(tempDir)
 
-  // Initialize a file-based database under vaultRoot/.capture-bridge/ledger.sqlite
-  // Note: For backup tests we intentionally use a file-backed DB (not ':memory:')
-  // because createBackup copies the underlying database file.
+    // Initialize a file-based database under vaultRoot/.capture-bridge/ledger.sqlite
+    // Note: For backup tests we intentionally use a file-backed DB (not ':memory:')
+    // because createBackup copies the underlying database file.
     const dbPath = join(vaultRoot, '.capture-bridge', 'ledger.sqlite')
     const fs = await import('node:fs')
     fs.mkdirSync(join(vaultRoot, '.capture-bridge'), { recursive: true })
