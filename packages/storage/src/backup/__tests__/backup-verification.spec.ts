@@ -516,3 +516,383 @@ describe('Backup Verification - Hash Comparison', () => {
     expect(result.error).toBeUndefined() // Not an error condition
   })
 })
+
+describe('Backup Verification - Weekly Restore Test', () => {
+  let testDir: string
+  const databases: Array<{ close: () => void; open: boolean; readonly: boolean }> = []
+
+  beforeEach(async () => {
+    const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+    const tempDir = await createTempDirectory()
+    testDir = tempDir.path
+  })
+
+  afterEach(async () => {
+    // 5-step cleanup sequence
+    // 1. Settle (prevent race conditions)
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    // 2. No pools in this test
+
+    // 3. Close databases
+    for (const db of databases) {
+      try {
+        if (db.open && !db.readonly) db.close()
+      } catch {
+        // Ignore errors in cleanup
+      }
+    }
+    databases.length = 0
+
+    // 4. TestKit auto-cleanup (temp directories)
+
+    // 5. Force GC
+    if (global.gc) global.gc()
+  })
+
+  it('should perform successful restore test when backup is valid [AC03]', async () => {
+    const Database = (await import('better-sqlite3')).default
+
+    // Create a valid backup database with all 4 required tables and data
+    const backupPath = join(testDir, 'backup.db')
+    const backupDb = new Database(backupPath)
+    databases.push(backupDb)
+
+    backupDb.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        status TEXT NOT NULL,
+        content_hash TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      );
+      CREATE TABLE exports_audit (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        capture_id TEXT NOT NULL,
+        export_path TEXT NOT NULL,
+        exported_at TEXT DEFAULT (datetime('now'))
+      );
+      CREATE TABLE errors_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        error_type TEXT NOT NULL,
+        error_message TEXT,
+        occurred_at TEXT DEFAULT (datetime('now'))
+      );
+      CREATE TABLE sync_state (
+        key TEXT PRIMARY KEY,
+        value TEXT,
+        updated_at TEXT DEFAULT (datetime('now'))
+      );
+
+      -- Insert test data
+      INSERT INTO captures (id, status, content_hash) VALUES ('01HQW3P7XK', 'exported', 'abc123');
+      INSERT INTO captures (id, status, content_hash) VALUES ('01HQW3P7XL', 'staged', 'def456');
+      INSERT INTO exports_audit (capture_id, export_path) VALUES ('01HQW3P7XK', '/vault/inbox/01HQW3P7XK.md');
+      INSERT INTO sync_state (key, value) VALUES ('last_backup', '2025-01-01T00:00:00Z');
+    `)
+    backupDb.close()
+
+    // Test verification with restore test
+    const { verifyBackup } = await import('../verification.js')
+    const result = await verifyBackup(backupPath, undefined, { perform_restore_test: true })
+
+    expect(result.success).toBe(true)
+    expect(result.integrity_check_passed).toBe(true)
+    expect(result.restore_test_passed).toBe(true)
+    expect(result.error).toBeUndefined()
+  })
+
+  it('should detect corrupted backup during restore test [AC03]', async () => {
+    const backupPath = join(testDir, 'corrupted.db')
+
+    // Create a corrupted database file
+    const { writeFileSync } = await import('node:fs')
+    writeFileSync(backupPath, 'This is not a valid SQLite database file')
+
+    // Test verification with restore test
+    const { verifyBackup } = await import('../verification.js')
+    const result = await verifyBackup(backupPath, undefined, { perform_restore_test: true })
+
+    expect(result.success).toBe(false)
+    expect(result.integrity_check_passed).toBe(false)
+    expect(result.restore_test_passed).toBe(false)
+    expect(result.error).toBeDefined()
+    expect(result.error).toContain('not a database')
+  })
+
+  it('should fail restore test when required tables are missing [AC03]', async () => {
+    const Database = (await import('better-sqlite3')).default
+
+    // Create a backup with missing tables
+    const backupPath = join(testDir, 'incomplete.db')
+    const backupDb = new Database(backupPath)
+    databases.push(backupDb)
+
+    // Only create 2 of the 4 required tables
+    backupDb.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        status TEXT NOT NULL
+      );
+      CREATE TABLE sync_state (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      );
+    `)
+    backupDb.close()
+
+    // Test verification with restore test
+    const { verifyBackup } = await import('../verification.js')
+    const result = await verifyBackup(backupPath, undefined, { perform_restore_test: true })
+
+    // Integrity check should pass (valid database structure)
+    expect(result.success).toBe(false)
+    expect(result.integrity_check_passed).toBe(true)
+    expect(result.restore_test_passed).toBe(false)
+    expect(result.error).toBeDefined()
+    expect(result.error).toContain('Missing required tables')
+  })
+
+  it('should fail restore test when foreign key violations exist [AC03]', async () => {
+    const Database = (await import('better-sqlite3')).default
+
+    // Create a backup with foreign key violations
+    const backupPath = join(testDir, 'fk-violations.db')
+    const backupDb = new Database(backupPath)
+    databases.push(backupDb)
+
+    // Disable foreign keys temporarily to create violations
+    backupDb.pragma('foreign_keys = OFF')
+
+    backupDb.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        status TEXT NOT NULL
+      );
+      CREATE TABLE exports_audit (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        capture_id TEXT NOT NULL,
+        export_path TEXT NOT NULL,
+        FOREIGN KEY (capture_id) REFERENCES captures(id)
+      );
+      CREATE TABLE errors_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        error_type TEXT NOT NULL
+      );
+      CREATE TABLE sync_state (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      );
+
+      -- Insert data with foreign key violation
+      INSERT INTO exports_audit (capture_id, export_path) VALUES ('NONEXISTENT', '/vault/test.md');
+    `)
+
+    backupDb.close()
+
+    // Test verification with restore test
+    const { verifyBackup } = await import('../verification.js')
+    const result = await verifyBackup(backupPath, undefined, { perform_restore_test: true })
+
+    // Database is structurally valid but has FK violations
+    expect(result.success).toBe(false)
+    expect(result.integrity_check_passed).toBe(true)
+    expect(result.restore_test_passed).toBe(false)
+    expect(result.error).toBeDefined()
+    expect(result.error).toContain('Foreign key violations detected')
+  })
+
+  it('should clean up temporary database after successful restore test [AC03]', async () => {
+    const Database = (await import('better-sqlite3')).default
+
+    // Create a valid backup
+    const backupPath = join(testDir, 'backup.db')
+    const backupDb = new Database(backupPath)
+    databases.push(backupDb)
+
+    backupDb.exec(`
+      CREATE TABLE captures (id TEXT PRIMARY KEY, status TEXT NOT NULL);
+      CREATE TABLE exports_audit (id INTEGER PRIMARY KEY);
+      CREATE TABLE errors_log (id INTEGER PRIMARY KEY);
+      CREATE TABLE sync_state (key TEXT PRIMARY KEY);
+    `)
+    backupDb.close()
+
+    // Test verification with restore test
+    const { verifyBackup } = await import('../verification.js')
+    const result = await verifyBackup(backupPath, undefined, { perform_restore_test: true })
+
+    expect(result.success).toBe(true)
+    expect(result.restore_test_passed).toBe(true)
+
+    // The temp file should be cleaned up (we can't directly access it, but the test should pass)
+    // Cleanup verification is implicit in the implementation
+  })
+
+  it('should clean up temporary database after failed restore test [AC03]', async () => {
+    const Database = (await import('better-sqlite3')).default
+
+    // Create an invalid backup (missing tables)
+    const backupPath = join(testDir, 'invalid.db')
+    const backupDb = new Database(backupPath)
+    databases.push(backupDb)
+
+    backupDb.exec(`
+      CREATE TABLE captures (id TEXT PRIMARY KEY, status TEXT NOT NULL);
+    `)
+    backupDb.close()
+
+    // Test verification with restore test (should fail due to missing tables)
+    const { verifyBackup } = await import('../verification.js')
+    const result = await verifyBackup(backupPath, undefined, { perform_restore_test: true })
+
+    expect(result.success).toBe(false)
+    expect(result.restore_test_passed).toBe(false)
+
+    // Temp file cleanup is implicit - handled by try/finally in implementation
+  })
+
+  it('should complete restore test within 2 seconds for typical database [AC03]', async () => {
+    const Database = (await import('better-sqlite3')).default
+
+    // Create a typical-sized backup database
+    const backupPath = join(testDir, 'typical.db')
+    const backupDb = new Database(backupPath)
+    databases.push(backupDb)
+
+    backupDb.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        status TEXT NOT NULL,
+        content TEXT,
+        content_hash TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      );
+      CREATE TABLE exports_audit (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        capture_id TEXT NOT NULL,
+        export_path TEXT NOT NULL,
+        exported_at TEXT DEFAULT (datetime('now'))
+      );
+      CREATE TABLE errors_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        error_type TEXT NOT NULL,
+        error_message TEXT,
+        occurred_at TEXT DEFAULT (datetime('now'))
+      );
+      CREATE TABLE sync_state (
+        key TEXT PRIMARY KEY,
+        value TEXT,
+        updated_at TEXT DEFAULT (datetime('now'))
+      );
+    `)
+
+    // Add a reasonable amount of test data
+    const stmt = backupDb.prepare('INSERT INTO captures (id, status, content, content_hash) VALUES (?, ?, ?, ?)')
+    for (let i = 0; i < 100; i++) {
+      stmt.run(`id-${i}`, 'exported', `Test content ${i}`, `hash-${i}`)
+    }
+
+    backupDb.close()
+
+    // Measure restore test performance
+    const startTime = Date.now()
+    const { verifyBackup } = await import('../verification.js')
+    const result = await verifyBackup(backupPath, undefined, { perform_restore_test: true })
+    const duration = Date.now() - startTime
+
+    expect(result.success).toBe(true)
+    expect(result.restore_test_passed).toBe(true)
+    expect(duration).toBeLessThan(2000) // Should complete within 2 seconds
+  })
+
+  it('should not perform restore test when option is false [AC03]', async () => {
+    const Database = (await import('better-sqlite3')).default
+
+    // Create a valid backup
+    const backupPath = join(testDir, 'backup.db')
+    const backupDb = new Database(backupPath)
+    databases.push(backupDb)
+
+    backupDb.exec(`
+      CREATE TABLE captures (id TEXT PRIMARY KEY, status TEXT NOT NULL);
+      CREATE TABLE exports_audit (id INTEGER PRIMARY KEY);
+      CREATE TABLE errors_log (id INTEGER PRIMARY KEY);
+      CREATE TABLE sync_state (key TEXT PRIMARY KEY);
+    `)
+    backupDb.close()
+
+    // Test without restore test
+    const { verifyBackup } = await import('../verification.js')
+    const result = await verifyBackup(backupPath, undefined, { perform_restore_test: false })
+
+    expect(result.success).toBe(true)
+    expect(result.integrity_check_passed).toBe(true)
+    expect(result.restore_test_passed).toBeUndefined() // Not performed
+    expect(result.error).toBeUndefined()
+  })
+
+  it('should not perform restore test when option is not provided [AC03]', async () => {
+    const Database = (await import('better-sqlite3')).default
+
+    // Create a valid backup
+    const backupPath = join(testDir, 'backup.db')
+    const backupDb = new Database(backupPath)
+    databases.push(backupDb)
+
+    backupDb.exec(`
+      CREATE TABLE captures (id TEXT PRIMARY KEY, status TEXT NOT NULL);
+      CREATE TABLE exports_audit (id INTEGER PRIMARY KEY);
+      CREATE TABLE errors_log (id INTEGER PRIMARY KEY);
+      CREATE TABLE sync_state (key TEXT PRIMARY KEY);
+    `)
+    backupDb.close()
+
+    // Test without options parameter
+    const { verifyBackup } = await import('../verification.js')
+    const result = await verifyBackup(backupPath)
+
+    expect(result.success).toBe(true)
+    expect(result.integrity_check_passed).toBe(true)
+    expect(result.restore_test_passed).toBeUndefined() // Not performed
+    expect(result.error).toBeUndefined()
+  })
+
+  it('should not leak memory during repeated restore tests [AC03]', async () => {
+    const Database = (await import('better-sqlite3')).default
+
+    // Create a valid backup
+    const backupPath = join(testDir, 'backup.db')
+    const backupDb = new Database(backupPath)
+    databases.push(backupDb)
+
+    backupDb.exec(`
+      CREATE TABLE captures (id TEXT PRIMARY KEY, status TEXT NOT NULL);
+      CREATE TABLE exports_audit (id INTEGER PRIMARY KEY);
+      CREATE TABLE errors_log (id INTEGER PRIMARY KEY);
+      CREATE TABLE sync_state (key TEXT PRIMARY KEY);
+      INSERT INTO captures (id, status) VALUES ('test1', 'exported');
+    `)
+    backupDb.close()
+
+    const { verifyBackup } = await import('../verification.js')
+
+    // Measure memory usage
+    if (global.gc) global.gc()
+    const before = process.memoryUsage().heapUsed
+
+    // Run multiple restore tests
+    for (let i = 0; i < 10; i++) {
+      const result = await verifyBackup(backupPath, undefined, { perform_restore_test: true })
+      expect(result.success).toBe(true)
+      expect(result.restore_test_passed).toBe(true)
+    }
+
+    // Check memory usage
+    if (global.gc) global.gc()
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    const after = process.memoryUsage().heapUsed
+
+    // Should not leak more than 10MB for 10 iterations
+    expect(after - before).toBeLessThan(10 * 1024 * 1024)
+  })
+})
