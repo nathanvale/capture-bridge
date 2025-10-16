@@ -362,6 +362,19 @@
       ],
       "acs_remaining": [],
       "notes": "Completed daily backup promotion core logic following strict TDD. AC05: promoteToDailyBackup() selects noon (or earliest) backup, verifies integrity, copies to daily set with 0600 permissions. pruneDailyBackups() keeps last 7 daily backups. AC06: Workflow integration - promote + verify + prune sequence tested. AC07: Performance < 5s verified (actual ~40ms). AC08: backup_duration_ms field included in BackupResult for histogram metrics. All 11 tests passing (7 promotion + 4 workflow). Files created: daily-promotion.ts, daily-promotion.spec.ts, daily-promotion-workflow.spec.ts. Exports added to index.ts."
+    },
+    "BACKUP_VERIFICATION_PROTOCOL--T01": {
+      "status": "completed",
+      "started_at": "2025-10-16T12:00:00Z",
+      "completed_at": "2025-10-16T20:00:00Z",
+      "acs_completed": [
+        "BACKUP_VERIFICATION_PROTOCOL-AC01",
+        "BACKUP_VERIFICATION_PROTOCOL-AC02",
+        "BACKUP_VERIFICATION_PROTOCOL-AC03",
+        "BACKUP_VERIFICATION_PROTOCOL-AC04"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed backup verification protocol following strict TDD. AC01: PRAGMA integrity_check on backup file (5 tests). AC02: SHA-256 hash comparison for backup vs live DB (7 tests). AC03: Weekly restore test with temp database validation (10 tests). AC04: Escalation policy state machine with 4 states (HEALTHY/WARN/DEGRADED_BACKUP/HALT_PRUNING) and consecutive failure tracking (19 tests). Total 41 tests passing (172/172 overall). Coverage: 90%+. Files created: verification.ts, backup-verification.spec.ts, escalation.ts, verification-escalation.spec.ts. Exports added to backup/index.ts."
     }
   }
 }
