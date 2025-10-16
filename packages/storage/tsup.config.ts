@@ -61,6 +61,7 @@ export default defineConfig([
     entry: {
       'backup/backup': 'src/backup/backup.ts',
       'backup/scheduler': 'src/backup/scheduler.ts',
+      'backup/daily-promotion': 'src/backup/daily-promotion.ts',
     },
     format: ['esm'],
     dts: isDev
