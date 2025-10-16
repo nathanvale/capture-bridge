@@ -349,6 +349,17 @@
       ],
       "acs_remaining": [],
       "notes": "Initialized hourly backup automation task. High risk → TDD required. Implement backup creation, ISO8601 timestamped filenames, hourly scheduler, and 24-hour retention policy per spec-staging-tech.md §2.4 and related guides."
+    },
+    "HOURLY_BACKUP_AUTOMATION--T02": {
+      "status": "in-progress",
+      "started_at": "2025-10-16T00:00:00Z",
+      "acs_completed": [],
+      "acs_remaining": [
+        "HOURLY_BACKUP_AUTOMATION-AC05",
+        "HOURLY_BACKUP_AUTOMATION-AC06",
+        "HOURLY_BACKUP_AUTOMATION-AC07",
+        "HOURLY_BACKUP_AUTOMATION-AC08"
+      ]
     }
   }
 }
