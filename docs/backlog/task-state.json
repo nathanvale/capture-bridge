@@ -353,9 +353,10 @@
     "HOURLY_BACKUP_AUTOMATION--T02": {
       "status": "in-progress",
       "started_at": "2025-10-16T00:00:00Z",
-      "acs_completed": [],
+      "acs_completed": [
+        "HOURLY_BACKUP_AUTOMATION-AC05"
+      ],
       "acs_remaining": [
-        "HOURLY_BACKUP_AUTOMATION-AC05",
         "HOURLY_BACKUP_AUTOMATION-AC06",
         "HOURLY_BACKUP_AUTOMATION-AC07",
         "HOURLY_BACKUP_AUTOMATION-AC08"
