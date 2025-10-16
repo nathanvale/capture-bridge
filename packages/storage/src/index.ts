@@ -43,3 +43,10 @@ export {
 export { createBackup, verifyBackup, pruneOldBackups } from './backup/backup.js'
 
 export { startBackupScheduler } from './backup/scheduler.js'
+
+export {
+  promoteToDailyBackup,
+  pruneDailyBackups,
+  type PromotionResult,
+  type PruneResult,
+} from './backup/daily-promotion.js'
