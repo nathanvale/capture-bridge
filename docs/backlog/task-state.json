@@ -351,16 +351,17 @@
       "notes": "Initialized hourly backup automation task. High risk → TDD required. Implement backup creation, ISO8601 timestamped filenames, hourly scheduler, and 24-hour retention policy per spec-staging-tech.md §2.4 and related guides."
     },
     "HOURLY_BACKUP_AUTOMATION--T02": {
-      "status": "in-progress",
+      "status": "completed",
       "started_at": "2025-10-16T00:00:00Z",
+      "completed_at": "2025-10-16T23:59:00Z",
       "acs_completed": [
-        "HOURLY_BACKUP_AUTOMATION-AC05"
-      ],
-      "acs_remaining": [
+        "HOURLY_BACKUP_AUTOMATION-AC05",
         "HOURLY_BACKUP_AUTOMATION-AC06",
         "HOURLY_BACKUP_AUTOMATION-AC07",
         "HOURLY_BACKUP_AUTOMATION-AC08"
-      ]
+      ],
+      "acs_remaining": [],
+      "notes": "Completed daily backup promotion core logic following strict TDD. AC05: promoteToDailyBackup() selects noon (or earliest) backup, verifies integrity, copies to daily set with 0600 permissions. pruneDailyBackups() keeps last 7 daily backups. AC06: Workflow integration - promote + verify + prune sequence tested. AC07: Performance < 5s verified (actual ~40ms). AC08: backup_duration_ms field included in BackupResult for histogram metrics. All 11 tests passing (7 promotion + 4 workflow). Files created: daily-promotion.ts, daily-promotion.spec.ts, daily-promotion-workflow.spec.ts. Exports added to index.ts."
     }
   }
 }
