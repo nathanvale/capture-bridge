@@ -126,7 +126,7 @@ describe('Daily Backup Workflow (AC06-08)', () => {
     const { createBackup } = await import('./backup.js')
 
     const start = performance.now()
-    const result = createBackup(db, vaultRoot)
+    const result = await createBackup(db, vaultRoot)
     const duration = performance.now() - start
 
     expect(result.success).toBe(true)
@@ -137,7 +137,7 @@ describe('Daily Backup Workflow (AC06-08)', () => {
   it('AC08: backup result includes duration_ms for histogram metric', async () => {
     const { createBackup } = await import('./backup.js')
 
-    const result = createBackup(db, vaultRoot)
+    const result = await createBackup(db, vaultRoot)
 
     expect(result.duration_ms).toBeDefined()
     expect(typeof result.duration_ms).toBe('number')
