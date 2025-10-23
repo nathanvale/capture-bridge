@@ -38,8 +38,9 @@ describe('State Machine Transition Validation', () => {
       const validTransitions = getValidTransitions('staged')
       expect(validTransitions).toContain('transcribed')
       expect(validTransitions).toContain('failed_transcription')
+      expect(validTransitions).toContain('exported') // Email direct export path (MPPP)
       expect(validTransitions).toContain('exported_duplicate')
-      expect(validTransitions).toHaveLength(3)
+      expect(validTransitions).toHaveLength(4)
     })
 
     it('should return valid transitions for transcribed status', () => {
@@ -97,8 +98,8 @@ describe('State Machine Transition Validation', () => {
     })
 
     it('should reject invalid transitions from staged', () => {
-      expect(validateTransition('staged', 'exported')).toBe(false)
       expect(validateTransition('staged', 'exported_placeholder')).toBe(false)
+      expect(validateTransition('staged', 'staged')).toBe(false)
     })
 
     it('should reject invalid transitions from transcribed', () => {
