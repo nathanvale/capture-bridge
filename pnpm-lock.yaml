@@ -224,6 +224,9 @@ importers:
       '@capture-bridge/foundation':
         specifier: workspace:*
         version: link:../foundation
+      '@capture-bridge/storage':
+        specifier: workspace:*
+        version: link:../storage
       '@orchestr8/testkit':
         specifier: ^2.2.0
         version: 2.2.0(@vitest/ui@3.2.4)(better-sqlite3@12.4.1)(happy-dom@18.0.1)(msw@2.11.3(@types/node@24.5.2)(typescript@5.9.2))(vitest@3.2.4)

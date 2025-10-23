@@ -46,6 +46,7 @@
   "devDependencies": {
     "@capture-bridge/build-config": "workspace:*",
     "@capture-bridge/foundation": "workspace:*",
+    "@capture-bridge/storage": "workspace:*",
     "@orchestr8/testkit": "^2.2.0",
     "@types/node": "^24.3.0",
     "better-sqlite3": "^12.4.1",

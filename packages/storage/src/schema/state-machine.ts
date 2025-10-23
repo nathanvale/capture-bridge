@@ -24,9 +24,12 @@ export type CaptureStatus =
 /**
  * State transition rules based on ADR-0004.
  * Terminal states (exported*) have no valid transitions.
+ *
+ * Note: 'staged' → 'exported' is allowed for direct email export (MPPP scope)
+ * where email content is already normalized during ingestion.
  */
 const VALID_TRANSITIONS = new Map<CaptureStatus, CaptureStatus[]>([
-  ['staged', ['transcribed', 'failed_transcription', 'exported_duplicate']],
+  ['staged', ['transcribed', 'failed_transcription', 'exported', 'exported_duplicate']],
   ['transcribed', ['exported', 'exported_duplicate']],
   ['failed_transcription', ['exported_placeholder']],
   ['exported', []],
