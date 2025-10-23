@@ -584,6 +584,199 @@ error: CORRUPT_AUDIO
     })
   })
 
+  describe('AC06: Terminal State Immutability (No Retrofit)', () => {
+    it('should reject transition from exported terminal state', async () => {
+      const { updateCaptureStatusToPlaceholder } = await import('../update-placeholder-status.js')
+
+      // Setup: Insert capture in 'exported' state (terminal)
+      const captureId = ulid()
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `
+      ).run(
+        captureId,
+        'voice',
+        'Transcribed content',
+        'sha256:hash',
+        'exported',
+        JSON.stringify({ channel: 'voice', channel_native_id: `voice-${captureId}` })
+      )
+
+      // Act & Assert: Should throw StateTransitionError with terminal state message
+      expect(() => updateCaptureStatusToPlaceholder(db, captureId, '[TRANSCRIPTION_FAILED]')).toThrow(
+        /Cannot transition from terminal state.*exported/
+      )
+    })
+
+    it('should reject transition from exported_duplicate terminal state', async () => {
+      const { updateCaptureStatusToPlaceholder } = await import('../update-placeholder-status.js')
+
+      // Setup: Insert capture in 'exported_duplicate' state (terminal)
+      const captureId = ulid()
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `
+      ).run(
+        captureId,
+        'email',
+        'Duplicate email content',
+        'sha256:duplicate-hash',
+        'exported_duplicate',
+        JSON.stringify({ channel: 'email', channel_native_id: `email-${captureId}` })
+      )
+
+      // Act & Assert: Should throw StateTransitionError
+      expect(() => updateCaptureStatusToPlaceholder(db, captureId, '[TRANSCRIPTION_FAILED]')).toThrow(
+        /Cannot transition from terminal state.*exported_duplicate/
+      )
+    })
+
+    it('should reject transition from exported_placeholder terminal state (no re-retry)', async () => {
+      const { updateCaptureStatusToPlaceholder } = await import('../update-placeholder-status.js')
+
+      // Setup: Insert capture in 'exported_placeholder' state (already a placeholder)
+      const captureId = ulid()
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `
+      ).run(
+        captureId,
+        'voice',
+        '[TRANSCRIPTION_FAILED] - Previous failure',
+        null, // content_hash is NULL for placeholder
+        'exported_placeholder',
+        JSON.stringify({ channel: 'voice', channel_native_id: `voice-${captureId}` })
+      )
+
+      // Act & Assert: Cannot retry placeholder export
+      expect(() => updateCaptureStatusToPlaceholder(db, captureId, '[TRANSCRIPTION_FAILED] - Retry')).toThrow(
+        /Cannot transition from terminal state.*exported_placeholder/
+      )
+    })
+
+    it('should NOT modify database when rejecting terminal state transition', async () => {
+      const { updateCaptureStatusToPlaceholder } = await import('../update-placeholder-status.js')
+
+      // Setup: Insert capture in 'exported' state with known content
+      const captureId = ulid()
+      const originalContent = 'Original exported content'
+      const originalHash = 'sha256:original-hash'
+
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, datetime('2020-01-01 00:00:00'), datetime('2020-01-01 00:00:00'))
+      `
+      ).run(
+        captureId,
+        'voice',
+        originalContent,
+        originalHash,
+        'exported',
+        JSON.stringify({ channel: 'voice', channel_native_id: `voice-${captureId}` })
+      )
+
+      // Get before state
+      const before = db.prepare('SELECT * FROM captures WHERE id = ?').get(captureId) as {
+        id: string
+        status: string
+        raw_content: string
+        content_hash: string | null
+        updated_at: string
+      }
+
+      // Act: Attempt invalid transition (should throw)
+      try {
+        updateCaptureStatusToPlaceholder(db, captureId, '[TRANSCRIPTION_FAILED] - Should not apply')
+      } catch {
+        // Expected error
+      }
+
+      // Assert: Database record unchanged
+      const after = db.prepare('SELECT * FROM captures WHERE id = ?').get(captureId) as {
+        id: string
+        status: string
+        raw_content: string
+        content_hash: string | null
+        updated_at: string
+      }
+
+      expect(after.status).toBe(before.status) // Still 'exported'
+      expect(after.raw_content).toBe(before.raw_content) // Original content preserved
+      expect(after.content_hash).toBe(before.content_hash) // Original hash preserved
+      expect(after.updated_at).toBe(before.updated_at) // Timestamp not changed
+    })
+
+    it('should verify state machine enforces all 3 terminal states', async () => {
+      // Import state machine to verify terminal state detection
+      const { isTerminalState } = await import('../../schema/state-machine.js')
+
+      // Assert: All three terminal states detected
+      expect(isTerminalState('exported')).toBe(true)
+      expect(isTerminalState('exported_duplicate')).toBe(true)
+      expect(isTerminalState('exported_placeholder')).toBe(true)
+
+      // Assert: Non-terminal states not detected
+      expect(isTerminalState('staged')).toBe(false)
+      expect(isTerminalState('transcribed')).toBe(false)
+      expect(isTerminalState('failed_transcription')).toBe(false)
+    })
+
+    it('should throw StateTransitionError type for terminal state rejection', async () => {
+      const { updateCaptureStatusToPlaceholder } = await import('../update-placeholder-status.js')
+      const { StateTransitionError } = await import('../../schema/service-layer.js')
+
+      // Setup: Terminal state capture
+      const captureId = ulid()
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `
+      ).run(captureId, 'voice', 'content', 'sha256:hash', 'exported', '{}')
+
+      // Act & Assert: Error is correct type
+      try {
+        updateCaptureStatusToPlaceholder(db, captureId, '[TRANSCRIPTION_FAILED]')
+        throw new Error('Should have thrown StateTransitionError')
+      } catch (error) {
+        expect(error).toBeInstanceOf(StateTransitionError)
+        expect((error as Error).name).toBe('StateTransitionError')
+        expect((error as Error).message).toContain('terminal state')
+      }
+    })
+
+    it('should document immutability constraint in error message', async () => {
+      const { updateCaptureStatusToPlaceholder } = await import('../update-placeholder-status.js')
+
+      // Setup: Terminal state capture
+      const captureId = ulid()
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `
+      ).run(captureId, 'voice', 'content', 'sha256:hash', 'exported_placeholder', '{}')
+
+      // Act & Assert: Error message references immutability
+      try {
+        updateCaptureStatusToPlaceholder(db, captureId, '[TRANSCRIPTION_FAILED]')
+        throw new Error('Should have thrown')
+      } catch (error) {
+        const { message } = error as Error
+        // Error should mention "terminal state" and the specific state
+        expect(message).toContain('terminal')
+        expect(message).toContain('exported_placeholder')
+      }
+    })
+  })
+
   describe('Contract Tests: Schema Validation', () => {
     it('should validate status enum includes exported_placeholder', () => {
       // Query schema to verify status CHECK constraint
