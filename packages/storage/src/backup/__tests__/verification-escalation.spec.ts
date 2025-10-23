@@ -1,9 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 
-import type Database from 'better-sqlite3'
-
 describe('Backup Verification Escalation Policy', () => {
-  const databases: Database[] = []
+  const databases: Array<{ close: () => void; open: boolean; readonly: boolean }> = []
 
   beforeEach(async () => {
     // Nothing to set up initially - each test creates its own in-memory db
@@ -20,8 +18,8 @@ describe('Backup Verification Escalation Policy', () => {
     for (const db of databases) {
       try {
         if (db.open && !db.readonly) db.close()
-      } catch (_error) {
-        /* ignore */
+      } catch {
+        // Ignore close errors during cleanup
       }
     }
     databases.length = 0
@@ -460,9 +458,6 @@ describe('Backup Verification Escalation Policy', () => {
         )
       `)
 
-      // Attempt SQL injection through malicious input
-      const maliciousInput = "'; DROP TABLE sync_state; --"
-
       // This should be safe because implementation uses parameterized queries
       const { getVerificationState } = await import('../escalation.js')
       const state = await getVerificationState(db)
@@ -496,7 +491,7 @@ describe('Backup Verification Escalation Policy', () => {
 
       // Perform many state updates
       for (let i = 0; i < 1000; i++) {
-        await (i % 2 === 0 ? recordVerificationFailure(db) : recordVerificationSuccess(db));
+        await (i % 2 === 0 ? recordVerificationFailure(db) : recordVerificationSuccess(db))
       }
 
       if (global.gc) global.gc()
