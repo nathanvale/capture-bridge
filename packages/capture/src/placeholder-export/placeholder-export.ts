@@ -3,11 +3,19 @@
  *
  * AC01: Trigger - Detect captures with status='failed_transcription'
  * AC02: Generate placeholder markdown content
+ * AC03: Atomic write to inbox/{capture.id}.md
  *
  * Medium Risk - TDD Required, Coverage ≥80%
  */
 
-import type { FailedTranscription, CaptureMetadata, TranscriptionErrorType } from './types.js'
+import { writeAtomic } from '@capture-bridge/obsidian-bridge'
+
+import type {
+  FailedTranscription,
+  CaptureMetadata,
+  TranscriptionErrorType,
+  PlaceholderExportResult,
+} from './types.js'
 import type Database from 'better-sqlite3'
 
 /**
@@ -75,4 +83,31 @@ This placeholder is PERMANENT and cannot be retried in MPPP.
 Original content unavailable due to processing failure.`
 
   return placeholder
+}
+
+/**
+ * AC03: Export placeholder markdown to vault inbox directory
+ *
+ * @param vaultRoot Absolute path to vault root
+ * @param captureId ULID from captures.id
+ * @param placeholder Placeholder markdown content
+ * @returns Result with success status and export path
+ */
+export const exportPlaceholderToVault = async (
+  vaultRoot: string,
+  captureId: string,
+  placeholder: string
+): Promise<PlaceholderExportResult> => {
+  // GREEN phase - use existing atomic writer from obsidian-bridge
+  const result = await writeAtomic(captureId, placeholder, vaultRoot)
+
+  // Handle optional export_path properly for exactOptionalPropertyTypes
+  if (result.export_path === undefined) {
+    return { success: result.success }
+  }
+
+  return {
+    success: result.success,
+    export_path: result.export_path,
+  }
 }

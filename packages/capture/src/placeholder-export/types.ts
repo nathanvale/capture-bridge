@@ -36,3 +36,15 @@ export interface CaptureMetadata {
   audio_fp?: string
   message_id?: string
 }
+
+/**
+ * Result of placeholder export to vault
+ */
+export interface PlaceholderExportResult {
+  success: boolean
+  export_path?: string
+  error?: {
+    code: string
+    message: string
+  }
+}

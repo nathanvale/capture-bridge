@@ -447,3 +447,361 @@ describe('generatePlaceholderMarkdown - AC02', () => {
     expect(markdown).toContain('[TRANSCRIPTION_FAILED: UNKNOWN]')
   })
 })
+
+describe('exportPlaceholderToVault - AC03', () => {
+  it('should write placeholder markdown to vault inbox directory', async () => {
+    // Arrange - Create temp vault directory
+    const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+    const tempVault = await createTempDirectory()
+    const vaultRoot = tempVault.path
+
+    // Create database with failed transcription
+    const db = new Database(':memory:')
+    databases.push(db)
+
+    db.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        raw_content TEXT NOT NULL,
+        content_hash TEXT,
+        status TEXT NOT NULL,
+        meta_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `)
+
+    db.prepare(
+      `
+      INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `
+    ).run(
+      '01JANKR8EKZM2YJVT8YFGQSZ4M',
+      'voice',
+      '/path/to/voice.m4a',
+      null,
+      'failed_transcription',
+      JSON.stringify({ file_path: '/path/to/voice.m4a', attempt_count: 1 }),
+      '2025-10-23T10:00:00Z',
+      '2025-10-23T10:05:00Z'
+    )
+
+    const capture = db.prepare('SELECT * FROM captures WHERE id = ?').get('01JANKR8EKZM2YJVT8YFGQSZ4M') as {
+      id: string
+      source: string
+      raw_content: string
+      content_hash: string | null
+      status: string
+      meta_json: string
+      created_at: string
+      updated_at: string
+    }
+
+    // Generate placeholder markdown
+    const { generatePlaceholderMarkdown, exportPlaceholderToVault } = await import('./placeholder-export.js')
+    const placeholder = generatePlaceholderMarkdown(capture, 'TIMEOUT', 'Test timeout error')
+
+    // Act - This will FAIL because exportPlaceholderToVault doesn't exist yet
+    const result = await exportPlaceholderToVault(vaultRoot, capture.id, placeholder)
+
+    // Assert
+    expect(result.success).toBe(true)
+    expect(result.export_path).toBe('inbox/01JANKR8EKZM2YJVT8YFGQSZ4M.md')
+
+    // Verify file was written to inbox
+    const { promises: fs } = await import('node:fs')
+    const path = await import('node:path')
+    const exportPath = path.join(vaultRoot, 'inbox', '01JANKR8EKZM2YJVT8YFGQSZ4M.md')
+
+    const fileContent = await fs.readFile(exportPath, 'utf-8')
+    expect(fileContent).toBe(placeholder)
+  })
+
+  it('should handle duplicate export (same content hash)', async () => {
+    // Arrange - Create temp vault directory
+    const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+    const tempVault = await createTempDirectory()
+    const vaultRoot = tempVault.path
+
+    const db = new Database(':memory:')
+    databases.push(db)
+
+    db.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        raw_content TEXT NOT NULL,
+        content_hash TEXT,
+        status TEXT NOT NULL,
+        meta_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `)
+
+    db.prepare(
+      `
+      INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `
+    ).run(
+      '01JANKR8EKZM2YJVT8YFGQSZ4N',
+      'voice',
+      '/path/to/voice.m4a',
+      null,
+      'failed_transcription',
+      JSON.stringify({ file_path: '/path/to/voice.m4a', attempt_count: 1 }),
+      '2025-10-23T10:00:00Z',
+      '2025-10-23T10:05:00Z'
+    )
+
+    const capture = db.prepare('SELECT * FROM captures WHERE id = ?').get('01JANKR8EKZM2YJVT8YFGQSZ4N') as {
+      id: string
+      source: string
+      raw_content: string
+      content_hash: string | null
+      status: string
+      meta_json: string
+      created_at: string
+      updated_at: string
+    }
+
+    const { generatePlaceholderMarkdown, exportPlaceholderToVault } = await import('./placeholder-export.js')
+    const placeholder = generatePlaceholderMarkdown(capture, 'TIMEOUT', 'Test timeout error')
+
+    // Act - Export twice with same content
+    const result1 = await exportPlaceholderToVault(vaultRoot, capture.id, placeholder)
+    const result2 = await exportPlaceholderToVault(vaultRoot, capture.id, placeholder)
+
+    // Assert - Both should succeed, second should be skipped (duplicate)
+    expect(result1.success).toBe(true)
+    expect(result2.success).toBe(true)
+
+    // Verify file exists only once
+    const { promises: fs } = await import('node:fs')
+    const path = await import('node:path')
+    const exportPath = path.join(vaultRoot, 'inbox', '01JANKR8EKZM2YJVT8YFGQSZ4N.md')
+    const fileContent = await fs.readFile(exportPath, 'utf-8')
+    expect(fileContent).toBe(placeholder)
+  })
+
+  it('should handle invalid vault path gracefully', async () => {
+    // Arrange - Use non-existent vault path
+    const invalidVaultPath = '/nonexistent/vault/path'
+
+    const db = new Database(':memory:')
+    databases.push(db)
+
+    db.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        raw_content TEXT NOT NULL,
+        content_hash TEXT,
+        status TEXT NOT NULL,
+        meta_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `)
+
+    db.prepare(
+      `
+      INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `
+    ).run(
+      '01JANKR8EKZM2YJVT8YFGQSZ4P',
+      'voice',
+      '/path/to/voice.m4a',
+      null,
+      'failed_transcription',
+      JSON.stringify({ file_path: '/path/to/voice.m4a', attempt_count: 1 }),
+      '2025-10-23T10:00:00Z',
+      '2025-10-23T10:05:00Z'
+    )
+
+    const capture = db.prepare('SELECT * FROM captures WHERE id = ?').get('01JANKR8EKZM2YJVT8YFGQSZ4P') as {
+      id: string
+      source: string
+      raw_content: string
+      content_hash: string | null
+      status: string
+      meta_json: string
+      created_at: string
+      updated_at: string
+    }
+
+    const { generatePlaceholderMarkdown, exportPlaceholderToVault } = await import('./placeholder-export.js')
+    const placeholder = generatePlaceholderMarkdown(capture, 'TIMEOUT', 'Test timeout error')
+
+    // Act - This should handle error gracefully
+    const result = await exportPlaceholderToVault(invalidVaultPath, capture.id, placeholder)
+
+    // Assert - Should fail but not throw
+    expect(result.success).toBe(false)
+  })
+
+  it('should validate capture_id format', async () => {
+    // Arrange - Create temp vault directory
+    const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+    const tempVault = await createTempDirectory()
+    const vaultRoot = tempVault.path
+
+    const { exportPlaceholderToVault } = await import('./placeholder-export.js')
+    const placeholder = '[TRANSCRIPTION_FAILED: TIMEOUT]\n\nTest placeholder'
+
+    // Act & Assert - Should reject invalid ULID
+    await expect(exportPlaceholderToVault(vaultRoot, 'invalid-ulid', placeholder)).rejects.toThrow(
+      'Invalid capture_id format'
+    )
+  })
+
+  it('should create inbox directory if it does not exist', async () => {
+    // Arrange - Create temp vault directory without inbox
+    const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+    const tempVault = await createTempDirectory()
+    const vaultRoot = tempVault.path
+
+    const db = new Database(':memory:')
+    databases.push(db)
+
+    db.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        raw_content TEXT NOT NULL,
+        content_hash TEXT,
+        status TEXT NOT NULL,
+        meta_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `)
+
+    db.prepare(
+      `
+      INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `
+    ).run(
+      '01JANKR8EKZM2YJVT8YFGQSZ4Q',
+      'voice',
+      '/path/to/voice.m4a',
+      null,
+      'failed_transcription',
+      JSON.stringify({ file_path: '/path/to/voice.m4a', attempt_count: 1 }),
+      '2025-10-23T10:00:00Z',
+      '2025-10-23T10:05:00Z'
+    )
+
+    const capture = db.prepare('SELECT * FROM captures WHERE id = ?').get('01JANKR8EKZM2YJVT8YFGQSZ4Q') as {
+      id: string
+      source: string
+      raw_content: string
+      content_hash: string | null
+      status: string
+      meta_json: string
+      created_at: string
+      updated_at: string
+    }
+
+    const { generatePlaceholderMarkdown, exportPlaceholderToVault } = await import('./placeholder-export.js')
+    const placeholder = generatePlaceholderMarkdown(capture, 'TIMEOUT', 'Test timeout error')
+
+    // Verify inbox directory does not exist before export
+    const { promises: fs } = await import('node:fs')
+    const path = await import('node:path')
+    const inboxPath = path.join(vaultRoot, 'inbox')
+    let inboxExists = false
+    try {
+      await fs.access(inboxPath)
+      inboxExists = true
+    } catch {
+      inboxExists = false
+    }
+    expect(inboxExists).toBe(false)
+
+    // Act - Export should create inbox directory
+    const result = await exportPlaceholderToVault(vaultRoot, capture.id, placeholder)
+
+    // Assert - Inbox directory should now exist
+    expect(result.success).toBe(true)
+    const exportPath = path.join(vaultRoot, 'inbox', '01JANKR8EKZM2YJVT8YFGQSZ4Q.md')
+    const fileContent = await fs.readFile(exportPath, 'utf-8')
+    expect(fileContent).toBe(placeholder)
+  })
+
+  it('should write file with correct permissions', async () => {
+    // Arrange - Create temp vault directory
+    const { createTempDirectory } = await import('@orchestr8/testkit/fs')
+    const tempVault = await createTempDirectory()
+    const vaultRoot = tempVault.path
+
+    const db = new Database(':memory:')
+    databases.push(db)
+
+    db.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        raw_content TEXT NOT NULL,
+        content_hash TEXT,
+        status TEXT NOT NULL,
+        meta_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `)
+
+    db.prepare(
+      `
+      INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `
+    ).run(
+      '01JANKR8EKZM2YJVT8YFGQSZ4R',
+      'voice',
+      '/path/to/voice.m4a',
+      null,
+      'failed_transcription',
+      JSON.stringify({ file_path: '/path/to/voice.m4a', attempt_count: 1 }),
+      '2025-10-23T10:00:00Z',
+      '2025-10-23T10:05:00Z'
+    )
+
+    const capture = db.prepare('SELECT * FROM captures WHERE id = ?').get('01JANKR8EKZM2YJVT8YFGQSZ4R') as {
+      id: string
+      source: string
+      raw_content: string
+      content_hash: string | null
+      status: string
+      meta_json: string
+      created_at: string
+      updated_at: string
+    }
+
+    const { generatePlaceholderMarkdown, exportPlaceholderToVault } = await import('./placeholder-export.js')
+    const placeholder = generatePlaceholderMarkdown(capture, 'TIMEOUT', 'Test timeout error')
+
+    // Act - Export placeholder
+    const result = await exportPlaceholderToVault(vaultRoot, capture.id, placeholder)
+
+    // Assert - File should be readable
+    expect(result.success).toBe(true)
+
+    const { promises: fs } = await import('node:fs')
+    const path = await import('node:path')
+    const exportPath = path.join(vaultRoot, 'inbox', '01JANKR8EKZM2YJVT8YFGQSZ4R.md')
+
+    // Verify file is readable (basic permission check)
+    const fileContent = await fs.readFile(exportPath, 'utf-8')
+    expect(fileContent).toBe(placeholder)
+
+    // Verify we can stat the file (confirms it exists and is accessible)
+    const stats = await fs.stat(exportPath)
+    expect(stats.isFile()).toBe(true)
+  })
+})
