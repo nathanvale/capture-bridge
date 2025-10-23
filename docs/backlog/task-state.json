@@ -438,6 +438,17 @@
       ],
       "acs_remaining": [],
       "notes": "Completed EMAIL_NORMALIZATION--T02: Email Body Normalization & Hash Computation - Core Logic following strict TDD (Red-Green-Refactor). All 3 ACs satisfied: AC05: Attachment count logged in meta_json via new attachment-counter.ts module and updateCaptureWithMetadata() function. Counts attachments from Gmail API metadata without downloading (11 tests, 100% coverage). AC06: Performance validation with 9 comprehensive benchmarks - end-to-end pipeline executes in 0.715ms (70x faster than 50ms requirement). AC07: Deterministic hashing validated with 28 tests covering 100+ iterations, 1000+ unique emails, and replay safety. Database UNIQUE constraint enforces deduplication. Total: 97 tests passing (71 existing + 28 new), 100% code coverage for normalization module. PR #52 created. Integration complete with email polling and vault export systems ready."
+    },
+    "DIRECT_EXPORT_EMAIL--T01": {
+      "status": "in-progress",
+      "started_at": "2025-10-23T21:45:00Z",
+      "acs_completed": [],
+      "acs_remaining": [
+        "DIRECT_EXPORT_EMAIL-AC01",
+        "DIRECT_EXPORT_EMAIL-AC02",
+        "DIRECT_EXPORT_EMAIL-AC03",
+        "DIRECT_EXPORT_EMAIL-AC04"
+      ]
     }
   }
 }
