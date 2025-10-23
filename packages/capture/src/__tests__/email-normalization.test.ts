@@ -155,3 +155,157 @@ describe('Email Normalization - AC01: Strip HTML Tags', () => {
     })
   })
 })
+
+describe('Email Normalization - AC02: Normalize Whitespace', () => {
+  describe('normalizeWhitespace', () => {
+    it('should trim leading and trailing whitespace', async () => {
+      const { normalizeWhitespace } = await import('../normalization/whitespace-normalizer.js')
+
+      const input = '  hello world  '
+      const result = normalizeWhitespace(input)
+
+      expect(result).toBe('hello world')
+    })
+
+    it('should collapse multiple spaces to single space', async () => {
+      const { normalizeWhitespace } = await import('../normalization/whitespace-normalizer.js')
+
+      const input = 'hello    world'
+      const result = normalizeWhitespace(input)
+
+      expect(result).toBe('hello world')
+    })
+
+    it('should collapse tabs and mixed whitespace to single space', async () => {
+      const { normalizeWhitespace } = await import('../normalization/whitespace-normalizer.js')
+
+      const input = 'hello\t\tworld'
+      const result = normalizeWhitespace(input)
+
+      expect(result).toBe('hello world')
+    })
+
+    it('should convert CRLF line endings to LF', async () => {
+      const { normalizeWhitespace } = await import('../normalization/whitespace-normalizer.js')
+
+      const input = 'line1\r\nline2\r\nline3'
+      const result = normalizeWhitespace(input)
+
+      expect(result).toBe('line1\nline2\nline3')
+    })
+
+    it('should convert all line ending types to LF', async () => {
+      const { normalizeWhitespace } = await import('../normalization/whitespace-normalizer.js')
+
+      const input = 'line1\r\nline2\nline3\r'
+      const result = normalizeWhitespace(input)
+
+      expect(result).toBe('line1\nline2\nline3')
+    })
+
+    it('should collapse multiple blank lines to single blank line', async () => {
+      const { normalizeWhitespace } = await import('../normalization/whitespace-normalizer.js')
+
+      const input = 'line1\n\n\nline2'
+      const result = normalizeWhitespace(input)
+
+      expect(result).toBe('line1\n\nline2')
+    })
+
+    it('should handle empty string', async () => {
+      const { normalizeWhitespace } = await import('../normalization/whitespace-normalizer.js')
+
+      const result = normalizeWhitespace('')
+
+      expect(result).toBe('')
+    })
+
+    it('should collapse whitespace-only string to empty string', async () => {
+      const { normalizeWhitespace } = await import('../normalization/whitespace-normalizer.js')
+
+      const input = '   \n  \t  '
+      const result = normalizeWhitespace(input)
+
+      expect(result).toBe('')
+    })
+
+    it('should preserve single internal spaces', async () => {
+      const { normalizeWhitespace } = await import('../normalization/whitespace-normalizer.js')
+
+      const input = 'hello world test'
+      const result = normalizeWhitespace(input)
+
+      expect(result).toBe('hello world test')
+    })
+
+    it('should handle complex mixed whitespace', async () => {
+      const { normalizeWhitespace } = await import('../normalization/whitespace-normalizer.js')
+
+      const input = '  hello\t\tworld  \n\n\n  test  '
+      const result = normalizeWhitespace(input)
+
+      expect(result).toBe('hello world\n\ntest')
+    })
+
+    it('should normalize actual email text after HTML stripping', async () => {
+      const { normalizeWhitespace } = await import('../normalization/whitespace-normalizer.js')
+      const { stripHtmlTags } = await import('../normalization/html-stripper.js')
+
+      const htmlEmail = `
+        <html>
+          <body>
+            <p>Hello     World</p>
+
+
+            <p>This   is   a   test</p>
+          </body>
+        </html>
+      `
+
+      const stripped = stripHtmlTags(htmlEmail)
+      const normalized = normalizeWhitespace(stripped)
+
+      // Should have clean text with normalized whitespace
+      expect(normalized).toContain('Hello World')
+      expect(normalized).toContain('This is a test')
+      expect(normalized).not.toContain('    ') // No multiple spaces
+    })
+
+    it('should process typical email body in under 1ms', async () => {
+      const { normalizeWhitespace } = await import('../normalization/whitespace-normalizer.js')
+
+      // Generate ~5KB text with various whitespace issues
+      const largeText = 'Content line  \t\t  with   spaces\r\n'.repeat(100)
+
+      const start = performance.now()
+      normalizeWhitespace(largeText)
+      const duration = performance.now() - start
+
+      expect(duration).toBeLessThan(1) // < 1ms for 5KB text
+    })
+
+    it('should be deterministic - same input always produces same output', async () => {
+      const { normalizeWhitespace } = await import('../normalization/whitespace-normalizer.js')
+
+      const input = '  hello\t\tworld  \r\n\r\n\r\n  test  '
+
+      const result1 = normalizeWhitespace(input)
+      const result2 = normalizeWhitespace(input)
+      const result3 = normalizeWhitespace(input)
+
+      expect(result1).toBe(result2)
+      expect(result2).toBe(result3)
+    })
+
+    it('should work seamlessly with stripHtmlTags in pipeline', async () => {
+      const { normalizeWhitespace } = await import('../normalization/whitespace-normalizer.js')
+      const { stripHtmlTags } = await import('../normalization/html-stripper.js')
+
+      const htmlEmail = '<p>Hello    World</p>\r\n\r\n<p>Test</p>'
+
+      const result = normalizeWhitespace(stripHtmlTags(htmlEmail))
+
+      expect(result).toBe('Hello World\n\nTest')
+    })
+  })
+})
