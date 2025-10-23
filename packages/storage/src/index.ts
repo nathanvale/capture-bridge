@@ -39,6 +39,15 @@ export {
   StagingLedgerError,
 } from './staging-ledger/staging-ledger.js'
 
+// Placeholder export utilities
+export {
+  updateCaptureStatusToPlaceholder,
+  UpdatePlaceholderStatusError,
+} from './staging-ledger/update-placeholder-status.js'
+
+// Metrics
+export { calculatePlaceholderExportRatio } from './metrics/placeholder-export-ratio.js'
+
 // Backup utilities
 export { createBackup, verifyBackup, pruneOldBackups } from './backup/backup.js'
 

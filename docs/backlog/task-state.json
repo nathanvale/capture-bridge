@@ -401,6 +401,18 @@
       ],
       "acs_remaining": [],
       "notes": "Completed placeholder export for failed transcriptions following strict TDD. AC01: Detect captures with status='failed_transcription' using parameterized SQL query (4 tests). AC02: Generate placeholder markdown with error type, audio path, timestamp, and permanence notice (8 tests). AC03: Atomic write to vault inbox using AtomicFileWriter from obsidian-bridge (6 tests). AC04: Insert exports_audit record with mode='placeholder', error_flag=1, hash_at_export=NULL, and update capture status (6 tests). Total: 24 unit tests + 7 integration tests = 31 passing. Coverage: 98.46% (exceeds 80% requirement for Medium risk). All quality checks passing (TypeScript, ESLint, build). Ready for integration with transcription failure handler."
+    },
+    "PLACEHOLDER_EXPORT--T02": {
+      "status": "completed",
+      "started_at": "2025-10-23T17:30:00Z",
+      "completed_at": "2025-10-23T18:45:00Z",
+      "acs_completed": [
+        "PLACEHOLDER_EXPORT-AC05",
+        "PLACEHOLDER_EXPORT-AC06",
+        "PLACEHOLDER_EXPORT-AC07"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed placeholder export core logic following strict TDD. AC05: updateCaptureStatusToPlaceholder() updates captures status to 'exported_placeholder' (18 tests). AC06: Terminal state immutability enforced - no retrofit possible (7 tests). AC07: calculatePlaceholderExportRatio() computes daily aggregation (10 tests). Total: 35 new tests + existing suite = 227/227 passing. All quality checks passing (TypeScript, ESLint, build)."
     }
   }
 }
