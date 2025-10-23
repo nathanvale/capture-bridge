@@ -405,12 +405,12 @@
     "PLACEHOLDER_EXPORT--T02": {
       "status": "in-progress",
       "started_at": "2025-10-23T17:30:00Z",
-      "acs_completed": ["PLACEHOLDER_EXPORT-AC05"],
-      "acs_remaining": [
-        "PLACEHOLDER_EXPORT-AC06",
-        "PLACEHOLDER_EXPORT-AC07"
+      "acs_completed": [
+        "PLACEHOLDER_EXPORT-AC05",
+        "PLACEHOLDER_EXPORT-AC06"
       ],
-      "notes": "AC05 completed: updateCaptureStatusToPlaceholder() function with 18 tests passing. AC06 and AC07 remaining."
+      "acs_remaining": ["PLACEHOLDER_EXPORT-AC07"],
+      "notes": "AC05-06 completed. AC07 (metrics aggregation) remaining."
     }
   }
 }
