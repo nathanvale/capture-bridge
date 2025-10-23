@@ -375,6 +375,17 @@
       ],
       "acs_remaining": [],
       "notes": "Completed backup verification protocol following strict TDD. AC01: PRAGMA integrity_check on backup file (5 tests). AC02: SHA-256 hash comparison for backup vs live DB (7 tests). AC03: Weekly restore test with temp database validation (10 tests). AC04: Escalation policy state machine with 4 states (HEALTHY/WARN/DEGRADED_BACKUP/HALT_PRUNING) and consecutive failure tracking (19 tests). Total 41 tests passing (172/172 overall). Coverage: 90%+. Files created: verification.ts, backup-verification.spec.ts, escalation.ts, verification-escalation.spec.ts. Exports added to backup/index.ts."
+    },
+    "BACKUP_VERIFICATION_PROTOCOL--T02": {
+      "status": "in-progress",
+      "started_at": "2025-10-23T16:30:00Z",
+      "acs_completed": [],
+      "acs_remaining": [
+        "BACKUP_VERIFICATION_PROTOCOL-AC05",
+        "BACKUP_VERIFICATION_PROTOCOL-AC06",
+        "BACKUP_VERIFICATION_PROTOCOL-AC07",
+        "BACKUP_VERIFICATION_PROTOCOL-AC08"
+      ]
     }
   }
 }
