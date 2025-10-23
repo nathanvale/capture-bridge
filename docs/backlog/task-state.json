@@ -464,6 +464,21 @@
       ],
       "acs_remaining": [],
       "notes": "Completed email direct export enhancements following strict TDD. All 4 ACs satisfied: AC05: Status update to 'exported' after successful export via StagingLedger.recordExport() with transactional consistency (3 tests). AC06: Performance validation < 1s (p95) measured full export cycle with benchmarks under 100ms typical (2 tests). AC07: Zero partial writes verified with crash testing - atomic rename ensures all-or-nothing semantics, temp file cleanup prevents orphaned files (3 tests). AC08: Metrics emission export_write_ms histogram with source and mode labels, optional metricsClient parameter maintains backward compatibility (3 tests). Total: 26/26 tests passing, 95%+ coverage. Files modified: email-direct-exporter.ts (status update, metrics, timing), email-direct-exporter.spec.ts (11 new tests for AC05-AC08). Integration complete with StagingLedger transactional guarantees and atomic write durability. PR ready for review."
+    },
+    "CLI_FOUNDATION--T01": {
+      "status": "in-progress",
+      "started_at": "2025-10-24T17:00:00Z",
+      "acs_completed": [],
+      "acs_remaining": [
+        "CLI_FOUNDATION-AC01",
+        "CLI_FOUNDATION-AC02",
+        "CLI_FOUNDATION-AC03",
+        "CLI_FOUNDATION-AC04",
+        "CLI_FOUNDATION-AC05",
+        "CLI_FOUNDATION-AC06",
+        "CLI_FOUNDATION-AC07",
+        "CLI_FOUNDATION-AC08"
+      ]
     }
   }
 }
