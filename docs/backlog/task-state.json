@@ -413,6 +413,19 @@
       ],
       "acs_remaining": [],
       "notes": "Completed placeholder export core logic following strict TDD. AC05: updateCaptureStatusToPlaceholder() updates captures status to 'exported_placeholder' (18 tests). AC06: Terminal state immutability enforced - no retrofit possible (7 tests). AC07: calculatePlaceholderExportRatio() computes daily aggregation (10 tests). Total: 35 new tests + existing suite = 227/227 passing. All quality checks passing (TypeScript, ESLint, build)."
+    },
+    "EMAIL_NORMALIZATION--T01": {
+      "status": "completed",
+      "started_at": "2025-10-23T17:45:00Z",
+      "completed_at": "2025-10-23T18:30:00Z",
+      "acs_completed": [
+        "EMAIL_NORMALIZATION-AC01",
+        "EMAIL_NORMALIZATION-AC02",
+        "EMAIL_NORMALIZATION-AC03",
+        "EMAIL_NORMALIZATION-AC04"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed email body normalization & hash computation following strict TDD. AC01: stripHtmlTags() removes HTML tags and decodes entities (14 tests). AC02: normalizeWhitespace() handles line endings and whitespace normalization (14 tests). AC03: computeEmailContentHash() provides deterministic SHA-256 hashing (11 tests). AC04: updateCaptureContentHash() updates captures table with computed values using parameterized SQL (10 tests). Total: 49/49 tests passing, 100% code coverage. All quality checks passing (TypeScript, ESLint, build)."
     }
   }
 }
