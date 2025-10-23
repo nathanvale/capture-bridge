@@ -418,10 +418,10 @@
       "status": "in-progress",
       "started_at": "2025-10-23T17:45:00Z",
       "acs_completed": [
-        "EMAIL_NORMALIZATION-AC01"
+        "EMAIL_NORMALIZATION-AC01",
+        "EMAIL_NORMALIZATION-AC02"
       ],
       "acs_remaining": [
-        "EMAIL_NORMALIZATION-AC02",
         "EMAIL_NORMALIZATION-AC03",
         "EMAIL_NORMALIZATION-AC04"
       ]
