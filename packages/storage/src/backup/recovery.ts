@@ -1,14 +1,10 @@
+
 import { recordVerificationSuccess, recordVerificationFailure } from './escalation.js'
 
 import type { VerificationResult } from './verification.js'
+import type DatabaseConstructor from 'better-sqlite3'
 
-// Database type interface for better-sqlite3
-interface Database {
-  prepare: (sql: string) => {
-    get: (param: string) => unknown
-    run: (key: string, value: string) => void
-  }
-}
+type Database = ReturnType<typeof DatabaseConstructor>
 
 /**
  * Handles verification result and updates escalation state accordingly.

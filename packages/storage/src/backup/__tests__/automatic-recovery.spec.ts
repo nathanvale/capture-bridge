@@ -25,7 +25,7 @@ describe('Automatic Recovery (AC05)', () => {
     // 3. Close databases
     for (const db of databases) {
       try {
-        if (db.open && !db.readonly) db.close()
+        if (db.open) db.close()
       } catch {
         // Ignore close errors during cleanup
       }

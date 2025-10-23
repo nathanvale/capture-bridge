@@ -30,7 +30,7 @@ describe('Performance (AC07)', () => {
     // 3. Close databases
     for (const db of databases) {
       try {
-        if (db.open && !db.readonly) db.close()
+        if (db.open) db.close()
       } catch {
         // Ignore close errors during cleanup
       }
@@ -135,7 +135,7 @@ describe('Performance (AC07)', () => {
 
     // Calculate p95
     timings.sort((a, b) => a - b)
-    const p95Index = Math.floor(timings.length * 0.95)
+    const p95Index = Math.max(0, Math.ceil(timings.length * 0.95) - 1)
     // eslint-disable-next-line security/detect-object-injection -- p95Index is calculated from array length
     const p95 = timings[p95Index]
 
