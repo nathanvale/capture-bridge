@@ -15,7 +15,6 @@ import { computeEmailContentHash } from './email-hasher.js'
 
 import type DatabaseConstructor from 'better-sqlite3'
 
-
 type Database = ReturnType<typeof DatabaseConstructor>
 
 /**
@@ -61,4 +60,46 @@ export const updateCaptureContentHash = (
   `)
 
   stmt.run(rawContent, contentHash, captureId)
+}
+
+/**
+ * Update capture with metadata including attachment count
+ *
+ * This function updates the meta_json field with email metadata,
+ * including the attachment_count field for AC05.
+ *
+ * @param db - better-sqlite3 Database instance
+ * @param captureId - ULID of the capture to update
+ * @param metadata - Email metadata object with attachment_count
+ *
+ * @example
+ * ```typescript
+ * const metadata = {
+ *   channel: 'email',
+ *   channel_native_id: 'msg_123@example.com',
+ *   message_id: 'msg_123@example.com',
+ *   from: 'sender@example.com',
+ *   subject: 'Test Email',
+ *   date: '2025-10-13T10:00:00Z',
+ *   attachment_count: 2,
+ * }
+ * updateCaptureWithMetadata(db, captureId, metadata)
+ * ```
+ */
+export const updateCaptureWithMetadata = (
+  db: Database,
+  captureId: string,
+  metadata: Record<string, unknown>
+): void => {
+  // Serialize metadata to JSON
+  const metaJson = JSON.stringify(metadata)
+
+  // Update capture with metadata (parameterized query for security)
+  const stmt = db.prepare(`
+    UPDATE captures
+    SET meta_json = ?
+    WHERE id = ?
+  `)
+
+  stmt.run(metaJson, captureId)
 }
