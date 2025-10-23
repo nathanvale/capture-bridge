@@ -43,6 +43,7 @@ export default defineConfig([
   {
     entry: {
       'staging-ledger/staging-ledger': 'src/staging-ledger/staging-ledger.ts',
+      'staging-ledger/update-placeholder-status': 'src/staging-ledger/update-placeholder-status.ts',
     },
     format: ['esm'],
     dts: isDev
@@ -72,6 +73,23 @@ export default defineConfig([
           },
         },
     bundle: true, // Bundle backup utilities to ensure standalone use
+    clean: false,
+    sourcemap: true,
+    target: 'es2022',
+  },
+  {
+    entry: {
+      'metrics/placeholder-export-ratio': 'src/metrics/placeholder-export-ratio.ts',
+    },
+    format: ['esm'],
+    dts: isDev
+      ? false
+      : {
+          compilerOptions: {
+            composite: false,
+          },
+        },
+    bundle: true, // Bundle metrics utilities to ensure standalone use
     clean: false,
     sourcemap: true,
     target: 'es2022',
