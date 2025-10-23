@@ -413,6 +413,17 @@
       ],
       "acs_remaining": [],
       "notes": "Completed placeholder export core logic following strict TDD. AC05: updateCaptureStatusToPlaceholder() updates captures status to 'exported_placeholder' (18 tests). AC06: Terminal state immutability enforced - no retrofit possible (7 tests). AC07: calculatePlaceholderExportRatio() computes daily aggregation (10 tests). Total: 35 new tests + existing suite = 227/227 passing. All quality checks passing (TypeScript, ESLint, build)."
+    },
+    "EMAIL_NORMALIZATION--T01": {
+      "status": "in-progress",
+      "started_at": "2025-10-23T17:45:00Z",
+      "acs_completed": [],
+      "acs_remaining": [
+        "EMAIL_NORMALIZATION-AC01",
+        "EMAIL_NORMALIZATION-AC02",
+        "EMAIL_NORMALIZATION-AC03",
+        "EMAIL_NORMALIZATION-AC04"
+      ]
     }
   }
 }
