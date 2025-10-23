@@ -15,6 +15,20 @@
 const ANSI_REGEX = /\x1b\[\d+m/g
 
 /**
+ * ANSI color code mappings for different output styles
+ */
+const STYLE_CODES = {
+  success: '\x1b[32m', // Green
+  error: '\x1b[31m', // Red
+  warn: '\x1b[33m', // Yellow
+} as const
+
+/**
+ * ANSI reset code to clear all styling
+ */
+const RESET_CODE = '\x1b[0m'
+
+/**
  * Format data as JSON with 2-space indentation
  *
  * @param data - Data to format as JSON
@@ -51,15 +65,8 @@ export const formatHuman = (message: string, style?: 'success' | 'error' | 'warn
     return message
   }
 
-  // Apply ANSI color codes based on style
-  switch (style) {
-    case 'success':
-      return `\x1b[32m${message}\x1b[0m` // Green
-    case 'error':
-      return `\x1b[31m${message}\x1b[0m` // Red
-    case 'warn':
-      return `\x1b[33m${message}\x1b[0m` // Yellow
-    default:
-      return message
-  }
+  // Apply ANSI color codes based on style using lookup object
+  // eslint-disable-next-line security/detect-object-injection -- style is type-safe from union type
+  const colorCode = STYLE_CODES[style]
+  return colorCode ? `${colorCode}${message}${RESET_CODE}` : message
 }

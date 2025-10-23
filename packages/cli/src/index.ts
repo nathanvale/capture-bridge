@@ -17,6 +17,9 @@ import { registerAllCommands } from './lib/command-registry.js'
  * - Error handling in src/errors/
  */
 
+// Version constant
+const CLI_VERSION = '0.1.0'
+
 // Create main program
 const program = new Command()
 
@@ -26,7 +29,7 @@ program
     'ADHD Digital Second Brain - Zero-friction capture layer with durable staging ledger'
   )
   .usage('[command] [options]')
-  .version('0.1.0', '-v, --version', 'Display version information')
+  .version(CLI_VERSION, '-v, --version', 'Display version information')
   .addHelpText(
     'after',
     `
@@ -53,7 +56,7 @@ program
   .description('Display version information')
   .action(() => {
     // eslint-disable-next-line no-console -- CLI output is intentional
-    console.log('0.1.0')
+    console.log(CLI_VERSION)
   })
 
 // Register all commands via the command registry

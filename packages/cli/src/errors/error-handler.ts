@@ -79,7 +79,7 @@ export const formatError = (error: CLIError | Error, options: FormatErrorOptions
       // Human mode
       let output = `Error (${error.code}): ${error.message}`
 
-      if (error.hint) {
+      if (error.hint !== undefined) {
         output += `\nHint: ${error.hint}`
       }
 
