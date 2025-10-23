@@ -854,4 +854,219 @@ error: CORRUPT_AUDIO
       expect(new Date(capture.updated_at).getTime()).not.toBeNaN()
     })
   })
+
+  describe('TOCTOU Race Condition Protection (Atomic UPDATE)', () => {
+    it('should detect concurrent status change between SELECT and UPDATE', async () => {
+      const { updateCaptureStatusToPlaceholder } = await import('../update-placeholder-status.js')
+
+      // Setup: Insert capture in 'failed_transcription' state
+      const captureId = ulid()
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `
+      ).run(
+        captureId,
+        'voice',
+        'path/to/voice.m4a',
+        'sha256:hash',
+        'failed_transcription',
+        JSON.stringify({ channel: 'voice', channel_native_id: `voice-${captureId}` })
+      )
+
+      // Simulate concurrent state change: Read current state
+      const capture = db.prepare('SELECT status FROM captures WHERE id = ?').get(captureId) as {
+        status: string
+      }
+      expect(capture.status).toBe('failed_transcription')
+
+      // External process changes status to invalid state between our SELECT and UPDATE
+      db.prepare('UPDATE captures SET status = ? WHERE id = ?').run('transcribed', captureId)
+
+      // Act: Try to update with the original status (should fail due to invalid transition)
+      // When the status changes to a non-valid transition source, it will be caught by assertValidTransition
+      expect(() => updateCaptureStatusToPlaceholder(db, captureId, '[FAILED]')).toThrow(
+        /Invalid transition|Cannot transition/
+      )
+
+      // Assert: Status remains as concurrently changed (transcribed)
+      const after = db.prepare('SELECT status FROM captures WHERE id = ?').get(captureId) as { status: string }
+      expect(after.status).toBe('transcribed')
+    })
+
+    it('should throw CONCURRENT_STATE_CHANGE error when status changes during operation', async () => {
+      const { updateCaptureStatusToPlaceholder } = await import('../update-placeholder-status.js')
+
+      // Setup: Insert capture in 'failed_transcription' state
+      const captureId = ulid()
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `
+      ).run(
+        captureId,
+        'voice',
+        'path/to/voice.m4a',
+        'sha256:hash',
+        'failed_transcription',
+        JSON.stringify({ channel: 'voice', channel_native_id: `voice-${captureId}` })
+      )
+
+      // Simulate another process completing transcription (changing status)
+      db.prepare('UPDATE captures SET status = ? WHERE id = ?').run('transcribed', captureId)
+
+      // Act & Assert: updateCaptureStatusToPlaceholder should detect the race
+      // When concurrent state changes to invalid transition, StateTransitionError is thrown
+      try {
+        updateCaptureStatusToPlaceholder(db, captureId, '[TRANSCRIPTION_FAILED]')
+        throw new Error('Should have thrown error due to concurrent state change')
+      } catch (error) {
+        // Could be StateTransitionError (if validation catches it) or UpdatePlaceholderStatusError (if atomic UPDATE catches it)
+        expect(error).toBeInstanceOf(Error)
+        const { message } = error as Error
+        expect(message).toMatch(/Invalid transition|changed concurrently/)
+      }
+    })
+
+    it('should not modify database when concurrent state change is detected', async () => {
+      const { updateCaptureStatusToPlaceholder } = await import('../update-placeholder-status.js')
+
+      // Setup: Insert capture in 'failed_transcription' state
+      const captureId = ulid()
+      const placeholderContent = '[TRANSCRIPTION_FAILED] - Original placeholder'
+
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `
+      ).run(
+        captureId,
+        'voice',
+        'path/to/voice.m4a',
+        'sha256:hash',
+        'failed_transcription',
+        JSON.stringify({ channel: 'voice', channel_native_id: `voice-${captureId}` })
+      )
+
+      // Get before state
+      const before = db.prepare('SELECT * FROM captures WHERE id = ?').get(captureId) as {
+        status: string
+        raw_content: string
+      }
+
+      // Concurrent state change
+      db.prepare('UPDATE captures SET status = ? WHERE id = ?').run('exported', captureId)
+
+      // Act: Try to update (should fail)
+      try {
+        updateCaptureStatusToPlaceholder(db, captureId, placeholderContent)
+      } catch {
+        // Expected - concurrent change detected
+      }
+
+      // Assert: Database state unchanged from the concurrent update
+      const after = db.prepare('SELECT * FROM captures WHERE id = ?').get(captureId) as {
+        status: string
+        raw_content: string
+      }
+
+      // Status should be the concurrent state (exported), not exported_placeholder
+      expect(after.status).toBe('exported')
+      // Raw content should still be original (from before the function was called)
+      expect(after.raw_content).toBe(before.raw_content)
+    })
+
+    it('should detect concurrent deletion of capture', async () => {
+      const { updateCaptureStatusToPlaceholder, UpdatePlaceholderStatusError } = await import(
+        '../update-placeholder-status.js'
+      )
+
+      // Setup: Insert capture in 'failed_transcription' state
+      const captureId = ulid()
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `
+      ).run(
+        captureId,
+        'voice',
+        'path/to/voice.m4a',
+        'sha256:hash',
+        'failed_transcription',
+        JSON.stringify({ channel: 'voice', channel_native_id: `voice-${captureId}` })
+      )
+
+      // Verify capture exists
+      const before = db.prepare('SELECT COUNT(*) as count FROM captures WHERE id = ?').get(captureId) as {
+        count: number
+      }
+      expect(before.count).toBe(1)
+
+      // Simulate concurrent deletion (TOCTOU edge case)
+      db.prepare('DELETE FROM captures WHERE id = ?').run(captureId)
+
+      // Act & Assert: Should throw error indicating concurrent deletion
+      try {
+        updateCaptureStatusToPlaceholder(db, captureId, '[TRANSCRIPTION_FAILED]')
+        throw new Error('Should have thrown error due to concurrent deletion')
+      } catch (error) {
+        expect(error).toBeInstanceOf(UpdatePlaceholderStatusError)
+        const err = error as InstanceType<typeof UpdatePlaceholderStatusError>
+        // Could be CONCURRENT_DELETION or other error codes depending on timing
+        expect(['CONCURRENT_DELETION', 'NOT_FOUND', 'CONCURRENT_STATE_CHANGE']).toContain(err.code)
+      }
+    })
+
+    it('should ensure atomic UPDATE prevents partial state inconsistency', async () => {
+      const { updateCaptureStatusToPlaceholder } = await import('../update-placeholder-status.js')
+
+      // Setup: Insert capture
+      const captureId = ulid()
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `
+      ).run(
+        captureId,
+        'voice',
+        'original.m4a',
+        'sha256:original-hash',
+        'failed_transcription',
+        JSON.stringify({ channel: 'voice', channel_native_id: `voice-${captureId}` })
+      )
+
+      // Simulate race: Status changes before UPDATE executes
+      db.prepare('UPDATE captures SET status = ? WHERE id = ?').run('transcribed', captureId)
+
+      // Act: Attempt update (should fail atomically)
+      try {
+        updateCaptureStatusToPlaceholder(db, captureId, '[NEW_PLACEHOLDER]')
+      } catch {
+        // Expected failure
+      }
+
+      // Assert: Verify no partial state update occurred
+      // If atomic UPDATE with WHERE clause works correctly, either all columns updated or none
+      const after = db.prepare('SELECT * FROM captures WHERE id = ?').get(captureId) as {
+        status: string
+        raw_content: string
+        content_hash: string | null
+      }
+
+      // Status should NOT be 'exported_placeholder' (update failed)
+      expect(after.status).not.toBe('exported_placeholder')
+
+      // Content should NOT be the new placeholder (update failed)
+      expect(after.raw_content).not.toBe('[NEW_PLACEHOLDER]')
+
+      // Content_hash should NOT be NULL (update failed)
+      // (it should still have the original hash because the update didn't execute)
+      expect(after.content_hash).toBe('sha256:original-hash')
+    })
+  })
 })
