@@ -73,14 +73,30 @@ describe('Token Expiry Detection [AC04]', () => {
     const { isTokenExpired } = await import('../auth.js')
 
     // Token expiring exactly in 5 minutes
-    const fiveMinutesFromNow = Date.now() + 5 * 60 * 1000
+    // Use a fixed reference point to avoid timing issues between Date.now() calls
+    const now = Date.now()
+    const fiveMinutesFromNow = now + 5 * 60 * 1000
     const token = {
       access_token: 'test-token',
       expiry_date: fiveMinutesFromNow,
     }
 
-    // Should be considered expiring (< 5 minutes, not <=)
-    expect(isTokenExpired(token)).toBe(false)
+    // Mock Date.now() to return consistent value for both calls
+    // This ensures the token expiry_date matches the boundary exactly
+    const originalNow = Date.now
+    ;(globalThis.Date.now as unknown) = () => {
+      // Return our fixed "now" consistently for both calls
+      // This makes the boundary test deterministic
+      return now
+    }
+
+    try {
+      // Token expiring exactly at 5-minute boundary should NOT be considered expired
+      expect(isTokenExpired(token)).toBe(false)
+    } finally {
+      // Restore original Date.now
+      ;(globalThis.Date.now as unknown) = originalNow
+    }
   })
 
   it('should handle token without expiry_date as expired [AC04]', async () => {
