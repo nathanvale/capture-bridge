@@ -426,6 +426,16 @@
       ],
       "acs_remaining": [],
       "notes": "Completed email body normalization & hash computation following strict TDD. AC01: stripHtmlTags() removes HTML tags and decodes entities (14 tests). AC02: normalizeWhitespace() handles line endings and whitespace normalization (14 tests). AC03: computeEmailContentHash() provides deterministic SHA-256 hashing (11 tests). AC04: updateCaptureContentHash() updates captures table with computed values using parameterized SQL (10 tests). Total: 49/49 tests passing, 100% code coverage. All quality checks passing (TypeScript, ESLint, build)."
+    },
+    "EMAIL_NORMALIZATION--T02": {
+      "status": "in-progress",
+      "started_at": "2025-10-23T18:50:00Z",
+      "acs_completed": [],
+      "acs_remaining": [
+        "EMAIL_NORMALIZATION-AC05",
+        "EMAIL_NORMALIZATION-AC06",
+        "EMAIL_NORMALIZATION-AC07"
+      ]
     }
   }
 }
