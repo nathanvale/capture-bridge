@@ -388,6 +388,19 @@
       ],
       "acs_remaining": [],
       "notes": "Completed backup verification recovery and manual intervention following strict TDD. AC05: Automatic recovery - escalation state resets from DEGRADED_BACKUP/HALT_PRUNING → HEALTHY on successful verification (6 tests). AC06: Manual intervention forceBackupAndVerify() enables manual retry via capture doctor --force-backup (5 tests). AC07: Performance validation - p95 = 32ms (well under 10s target) on 10MB DB with 10k rows (4 tests). AC08: Metrics emission - backup_verification_result metric with status='success'|'failure' labels (5 tests). Total 20 new tests passing (192/192 overall). Files created: recovery.ts, manual-intervention.ts, metrics.ts, 4 test files. Exports added to backup/index.ts."
+    },
+    "PLACEHOLDER_EXPORT--T01": {
+      "status": "completed",
+      "started_at": "2025-10-23T18:00:00Z",
+      "completed_at": "2025-10-23T18:30:00Z",
+      "acs_completed": [
+        "PLACEHOLDER_EXPORT-AC01",
+        "PLACEHOLDER_EXPORT-AC02",
+        "PLACEHOLDER_EXPORT-AC03",
+        "PLACEHOLDER_EXPORT-AC04"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed placeholder export for failed transcriptions following strict TDD. AC01: Detect captures with status='failed_transcription' using parameterized SQL query (4 tests). AC02: Generate placeholder markdown with error type, audio path, timestamp, and permanence notice (8 tests). AC03: Atomic write to vault inbox using AtomicFileWriter from obsidian-bridge (6 tests). AC04: Insert exports_audit record with mode='placeholder', error_flag=1, hash_at_export=NULL, and update capture status (6 tests). Total: 24 unit tests + 7 integration tests = 31 passing. Coverage: 98.46% (exceeds 80% requirement for Medium risk). All quality checks passing (TypeScript, ESLint, build). Ready for integration with transcription failure handler."
     }
   }
 }
