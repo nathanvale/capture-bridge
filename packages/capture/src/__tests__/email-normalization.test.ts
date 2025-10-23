@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 
 describe('Email Normalization - AC01: Strip HTML Tags', () => {
   describe('stripHtmlTags', () => {
@@ -491,6 +491,321 @@ describe('Email Normalization - AC03: Compute SHA-256 Content Hash', () => {
       const duration = performance.now() - start
 
       expect(duration).toBeLessThan(1) // < 1ms for typical email
+    })
+  })
+})
+
+describe('Email Normalization - AC04: Update Capture Content Hash', () => {
+  describe('updateCaptureContentHash', () => {
+    let db: any
+    const databases: any[] = []
+
+    beforeEach(async () => {
+      // Import Database constructor
+      const DatabaseModule = await import('better-sqlite3')
+      const Database = DatabaseModule.default
+
+      // Create in-memory database
+      db = new Database(':memory:')
+      databases.push(db)
+
+      // Initialize schema
+      const { initializeDatabase } = await import('@capture-bridge/storage')
+      initializeDatabase(db)
+    })
+
+    afterEach(() => {
+      // Close all databases
+      for (const database of databases) {
+        database.close()
+      }
+      databases.length = 0
+
+      // Force GC
+      if (global.gc) global.gc()
+    })
+
+    it('should update capture with computed hash and raw content', async () => {
+      const { updateCaptureContentHash } = await import('../normalization/capture-updater.js')
+
+      // Insert test capture
+      const captureId = '01HQW3P7XKZM2YJVT8YFGQSZ4M'
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, 'email', '', NULL, 'staged', '{}')
+      `
+      ).run(captureId)
+
+      // Update with normalized content
+      const rawContent = '<p>Hello     World</p>'
+      updateCaptureContentHash(db, captureId, rawContent)
+
+      // Verify stored values
+      const result = db.prepare('SELECT raw_content, content_hash FROM captures WHERE id = ?').get(captureId) as {
+        raw_content: string
+        content_hash: string
+      }
+
+      expect(result.raw_content).toBe(rawContent)
+      expect(result.content_hash).toMatch(/^[0-9a-f]{64}$/)
+    })
+
+    it('should store original raw_content without normalization', async () => {
+      const { updateCaptureContentHash } = await import('../normalization/capture-updater.js')
+
+      const captureId = '01HQW3P7XKZM2YJVT8YFGQSZ4M'
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, 'email', '', NULL, 'staged', '{}')
+      `
+      ).run(captureId)
+
+      // Raw content with HTML and whitespace
+      const rawContent = '<div><p>Hello     World</p>\r\n\r\n<p>Test</p></div>'
+      updateCaptureContentHash(db, captureId, rawContent)
+
+      const result = db.prepare('SELECT raw_content FROM captures WHERE id = ?').get(captureId) as {
+        raw_content: string
+      }
+
+      // Should store original, not normalized
+      expect(result.raw_content).toBe(rawContent)
+      expect(result.raw_content).toContain('<div>')
+      expect(result.raw_content).toContain('\r\n')
+    })
+
+    it('should compute hash from normalized content', async () => {
+      const { updateCaptureContentHash } = await import('../normalization/capture-updater.js')
+      const { computeEmailContentHash } = await import('../normalization/email-hasher.js')
+
+      const captureId = '01HQW3P7XKZM2YJVT8YFGQSZ4M'
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, 'email', '', NULL, 'staged', '{}')
+      `
+      ).run(captureId)
+
+      const rawContent = '<p>Hello     World</p>'
+      updateCaptureContentHash(db, captureId, rawContent)
+
+      const result = db.prepare('SELECT content_hash FROM captures WHERE id = ?').get(captureId) as {
+        content_hash: string
+      }
+
+      // Should match hash computed by AC03
+      const expectedHash = computeEmailContentHash(rawContent)
+      expect(result.content_hash).toBe(expectedHash)
+    })
+
+    it('should use parameterized SQL queries for security', async () => {
+      const { updateCaptureContentHash } = await import('../normalization/capture-updater.js')
+
+      const captureId = '01HQW3P7XKZM2YJVT8YFGQSZ4M'
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, 'email', '', NULL, 'staged', '{}')
+      `
+      ).run(captureId)
+
+      // Attempt SQL injection in raw content
+      const sqlInjection = "'; DROP TABLE captures; --"
+      updateCaptureContentHash(db, captureId, sqlInjection)
+
+      // Verify table still exists and content is escaped
+      const tables = db
+        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='captures'")
+        .all() as Array<{ name: string }>
+
+      expect(tables).toHaveLength(1)
+
+      const result = db.prepare('SELECT raw_content FROM captures WHERE id = ?').get(captureId) as {
+        raw_content: string
+      }
+
+      expect(result.raw_content).toBe(sqlInjection)
+    })
+
+    it('should be idempotent - same update twice produces consistent result', async () => {
+      const { updateCaptureContentHash } = await import('../normalization/capture-updater.js')
+
+      const captureId = '01HQW3P7XKZM2YJVT8YFGQSZ4M'
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, 'email', '', NULL, 'staged', '{}')
+      `
+      ).run(captureId)
+
+      const rawContent = 'Test content'
+
+      // Update twice
+      updateCaptureContentHash(db, captureId, rawContent)
+      updateCaptureContentHash(db, captureId, rawContent)
+
+      // Verify single row with correct values
+      const allResults = db.prepare('SELECT * FROM captures').all()
+      expect(allResults).toHaveLength(1)
+
+      const result = db.prepare('SELECT raw_content, content_hash FROM captures WHERE id = ?').get(captureId) as {
+        raw_content: string
+        content_hash: string
+      }
+
+      expect(result.raw_content).toBe(rawContent)
+      expect(result.content_hash).toMatch(/^[0-9a-f]{64}$/)
+    })
+
+    it('should handle empty raw_content', async () => {
+      const { updateCaptureContentHash } = await import('../normalization/capture-updater.js')
+      const { computeEmailContentHash } = await import('../normalization/email-hasher.js')
+
+      const captureId = '01HQW3P7XKZM2YJVT8YFGQSZ4M'
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, 'email', '', NULL, 'staged', '{}')
+      `
+      ).run(captureId)
+
+      updateCaptureContentHash(db, captureId, '')
+
+      const result = db.prepare('SELECT raw_content, content_hash FROM captures WHERE id = ?').get(captureId) as {
+        raw_content: string
+        content_hash: string
+      }
+
+      expect(result.raw_content).toBe('')
+      expect(result.content_hash).toBe(computeEmailContentHash(''))
+    })
+
+    it('should update 100 captures in under 100ms', async () => {
+      const { updateCaptureContentHash } = await import('../normalization/capture-updater.js')
+
+      // Insert 100 captures
+      const stmt = db.prepare(`
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, 'email', '', NULL, 'staged', '{}')
+      `)
+
+      const captureIds: string[] = []
+      for (let i = 0; i < 100; i++) {
+        const id = `01HQW3P7XKZM2YJVT8YFGQSZ${i.toString().padStart(3, '0')}`
+        stmt.run(id)
+        captureIds.push(id)
+      }
+
+      // Measure update time
+      const start = performance.now()
+
+      for (const id of captureIds) {
+        updateCaptureContentHash(db, id, `Test content ${id}`)
+      }
+
+      const duration = performance.now() - start
+
+      expect(duration).toBeLessThan(100) // < 100ms for 100 updates
+
+      // Verify all updates
+      const results = db.prepare('SELECT COUNT(*) as count FROM captures WHERE content_hash IS NOT NULL').get() as {
+        count: number
+      }
+      expect(results.count).toBe(100)
+    })
+
+    it('should handle database transaction properly', async () => {
+      const { updateCaptureContentHash } = await import('../normalization/capture-updater.js')
+
+      const captureId = '01HQW3P7XKZM2YJVT8YFGQSZ4M'
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, 'email', '', NULL, 'staged', '{}')
+      `
+      ).run(captureId)
+
+      // Update should work within transaction context
+      db.prepare('BEGIN').run()
+      updateCaptureContentHash(db, captureId, 'Test content')
+      db.prepare('COMMIT').run()
+
+      const result = db.prepare('SELECT raw_content FROM captures WHERE id = ?').get(captureId) as {
+        raw_content: string
+      }
+
+      expect(result.raw_content).toBe('Test content')
+    })
+
+    it('should work with captures table schema', async () => {
+      const { updateCaptureContentHash } = await import('../normalization/capture-updater.js')
+
+      const captureId = '01HQW3P7XKZM2YJVT8YFGQSZ4M'
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, 'email', '', NULL, 'staged', '{}')
+      `
+      ).run(captureId)
+
+      updateCaptureContentHash(db, captureId, 'Test content')
+
+      // Verify all columns are correct
+      const result = db
+        .prepare('SELECT id, source, raw_content, content_hash, status FROM captures WHERE id = ?')
+        .get(captureId) as {
+        id: string
+        source: string
+        raw_content: string
+        content_hash: string
+        status: string
+      }
+
+      expect(result.id).toBe(captureId)
+      expect(result.source).toBe('email')
+      expect(result.raw_content).toBe('Test content')
+      expect(result.content_hash).toMatch(/^[0-9a-f]{64}$/)
+      expect(result.status).toBe('staged')
+    })
+
+    it('should integrate with email polling pipeline', async () => {
+      const { updateCaptureContentHash } = await import('../normalization/capture-updater.js')
+      const { computeEmailContentHash } = await import('../normalization/email-hasher.js')
+
+      // Simulate email polling → staging → normalization flow
+      const captureId = '01HQW3P7XKZM2YJVT8YFGQSZ4M'
+      const gmailMessageId = 'msg_12345'
+      const metaJson = JSON.stringify({
+        channel: 'email',
+        channel_native_id: gmailMessageId,
+      })
+
+      // 1. Email polling creates staged capture
+      db.prepare(
+        `
+        INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json)
+        VALUES (?, 'email', '', NULL, 'staged', ?)
+      `
+      ).run(captureId, metaJson)
+
+      // 2. Normalization updates with raw_content + hash
+      const emailBody = '<p>Hello World</p>'
+      updateCaptureContentHash(db, captureId, emailBody)
+
+      // 3. Verify pipeline integration
+      const result = db
+        .prepare('SELECT raw_content, content_hash, status FROM captures WHERE id = ?')
+        .get(captureId) as {
+        raw_content: string
+        content_hash: string
+        status: string
+      }
+
+      expect(result.raw_content).toBe(emailBody)
+      expect(result.content_hash).toBe(computeEmailContentHash(emailBody))
+      expect(result.status).toBe('staged')
     })
   })
 })
