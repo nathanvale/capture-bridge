@@ -43,7 +43,12 @@
   "dependencies": {
     "@capture-bridge/foundation": "workspace:*",
     "@capture-bridge/storage": "workspace:*",
-    "@capture-bridge/capture": "workspace:*"
+    "@capture-bridge/capture": "workspace:*",
+    "commander": "^12.1.0",
+    "chalk": "^5.3.0",
+    "ora": "^8.0.1",
+    "enquirer": "^2.4.1",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "@capture-bridge/build-config": "workspace:*",
