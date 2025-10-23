@@ -13,7 +13,6 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 
 import type DatabaseConstructor from 'better-sqlite3'
 
-
 type Database = ReturnType<typeof DatabaseConstructor>
 
 describe('Service Layer Validation (AC04, AC05, AC06)', () => {
@@ -32,7 +31,7 @@ describe('Service Layer Validation (AC04, AC05, AC06)', () => {
     // Dynamic imports following TestKit pattern
     const DatabaseModule = await import('better-sqlite3')
     const Database = DatabaseModule.default
-    
+
     db = new Database(':memory:')
     databases.push(db)
     const schemaModule = await import('../schema.js')
@@ -93,15 +92,19 @@ describe('Service Layer Validation (AC04, AC05, AC06)', () => {
       }).not.toThrow()
     })
 
-    it('should throw error for invalid transition from staged to exported', () => {
+    it('should allow valid transition from staged to exported (email direct export)', () => {
+      // Email direct export path skips transcription step
       expect(() => {
         assertValidTransition('staged', 'exported')
-      }).toThrow(/Invalid transition/)
+      }).not.toThrow()
+    })
+
+    it('should throw error for invalid transition from exported to transcribed', () => {
       expect(() => {
-        assertValidTransition('staged', 'exported')
-      }).toThrow(/staged/)
+        assertValidTransition('exported', 'transcribed')
+      }).toThrow(/Cannot transition from terminal state/)
       expect(() => {
-        assertValidTransition('staged', 'exported')
+        assertValidTransition('exported', 'transcribed')
       }).toThrow(/exported/)
     })
 
@@ -109,7 +112,7 @@ describe('Service Layer Validation (AC04, AC05, AC06)', () => {
       try {
         assertValidTransition('staged', 'exported')
       } catch (error) {
-        const {message} = (error as Error)
+        const { message } = error as Error
         expect(message).toContain('transcribed')
         expect(message).toContain('failed_transcription')
         expect(message).toContain('exported_duplicate')
@@ -144,10 +147,12 @@ describe('Service Layer Validation (AC04, AC05, AC06)', () => {
   describe('AC06: Recovery query for non-terminal states', () => {
     beforeEach(() => {
       // Insert test captures with various statuses
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
+      `
+      ).run(
         '01HZVM8YWRQT5J3M3K7YPTX9R1',
         'voice',
         '',
@@ -158,10 +163,12 @@ describe('Service Layer Validation (AC04, AC05, AC06)', () => {
         '2025-01-01T10:00:00Z'
       )
 
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
+      `
+      ).run(
         '01HZVM8YWRQT5J3M3K7YPTX9R2',
         'voice',
         'Test transcript',
@@ -172,10 +179,12 @@ describe('Service Layer Validation (AC04, AC05, AC06)', () => {
         '2025-01-01T10:01:00Z'
       )
 
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
+      `
+      ).run(
         '01HZVM8YWRQT5J3M3K7YPTX9R3',
         'voice',
         '',
@@ -186,10 +195,12 @@ describe('Service Layer Validation (AC04, AC05, AC06)', () => {
         '2025-01-01T10:02:00Z'
       )
 
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
+      `
+      ).run(
         '01HZVM8YWRQT5J3M3K7YPTX9R4',
         'voice',
         'Exported content',
@@ -200,10 +211,12 @@ describe('Service Layer Validation (AC04, AC05, AC06)', () => {
         '2025-01-01T10:03:00Z'
       )
 
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
+      `
+      ).run(
         '01HZVM8YWRQT5J3M3K7YPTX9R5',
         'voice',
         'Duplicate content',
@@ -214,10 +227,12 @@ describe('Service Layer Validation (AC04, AC05, AC06)', () => {
         '2025-01-01T10:04:00Z'
       )
 
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
+      `
+      ).run(
         '01HZVM8YWRQT5J3M3K7YPTX9R6',
         'voice',
         '[TRANSCRIPTION_FAILED]',
@@ -231,10 +246,10 @@ describe('Service Layer Validation (AC04, AC05, AC06)', () => {
 
     it('should return only non-terminal captures', () => {
       const recoverable = queryRecoverableCaptures(db)
-      
+
       expect(recoverable).toHaveLength(3)
-      
-      const statuses = recoverable.map(c => c.status)
+
+      const statuses = recoverable.map((c) => c.status)
       expect(statuses).toContain('staged')
       expect(statuses).toContain('transcribed')
       expect(statuses).toContain('failed_transcription')
@@ -245,28 +260,32 @@ describe('Service Layer Validation (AC04, AC05, AC06)', () => {
 
     it('should order captures by created_at ASC', () => {
       const recoverable = queryRecoverableCaptures(db)
-      
+
       expect(recoverable).toHaveLength(3)
-      expect(recoverable[0]!.id).toBe('01HZVM8YWRQT5J3M3K7YPTX9R1') // staged - earliest
-      expect(recoverable[1]!.id).toBe('01HZVM8YWRQT5J3M3K7YPTX9R2') // transcribed
-      expect(recoverable[2]!.id).toBe('01HZVM8YWRQT5J3M3K7YPTX9R3') // failed_transcription
+      expect(recoverable[0]).toBeDefined()
+      expect(recoverable[0]?.id).toBe('01HZVM8YWRQT5J3M3K7YPTX9R1') // staged - earliest
+      expect(recoverable[1]?.id).toBe('01HZVM8YWRQT5J3M3K7YPTX9R2') // transcribed
+      expect(recoverable[2]?.id).toBe('01HZVM8YWRQT5J3M3K7YPTX9R3') // failed_transcription
     })
 
     it('should return empty array when no recoverable captures exist', () => {
       // Delete all non-terminal captures
       db.prepare(`DELETE FROM captures WHERE status NOT LIKE 'exported%'`).run()
-      
+
       const recoverable = queryRecoverableCaptures(db)
-      
+
       expect(recoverable).toEqual([])
     })
 
     it('should include all required fields', () => {
       const recoverable = queryRecoverableCaptures(db)
-      
+
       expect(recoverable).toHaveLength(3)
-      const capture = recoverable[0]!
-      
+      if (recoverable[0] === undefined) {
+        throw new Error('Expected first capture to be defined')
+      }
+      const capture = recoverable[0]
+
       expect(capture).toHaveProperty('id')
       expect(capture).toHaveProperty('status')
       expect(capture).toHaveProperty('created_at')
