@@ -13,3 +13,6 @@ export {
   insertPlaceholderAuditRecord,
 } from './placeholder-export/index.js'
 export type { FailedTranscription } from './placeholder-export/index.js'
+
+// Export email normalization
+export { stripHtmlTags } from './normalization/html-stripper.js'
