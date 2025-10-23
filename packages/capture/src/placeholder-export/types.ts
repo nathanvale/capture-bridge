@@ -15,3 +15,24 @@ export interface FailedTranscription {
   created_at: string
   updated_at: string
 }
+
+/**
+ * Error types for transcription failures
+ */
+export type TranscriptionErrorType =
+  | 'TIMEOUT'
+  | 'CORRUPT_AUDIO'
+  | 'OOM'
+  | 'UNSUPPORTED_FORMAT'
+  | 'FILE_NOT_FOUND'
+  | 'UNKNOWN'
+
+/**
+ * Parsed metadata from meta_json
+ */
+export interface CaptureMetadata {
+  file_path?: string
+  attempt_count?: number
+  audio_fp?: string
+  message_id?: string
+}
