@@ -6,5 +6,10 @@ export { WhisperModel } from './transcription/whisper-model.js'
 export type { ModelLoadConfig, LoadedModel, ModelStatus } from './transcription/whisper-model.js'
 
 // Export placeholder-export module
-export { detectFailedTranscriptions } from './placeholder-export/index.js'
+export {
+  detectFailedTranscriptions,
+  generatePlaceholderMarkdown,
+  exportPlaceholderToVault,
+  insertPlaceholderAuditRecord,
+} from './placeholder-export/index.js'
 export type { FailedTranscription } from './placeholder-export/index.js'

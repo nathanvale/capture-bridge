@@ -362,8 +362,8 @@ describe('generatePlaceholderMarkdown - AC02', () => {
     const markdown = generatePlaceholderMarkdown(capture, 'FILE_NOT_FOUND', 'Audio file no longer exists')
 
     // Assert
-    expect(markdown).toContain('PERMANENT')
-    expect(markdown).toMatch(/cannot be retried|permanent/i)
+    expect(markdown).toContain('permanent')
+    expect(markdown).toMatch(/will not be retried|permanent/i)
   })
 
   it('should format all error types correctly', async () => {

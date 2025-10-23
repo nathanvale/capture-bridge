@@ -57,8 +57,13 @@ export const generatePlaceholderMarkdown = (
   errorType: TranscriptionErrorType,
   reason: string
 ): string => {
-  // Parse metadata JSON
-  const metadata: CaptureMetadata = JSON.parse(capture.meta_json)
+  // Parse metadata JSON with fallback to empty object on parse failure
+  let metadata: CaptureMetadata = {}
+  try {
+    metadata = JSON.parse(capture.meta_json) as CaptureMetadata
+  } catch {
+    // Malformed JSON - safe to use empty metadata as fallback
+  }
   const attemptCount = metadata.attempt_count ?? 0
 
   // Build source-specific metadata section
@@ -79,7 +84,7 @@ Error: ${reason}
 Retry count: ${attemptCount}
 ---
 
-This placeholder is PERMANENT and cannot be retried in MPPP.
+This placeholder is permanent and will not be retried automatically.
 Original content unavailable due to processing failure.`
 
   return placeholder
@@ -98,6 +103,18 @@ export const exportPlaceholderToVault = async (
   captureId: string,
   placeholder: string
 ): Promise<PlaceholderExportResult> => {
+  // Validate absolute vault path per operational file guidelines
+  const path = await import('node:path')
+  if (!path.isAbsolute(vaultRoot)) {
+    return {
+      success: false,
+      error: {
+        code: 'INVALID_VAULT_PATH',
+        message: 'Vault root must be an absolute path',
+      },
+    }
+  }
+
   // GREEN phase - use existing atomic writer from obsidian-bridge
   const result = await writeAtomic(captureId, placeholder, vaultRoot)
 
