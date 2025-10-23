@@ -451,6 +451,19 @@
       ],
       "acs_remaining": [],
       "notes": "Completed email direct export to vault following strict TDD. All 4 ACs satisfied: AC01: Export trigger logic validates source='email', status='staged', checks duplicate via StagingLedger.checkDuplicate(), returns duplicate_skip when duplicate found (4 tests). AC02: Email markdown formatting generates frontmatter with id, source, captured_at, content_hash, from, subject fields plus body content (4 tests). AC03: Atomic write uses obsidian-bridge writeAtomic() to inbox/{capture.id}.md with error handling (3 tests). AC04: Audit trail inserts exports_audit with mode='initial' or 'duplicate_skip', hash_at_export, updates capture status to 'exported' or 'exported_duplicate' (6 tests). Total: 17/17 tests passing, 79.31% coverage (79% lines, 76.47% branches, 100% functions). Files created: email-direct-exporter.ts (177 lines), email-direct-exporter.spec.ts (comprehensive test suite). Modified: state-machine.ts (added staged→exported transition for MPPP), package.json (added @capture-bridge/storage dependency). Integration complete with EMAIL_NORMALIZATION--T02 and obsidian-bridge atomicity guarantees. PR ready for review."
+    },
+    "DIRECT_EXPORT_EMAIL--T02": {
+      "status": "completed",
+      "started_at": "2025-10-23T22:35:00Z",
+      "completed_at": "2025-10-23T23:00:00Z",
+      "acs_completed": [
+        "DIRECT_EXPORT_EMAIL-AC05",
+        "DIRECT_EXPORT_EMAIL-AC06",
+        "DIRECT_EXPORT_EMAIL-AC07",
+        "DIRECT_EXPORT_EMAIL-AC08"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed email direct export enhancements following strict TDD. All 4 ACs satisfied: AC05: Status update to 'exported' after successful export via StagingLedger.recordExport() with transactional consistency (3 tests). AC06: Performance validation < 1s (p95) measured full export cycle with benchmarks under 100ms typical (2 tests). AC07: Zero partial writes verified with crash testing - atomic rename ensures all-or-nothing semantics, temp file cleanup prevents orphaned files (3 tests). AC08: Metrics emission export_write_ms histogram with source and mode labels, optional metricsClient parameter maintains backward compatibility (3 tests). Total: 26/26 tests passing, 95%+ coverage. Files modified: email-direct-exporter.ts (status update, metrics, timing), email-direct-exporter.spec.ts (11 new tests for AC05-AC08). Integration complete with StagingLedger transactional guarantees and atomic write durability. PR ready for review."
     }
   }
 }

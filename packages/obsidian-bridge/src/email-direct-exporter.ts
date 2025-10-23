@@ -30,16 +30,22 @@ export interface ExportResult {
   }
 }
 
+export interface MetricsClient {
+  histogram: (metric: string, value: number, labels?: Record<string, string>) => void
+}
+
 /**
  * Export an email capture to the vault
  * AC01: Trigger on status='staged' (email) AND duplicate check passed
  * AC03: Atomic write to inbox/{capture.id}.md
  * AC04: Insert exports_audit record
+ * AC08: Emit export_write_ms histogram metric (T02)
  */
 export const exportEmailCapture = async (
   captureId: string,
   vaultPath: string,
-  db: Database
+  db: Database,
+  metricsClient?: MetricsClient
 ): Promise<ExportResult> => {
   // Import dependencies dynamically
   // eslint-disable-next-line import/no-unresolved -- TypeScript path mapping resolves this
@@ -91,7 +97,8 @@ export const exportEmailCapture = async (
   const dupCheck = ledger.checkDuplicate(capture.content_hash)
 
   if (dupCheck.is_duplicate) {
-    // Record as duplicate_skip
+    // Record as duplicate_skip (with timing for AC08)
+    const dupStartTime = performance.now()
     await ledger.recordExport(captureId, {
       vault_path:
         'original_export_path' in dupCheck && dupCheck.original_export_path
@@ -101,6 +108,15 @@ export const exportEmailCapture = async (
       mode: 'duplicate_skip',
       error_flag: false,
     })
+    const dupDuration = performance.now() - dupStartTime
+
+    // AC08: Emit metric for duplicate_skip mode (T02)
+    if (metricsClient) {
+      metricsClient.histogram('export_write_ms', dupDuration, {
+        source: 'email',
+        mode: 'duplicate_skip',
+      })
+    }
 
     return {
       success: true,
@@ -111,8 +127,10 @@ export const exportEmailCapture = async (
   // AC02: Format as markdown
   const markdown = formatEmailMarkdown(captureRecord)
 
-  // AC03: Atomic write to vault
+  // AC03: Atomic write to vault (with timing for AC08)
+  const writeStartTime = performance.now()
   const writeResult = await writeAtomic(captureId, markdown, vaultPath)
+  const writeDuration = performance.now() - writeStartTime
 
   if (!writeResult.success) {
     // Write failed, don't update status
@@ -133,6 +151,14 @@ export const exportEmailCapture = async (
     mode: 'initial',
     error_flag: false,
   })
+
+  // AC08: Emit export_write_ms histogram metric (T02)
+  if (metricsClient) {
+    metricsClient.histogram('export_write_ms', writeDuration, {
+      source: 'email',
+      mode: 'initial',
+    })
+  }
 
   return {
     success: true,
