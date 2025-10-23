@@ -18,8 +18,7 @@ import type { Command } from 'commander'
 export const registerCaptureVoiceCommand = (captureCommand: Command): void => {
   captureCommand
     .command('voice <file>')
-    .description('Capture voice memo file into staging ledger')
-    .argument('<file>', 'Path to voice memo file (m4a, mp3, wav)')
+    .description('Capture voice memo file into staging ledger (m4a, mp3, wav)')
     .option('-t, --transcribe', 'Transcribe immediately (default: queue for later)')
     .option('--tag <tags>', 'Comma-separated tags for categorization')
     .option('--priority <level>', 'Priority level: low, normal, high (default: normal)', 'normal')
@@ -57,8 +56,7 @@ Examples:
 export const registerCaptureEmailCommand = (captureCommand: Command): void => {
   captureCommand
     .command('email <file>')
-    .description('Capture email from EML file into staging ledger')
-    .argument('<file>', 'Path to .eml file (or "-" for stdin)')
+    .description('Capture email from EML file into staging ledger (or "-" for stdin)')
     .option('--tag <tags>', 'Comma-separated tags for categorization')
     .option('-j, --json', 'Output result as JSON')
     .addHelpText(
@@ -128,8 +126,9 @@ Examples:
 export const registerCaptureShowCommand = (captureCommand: Command): void => {
   captureCommand
     .command('show <id>')
-    .description('Show detailed capture information including raw content and metadata')
-    .argument('<id>', 'Capture ID (ULID format, e.g., 01HQW3P7XKZM2YJVT8YFGQSZ4M)')
+    .description(
+      'Show detailed capture information including raw content and metadata (ULID format, e.g., 01HQW3P7XKZM2YJVT8YFGQSZ4M)'
+    )
     .option('-j, --json', 'Output full capture as JSON object')
     .addHelpText(
       'after',

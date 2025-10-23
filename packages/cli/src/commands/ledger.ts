@@ -67,8 +67,9 @@ Output includes:
 export const registerLedgerInspectCommand = (ledgerCommand: Command): void => {
   ledgerCommand
     .command('inspect <id>')
-    .description('Show detailed information for a single capture')
-    .argument('<id>', 'Capture ID (ULID format, e.g., 01HQW3P7XKZM2YJVT8YFGQSZ4M)')
+    .description(
+      'Show detailed information for a single capture (ULID format, e.g., 01HQW3P7XKZM2YJVT8YFGQSZ4M)'
+    )
     .option('-j, --json', 'Output full capture as JSON object')
     .addHelpText(
       'after',
