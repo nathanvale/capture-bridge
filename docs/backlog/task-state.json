@@ -388,6 +388,17 @@
       ],
       "acs_remaining": [],
       "notes": "Completed backup verification recovery and manual intervention following strict TDD. AC05: Automatic recovery - escalation state resets from DEGRADED_BACKUP/HALT_PRUNING → HEALTHY on successful verification (6 tests). AC06: Manual intervention forceBackupAndVerify() enables manual retry via capture doctor --force-backup (5 tests). AC07: Performance validation - p95 = 32ms (well under 10s target) on 10MB DB with 10k rows (4 tests). AC08: Metrics emission - backup_verification_result metric with status='success'|'failure' labels (5 tests). Total 20 new tests passing (192/192 overall). Files created: recovery.ts, manual-intervention.ts, metrics.ts, 4 test files. Exports added to backup/index.ts."
+    },
+    "PLACEHOLDER_EXPORT--T01": {
+      "status": "in-progress",
+      "started_at": "2025-10-23T18:00:00Z",
+      "acs_completed": [],
+      "acs_remaining": [
+        "PLACEHOLDER_EXPORT-AC01",
+        "PLACEHOLDER_EXPORT-AC02",
+        "PLACEHOLDER_EXPORT-AC03",
+        "PLACEHOLDER_EXPORT-AC04"
+      ]
     }
   }
 }
