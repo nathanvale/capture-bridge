@@ -111,3 +111,46 @@ export const exportPlaceholderToVault = async (
     export_path: result.export_path,
   }
 }
+
+/**
+ * AC04: Insert exports_audit record for placeholder export
+ *
+ * @param db SQLite database instance
+ * @param captureId ULID from captures.id
+ * @param vaultPath Relative path to exported file (e.g., "inbox/{id}.md")
+ * @param _errorType Type of transcription error (reserved for future use)
+ * @param _reason Human-readable error message (reserved for future use)
+ * @returns Result with success status
+ */
+export const insertPlaceholderAuditRecord = async (
+  db: Database.Database,
+  captureId: string,
+  vaultPath: string,
+  _errorType: TranscriptionErrorType,
+  _reason: string
+): Promise<{ success: boolean; error?: { code: string; message: string } }> => {
+  try {
+    // Generate ULID for audit record
+    const { ulid } = await import('ulid')
+    const auditId = ulid()
+
+    // Insert exports_audit record with NULL hash_at_export
+    db.prepare(
+      `INSERT INTO exports_audit (id, capture_id, vault_path, hash_at_export, mode, error_flag, exported_at)
+       VALUES (?, ?, ?, NULL, 'placeholder', 1, ?)`
+    ).run(auditId, captureId, vaultPath, new Date().toISOString())
+
+    // Update capture status to 'exported_placeholder'
+    db.prepare(`UPDATE captures SET status = 'exported_placeholder' WHERE id = ?`).run(captureId)
+
+    return { success: true }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        code: 'AUDIT_INSERT_FAILED',
+        message: error instanceof Error ? error.message : String(error),
+      },
+    }
+  }
+}

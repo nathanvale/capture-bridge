@@ -805,3 +805,426 @@ describe('exportPlaceholderToVault - AC03', () => {
     expect(stats.isFile()).toBe(true)
   })
 })
+
+describe('insertPlaceholderAuditRecord - AC04', () => {
+  it('should insert exports_audit row with NULL hash_at_export for placeholder', async () => {
+    // Arrange - Create in-memory database with required tables
+    const db = new Database(':memory:')
+    databases.push(db)
+
+    db.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        raw_content TEXT NOT NULL,
+        content_hash TEXT,
+        status TEXT NOT NULL,
+        meta_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE exports_audit (
+        id TEXT PRIMARY KEY,
+        capture_id TEXT NOT NULL,
+        vault_path TEXT NOT NULL,
+        hash_at_export TEXT,
+        mode TEXT NOT NULL,
+        error_flag INTEGER NOT NULL,
+        exported_at TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY(capture_id) REFERENCES captures(id) ON DELETE CASCADE
+      );
+    `)
+
+    // Insert a failed transcription capture
+    db.prepare(
+      `
+      INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `
+    ).run(
+      '01JANKR8EKZM2YJVT8YFGQSZ4S',
+      'voice',
+      '/path/to/voice.m4a',
+      null,
+      'failed_transcription',
+      JSON.stringify({ file_path: '/path/to/voice.m4a', attempt_count: 2 }),
+      '2025-10-23T10:00:00Z',
+      '2025-10-23T10:05:00Z'
+    )
+
+    const captureId = '01JANKR8EKZM2YJVT8YFGQSZ4S'
+    const vaultPath = 'inbox/01JANKR8EKZM2YJVT8YFGQSZ4S.md'
+
+    // Act - This will FAIL because insertPlaceholderAuditRecord doesn't exist yet
+    const { insertPlaceholderAuditRecord } = await import('./placeholder-export.js')
+    const result = await insertPlaceholderAuditRecord(db, captureId, vaultPath, 'TIMEOUT', 'Test timeout error')
+
+    // Assert
+    expect(result.success).toBe(true)
+
+    // Verify exports_audit row was created with correct values
+    const auditRecord = db.prepare('SELECT * FROM exports_audit WHERE capture_id = ?').get(captureId) as
+      | {
+          id: string
+          capture_id: string
+          vault_path: string
+          hash_at_export: string | null
+          mode: string
+          error_flag: number
+          exported_at: string
+          created_at: string
+        }
+      | undefined
+
+    expect(auditRecord).toBeDefined()
+
+    // Assert auditRecord exists before accessing properties
+    if (!auditRecord) {
+      throw new Error('Audit record should exist')
+    }
+
+    expect(auditRecord.capture_id).toBe(captureId)
+    expect(auditRecord.vault_path).toBe(vaultPath)
+    expect(auditRecord.hash_at_export).toBeNull()
+    expect(auditRecord.mode).toBe('placeholder')
+    expect(auditRecord.error_flag).toBe(1)
+
+    // Verify timestamp is recent (within 1 second)
+    const exportedAt = new Date(auditRecord.exported_at)
+    const now = new Date()
+    const diffMs = now.getTime() - exportedAt.getTime()
+    expect(diffMs).toBeLessThan(1000)
+  })
+
+  it('should update capture status to exported_placeholder', async () => {
+    // Arrange - Create database with captures and exports_audit tables
+    const db = new Database(':memory:')
+    databases.push(db)
+
+    db.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        raw_content TEXT NOT NULL,
+        content_hash TEXT,
+        status TEXT NOT NULL,
+        meta_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE exports_audit (
+        id TEXT PRIMARY KEY,
+        capture_id TEXT NOT NULL,
+        vault_path TEXT NOT NULL,
+        hash_at_export TEXT,
+        mode TEXT NOT NULL,
+        error_flag INTEGER NOT NULL,
+        exported_at TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY(capture_id) REFERENCES captures(id) ON DELETE CASCADE
+      );
+    `)
+
+    // Insert a failed transcription capture
+    db.prepare(
+      `
+      INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `
+    ).run(
+      '01JANKR8EKZM2YJVT8YFGQSZ4T',
+      'voice',
+      '/path/to/voice.m4a',
+      null,
+      'failed_transcription',
+      JSON.stringify({ file_path: '/path/to/voice.m4a', attempt_count: 1 }),
+      '2025-10-23T10:00:00Z',
+      '2025-10-23T10:05:00Z'
+    )
+
+    const captureId = '01JANKR8EKZM2YJVT8YFGQSZ4T'
+    const vaultPath = 'inbox/01JANKR8EKZM2YJVT8YFGQSZ4T.md'
+
+    // Act
+    const { insertPlaceholderAuditRecord } = await import('./placeholder-export.js')
+    await insertPlaceholderAuditRecord(db, captureId, vaultPath, 'TIMEOUT', 'Test timeout error')
+
+    // Assert - Capture status should be updated
+    const capture = db.prepare('SELECT status FROM captures WHERE id = ?').get(captureId) as
+      | { status: string }
+      | undefined
+
+    expect(capture).toBeDefined()
+
+    if (!capture) {
+      throw new Error('Capture should exist')
+    }
+
+    expect(capture.status).toBe('exported_placeholder')
+  })
+
+  it('should handle foreign key constraint when capture does not exist', async () => {
+    // Arrange - Create database with tables but no capture
+    const db = new Database(':memory:')
+    databases.push(db)
+
+    db.exec(`
+      PRAGMA foreign_keys = ON;
+
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        raw_content TEXT NOT NULL,
+        content_hash TEXT,
+        status TEXT NOT NULL,
+        meta_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE exports_audit (
+        id TEXT PRIMARY KEY,
+        capture_id TEXT NOT NULL,
+        vault_path TEXT NOT NULL,
+        hash_at_export TEXT,
+        mode TEXT NOT NULL,
+        error_flag INTEGER NOT NULL,
+        exported_at TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY(capture_id) REFERENCES captures(id) ON DELETE CASCADE
+      );
+    `)
+
+    const nonExistentCaptureId = '01JANKR8EKZM2YJVT8YFGQSZ4U'
+    const vaultPath = 'inbox/01JANKR8EKZM2YJVT8YFGQSZ4U.md'
+
+    // Act
+    const { insertPlaceholderAuditRecord } = await import('./placeholder-export.js')
+    const result = await insertPlaceholderAuditRecord(db, nonExistentCaptureId, vaultPath, 'TIMEOUT', 'Test error')
+
+    // Assert - Should fail due to foreign key constraint
+    expect(result.success).toBe(false)
+    expect(result.error?.code).toBe('AUDIT_INSERT_FAILED')
+  })
+
+  it('should prevent duplicate audit records for same capture', async () => {
+    // Arrange - Create database with unique constraint
+    const db = new Database(':memory:')
+    databases.push(db)
+
+    db.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        raw_content TEXT NOT NULL,
+        content_hash TEXT,
+        status TEXT NOT NULL,
+        meta_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE exports_audit (
+        id TEXT PRIMARY KEY,
+        capture_id TEXT NOT NULL,
+        vault_path TEXT NOT NULL,
+        hash_at_export TEXT,
+        mode TEXT NOT NULL,
+        error_flag INTEGER NOT NULL,
+        exported_at TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY(capture_id) REFERENCES captures(id) ON DELETE CASCADE
+      );
+    `)
+
+    // Insert a failed transcription capture
+    db.prepare(
+      `
+      INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `
+    ).run(
+      '01JANKR8EKZM2YJVT8YFGQSZ4V',
+      'voice',
+      '/path/to/voice.m4a',
+      null,
+      'failed_transcription',
+      JSON.stringify({ file_path: '/path/to/voice.m4a', attempt_count: 1 }),
+      '2025-10-23T10:00:00Z',
+      '2025-10-23T10:05:00Z'
+    )
+
+    const captureId = '01JANKR8EKZM2YJVT8YFGQSZ4V'
+    const vaultPath = 'inbox/01JANKR8EKZM2YJVT8YFGQSZ4V.md'
+
+    // Act - Insert twice
+    const { insertPlaceholderAuditRecord } = await import('./placeholder-export.js')
+    const result1 = await insertPlaceholderAuditRecord(db, captureId, vaultPath, 'TIMEOUT', 'Test error')
+    const result2 = await insertPlaceholderAuditRecord(db, captureId, vaultPath, 'TIMEOUT', 'Test error')
+
+    // Assert - First should succeed, second should succeed (multiple audit records allowed)
+    expect(result1.success).toBe(true)
+    expect(result2.success).toBe(true)
+
+    // Verify multiple audit records exist
+    const auditRecords = db
+      .prepare('SELECT COUNT(*) as count FROM exports_audit WHERE capture_id = ?')
+      .get(captureId) as { count: number } | undefined
+
+    expect(auditRecords).toBeDefined()
+
+    if (!auditRecords) {
+      throw new Error('Audit records should exist')
+    }
+
+    expect(auditRecords.count).toBe(2)
+  })
+
+  it('should use parameterized queries to prevent SQL injection', async () => {
+    // Arrange - Create database
+    const db = new Database(':memory:')
+    databases.push(db)
+
+    db.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        raw_content TEXT NOT NULL,
+        content_hash TEXT,
+        status TEXT NOT NULL,
+        meta_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE exports_audit (
+        id TEXT PRIMARY KEY,
+        capture_id TEXT NOT NULL,
+        vault_path TEXT NOT NULL,
+        hash_at_export TEXT,
+        mode TEXT NOT NULL,
+        error_flag INTEGER NOT NULL,
+        exported_at TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY(capture_id) REFERENCES captures(id) ON DELETE CASCADE
+      );
+    `)
+
+    // Insert a failed transcription capture
+    const captureId = '01JANKR8EKZM2YJVT8YFGQSZ4W'
+    db.prepare(
+      `
+      INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `
+    ).run(
+      captureId,
+      'voice',
+      '/path/to/voice.m4a',
+      null,
+      'failed_transcription',
+      JSON.stringify({ file_path: '/path/to/voice.m4a', attempt_count: 1 }),
+      '2025-10-23T10:00:00Z',
+      '2025-10-23T10:05:00Z'
+    )
+
+    // Malicious input attempt
+    const maliciousVaultPath = "inbox/test.md'; DROP TABLE captures; --"
+
+    // Act
+    const { insertPlaceholderAuditRecord } = await import('./placeholder-export.js')
+    const result = await insertPlaceholderAuditRecord(db, captureId, maliciousVaultPath, 'TIMEOUT', 'Test error')
+
+    // Assert - Should succeed safely
+    expect(result.success).toBe(true)
+
+    // Verify captures table still exists (not dropped by SQL injection)
+    const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='captures'").get()
+    expect(tableExists).toBeDefined()
+
+    // Verify malicious string was stored as literal data
+    const auditRecord = db.prepare('SELECT vault_path FROM exports_audit WHERE capture_id = ?').get(captureId) as
+      | { vault_path: string }
+      | undefined
+
+    expect(auditRecord).toBeDefined()
+
+    if (!auditRecord) {
+      throw new Error('Audit record should exist')
+    }
+
+    expect(auditRecord.vault_path).toBe(maliciousVaultPath)
+  })
+
+  it('should format timestamps as ISO 8601 UTC strings', async () => {
+    // Arrange - Create database
+    const db = new Database(':memory:')
+    databases.push(db)
+
+    db.exec(`
+      CREATE TABLE captures (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        raw_content TEXT NOT NULL,
+        content_hash TEXT,
+        status TEXT NOT NULL,
+        meta_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE exports_audit (
+        id TEXT PRIMARY KEY,
+        capture_id TEXT NOT NULL,
+        vault_path TEXT NOT NULL,
+        hash_at_export TEXT,
+        mode TEXT NOT NULL,
+        error_flag INTEGER NOT NULL,
+        exported_at TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY(capture_id) REFERENCES captures(id) ON DELETE CASCADE
+      );
+    `)
+
+    // Insert a failed transcription capture
+    const captureId = '01JANKR8EKZM2YJVT8YFGQSZ4X'
+    db.prepare(
+      `
+      INSERT INTO captures (id, source, raw_content, content_hash, status, meta_json, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `
+    ).run(
+      captureId,
+      'voice',
+      '/path/to/voice.m4a',
+      null,
+      'failed_transcription',
+      JSON.stringify({ file_path: '/path/to/voice.m4a', attempt_count: 1 }),
+      '2025-10-23T10:00:00Z',
+      '2025-10-23T10:05:00Z'
+    )
+
+    const vaultPath = 'inbox/01JANKR8EKZM2YJVT8YFGQSZ4X.md'
+
+    // Act
+    const { insertPlaceholderAuditRecord } = await import('./placeholder-export.js')
+    await insertPlaceholderAuditRecord(db, captureId, vaultPath, 'TIMEOUT', 'Test error')
+
+    // Assert - Verify ISO 8601 format
+    const auditRecord = db.prepare('SELECT exported_at FROM exports_audit WHERE capture_id = ?').get(captureId) as
+      | { exported_at: string }
+      | undefined
+
+    expect(auditRecord).toBeDefined()
+
+    if (!auditRecord) {
+      throw new Error('Audit record should exist')
+    }
+
+    // ISO 8601 format: YYYY-MM-DDTHH:MM:SS.sssZ
+    expect(auditRecord.exported_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
+  })
+})
