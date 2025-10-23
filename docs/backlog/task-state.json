@@ -377,15 +377,17 @@
       "notes": "Completed backup verification protocol following strict TDD. AC01: PRAGMA integrity_check on backup file (5 tests). AC02: SHA-256 hash comparison for backup vs live DB (7 tests). AC03: Weekly restore test with temp database validation (10 tests). AC04: Escalation policy state machine with 4 states (HEALTHY/WARN/DEGRADED_BACKUP/HALT_PRUNING) and consecutive failure tracking (19 tests). Total 41 tests passing (172/172 overall). Coverage: 90%+. Files created: verification.ts, backup-verification.spec.ts, escalation.ts, verification-escalation.spec.ts. Exports added to backup/index.ts."
     },
     "BACKUP_VERIFICATION_PROTOCOL--T02": {
-      "status": "in-progress",
+      "status": "completed",
       "started_at": "2025-10-23T16:30:00Z",
-      "acs_completed": [],
-      "acs_remaining": [
+      "completed_at": "2025-10-23T17:15:00Z",
+      "acs_completed": [
         "BACKUP_VERIFICATION_PROTOCOL-AC05",
         "BACKUP_VERIFICATION_PROTOCOL-AC06",
         "BACKUP_VERIFICATION_PROTOCOL-AC07",
         "BACKUP_VERIFICATION_PROTOCOL-AC08"
-      ]
+      ],
+      "acs_remaining": [],
+      "notes": "Completed backup verification recovery and manual intervention following strict TDD. AC05: Automatic recovery - escalation state resets from DEGRADED_BACKUP/HALT_PRUNING → HEALTHY on successful verification (6 tests). AC06: Manual intervention forceBackupAndVerify() enables manual retry via capture doctor --force-backup (5 tests). AC07: Performance validation - p95 = 32ms (well under 10s target) on 10MB DB with 10k rows (4 tests). AC08: Metrics emission - backup_verification_result metric with status='success'|'failure' labels (5 tests). Total 20 new tests passing (192/192 overall). Files created: recovery.ts, manual-intervention.ts, metrics.ts, 4 test files. Exports added to backup/index.ts."
     }
   }
 }
