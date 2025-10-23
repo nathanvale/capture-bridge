@@ -17,3 +17,4 @@ export type { FailedTranscription } from './placeholder-export/index.js'
 // Export email normalization
 export { stripHtmlTags } from './normalization/html-stripper.js'
 export { normalizeWhitespace } from './normalization/whitespace-normalizer.js'
+export { computeEmailContentHash } from './normalization/email-hasher.js'

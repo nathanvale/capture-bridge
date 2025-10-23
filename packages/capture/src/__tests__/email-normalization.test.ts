@@ -309,3 +309,188 @@ describe('Email Normalization - AC02: Normalize Whitespace', () => {
     })
   })
 })
+
+describe('Email Normalization - AC03: Compute SHA-256 Content Hash', () => {
+  describe('computeEmailContentHash', () => {
+    it('should compute deterministic SHA-256 hash for simple text', async () => {
+      const { computeEmailContentHash } = await import('../normalization/email-hasher.js')
+
+      const input = 'Hello World'
+      const result = computeEmailContentHash(input)
+
+      // Should be 64-character hex string
+      expect(result).toMatch(/^[0-9a-f]{64}$/)
+
+      // Should be deterministic - same input produces same hash
+      const result2 = computeEmailContentHash(input)
+      expect(result).toBe(result2)
+    })
+
+    it('should normalize HTML before hashing', async () => {
+      const { computeEmailContentHash } = await import('../normalization/email-hasher.js')
+
+      const htmlInput = '<p>Hello     World</p>'
+      const plainInput = 'Hello World'
+
+      const htmlHash = computeEmailContentHash(htmlInput)
+      const plainHash = computeEmailContentHash(plainInput)
+
+      // After HTML stripping and whitespace normalization, should produce same hash
+      expect(htmlHash).toBe(plainHash)
+    })
+
+    it('should produce identical hashes for content with different spacing', async () => {
+      const { computeEmailContentHash } = await import('../normalization/email-hasher.js')
+
+      const input1 = 'Hello     World'
+      const input2 = 'Hello\t\tWorld'
+      const input3 = '  Hello World  '
+
+      const hash1 = computeEmailContentHash(input1)
+      const hash2 = computeEmailContentHash(input2)
+      const hash3 = computeEmailContentHash(input3)
+
+      // All should normalize to same content and produce same hash
+      expect(hash1).toBe(hash2)
+      expect(hash2).toBe(hash3)
+    })
+
+    it('should produce different hashes for different content', async () => {
+      const { computeEmailContentHash } = await import('../normalization/email-hasher.js')
+
+      const input1 = 'Hello World'
+      const input2 = 'Goodbye World'
+
+      const hash1 = computeEmailContentHash(input1)
+      const hash2 = computeEmailContentHash(input2)
+
+      expect(hash1).not.toBe(hash2)
+    })
+
+    it('should handle empty string deterministically', async () => {
+      const { computeEmailContentHash } = await import('../normalization/email-hasher.js')
+
+      const result = computeEmailContentHash('')
+
+      // Should be 64-character hex string (SHA-256 of empty string)
+      expect(result).toMatch(/^[0-9a-f]{64}$/)
+
+      // Should be deterministic
+      const result2 = computeEmailContentHash('')
+      expect(result).toBe(result2)
+
+      // SHA-256 of empty string is a known value
+      expect(result).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
+    })
+
+    it('should handle large email body efficiently', async () => {
+      const { computeEmailContentHash } = await import('../normalization/email-hasher.js')
+
+      // Generate ~10KB text
+      const largeBody = 'This is a test email body with some content.\n'.repeat(200)
+
+      const start = performance.now()
+      const result = computeEmailContentHash(largeBody)
+      const duration = performance.now() - start
+
+      expect(result).toMatch(/^[0-9a-f]{64}$/)
+      expect(duration).toBeLessThan(1) // < 1ms for 10KB content
+    })
+
+    it('should handle special characters and unicode', async () => {
+      const { computeEmailContentHash } = await import('../normalization/email-hasher.js')
+
+      const input = 'Hello 世界 🌍 with symbols @#$%^&*()'
+      const result = computeEmailContentHash(input)
+
+      // Should produce valid hash
+      expect(result).toMatch(/^[0-9a-f]{64}$/)
+
+      // Should be deterministic
+      const result2 = computeEmailContentHash(input)
+      expect(result).toBe(result2)
+    })
+
+    it('should normalize line endings before hashing', async () => {
+      const { computeEmailContentHash } = await import('../normalization/email-hasher.js')
+
+      const crlfInput = 'line1\r\nline2\r\nline3'
+      const lfInput = 'line1\nline2\nline3'
+      const mixedInput = 'line1\r\nline2\nline3\r'
+
+      const hash1 = computeEmailContentHash(crlfInput)
+      const hash2 = computeEmailContentHash(lfInput)
+      const hash3 = computeEmailContentHash(mixedInput)
+
+      // All should normalize to same line endings and produce same hash
+      expect(hash1).toBe(hash2)
+      expect(hash2).toBe(hash3)
+    })
+
+    it('should integrate full AC01→AC02→AC03 pipeline', async () => {
+      const { computeEmailContentHash } = await import('../normalization/email-hasher.js')
+      const { stripHtmlTags } = await import('../normalization/html-stripper.js')
+      const { normalizeWhitespace } = await import('../normalization/whitespace-normalizer.js')
+
+      // Complex HTML email with whitespace issues
+      const htmlEmail = `
+        <html>
+          <head><title>Test</title></head>
+          <body>
+            <p>Hello     World</p>
+
+
+            <p>This   is   a   test</p>
+          </body>
+        </html>
+      `
+
+      const result = computeEmailContentHash(htmlEmail)
+
+      // Should be valid SHA-256 hash
+      expect(result).toMatch(/^[0-9a-f]{64}$/)
+
+      // Verify the pipeline produces expected normalization
+      const stripped = stripHtmlTags(htmlEmail)
+      const normalized = normalizeWhitespace(stripped)
+
+      // Should contain the title and body text, normalized
+      expect(normalized).toContain('Test')
+      expect(normalized).toContain('Hello World')
+      expect(normalized).toContain('This is a test')
+
+      // Should be deterministic - same input produces same hash
+      const result2 = computeEmailContentHash(htmlEmail)
+      expect(result).toBe(result2)
+    })
+
+    it('should demonstrate collision resistance - different inputs produce different hashes', async () => {
+      const { computeEmailContentHash } = await import('../normalization/email-hasher.js')
+
+      const hashes = new Set<string>()
+
+      // Generate 1000 different inputs
+      for (let i = 0; i < 1000; i++) {
+        const input = `Test email content number ${i} with unique data`
+        const hash = computeEmailContentHash(input)
+        hashes.add(hash)
+      }
+
+      // All hashes should be unique (no collisions)
+      expect(hashes.size).toBe(1000)
+    })
+
+    it('should process typical 5KB email body in under 1ms', async () => {
+      const { computeEmailContentHash } = await import('../normalization/email-hasher.js')
+
+      // Generate ~5KB text (typical email size)
+      const typicalEmail = 'This is a typical email body with some content and formatting.\n'.repeat(100)
+
+      const start = performance.now()
+      computeEmailContentHash(typicalEmail)
+      const duration = performance.now() - start
+
+      expect(duration).toBeLessThan(1) // < 1ms for typical email
+    })
+  })
+})
