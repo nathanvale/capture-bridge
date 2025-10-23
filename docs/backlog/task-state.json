@@ -438,6 +438,19 @@
       ],
       "acs_remaining": [],
       "notes": "Completed EMAIL_NORMALIZATION--T02: Email Body Normalization & Hash Computation - Core Logic following strict TDD (Red-Green-Refactor). All 3 ACs satisfied: AC05: Attachment count logged in meta_json via new attachment-counter.ts module and updateCaptureWithMetadata() function. Counts attachments from Gmail API metadata without downloading (11 tests, 100% coverage). AC06: Performance validation with 9 comprehensive benchmarks - end-to-end pipeline executes in 0.715ms (70x faster than 50ms requirement). AC07: Deterministic hashing validated with 28 tests covering 100+ iterations, 1000+ unique emails, and replay safety. Database UNIQUE constraint enforces deduplication. Total: 97 tests passing (71 existing + 28 new), 100% code coverage for normalization module. PR #52 created. Integration complete with email polling and vault export systems ready."
+    },
+    "DIRECT_EXPORT_EMAIL--T01": {
+      "status": "completed",
+      "started_at": "2025-10-23T21:45:00Z",
+      "completed_at": "2025-10-23T22:30:00Z",
+      "acs_completed": [
+        "DIRECT_EXPORT_EMAIL-AC01",
+        "DIRECT_EXPORT_EMAIL-AC02",
+        "DIRECT_EXPORT_EMAIL-AC03",
+        "DIRECT_EXPORT_EMAIL-AC04"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed email direct export to vault following strict TDD. All 4 ACs satisfied: AC01: Export trigger logic validates source='email', status='staged', checks duplicate via StagingLedger.checkDuplicate(), returns duplicate_skip when duplicate found (4 tests). AC02: Email markdown formatting generates frontmatter with id, source, captured_at, content_hash, from, subject fields plus body content (4 tests). AC03: Atomic write uses obsidian-bridge writeAtomic() to inbox/{capture.id}.md with error handling (3 tests). AC04: Audit trail inserts exports_audit with mode='initial' or 'duplicate_skip', hash_at_export, updates capture status to 'exported' or 'exported_duplicate' (6 tests). Total: 17/17 tests passing, 79.31% coverage (79% lines, 76.47% branches, 100% functions). Files created: email-direct-exporter.ts (177 lines), email-direct-exporter.spec.ts (comprehensive test suite). Modified: state-machine.ts (added staged→exported transition for MPPP), package.json (added @capture-bridge/storage dependency). Integration complete with EMAIL_NORMALIZATION--T02 and obsidian-bridge atomicity guarantees. PR ready for review."
     }
   }
 }
