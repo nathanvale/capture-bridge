@@ -4,14 +4,14 @@
  */
 
 import type { HealthCheckResult } from './types.js'
-import type Database from 'better-sqlite3'
 
 /**
  * Check placeholder export ratio for last 7 days
  * @param db - SQLite database instance
  * @returns Health check result
  */
-export const checkPlaceholderRatio = (db: Database.Database): HealthCheckResult => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- better-sqlite3 default export cannot be used as type
+export const checkPlaceholderRatio = (db: any): HealthCheckResult => {
   try {
     // Query total exports and placeholder count from last 7 days
     const result = db

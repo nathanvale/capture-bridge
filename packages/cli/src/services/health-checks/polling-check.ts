@@ -4,8 +4,6 @@
  */
 
 import type { HealthCheckResult } from './types.js'
-import type Database from 'better-sqlite3'
-
 
 interface SyncStateRow {
   key: string
@@ -18,7 +16,8 @@ interface SyncStateRow {
  * @param db - SQLite database instance
  * @returns Health check result
  */
-export const checkPollingTimestamps = (db: Database.Database): HealthCheckResult => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- better-sqlite3 default export cannot be used as type
+export const checkPollingTimestamps = (db: any): HealthCheckResult => {
   try {
     // Query sync_state for last poll timestamps
     const rows = db

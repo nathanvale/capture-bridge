@@ -9,7 +9,7 @@ import Database from 'better-sqlite3'
 import { describe, it, expect, afterEach } from 'vitest'
 
 describe('Doctor Command - AC07: Polling Timestamp Checks', () => {
-  const databases: Database.Database[] = []
+  const databases: any[] = []
   const pools: any[] = []
   const resources: Array<{ shutdown: () => Promise<void> }> = []
 
@@ -146,7 +146,7 @@ describe('Doctor Command - AC07: Polling Timestamp Checks', () => {
 })
 
 describe('Doctor Command - AC08: Error Log Summary', () => {
-  const databases: Database.Database[] = []
+  const databases: any[] = []
   const pools: any[] = []
   const resources: Array<{ shutdown: () => Promise<void> }> = []
 
@@ -270,7 +270,7 @@ describe('Doctor Command - AC08: Error Log Summary', () => {
 })
 
 describe('Doctor Command - AC10: Queue Depth Check', () => {
-  const databases: Database.Database[] = []
+  const databases: any[] = []
   const pools: any[] = []
   const resources: Array<{ shutdown: () => Promise<void> }> = []
 
@@ -397,7 +397,7 @@ describe('Doctor Command - AC10: Queue Depth Check', () => {
 })
 
 describe('Doctor Command - AC11: Placeholder Ratio Check', () => {
-  const databases: Database.Database[] = []
+  const databases: any[] = []
   const pools: any[] = []
   const resources: Array<{ shutdown: () => Promise<void> }> = []
 

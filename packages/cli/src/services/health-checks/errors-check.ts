@@ -4,15 +4,14 @@
  */
 
 import type { HealthCheckResult } from './types.js'
-import type Database from 'better-sqlite3'
-
 
 /**
  * Check error log summary for last 24 hours
  * @param db - SQLite database instance
  * @returns Health check result
  */
-export const checkErrorLog = (db: Database.Database): HealthCheckResult => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- better-sqlite3 default export cannot be used as type
+export const checkErrorLog = (db: any): HealthCheckResult => {
   try {
     // Query errors from last 24 hours
     const count = db

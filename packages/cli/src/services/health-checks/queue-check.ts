@@ -4,15 +4,14 @@
  */
 
 import type { HealthCheckResult } from './types.js'
-import type Database from 'better-sqlite3'
-
 
 /**
  * Check queue depth (captures pending processing)
  * @param db - SQLite database instance
  * @returns Health check result
  */
-export const checkQueueDepth = (db: Database.Database): HealthCheckResult => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- better-sqlite3 default export cannot be used as type
+export const checkQueueDepth = (db: any): HealthCheckResult => {
   try {
     // Query count of captures in processing states
     const result = db
