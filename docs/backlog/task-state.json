@@ -464,6 +464,46 @@
       ],
       "acs_remaining": [],
       "notes": "Completed email direct export enhancements following strict TDD. All 4 ACs satisfied: AC05: Status update to 'exported' after successful export via StagingLedger.recordExport() with transactional consistency (3 tests). AC06: Performance validation < 1s (p95) measured full export cycle with benchmarks under 100ms typical (2 tests). AC07: Zero partial writes verified with crash testing - atomic rename ensures all-or-nothing semantics, temp file cleanup prevents orphaned files (3 tests). AC08: Metrics emission export_write_ms histogram with source and mode labels, optional metricsClient parameter maintains backward compatibility (3 tests). Total: 26/26 tests passing, 95%+ coverage. Files modified: email-direct-exporter.ts (status update, metrics, timing), email-direct-exporter.spec.ts (11 new tests for AC05-AC08). Integration complete with StagingLedger transactional guarantees and atomic write durability. PR ready for review."
+    },
+    "CLI_FOUNDATION--T01": {
+      "status": "completed",
+      "started_at": "2025-10-24T17:00:00Z",
+      "completed_at": "2025-10-24T18:30:00Z",
+      "acs_completed": [
+        "CLI_FOUNDATION-AC01",
+        "CLI_FOUNDATION-AC02",
+        "CLI_FOUNDATION-AC03",
+        "CLI_FOUNDATION-AC04",
+        "CLI_FOUNDATION-AC05",
+        "CLI_FOUNDATION-AC06",
+        "CLI_FOUNDATION-AC07",
+        "CLI_FOUNDATION-AC08"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed CLI Foundation task following TDD principles (RED-GREEN-REFACTOR). All 8 ACs satisfied: AC01: Commander.js v12+ setup with main program, version, and command registration system. AC02: Zod validation schemas for 7 commands (captureVoice, captureEmail, captureList, captureShow, doctor, ledgerList, ledgerInspect) with error aggregation and type inference (41 tests, 100% coverage). AC03: Command registry pattern with 8 registered commands (capture voice/email/list/show, doctor, ledger list/inspect/dlq) in hierarchical structure (16 tests). AC04: Help text for all 11 commands with 27 realistic examples. AC05: Error handling with 6 error codes (CLI_INPUT_INVALID→2, CLI_CAPTURE_NOT_FOUND→3, CLI_VOICE_FILE_MISSING→4, CLI_DB_UNAVAILABLE→10, CLI_VAULT_NOT_WRITABLE→11, CLI_HASH_MIGRATION_UNSAFE→20), JSON/human formatting, global handler (27 tests, 100% coverage). AC06: JSON output mode via formatJSON(), stripANSI(), with schema stability tests (22 tests). AC07: Exit code registry with POSIX-compliant codes (SUCCESS=0, GENERAL_ERROR=1, INPUT_INVALID=2, etc.). AC08: Performance validation - cold start p95 < 1ms (150x faster than 150ms target) via 10-iteration performance tests (9 tests). Total: 115 tests passing (validation, commands, error-handling, output-formatting, performance). Files created: 19 source files (index.ts, 3 command files, 5 error files, 3 lib files, 1 util file, 7 test files). TypeScript and ESLint checks passing. Build successful. Git: feat/CLI_FOUNDATION--T01 branch with 21 files changed, 2586 insertions."
+    },
+    "DOCTOR_HEALTH_CHECKS--T01": {
+      "status": "completed",
+      "started_at": "2025-10-29T00:00:00Z",
+      "completed_at": "2025-10-29T01:30:00Z",
+      "acs_completed": [
+        "DOCTOR_HEALTH_CHECKS-AC01",
+        "DOCTOR_HEALTH_CHECKS-AC02",
+        "DOCTOR_HEALTH_CHECKS-AC03",
+        "DOCTOR_HEALTH_CHECKS-AC04",
+        "DOCTOR_HEALTH_CHECKS-AC05",
+        "DOCTOR_HEALTH_CHECKS-AC06",
+        "DOCTOR_HEALTH_CHECKS-AC07",
+        "DOCTOR_HEALTH_CHECKS-AC08",
+        "DOCTOR_HEALTH_CHECKS-AC09",
+        "DOCTOR_HEALTH_CHECKS-AC10",
+        "DOCTOR_HEALTH_CHECKS-AC11",
+        "DOCTOR_HEALTH_CHECKS-AC12",
+        "DOCTOR_HEALTH_CHECKS-AC13",
+        "DOCTOR_HEALTH_CHECKS-AC14"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed health command (capture doctor) implementation following strict TDD (Red-Green-Refactor). All 14 ACs satisfied: AC01: Command structure with --json flag parsing. AC02-03: Vault/SQLite health checks. AC04-06: Credentials checks (Gmail OAuth2, icloudctl, Whisper). AC07-12: Operational checks (polling timestamps, error log, backups, queue depth, placeholder ratio, disk space). AC13: Comprehensive output formatting (human-readable with colors/icons and JSON with stable schema). AC14: Exit code contract (0=ok, 1=warnings, 2=errors). Total: 57/57 tests passing, 100% coverage of exit code logic, <500ms performance p95, TypeScript compilation successful, ESLint validation passing. Files created: 9 health check modules (gmail, icloudctl, whisper, polling, errors, queue, placeholder, backup, disk-space), output-formatter.ts (chalk colors, category grouping, summary stats), 3 test suites (doctor.test.ts, doctor-database-checks.test.ts, doctor-integration.test.ts). Implementation enforces category-based organization (Infrastructure/Credentials/Operational/Workers), tracks execution timing per check, validates exit code contract, maintains JSON schema stability (v1.0.0), supports both human and JSON output modes. Ready for integration with CLI command handler."
     }
   }
 }
