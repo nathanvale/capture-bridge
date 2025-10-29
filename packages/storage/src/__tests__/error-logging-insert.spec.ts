@@ -9,16 +9,17 @@
  * Source: docs/features/staging-ledger/spec-staging-tech.md §2.1 (errors_log table)
  */
 
+import Database from 'better-sqlite3'
 import { ulid } from 'ulid'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-describe('Error Logging: Insert errors_log', () => {
-  let db: ReturnType<typeof import('better-sqlite3').default>
-  const databases: Array<ReturnType<typeof import('better-sqlite3').default>> = []
+type DatabaseInstance = ReturnType<typeof Database>
 
-  beforeEach(async () => {
-    // Dynamic import to avoid type issues
-    const Database = (await import('better-sqlite3')).default
+describe('Error Logging: Insert errors_log', () => {
+  let db: DatabaseInstance
+  const databases: DatabaseInstance[] = []
+
+  beforeEach(() => {
     // Create in-memory database for each test
     db = new Database(':memory:')
     databases.push(db)
@@ -144,15 +145,17 @@ describe('Error Logging: Insert errors_log', () => {
   })
 
   it('sets created_at to current timestamp automatically', async () => {
-    // Arrange: Note current time (within 2 seconds tolerance)
-    const beforeTime = new Date()
-    beforeTime.setSeconds(beforeTime.getSeconds() - 2)
+    // Arrange: Note current time before insert
+    const beforeInsert = new Date()
 
     // Dynamic import
     const { logError } = await import('../errors/error-logger.js')
 
     // Act: Call logError
     await logError(db, null, 'backup', 'Backup verification failed')
+
+    // Arrange: Note current time after insert
+    const afterInsert = new Date()
 
     // Assert: Query row and verify created_at is close to current time
     const row = db.prepare('SELECT * FROM errors_log WHERE stage = ?').get('backup') as {
@@ -166,13 +169,13 @@ describe('Error Logging: Insert errors_log', () => {
     expect(row).toBeDefined()
     expect(row.created_at).toBeDefined()
 
-    // Parse created_at and verify it's recent (within 5 seconds)
-    const createdAt = new Date(row.created_at)
-    const now = new Date()
-    const diffMs = now.getTime() - createdAt.getTime()
+    // SQLite CURRENT_TIMESTAMP returns UTC time as string: "YYYY-MM-DD HH:MM:SS"
+    // Parse it and verify it's between beforeInsert and afterInsert (with some tolerance)
+    const createdAt = new Date(row.created_at + ' UTC')
 
-    expect(diffMs).toBeGreaterThanOrEqual(0)
-    expect(diffMs).toBeLessThan(5000) // Within 5 seconds
+    // Verify timestamp is reasonable (within test execution window + 5s tolerance)
+    expect(createdAt.getTime()).toBeGreaterThanOrEqual(beforeInsert.getTime() - 5000)
+    expect(createdAt.getTime()).toBeLessThanOrEqual(afterInsert.getTime() + 5000)
   })
 
   it('generates unique ULIDs for each error log entry', async () => {
@@ -207,7 +210,7 @@ describe('Error Logging: Insert errors_log', () => {
     await logError(db, captureId, 'export', 'Export failed')
 
     // Verify insertion
-    let row = db.prepare('SELECT * FROM errors_log WHERE capture_id = ?').get(captureId) as
+    const initialRow = db.prepare('SELECT * FROM errors_log WHERE capture_id = ?').get(captureId) as
       | {
           id: string
           capture_id: string
@@ -216,14 +219,16 @@ describe('Error Logging: Insert errors_log', () => {
         }
       | undefined
 
-    expect(row).toBeDefined()
-    expect(row!.capture_id).toBe(captureId)
+    expect(initialRow).toBeDefined()
+    expect(initialRow).toHaveProperty('capture_id', captureId)
 
     // Act: Delete the capture (should SET NULL on errors_log)
     db.prepare('DELETE FROM captures WHERE id = ?').run(captureId)
 
     // Assert: errors_log row should still exist but capture_id should be NULL
-    row = db.prepare('SELECT * FROM errors_log WHERE stage = ? AND message = ?').get('export', 'Export failed') as
+    const rowAfterDelete = db
+      .prepare('SELECT * FROM errors_log WHERE stage = ? AND message = ?')
+      .get('export', 'Export failed') as
       | {
           id: string
           capture_id: string | null
@@ -232,7 +237,7 @@ describe('Error Logging: Insert errors_log', () => {
         }
       | undefined
 
-    expect(row).toBeDefined()
-    expect(row!.capture_id).toBeNull() // ON DELETE SET NULL
+    expect(rowAfterDelete).toBeDefined()
+    expect(rowAfterDelete).toHaveProperty('capture_id', null) // ON DELETE SET NULL
   })
 })
