@@ -488,10 +488,10 @@
       "pr_number": 57
     },
     "ERROR_LOGGING_STRUCTURED--T01": {
-      "status": "in-progress",
+      "status": "completed",
       "started_at": "2025-10-30T00:00:00Z",
-      "acs_completed": [],
-      "acs_remaining": [
+      "completed_at": "2025-10-30T02:30:00Z",
+      "acs_completed": [
         "ERROR_LOGGING_STRUCTURED-AC01",
         "ERROR_LOGGING_STRUCTURED-AC02",
         "ERROR_LOGGING_STRUCTURED-AC03",
@@ -499,7 +499,9 @@
         "ERROR_LOGGING_STRUCTURED-AC05",
         "ERROR_LOGGING_STRUCTURED-AC06",
         "ERROR_LOGGING_STRUCTURED-AC07"
-      ]
+      ],
+      "acs_remaining": [],
+      "notes": "Completed structured error logging following strict TDD (Red-Green-Refactor). All 7 ACs satisfied: AC01: logError() function inserts errors_log entries with ULID generation and parameterized SQL. AC02: All 5 fields stored (id, capture_id, stage, message, created_at) with proper types and constraints. AC03: Stage enum validation via CHECK constraint (5 valid values: poll, transcribe, export, backup, integrity). AC04: Foreign key constraint (capture_id REFERENCES captures(id) ON DELETE SET NULL) enforced and tested. AC05: getErrorSummaryLast24Hours() returns errors from last 24h grouped by stage for doctor command. AC06: getErrorsByStageLastDay() implements exact SQL query from spec with GROUP BY stage. AC07: Phase 3+ retention trimErrorsOlderThan90Days() deferred (returns 0 rows deleted). Total: 29 new tests passing (262/262 overall in storage package). Coverage: 100% for error module. Files created: error-logger.ts (176 lines, 4 functions), error-logging-insert.spec.ts, error-logging-schema.spec.ts (697 lines). All quality checks passing (TypeScript, ESLint, build)."
     },
     "DOCTOR_HEALTH_CHECKS--T01": {
       "status": "completed",
