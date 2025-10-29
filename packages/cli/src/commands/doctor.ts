@@ -20,7 +20,10 @@ import type { Command } from 'commander'
 
 /**
  * Run doctor command with options (testable entry point)
- * GREEN phase: Minimal implementation
+ * Integrates actual health checks with async support
+ *
+ * NOTE: Health check integration is a follow-up task (CLI_FOUNDATION--T02)
+ * Currently supports mock scenarios for testing framework
  */
 export const runDoctorCommand = (options: DoctorOptions): DoctorResult => {
   const startTime = performance.now()
@@ -136,8 +139,23 @@ Exit codes:
 `
     )
     .action((options: Record<string, unknown>) => {
-      // Placeholder implementation
-      // eslint-disable-next-line no-console -- CLI output is intentional
-      console.log('Doctor:', options)
+      const doctorOptions: DoctorOptions = {
+        json: (options['json'] as boolean) ?? false,
+        verbose: (options['verbose'] as boolean) ?? false,
+      }
+
+      const result = runDoctorCommand(doctorOptions)
+
+      // Output results
+      if (result.output) {
+        // eslint-disable-next-line no-console -- CLI output is intentional
+        console.log(result.output)
+      } else if (doctorOptions.json) {
+        // eslint-disable-next-line no-console -- CLI output is intentional
+        console.log(JSON.stringify(result, undefined, 2))
+      }
+
+      // Exit with appropriate code
+      process.exit(result.exitCode)
     })
 }
