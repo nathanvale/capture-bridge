@@ -94,4 +94,21 @@ export default defineConfig([
     sourcemap: true,
     target: 'es2022',
   },
+  {
+    entry: {
+      'errors/index': 'src/errors/index.ts',
+    },
+    format: ['esm'],
+    dts: isDev
+      ? false
+      : {
+          compilerOptions: {
+            composite: false,
+          },
+        },
+    bundle: true, // Bundle error utilities to ensure standalone use
+    clean: false,
+    sourcemap: true,
+    target: 'es2022',
+  },
 ])

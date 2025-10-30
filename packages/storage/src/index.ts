@@ -45,6 +45,15 @@ export {
   UpdatePlaceholderStatusError,
 } from './staging-ledger/update-placeholder-status.js'
 
+// Error logging
+export {
+  logError,
+  getErrorSummaryLast24Hours,
+  getErrorsByStageLastDay,
+  trimErrorsOlderThan90Days,
+  type ErrorLogEntry,
+} from './errors/index.js'
+
 // Metrics
 export { calculatePlaceholderExportRatio } from './metrics/placeholder-export-ratio.js'
 

@@ -487,6 +487,22 @@
       "notes": "Completed CLI Foundation task following TDD principles (RED-GREEN-REFACTOR). All 8 ACs satisfied: AC01: Commander.js v12+ setup with main program, version, and command registration system. AC02: Zod validation schemas for 7 commands (captureVoice, captureEmail, captureList, captureShow, doctor, ledgerList, ledgerInspect) with error aggregation and type inference (41 tests, 100% coverage). AC03: Command registry pattern with 8 registered commands (capture voice/email/list/show, doctor, ledger list/inspect/dlq) in hierarchical structure (16 tests). AC04: Help text for all 11 commands with 27 realistic examples. AC05: Error handling with 6 error codes (CLI_INPUT_INVALID→2, CLI_CAPTURE_NOT_FOUND→3, CLI_VOICE_FILE_MISSING→4, CLI_DB_UNAVAILABLE→10, CLI_VAULT_NOT_WRITABLE→11, CLI_HASH_MIGRATION_UNSAFE→20), JSON/human formatting, global handler (27 tests, 100% coverage). AC06: JSON output mode via formatJSON(), stripANSI(), with schema stability tests (22 tests). AC07: Exit code registry with POSIX-compliant codes (SUCCESS=0, GENERAL_ERROR=1, INPUT_INVALID=2, etc.). AC08: Performance validation - cold start p95 < 1ms (150x faster than 150ms target) via 10-iteration performance tests (9 tests). Total: 115 tests passing (validation, commands, error-handling, output-formatting, performance). Files created: 19 source files (index.ts, 3 command files, 5 error files, 3 lib files, 1 util file, 7 test files). TypeScript and ESLint checks passing. Build successful. Git: feat/CLI_FOUNDATION--T01 branch with 21 files changed, 2586 insertions.",
       "pr_number": 57
     },
+    "ERROR_LOGGING_STRUCTURED--T01": {
+      "status": "completed",
+      "started_at": "2025-10-30T00:00:00Z",
+      "completed_at": "2025-10-30T02:30:00Z",
+      "acs_completed": [
+        "ERROR_LOGGING_STRUCTURED-AC01",
+        "ERROR_LOGGING_STRUCTURED-AC02",
+        "ERROR_LOGGING_STRUCTURED-AC03",
+        "ERROR_LOGGING_STRUCTURED-AC04",
+        "ERROR_LOGGING_STRUCTURED-AC05",
+        "ERROR_LOGGING_STRUCTURED-AC06",
+        "ERROR_LOGGING_STRUCTURED-AC07"
+      ],
+      "acs_remaining": [],
+      "notes": "Completed structured error logging following strict TDD (Red-Green-Refactor). All 7 ACs satisfied: AC01: logError() function inserts errors_log entries with ULID generation and parameterized SQL. AC02: All 5 fields stored (id, capture_id, stage, message, created_at) with proper types and constraints. AC03: Stage enum validation via CHECK constraint (5 valid values: poll, transcribe, export, backup, integrity). AC04: Foreign key constraint (capture_id REFERENCES captures(id) ON DELETE SET NULL) enforced and tested. AC05: getErrorSummaryLast24Hours() returns errors from last 24h grouped by stage for doctor command. AC06: getErrorsByStageLastDay() implements exact SQL query from spec with GROUP BY stage. AC07: Phase 3+ retention trimErrorsOlderThan90Days() deferred (returns 0 rows deleted). Total: 29 new tests passing (262/262 overall in storage package). Coverage: 100% for error module. Files created: error-logger.ts (176 lines, 4 functions), error-logging-insert.spec.ts, error-logging-schema.spec.ts (697 lines). All quality checks passing (TypeScript, ESLint, build)."
+    },
     "DOCTOR_HEALTH_CHECKS--T01": {
       "status": "completed",
       "started_at": "2025-10-29T00:00:00Z",
