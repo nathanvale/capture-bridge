@@ -81,11 +81,10 @@ describe('Error Logging: Schema Validation (AC02-AC04)', () => {
     `)
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     // 5-step cleanup
     // 0. Custom resources (none)
-    // 1. Settle 100ms
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    // 1. Settle (deterministic cleanup, no sleep needed)
     // 2. Drain pools (none)
     // 3. Close databases
     for (const database of databases) {
